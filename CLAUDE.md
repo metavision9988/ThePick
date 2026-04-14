@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **쪽집게(ThePick)** — 손해평가사 자격시험(1차+2차) AI 학습 서비스
 
-- Graph RAG 기반 교재 835쪽 + 기출 825문항 구조화
+- Graph RAG 기반 교재 835쪽 + 기출 ~581문항(7회분, 제5~11회) 구조화
 - 룰 엔진 산식 연산 + 혼동 유형 자동 감지 + FSRS 간격반복
 
 ## 스택
