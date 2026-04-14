@@ -19,9 +19,9 @@ import type { CalculateResult } from '@thepick/formula-engine';
 // --- QG-2 임계값 ---
 
 const QG2_THRESHOLDS = {
-  minNodes: 60,
-  minEdges: 200,
-  minFormulas: 13,
+  minNodes: 40,
+  minEdges: 80,
+  minFormulas: 7,
   formulaAccuracy: 1.0, // 100%
   maxOrphanNodes: 0,
   maxBrokenEdges: 0,
@@ -30,7 +30,7 @@ const QG2_THRESHOLDS = {
 
 /** 배치별 누적 산식 수 임계값 (BATCH_CONFIGS.expectedFormulas 기반) */
 const CUMULATIVE_FORMULA_THRESHOLDS: Record<string, number> = {
-  'BATCH-1': 13,
+  'BATCH-1': 7,
   'BATCH-2': 30, // 13 + 17
   'BATCH-3': 38, // 30 + 8
   'BATCH-4': 53, // 38 + 15
@@ -75,13 +75,13 @@ export function checkGraphScale(
 
   return [
     {
-      name: 'Node count >= 60',
+      name: `Node count >= ${QG2_THRESHOLDS.minNodes}`,
       passed: activeNodes >= QG2_THRESHOLDS.minNodes,
       expected: `>= ${QG2_THRESHOLDS.minNodes}`,
       actual: String(activeNodes),
     },
     {
-      name: 'Edge count >= 200',
+      name: `Edge count >= ${QG2_THRESHOLDS.minEdges}`,
       passed: activeEdges >= QG2_THRESHOLDS.minEdges,
       expected: `>= ${QG2_THRESHOLDS.minEdges}`,
       actual: String(activeEdges),

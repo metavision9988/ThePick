@@ -150,16 +150,16 @@ APPLIES_TO, REQUIRES_INVESTIGATION, PREREQUISITE, USES_FORMULA, DEPENDS_ON, GOVE
 
 > DEV COVEN HI-02 + HI-08: 인증 체계 완전 부재 + 개인정보보호법 대응
 
-| 항목          | 결정                                                                |
-| ------------- | ------------------------------------------------------------------- |
-| MVP 인증      | 이메일+비밀번호 (Argon2 해시) or Cloudflare Access                  |
-| 베타 기간     | 초대 코드 기반 가입 제한                                            |
-| 테이블        | `users` (id, email, hashed_password, role, invite_code, created_at) |
-| PII 범위      | email + 학습 이력 (user_progress)                                   |
-| 보관 정책     | 탈퇴 후 30일 내 완전 삭제 (D1 + IndexedDB)                          |
-| 관리자 접근   | 통계만 가능, 개별 학습 이력 접근 불가                               |
-| 로그 마스킹   | userId를 해시로 변환하여 로깅                                       |
-| 개인정보 동의 | 회원가입 시 수집·이용 동의 UI 필수                                  |
+| 항목          | 결정                                                                                                                             |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| MVP 인증      | 이메일+비밀번호 (WebCrypto PBKDF2-SHA256, Workers 호환) or Cloudflare Access                                                     |
+| 베타 기간     | 초대 코드 기반 가입 제한                                                                                                         |
+| 테이블        | `users` (id, email, hashed_password, role, invite_code, created_at)                                                              |
+| PII 범위      | email + 학습 이력 (user_progress)                                                                                                |
+| 보관 정책     | D1: 탈퇴 후 30일 내 삭제. IndexedDB: 앱 재접속 시 자동 정리 (서버 410 응답 → 클라이언트 DB clear). 미접속 시 브라우저 quota 의존 |
+| 관리자 접근   | 통계만 가능, 개별 학습 이력 접근 불가                                                                                            |
+| 로그 마스킹   | userId를 해시로 변환하여 로깅                                                                                                    |
+| 개인정보 동의 | 회원가입 시 수집·이용 동의 UI 필수                                                                                               |
 
 ### 기본 6개 테이블
 
