@@ -1,0 +1,43 @@
+---
+/**
+ * 관리자 CMS 메인 — Graph Visualizer + Content Queue
+ */
+---
+
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>ThePick Admin — Graph Visualizer</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: system-ui, -apple-system, sans-serif; background: #f1f5f9; }
+      .header { background: #1e293b; color: #f8fafc; padding: 16px 24px; }
+      .header h1 { font-size: 18px; font-weight: 600; }
+      .main { display: grid; grid-template-columns: 1fr 400px; gap: 16px; padding: 16px; height: calc(100vh - 56px); }
+      .panel { background: #fff; border-radius: 8px; padding: 16px; overflow: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+      @media (max-width: 1024px) {
+        .main { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>ThePick Admin — Knowledge Graph</h1>
+    </div>
+    <div class="main">
+      <div class="panel" id="graph-panel">
+        <div id="graph-mount" style="width:100%;height:100%;"></div>
+      </div>
+      <div class="panel" id="queue-panel">
+        <h2 style="font-size:16px;font-weight:600;margin-bottom:12px;">Content Queue</h2>
+        <div id="queue-mount"></div>
+      </div>
+    </div>
+
+    <script>
+      // React Islands는 Astro의 client:only 디렉티브로 마운트
+      // 현재는 데이터 없이 빈 상태. BATCH 1 적재 후 API 연동 예정.
+    </script>
+  </body>
+</html>

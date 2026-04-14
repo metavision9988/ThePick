@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThePick Architecture Visualizer</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard', -apple-system, sans-serif; background: #0f1117; color: #e1e4e8; overflow: hidden; }
+  nav { display: flex; gap: 2px; background: #161b22; padding: 8px 16px; border-bottom: 1px solid #30363d; align-items: center; }
+  nav .logo { font-weight: 700; font-size: 15px; color: #58a6ff; margin-right: 16px; white-space: nowrap; }
+  nav button { background: #21262d; border: 1px solid #30363d; color: #c9d1d9; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all .15s; white-space: nowrap; }
+  nav button:hover { background: #30363d; }
+  nav button.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  #legend { position: absolute; top: 56px; right: 16px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px 16px; z-index: 10; font-size: 11px; max-width: 220px; }
+  #legend h4 { margin-bottom: 8px; color: #58a6ff; font-size: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  #tooltip { position: absolute; background: #1c2128; border: 1px solid #444c56; border-radius: 8px; padding: 10px 14px; font-size: 12px; pointer-events: none; opacity: 0; transition: opacity .15s; max-width: 320px; z-index: 20; box-shadow: 0 4px 12px rgba(0,0,0,.4); }
+  #tooltip .tt-title { color: #58a6ff; margin-bottom: 4px; font-size: 13px; font-weight: 600; }
+  #tooltip .tt-desc { color: #8b949e; line-height: 1.5; white-space: pre-line; }
+  #tooltip .tt-tag { display: inline-block; background: #30363d; padding: 1px 6px; border-radius: 4px; font-size: 10px; margin-top: 4px; }
+  #tooltip .tt-tag-l3 { background: #6e1b1b; color: #f85149; }
+  #info { position: absolute; bottom: 16px; left: 16px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 10px 16px; font-size: 11px; color: #8b949e; z-index: 10; }
+  #info kbd { background: #30363d; padding: 2px 6px; border-radius: 3px; font-size: 10px; }
+  svg { width: 100%; height: calc(100vh - 45px); }
+  .link { stroke-opacity: 0.5; fill: none; }
+  .link-label { font-size: 9px; fill: #6e7681; pointer-events: none; }
+  .node-label { font-size: 11px; fill: #c9d1d9; pointer-events: none; text-anchor: middle; font-weight: 500; }
+  .node-sublabel { font-size: 9px; fill: #6e7681; pointer-events: none; text-anchor: middle; }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="logo">ThePick Arch</span>
+  <button class="active" data-view="system">System Overview</button>
+  <button data-view="dataflow">Data Flow</button>
+  <button data-view="modules">Module Deps</button>
+  <button data-view="pipeline">Batch Pipeline</button>
+  <button data-view="offline">Offline Sync</button>
+  <button data-view="hexagonal">Hexagonal</button>
+</nav>
+
+<div id="legend"></div>
+<div id="tooltip">
+  <div class="tt-title"></div>
+  <div class="tt-desc"></div>
+  <span class="tt-tag"></span>
+</div>
+<div id="info">
+  <kbd>drag</kbd> move &nbsp; <kbd>scroll</kbd> zoom &nbsp; <kbd>hover</kbd> detail &nbsp; <kbd>click</kbd> pin/unpin
+</div>
+
+<svg id="canvas"></svg>
+
+<script>
+const W = window.innerWidth, H = window.innerHeight - 45;
+
+const C = {
+  pwa:'#3fb950', worker:'#1f6feb', module_a:'#a371f7', d1:'#f0883e',
+  vectorize:'#f78166', pipeline:'#768390', admin:'#39d353', quality:'#f85149',
+  formula:'#ff7b72', fsrs:'#79c0ff', batch:'#d29922', shared:'#8b949e',
+  sync:'#56d364', error:'#f85149', i18n:'#ffa657', domain:'#7ee787',
+  application:'#a371f7', infrastructure:'#79c0ff',
+};
+
+const VIEWS = {};
+
+VIEWS.system = {
+  nodes: [
+    {id:'exam',label:'Exam',sub:'M25 - Solve past questions',group:'pwa',x:-300,y:-200},
+    {id:'review',label:'Review',sub:'M26 - FSRS flashcards',group:'pwa',x:-150,y:-200},
+    {id:'mock',label:'Mock Test',sub:'M27 - 25q x 3 subjects',group:'pwa',x:0,y:-200},
+    {id:'tutor',label:'AI Tutor',sub:'P3 - Graph RAG chat',group:'pwa',x:150,y:-200},
+    {id:'dash',label:'Dashboard',sub:'Progress + analytics',group:'pwa',x:300,y:-200},
+    {id:'idb',label:'IndexedDB',sub:'Dexie.js ~4MB local cache',group:'pwa',x:-200,y:-80,size:18},
+    {id:'zustand',label:'Zustand',sub:'Session state',group:'pwa',x:-50,y:-80},
+    {id:'fsrs_c',label:'FSRS Local',sub:'Offline schedule calc',group:'fsrs',x:100,y:-80},
+    {id:'sw',label:'Service Worker',sub:'4 caching strategies',group:'sync',x:250,y:-80},
+    {id:'bgsync',label:'Background Sync',sub:'offlineActions queue',group:'sync',x:0,y:-10},
+    {id:'router',label:'Hono Router',sub:'Edge API entry',group:'worker',x:0,y:90,size:20},
+    {id:'auth',label:'Auth MW',sub:'Authentication',group:'worker',x:-150,y:90},
+    {id:'errmw',label:'Error Handler',sub:'AppError to ErrorResponse',group:'error',x:150,y:90},
+    {id:'content',label:'content',sub:'search-graph, calc-formula',group:'module_a',x:-200,y:190,size:22},
+    {id:'learning',label:'learning',sub:'FSRS, mnemonic, sync',group:'module_a',x:0,y:190,size:22},
+    {id:'exam_m',label:'exam',sub:'take-exam, run-mock',group:'module_a',x:200,y:190,size:22},
+    {id:'d1',label:'Cloudflare D1',sub:'9 tables (structured)',group:'d1',x:-100,y:320,size:24},
+    {id:'vec',label:'Vectorize',sub:'Embedding search',group:'vectorize',x:100,y:320,size:20},
+    {id:'pdf',label:'pdfplumber',sub:'Stage 1 - PDF extract',group:'pipeline',x:-350,y:320},
+    {id:'claude_b',label:'Claude Batch',sub:'Stage 3 - structuring',group:'pipeline',x:-350,y:200},
+    {id:'ontology',label:'Ontology Lock',sub:'L3 - ID validation',group:'quality',x:-350,y:100},
+    {id:'graphviz',label:'Graph Visualizer',sub:'D3.js subgraph view',group:'admin',x:350,y:100},
+    {id:'cqueue',label:'Content Queue',sub:'draft to approved',group:'admin',x:350,y:200},
+  ],
+  links: [
+    {source:'exam',target:'router'},{source:'review',target:'router'},{source:'mock',target:'router'},
+    {source:'tutor',target:'router'},{source:'dash',target:'router'},
+    {source:'router',target:'auth'},{source:'router',target:'errmw'},
+    {source:'router',target:'content'},{source:'router',target:'learning'},{source:'router',target:'exam_m'},
+    {source:'content',target:'d1'},{source:'content',target:'vec'},
+    {source:'learning',target:'d1'},{source:'exam_m',target:'d1'},
+    {source:'review',target:'idb',label:'offline',dash:true},
+    {source:'idb',target:'fsrs_c',dash:true},{source:'fsrs_c',target:'bgsync',label:'online',dash:true},
+    {source:'bgsync',target:'router',label:'batch sync'},
+    {source:'pdf',target:'claude_b'},{source:'claude_b',target:'ontology'},{source:'ontology',target:'d1',label:'draft'},
+    {source:'graphviz',target:'router'},{source:'cqueue',target:'d1'},
+  ],
+  legend:[{color:C.pwa,label:'PWA (Learner)'},{color:C.worker,label:'Workers (Edge)'},{color:C.module_a,label:'modules/ (Domain)'},
+    {color:C.d1,label:'D1 (Precise+Structure)'},{color:C.vectorize,label:'Vectorize (Context)'},
+    {color:C.pipeline,label:'Build Pipeline'},{color:C.sync,label:'Offline Sync'},{color:C.admin,label:'Admin CMS'}]
+};
+
+VIEWS.dataflow = {
+  nodes: [
+    {id:'q',label:'User Query',sub:'',group:'pwa',x:-350,y:0},
+    {id:'analyze',label:'Query Analysis',sub:'Extract LV1/LV2/LV3',group:'worker',x:-200,y:0},
+    {id:'meta',label:'D1 Meta Filter',sub:'WHERE lv1=? AND lv2=?',group:'d1',x:-50,y:-80},
+    {id:'vecsearch',label:'Vectorize Search',sub:'Similarity score',group:'vectorize',x:100,y:-80},
+    {id:'simcheck',label:'Similarity >= 0.60?',sub:'Threshold gate',group:'quality',x:250,y:-80,size:22},
+    {id:'degrade',label:'Graceful Degradation',sub:'Refer textbook ch/sec',group:'error',x:250,y:-220,size:20},
+    {id:'twsort',label:'Truth Weight Sort',sub:'LAW(10) > FORMULA(8) > ...',group:'module_a',x:250,y:60,size:20},
+    {id:'fcheck',label:'Formula needed?',sub:'Branch decision',group:'worker',x:100,y:160,size:18},
+    {id:'constq',label:'Constants Query',sub:'DB direct (no LLM)',group:'d1',x:-50,y:250},
+    {id:'fengine',label:'Formula Engine',sub:'math.js AST (L3)',group:'formula',x:100,y:250,size:22},
+    {id:'ctx',label:'Build Context',sub:'',group:'module_a',x:250,y:160},
+    {id:'cgen',label:'Claude API',sub:'Context-injected answer',group:'pipeline',x:350,y:160},
+    {id:'result',label:'SuccessResponse',sub:'Return result',group:'sync',x:350,y:60},
+    {id:'erresult',label:'ErrorResponse',sub:'+ textbook reference',group:'error',x:350,y:-220},
+  ],
+  links: [
+    {source:'q',target:'analyze'},{source:'analyze',target:'meta'},{source:'meta',target:'vecsearch'},
+    {source:'vecsearch',target:'simcheck'},{source:'simcheck',target:'degrade',label:'< 0.60'},
+    {source:'simcheck',target:'twsort',label:'>= 0.60'},{source:'degrade',target:'erresult'},
+    {source:'twsort',target:'fcheck'},{source:'fcheck',target:'constq',label:'Yes'},
+    {source:'constq',target:'fengine'},{source:'fengine',target:'result'},
+    {source:'fcheck',target:'ctx',label:'No'},{source:'ctx',target:'cgen'},{source:'cgen',target:'result'},
+  ],
+  legend:[{color:C.pwa,label:'Input'},{color:C.d1,label:'D1 (Precise+Structure)'},{color:C.vectorize,label:'Vectorize (Context)'},
+    {color:C.quality,label:'Defense Gate'},{color:C.formula,label:'Formula Engine (L3)'},
+    {color:C.error,label:'Graceful Degradation'},{color:C.sync,label:'Result'}]
+};
+
+VIEWS.modules = {
+  nodes: [
+    {id:'pp',label:'parser',sub:'M01,M06~M10',group:'pipeline',x:-300,y:-150},
+    {id:'p1st',label:'parser-1st-exam',sub:'M03~M05,M11',group:'pipeline',x:-300,y:-50},
+    {id:'pq',label:'quality',sub:'M12~M14',group:'quality',x:-100,y:-100},
+    {id:'pf',label:'formula-engine',sub:'M16 (L3)',group:'formula',x:-300,y:50,size:20},
+    {id:'psg',label:'study-material-gen',sub:'M20~M24',group:'pipeline',x:-300,y:150},
+    {id:'psh',label:'shared',sub:'AppError, types',group:'shared',x:-100,y:0},
+    {id:'mc',label:'content',sub:'search-graph\ncalculate-formula',group:'module_a',x:150,y:-100,size:24},
+    {id:'ml',label:'learning',sub:'schedule-review\nmatch-mnemonic',group:'module_a',x:150,y:50,size:24},
+    {id:'me',label:'exam',sub:'take-exam\nrun-mock',group:'module_a',x:150,y:200,size:24},
+    {id:'aw',label:'web (PWA)',sub:'Astro+React',group:'pwa',x:350,y:-200},
+    {id:'aa',label:'admin-web',sub:'D3.js Graph',group:'admin',x:350,y:-100},
+    {id:'aapi',label:'api (Workers)',sub:'Hono',group:'worker',x:350,y:50,size:20},
+    {id:'ab',label:'batch',sub:'jobs/',group:'batch',x:350,y:200},
+    {id:'d1',label:'D1',sub:'9 tables',group:'d1',x:0,y:300,size:22},
+    {id:'vec',label:'Vectorize',sub:'embeddings',group:'vectorize',x:200,y:300,size:18},
+    {id:'idb',label:'IndexedDB',sub:'client local',group:'sync',x:400,y:300},
+  ],
+  links: [
+    {source:'pp',target:'pq'},{source:'p1st',target:'pq'},{source:'pq',target:'d1',label:'approved'},
+    {source:'pf',target:'d1'},{source:'psg',target:'d1'},
+    {source:'psh',target:'pp',dash:true},{source:'psh',target:'pf',dash:true},{source:'psh',target:'pq',dash:true},
+    {source:'aapi',target:'mc',label:'routes->app'},{source:'aapi',target:'ml'},{source:'aapi',target:'me'},
+    {source:'mc',target:'d1'},{source:'mc',target:'vec'},{source:'ml',target:'d1'},{source:'me',target:'d1'},
+    {source:'aw',target:'aapi',label:'API'},{source:'aa',target:'aapi'},
+    {source:'ab',target:'pp'},{source:'ab',target:'psg'},
+    {source:'aw',target:'idb',label:'offline',dash:true},
+  ],
+  legend:[{color:C.pipeline,label:'packages/ (Build)'},{color:C.module_a,label:'modules/ (Runtime)'},
+    {color:C.worker,label:'apps/ (Entry)'},{color:C.formula,label:'L3 Zone'},
+    {color:C.d1,label:'D1 (Server)'},{color:C.sync,label:'IndexedDB (Client)'},{color:C.shared,label:'shared (Types)'}]
+};
+
+VIEWS.pipeline = {
+  nodes: [
+    {id:'s1',label:'Stage 1: PDF',sub:'pdfplumber 835p',group:'pipeline',x:-350,y:-100},
+    {id:'s2',label:'Stage 2: Split',sub:'Regex + structure',group:'pipeline',x:-200,y:-100},
+    {id:'s3',label:'Stage 3: Claude',sub:'Knowledge Contract',group:'pipeline',x:-50,y:-100},
+    {id:'s4',label:'Stage 4: Validate',sub:'Ontology Lock (L3)',group:'quality',x:100,y:-100,size:20},
+    {id:'rej',label:'Reject + Retry',sub:'Unregistered ID',group:'error',x:25,y:-220},
+    {id:'s5',label:'Stage 5: Insert',sub:"status='draft'",group:'d1',x:250,y:-100},
+    {id:'m14',label:'M14: Integrity',sub:'Orphan/cycle = 0',group:'quality',x:250,y:0},
+    {id:'fix',label:'Fix + Revalidate',sub:'',group:'error',x:400,y:0},
+    {id:'s6',label:'Stage 6: Review',sub:'Graph Visualizer',group:'admin',x:250,y:100},
+    {id:'s7',label:'Stage 7: Embed',sub:'approved only',group:'vectorize',x:100,y:100},
+    {id:'s8',label:'Stage 8: Generate',sub:'M20~M24',group:'pipeline',x:-50,y:100},
+    {id:'b1',label:'BATCH 1',sub:'p.403~434',group:'sync',x:-350,y:250,size:18},
+    {id:'b2',label:'BATCH 2',sub:'p.435~500',group:'batch',x:-220,y:250},
+    {id:'b3',label:'BATCH 3',sub:'p.501~521',group:'batch',x:-90,y:250},
+    {id:'b4',label:'BATCH 4',sub:'p.522~576',group:'batch',x:40,y:250},
+    {id:'b5',label:'BATCH 5',sub:'p.577~647',group:'batch',x:170,y:250},
+    {id:'b6',label:'BATCH 6',sub:'p.648~757',group:'batch',x:300,y:250},
+    {id:'b7',label:'BATCH 7',sub:'p.1~388',group:'batch',x:-160,y:320},
+    {id:'b8',label:'BATCH 8',sub:'p.758~835',group:'batch',x:-30,y:320},
+  ],
+  links: [
+    {source:'s1',target:'s2'},{source:'s2',target:'s3'},{source:'s3',target:'s4'},
+    {source:'s4',target:'rej',label:'bad ID'},{source:'rej',target:'s3',label:'retry'},
+    {source:'s4',target:'s5',label:'pass'},{source:'s5',target:'m14'},
+    {source:'m14',target:'fix',label:'fail'},{source:'fix',target:'s5'},
+    {source:'m14',target:'s6',label:'pass'},{source:'s6',target:'s7',label:'approved'},
+    {source:'s7',target:'s8'},
+    {source:'b1',target:'b2',label:'QG-2'},{source:'b2',target:'b3'},{source:'b3',target:'b4'},
+    {source:'b4',target:'b5'},{source:'b5',target:'b6'},{source:'b6',target:'b7'},{source:'b7',target:'b8'},
+  ],
+  legend:[{color:C.pipeline,label:'Pipeline Stage'},{color:C.quality,label:'Validation Gate'},
+    {color:C.error,label:'Reject/Retry'},{color:C.d1,label:'DB Insert'},
+    {color:C.admin,label:'Human Review'},{color:C.vectorize,label:'Embedding'},
+    {color:C.sync,label:'BATCH 1 (PoC)'},{color:C.batch,label:'BATCH 2~8'}]
+};
+
+VIEWS.offline = {
+  nodes: [
+    {id:'user',label:'Student',sub:'',group:'pwa',x:-300,y:0,size:22},
+    {id:'pwa',label:'PWA',sub:'React UI',group:'pwa',x:-150,y:0},
+    {id:'idb',label:'IndexedDB',sub:'Dexie.js local',group:'sync',x:0,y:-100,size:20},
+    {id:'fsrs',label:'FSRS Local',sub:'Schedule calc',group:'fsrs',x:0,y:100,size:20},
+    {id:'queue',label:'offlineActions',sub:'synced=false queue',group:'batch',x:150,y:-100},
+    {id:'sw',label:'Service Worker',sub:'Background Sync',group:'sync',x:150,y:100,size:18},
+    {id:'api',label:'Workers API',sub:'POST /progress/sync',group:'worker',x:300,y:0,size:20},
+    {id:'d1',label:'D1',sub:'Timestamp UPSERT',group:'d1',x:400,y:0,size:20},
+    {id:'conflict',label:'Conflict Resolution',sub:'Latest timestamp wins',group:'quality',x:400,y:120},
+  ],
+  links: [
+    {source:'user',target:'pwa',label:'study'},{source:'pwa',target:'idb',label:'save progress'},
+    {source:'pwa',target:'fsrs',label:'calc schedule'},{source:'fsrs',target:'pwa',label:'next_review'},
+    {source:'idb',target:'queue',label:'enqueue'},{source:'sw',target:'queue',label:'dequeue',dash:true},
+    {source:'sw',target:'api',label:'batch send'},{source:'api',target:'d1',label:'UPSERT'},
+    {source:'d1',target:'conflict',label:'on conflict'},{source:'conflict',target:'d1'},
+    {source:'api',target:'sw',label:'server latest'},{source:'sw',target:'idb',label:'synced=true'},
+  ],
+  legend:[{color:C.pwa,label:'User/PWA'},{color:C.sync,label:'Sync Engine'},{color:C.fsrs,label:'FSRS Local'},
+    {color:C.batch,label:'Offline Queue'},{color:C.worker,label:'Workers API'},
+    {color:C.d1,label:'D1 Server'},{color:C.quality,label:'Conflict Resolution'}]
+};
+
+VIEWS.hexagonal = {
+  nodes: [
+    {id:'cd',label:'content/domain',sub:'TruthWeight, NodeId\nGraphTraversal',group:'domain',x:-200,y:-120,size:26},
+    {id:'ca',label:'content/app',sub:'search-graph\ncalculate-formula',group:'application',x:0,y:-120,size:24},
+    {id:'ci',label:'content/infra',sub:'D1 Repo, Vectorize\nClaude Client',group:'infrastructure',x:200,y:-120,size:22},
+    {id:'ld',label:'learning/domain',sub:'FSRSParams\nConfusionType',group:'domain',x:-200,y:30,size:26},
+    {id:'la',label:'learning/app',sub:'schedule-review\nmatch-mnemonic',group:'application',x:0,y:30,size:24},
+    {id:'li',label:'learning/infra',sub:'D1 Progress Repo',group:'infrastructure',x:200,y:30,size:22},
+    {id:'ed',label:'exam/domain',sub:'Score, PassCriteria\nGradingService',group:'domain',x:-200,y:180,size:26},
+    {id:'ea',label:'exam/app',sub:'take-exam\nrun-mock',group:'application',x:0,y:180,size:24},
+    {id:'ei',label:'exam/infra',sub:'D1 Exam Repo',group:'infrastructure',x:200,y:180,size:22},
+    {id:'routes',label:'api/routes',sub:'Entry point',group:'worker',x:0,y:-260},
+    {id:'ext',label:'External Systems',sub:'D1, Vectorize, Claude',group:'d1',x:400,y:30,size:20},
+    {id:'ban',label:'FORBIDDEN',sub:'domain -> infra direct ref',group:'error',x:0,y:300,size:16},
+  ],
+  links: [
+    {source:'ca',target:'cd',label:'call'},{source:'ca',target:'ci',label:'interface'},{source:'ci',target:'ext'},
+    {source:'la',target:'ld'},{source:'la',target:'li'},{source:'li',target:'ext'},
+    {source:'ea',target:'ed'},{source:'ea',target:'ei'},{source:'ei',target:'ext'},
+    {source:'routes',target:'ca'},{source:'routes',target:'la'},{source:'routes',target:'ea'},
+    {source:'cd',target:'ban',dash:true},{source:'ld',target:'ban',dash:true},{source:'ed',target:'ban',dash:true},
+  ],
+  legend:[{color:C.domain,label:'domain/ (pure, 0 deps)'},{color:C.application,label:'application/ (use case)'},
+    {color:C.infrastructure,label:'infrastructure/ (adapter)'},{color:C.worker,label:'api/routes (entry)'},
+    {color:C.d1,label:'External systems'},{color:C.error,label:'Forbidden direction'}]
+};
+
+// ─── Render Engine ───
+let sim = null;
+
+document.querySelectorAll('nav button').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    render(this.dataset.view);
+  });
+});
+
+function render(view) {
+  const data = VIEWS[view];
+  const nodes = data.nodes.map(d => Object.assign({}, d));
+  const links = data.links.map(d => Object.assign({}, d));
+
+  const svg = d3.select('#canvas');
+  svg.selectAll('*').remove();
+
+  // Legend
+  const leg = document.getElementById('legend');
+  leg.textContent = '';
+  const h4 = document.createElement('h4');
+  h4.textContent = view.toUpperCase();
+  leg.appendChild(h4);
+  data.legend.forEach(l => {
+    const row = document.createElement('div');
+    row.className = 'legend-item';
+    const dot = document.createElement('div');
+    dot.className = 'legend-dot';
+    dot.style.background = l.color;
+    const txt = document.createTextNode(l.label);
+    row.appendChild(dot);
+    row.appendChild(txt);
+    leg.appendChild(row);
+  });
+
+  const g = svg.append('g');
+  const zoom = d3.zoom().scaleExtent([0.3, 3]).on('zoom', e => g.attr('transform', e.transform));
+  svg.call(zoom);
+  svg.call(zoom.transform, d3.zoomIdentity.translate(W/2, H/2).scale(0.85));
+
+  // Arrows
+  const defs = svg.append('defs');
+  ['n','d'].forEach(t => {
+    defs.append('marker').attr('id','a-'+t)
+      .attr('viewBox','0 -5 10 10').attr('refX',20).attr('refY',0)
+      .attr('markerWidth',6).attr('markerHeight',6).attr('orient','auto')
+      .append('path').attr('d','M0,-4L8,0L0,4').attr('fill',t==='d'?'#484f58':'#6e7681');
+  });
+
+  if (sim) sim.stop();
+  sim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(120).strength(0.3))
+    .force('charge', d3.forceManyBody().strength(-400))
+    .force('x', d3.forceX(d => d.x||0).strength(0.15))
+    .force('y', d3.forceY(d => d.y||0).strength(0.15))
+    .force('collision', d3.forceCollide().radius(d => (d.size||14)+20));
+
+  const link = g.selectAll('.link').data(links).join('line')
+    .attr('class','link')
+    .attr('stroke', d => d.dash?'#484f58':'#6e7681')
+    .attr('stroke-width', d => d.dash?1:1.5)
+    .attr('stroke-dasharray', d => d.dash?'6,4':null)
+    .attr('marker-end', d => 'url(#a-'+(d.dash?'d':'n')+')');
+
+  const linkLabel = g.selectAll('.link-label').data(links.filter(d=>d.label)).join('text')
+    .attr('class','link-label').text(d=>d.label);
+
+  const node = g.selectAll('.node').data(nodes).join('g').attr('class','node')
+    .call(d3.drag().on('start',(e,d)=>{if(!e.active)sim.alphaTarget(.3).restart();d.fx=d.x;d.fy=d.y;})
+      .on('drag',(e,d)=>{d.fx=e.x;d.fy=e.y;}).on('end',(e,d)=>{if(!e.active)sim.alphaTarget(0);}));
+
+  node.append('circle')
+    .attr('r', d=>d.size||14)
+    .attr('fill', d=>C[d.group]||'#6e7681')
+    .attr('stroke', d=>d3.color(C[d.group]||'#6e7681').brighter(0.6))
+    .attr('stroke-width',2).attr('opacity',0.9);
+
+  node.append('text').attr('class','node-label').attr('dy',d=>-(d.size||14)-8).text(d=>d.label);
+  node.append('text').attr('class','node-sublabel').attr('dy',d=>(d.size||14)+14).text(d=>(d.sub||'').split('\n')[0]);
+
+  // Tooltip (safe: textContent only, no user input)
+  const tt = document.getElementById('tooltip');
+  const ttTitle = tt.querySelector('.tt-title');
+  const ttDesc = tt.querySelector('.tt-desc');
+  const ttTag = tt.querySelector('.tt-tag');
+
+  node.on('mouseover', (e,d)=>{
+    ttTitle.textContent = d.label;
+    ttDesc.textContent = d.sub || '';
+    ttTag.textContent = d.group;
+    ttTag.className = 'tt-tag' + (d.sub && d.sub.includes('L3') ? ' tt-tag-l3' : '');
+    tt.style.opacity=1;
+    tt.style.left=(e.pageX+12)+'px';
+    tt.style.top=(e.pageY-10)+'px';
+    d3.select(e.currentTarget).select('circle').transition().duration(150).attr('r',(d.size||14)*1.3);
+  }).on('mousemove',(e)=>{
+    tt.style.left=(e.pageX+12)+'px';
+    tt.style.top=(e.pageY-10)+'px';
+  }).on('mouseout',(e,d)=>{
+    tt.style.opacity=0;
+    d3.select(e.currentTarget).select('circle').transition().duration(150).attr('r',d.size||14);
+  });
+
+  node.on('click',(e,d)=>{
+    d.fx=d.fx?null:d.x; d.fy=d.fy?null:d.y;
+    d3.select(e.currentTarget).select('circle')
+      .attr('stroke-width',d.fx?4:2)
+      .attr('stroke',d.fx?'#fff':d3.color(C[d.group]).brighter(0.6));
+  });
+
+  sim.on('tick',()=>{
+    link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+    linkLabel.attr('x',d=>(d.source.x+d.target.x)/2).attr('y',d=>(d.source.y+d.target.y)/2-6);
+    node.attr('transform',d=>'translate('+d.x+','+d.y+')');
+  });
+}
+
+render('system');
+</script>
+</body>
+</html>

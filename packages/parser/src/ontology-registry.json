@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "node_types": ["LAW", "FORMULA", "INVESTIGATION", "INSURANCE", "CROP", "CONCEPT", "TERM"],
+  "edge_types": [
+    "APPLIES_TO",
+    "REQUIRES_INVESTIGATION",
+    "PREREQUISITE",
+    "USES_FORMULA",
+    "DEPENDS_ON",
+    "GOVERNED_BY",
+    "DEFINED_AS",
+    "EXCEPTION",
+    "TIME_CONSTRAINT",
+    "SUPERSEDES",
+    "SHARED_WITH",
+    "DIFFERS_FROM",
+    "CROSS_REF"
+  ],
+  "node_id_patterns": {
+    "LAW": "^LAW-\\d{3}$",
+    "FORMULA": "^F-\\d{2}$",
+    "INVESTIGATION": "^INV-\\d{3}$",
+    "INSURANCE": "^INS-\\d{2}$",
+    "CROP": "^CROP-\\d{3}$",
+    "CONCEPT": "^CONCEPT-\\d{3}$",
+    "TERM": "^TERM-\\d{3}$"
+  },
+  "formula_id_pattern": "^F-\\d{2}$",
+  "constant_id_pattern": "^CONST-\\d{3}$",
+  "constant_categories": [
+    "threshold",
+    "coefficient",
+    "date",
+    "ratio",
+    "sample",
+    "deductible",
+    "insurance_rate"
+  ]
+}

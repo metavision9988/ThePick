@@ -1,0 +1,55 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title = '쪽집게 — 손해평가사 합격' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1e40af" />
+    <meta name="description" content="손해평가사 자격시험 AI 학습 서비스" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen bg-white text-gray-900 antialiased">
+    <slot />
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch((err) => {
+            console.error('SW registration failed:', err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  /* Touch target minimum 44px for mobile */
+  button,
+  a,
+  [role="button"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Responsive breakpoints: 360px / 768px / 1024px */
+  @media (max-width: 360px) {
+    html {
+      font-size: 14px;
+    }
+  }
+</style>

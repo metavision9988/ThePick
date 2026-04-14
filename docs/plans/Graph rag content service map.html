@@ -1,0 +1,82 @@
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.src{display:flex;gap:4px;flex-wrap:wrap;margin:10px 0}
+.sb{padding:4px 10px;font-size:12px;border-radius:8px;cursor:pointer;border:0.5px solid rgba(0,0,0,0.15);background:none;color:#5F5E5A}
+.sb.on{background:#E6F1FB;color:#0C447C;border-color:#85B7EB}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:12px}
+.card{background:#fff;border:0.5px solid rgba(0,0,0,0.1);border-radius:12px;padding:14px 16px;transition:border-color .15s}
+.card:hover{border-color:rgba(0,0,0,0.2)}
+.card-h{display:flex;justify-content:space-between;align-items:start;margin-bottom:8px}
+.card-t{font-size:14px;font-weight:500}
+.badge{font-size:10px;padding:2px 8px;border-radius:8px;white-space:nowrap}
+.b-p0{background:#E1F5EE;color:#085041}.b-p1{background:#E6F1FB;color:#0C447C}.b-p2{background:#FAEEDA;color:#633806}.b-p3{background:#EEEDFE;color:#3C3489}
+.card-d{font-size:12px;color:#5F5E5A;line-height:1.6;margin-bottom:8px}
+.tags{display:flex;flex-wrap:wrap;gap:4px}
+.tag{font-size:10px;padding:1px 6px;border-radius:8px;background:#F1EFE8;color:#5F5E5A}
+.tag-h{background:#FAEEDA;color:#633806}
+.meta{font-size:11px;color:#888780;margin-top:6px;display:flex;gap:12px}
+.cnt{font-size:13px;color:#5F5E5A;margin-top:12px}
+</style>
+
+<div class="src" id="filters"></div>
+<div class="cnt" id="cnt"></div>
+<div class="grid" id="grid"></div>
+
+<script>
+const items=[
+{cat:'content',name:'FSRS 간격반복 플래시카드',phase:'P0',desc:'constants(danger/warn) + 개정사항 → 자동 플래시카드 생성. exam_priority로 복습 주기 자동 조절',src:['constants','revision_changes'],tags:['자동생성','FSRS']},
+{cat:'content',name:'산식 인터랙티브 계산기',phase:'P0',desc:'formulas + variables_schema → 슬라이더로 변수 조절하며 산식 결과 실시간 확인. 룰 엔진(AST) 연동',src:['formulas','constants'],tags:['인터랙티브','계산연습']},
+{cat:'content',name:'조사 절차 플로우차트',phase:'P1',desc:'INVESTIGATION 노드 + PREREQUISITE 엣지 → 시기별 클릭형 SVG 플로우차트 자동 생성',src:['knowledge_nodes','knowledge_edges'],tags:['자동생성','시각화']},
+{cat:'content',name:'작물별 교차 비교표',phase:'P1',desc:'SHARED_WITH + DIFFERS_FROM 엣지 → "사과vs포도 착과수조사 차이점" 자동 매트릭스',src:['knowledge_edges'],tags:['자동생성','비교학습']},
+{cat:'content',name:'재해별 조건부 분기 트리',phase:'P1',desc:'엣지 condition → 아코디언 카드. "우박이면→A, 태풍이면→B" 시각적 분기 학습',src:['knowledge_edges'],tags:['조건부','시각화']},
+{cat:'content',name:'개정사항 최우선 학습 배너',phase:'P0',desc:'revision_changes(exam_priority≥8) → "올해 바뀐 것" 배너로 최우선 노출',src:['revision_changes'],tags:['개정추적','출제예측']},
+{cat:'content',name:'매직넘버 암기 카드',phase:'P0',desc:'constants 전체 → 카테고리별/혼동등급별 암기 카드. 두문자어 + 연상법 AI 생성',src:['constants'],tags:['암기법','AI생성']},
+{cat:'content',name:'용어사전 + 관계망',phase:'P1',desc:'TERM 노드 + DEFINED_AS 엣지 → 검색 가능 용어사전. 관련 개념 자동 연결',src:['knowledge_nodes','knowledge_edges'],tags:['참조자료']},
+{cat:'quiz',name:'기출문제 역공학 풀이',phase:'P1',desc:'exam_questions + related_nodes/constants → "이 문제는 어떤 개념+어떤 상수를 테스트하는가" 분해',src:['exam_questions','knowledge_nodes','constants'],tags:['기출분석','역공학'],hi:true},
+{cat:'quiz',name:'OX 문제 자동 생성',phase:'P1',desc:'knowledge_nodes(CONCEPT) → "경작불능 기준은 60%이다(X, 65%)" 자동 생성. 오류 위험 최소',src:['knowledge_nodes','constants'],tags:['자동생성','저위험']},
+{cat:'quiz',name:'빈칸 문제 자동 생성',phase:'P1',desc:'formulas + constants → "인정피해율 = ( )×낙엽률−0.0014×경과일수" 빈칸화',src:['formulas','constants'],tags:['자동생성','저위험']},
+{cat:'quiz',name:'계산 문제 + 단계별 풀이',phase:'P2',desc:'formulas + constants + AST 엔진 → 변수값 제시 → 정답 자동 계산 → 풀이과정 역추적',src:['formulas','constants'],tags:['계산연습','룰엔진'],hi:true},
+{cat:'quiz',name:'기출 변형 (선지 셔플/긍부정 전환)',phase:'P1',desc:'exam_questions → 선지 순서 변경, "옳은것→틀린것" 전환, 숫자/이름 치환',src:['exam_questions'],tags:['변형문제','중위험']},
+{cat:'quiz',name:'개정 기반 신규 문제',phase:'P2',desc:'revision_changes → "종전A→현행B" 기반 OX/사례형 자동 생성. 출제 확률 최고',src:['revision_changes','constants'],tags:['개정추적','출제예측'],hi:true},
+{cat:'quiz',name:'캐스케이딩 문제 (2차 실기)',phase:'P3',desc:'PREREQUISITE 엣지 체인 → 다단계 서술형. "사고접수→조사→산정→보험금" 전 과정 서술',src:['knowledge_nodes','knowledge_edges','formulas'],tags:['2차실기','고난도']},
+{cat:'analytics',name:'합격 예측 시뮬레이션',phase:'P2',desc:'암기 완료율 × 기출 정답률 × 출제 빈도 → 예상 점수 + 합격 확률 + 취약 영역 안내',src:['exam_questions','constants'],tags:['AI코칭','예측']},
+{cat:'analytics',name:'출제 빈도 히트맵',phase:'P1',desc:'exam_questions + related_nodes → "이 개념 5년간 4회 출제" 히트맵. 학습 우선순위 자동 결정',src:['exam_questions','knowledge_nodes'],tags:['출제분석','시각화']},
+{cat:'analytics',name:'취약 영역 자동 진단',phase:'P2',desc:'오답 패턴 + knowledge_nodes LV1/LV2 → "밭작물 생산비보장 영역이 약합니다" 진단',src:['knowledge_nodes'],tags:['AI코칭','개인화']},
+{cat:'analytics',name:'학습 진도 대시보드',phase:'P1',desc:'노드별 학습상태(미학습/학습중/완료) × FSRS 데이터 → 전체 진도 시각화',src:['knowledge_nodes'],tags:['진도관리']},
+{cat:'analytics',name:'개정사항 영향도 분석',phase:'P2',desc:'revision_changes + related_nodes → "이번 개정이 영향 미치는 기출 12문제" 자동 매핑',src:['revision_changes','exam_questions'],tags:['개정추적','기출연동']},
+{cat:'ai',name:'AI 개인 튜터 (RAG 기반)',phase:'P2',desc:'"경작불능이 뭐야?" → Graph RAG 검색 → truth_weight 정렬 → 교재 근거 기반 해설',src:['knowledge_nodes','knowledge_edges','formulas','constants'],tags:['RAG','대화형'],hi:true},
+{cat:'ai',name:'Memory Palace 스크립트',phase:'P2',desc:'INVESTIGATION 조사 절차 → "거실에 피해사실확인을, 주방에 경작불능을 배치하세요" AI 생성',src:['knowledge_nodes'],tags:['암기법','AI생성']},
+{cat:'ai',name:'두문자어/연상법 자동 생성',phase:'P1',desc:'constants(danger) → "경작불능 65%는 육오!" 같은 연상법 AI 배치 생성',src:['constants'],tags:['암기법','AI생성']},
+{cat:'ai',name:'오답 해설 자동 생성',phase:'P2',desc:'오답 선지 + knowledge_nodes → "2번이 틀린 이유: 이건 수확감소가 아니라 경작불능 기준" 해설',src:['knowledge_nodes','knowledge_edges','exam_questions'],tags:['해설','AI생성']},
+{cat:'ai',name:'시험 전략 코칭',phase:'P3',desc:'학습 데이터 + 출제 분석 → "남은 2주, A등급 4개만 더 외우면 합격 가능성 85%" 전략 제시',src:['exam_questions','knowledge_nodes'],tags:['AI코칭','전략']}
+];
+
+const cats={content:'학습 컨텐츠',quiz:'문제 풀이',analytics:'분석/진단',ai:'AI 서비스'};
+const phases={P0:'Phase 0 (PoC)',P1:'Phase 1',P2:'Phase 2',P3:'Phase 3'};
+let activeCat='all';
+
+function init(){
+  const f=document.getElementById('filters');
+  const allb=document.createElement('button');allb.className='sb on';allb.textContent='전체 ('+items.length+')';allb.dataset.c='all';allb.onclick=()=>select('all');f.appendChild(allb);
+  Object.entries(cats).forEach(([k,v])=>{const b=document.createElement('button');b.className='sb';b.textContent=v+' ('+items.filter(i=>i.cat===k).length+')';b.dataset.c=k;b.onclick=()=>select(k);f.appendChild(b)});
+  render();
+}
+
+function select(c){activeCat=c;document.querySelectorAll('.sb').forEach(b=>b.classList.toggle('on',b.dataset.c===c));render()}
+
+function render(){
+  const list=activeCat==='all'?items:items.filter(i=>i.cat===activeCat);
+  document.getElementById('cnt').textContent=list.length+'개 서비스/컨텐츠';
+  const g=document.getElementById('grid');
+  g.innerHTML=list.map(i=>{
+    const pc={'P0':'b-p0','P1':'b-p1','P2':'b-p2','P3':'b-p3'}[i.phase];
+    return `<div class="card${i.hi?' ':''}" ${i.hi?'style="border:2px solid #85B7EB"':''}>
+      <div class="card-h"><div class="card-t">${i.name}</div><span class="badge ${pc}">${phases[i.phase]}</span></div>
+      <div class="card-d">${i.desc}</div>
+      <div class="tags">${i.tags.map(t=>`<span class="tag${i.hi&&t.includes('출제')?' tag-h':''}">${t}</span>`).join('')}</div>
+      <div class="meta"><span>DB: ${i.src.join(', ')}</span></div>
+    </div>`;
+  }).join('');
+}
+init();
+</script>

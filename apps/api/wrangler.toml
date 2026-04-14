@@ -1,0 +1,26 @@
+name = "thepick-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ENVIRONMENT = "development"
+API_VERSION = "0.1.0"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "thepick-db-dev"
+database_id = "local"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "local"
+
+[dev]
+port = 8787
+local_protocol = "http"
+ip = "localhost"
+
+[observability]
+enabled = true
+head_sampling_rate = 1

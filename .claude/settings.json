@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "deny": ["Bash(cat .env*)", "Bash(cat *.env)", "Read(.env*)"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/soo/ClaudePro/ThePick/.claude/hooks/protect-l3.sh \"$CLAUDE_FILE_PATH\""
+          }
+        ]
+      }
+    ],
+    "Stop": []
+  }
+}

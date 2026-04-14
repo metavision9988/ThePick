@@ -1,0 +1,12 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
+---
+
+<BaseLayout>
+  <main class="flex min-h-screen flex-col items-center justify-center px-4">
+    <h1 class="text-3xl font-bold text-blue-800">쪽집게</h1>
+    <p class="mt-2 text-gray-600">손해평가사 자격시험 AI 학습 서비스</p>
+  </main>
+  <OfflineIndicator client:load />
+</BaseLayout>

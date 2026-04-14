@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@thepick/shared": ["packages/shared/src"],
+      "@thepick/parser": ["packages/parser/src"],
+      "@thepick/parser-1st-exam": ["packages/parser-1st-exam/src"],
+      "@thepick/formula-engine": ["packages/formula-engine/src"],
+      "@thepick/quality": ["packages/quality/src"],
+      "@thepick/study-material-generator": ["packages/study-material-generator/src"],
+      "@modules/*": ["modules/*/src"]
+    }
+  },
+  "exclude": ["node_modules", "dist", ".turbo"]
+}
