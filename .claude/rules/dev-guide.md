@@ -1,5 +1,11 @@
 # ThePick — 프로젝트 개발 규칙
 
+## 상용 품질 원칙 (최우선 — `.claude/rules/production-quality.md` 참조)
+
+- "이 코드가 10K 유저, 매년 개정, 확장에서도 버티는가?" 매 구현 전 자문
+- 땜빵/꼼수/임시방편 금지 — 범위를 줄이는 것은 OK, 품질을 줄이는 것은 NOT OK
+- `quality-gate.sh` 훅이 any/console.log/빈catch/TODO 자동 감지
+
 ## 코딩 규칙
 
 - Cloudflare Workers 런타임 제약: Node.js API 일부만 사용 가능, fs/path 등 불가

@@ -10,6 +10,10 @@
           {
             "type": "command",
             "command": "bash /home/soo/ClaudePro/ThePick/.claude/hooks/protect-l3.sh \"$CLAUDE_FILE_PATH\""
+          },
+          {
+            "type": "command",
+            "command": "bash /home/soo/ClaudePro/ThePick/.claude/hooks/quality-gate.sh \"$CLAUDE_FILE_PATH\""
           }
         ]
       }

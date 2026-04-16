@@ -41,6 +41,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 구현: `docs/쪽집게(ThePick) — 구현 설계서 및 개발 로드맵.md` 참조
 아키텍처 다이어그램: `docs/architecture/ARCHITECTURE.md` 참조 (Mermaid DaC — 시스템 조감도, 데이터 흐름, 의존관계, 배치 파이프라인, 오프라인 동기화, Hexagonal 규칙)
 
+## 상용 품질 원칙 (★ 최우선)
+
+이 서비스는 상용 출시를 목표한다. "당장 돌아가는 코드"가 아닌 "10K 유저, 매년 개정, 다른 시험 확장에서도 버티는 코드"를 작성한다.
+
+- any 타입 금지 → 정확한 타입/제네릭
+- 하드코딩 금지 → Constants DB 또는 명명된 상수
+- 인메모리 임시 저장 금지 → D1/IndexedDB 영구 경로
+- TODO/HACK 주석 금지 → 즉시 구현 or 기획 보고
+- 빈 catch 금지 → 에러 로깅 + 전파/폴백
+- `import *` 금지 → 선택적 임포트 (번들 최적화)
+- 테스트 없이 완료 금지 → Golden Test 포함
+- 상세: `.claude/rules/production-quality.md`
+- Hook: `quality-gate.sh`가 any/console.log/빈catch/TODO 자동 감지
+
 ## Hard Limit (절대 제약)
 
 - `.env*` 파일 커밋 금지
