@@ -1,6 +1,50 @@
 {
-  "phase": 0,
-  "step": "0-1",
-  "status": "in_progress",
-  "startedAt": "2026-04-12"
+  "phase": 1,
+  "step": "1-1",
+  "status": "completed_strict_b_plan",
+  "startedAt": "2026-04-18",
+  "completedAt": "2026-04-18",
+  "notes": "Step 1-1 PBKDF2 인증 기반 완료 (B안 — 엄격). 자격증 학습 서비스 신뢰성 확보: PBKDF2 600k iter (OWASP 2024) + v3.0 §7.1 users 전체 12컬럼(name 복원) + Cloudflare Rate Limit API (IP 20/60s + email 5/600s) + timing enum 방어 (dummy-verify) + cache-control security floor + 58 tests 통과. 1차 4-Pass (Critical 9) → B안 수정 → 2차 축약 2-agent 재리뷰 → Critical 0 / Major 이월 2 / Minor 3 즉시 해소. 결제 관련 추가 보안 기반 확립.",
+  "nextStep": {
+    "step": "1-2",
+    "scope": "apps/api/src/webhooks/payment.ts — Webhook Replay/Idempotency 패턴 + logger 마이그레이션 (console → @thepick/shared logger) + PBKDF2 Workers Paid 환경 CPU 실측 + KV namespaces staging/production binding 발급 (ADR-008 §3 KV 폴백 구현 시)",
+    "prerequisite": [
+      "L3 plan 새 파일 교체 (Step 1-2)",
+      "진산님 수동: KV namespace 2개 발급 (wrangler kv:namespace create CACHE_STAGING / CACHE_PRODUCTION)",
+      "진산님 수동: Workers Paid 환경 PBKDF2 600k CPU 실측 (Wrangler Tail Logs)"
+    ],
+    "carryOverMajors": [
+      "M-logger: routes.ts console → logger 마이그레이션 (임시 maskEmail 적용 상태)",
+      "M-KV-env: wrangler.toml staging/production에 KV binding 미선언 (현재 참조 0건이라 무해)",
+      "M-dummy-hash: Phase 1 Step 1-2에 실제 PBKDF2 산출물로 DUMMY_HASH 교체 권고",
+      "M-rate-limit-namespace: 환경별 namespace_id 분리 검토 (현재 1001/1002 공유)"
+    ]
+  },
+  "step_1_1": {
+    "migrations": ["0006_users_and_auth.sql", "0007_users_strict_hardening.sql"],
+    "triggers": "staging+production 양쪽 사용자 테이블 관련 12 triggers + 기존 35 = 47 triggers",
+    "tests": { "api": 58, "total_monorepo": 406 },
+    "adrs_applied": [
+      "ADR-005 (PBKDF2 600k)",
+      "ADR-006 (Cloudflare 단일 벤더)",
+      "ADR-007 (name 컬럼 복원)",
+      "ADR-008 §1/§5/§6/§8",
+      "ADR-009 (maskEmail 임시)"
+    ],
+    "critical_resolved": 9,
+    "reviews": [
+      "review-20260418-182605.md (1차 4-Pass Critical 9)",
+      "review-20260418-201954.md (2차 축약 2-agent — 완료 판정)"
+    ]
+  },
+  "previousPhase": {
+    "phase": 0,
+    "completedAt": "2026-04-13",
+    "notes": "Phase 0 완료 선언 — 모노레포 인프라 + 핵심 엔진 구축. Golden Test 29건 통과. BATCH 1~5 실데이터 적재는 Phase 1에서 수행."
+  },
+  "previousStep": {
+    "step": "1-0",
+    "completedAt": "2026-04-18",
+    "notes": "Session 8 Step 1-0 기술 부채 정리 완료 (11개 항목). ADR-007/008/009 체계 확정 + wrangler v4 + 0005 NOT NULL 트리거 + ESLint Rule 17."
+  }
 }

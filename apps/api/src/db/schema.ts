@@ -1,12 +1,14 @@
 /**
  * ThePick Graph RAG — Drizzle ORM Schema
  *
- * 9 tables (base 6 + extension 3):
+ * 10 tables (base 6 + extension 3 + auth 1):
  *   knowledge_nodes, knowledge_edges, formulas, constants,
  *   revision_changes, exam_questions,
- *   mnemonic_cards, user_progress, topic_clusters
+ *   mnemonic_cards, user_progress, topic_clusters,
+ *   users (Phase 1 Step 1-1 — migrations/0006)
  *
  * Temporal Graph pattern: UPDATE 금지 → INSERT + SUPERSEDES edge
+ * (users 테이블은 예외 — last_login_at / subscription_* 변경 빈도로 일반 UPDATE 허용)
  */
 
 import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
@@ -51,6 +53,8 @@ const CONSTANT_CATEGORIES = [
   'insurance_rate',
 ] as const;
 const CHANGE_TYPES = ['added', 'modified', 'deleted', 'clarified'] as const;
+const USER_STATUSES = ['active', 'suspended', 'deleted'] as const;
+const SUBSCRIPTION_PLANS = ['single', 'combo', 'all_access'] as const;
 const EXAM_SCOPES = ['1st_sub1', '1st_sub2', '1st_sub3', '2nd', 'shared'] as const;
 const EXAM_TYPES = ['1st', '2nd'] as const;
 const CONFUSION_TYPES = [
@@ -274,6 +278,32 @@ export const topicClusters = sqliteTable('topic_clusters', {
 });
 
 // ---------------------------------------------------------------------------
+// 10. Users (Phase 1 Step 1-1 — migrations/0006)
+// L3: PII — password_hash/salt/iterations + subscription 관리
+// ---------------------------------------------------------------------------
+
+export const users = sqliteTable('users', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  name: text('name'), // v3.0 §7.1 정합 — migrations/0007
+  passwordHash: text('password_hash').notNull(),
+  passwordSalt: text('password_salt').notNull(),
+  passwordIterations: integer('password_iterations').notNull(),
+  subscriptionPlan: text('subscription_plan', { enum: SUBSCRIPTION_PLANS }),
+  subscribedExams: text('subscribed_exams'), // JSON array of ExamId
+  subscriptionStartedAt: text('subscription_started_at'),
+  subscriptionExpiresAt: text('subscription_expires_at'),
+  lastLoginAt: text('last_login_at'),
+  status: text('status', { enum: USER_STATUSES }).notNull().default('active'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+// ---------------------------------------------------------------------------
 // Type Exports
 // ---------------------------------------------------------------------------
 
@@ -303,3 +333,6 @@ export type NewUserProgress = typeof userProgress.$inferInsert;
 
 export type TopicCluster = typeof topicClusters.$inferSelect;
 export type NewTopicCluster = typeof topicClusters.$inferInsert;
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;

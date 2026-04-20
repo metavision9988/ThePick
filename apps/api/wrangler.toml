@@ -1,8 +1,16 @@
 name = "thepick-api"
 main = "src/index.ts"
-compatibility_date = "2024-01-01"
+# compatibility_date 업데이트: 2024-01-01 → 2026-04-01 (2+년 보안/런타임 패치 반영)
+# 변경 전 tests 통과 확인 (Session 8, 2026-04-18)
+compatibility_date = "2026-04-01"
 compatibility_flags = ["nodejs_compat"]
 
+# ============================================================
+# Default (local dev with miniflare/wrangler dev)
+# ============================================================
+# 주의: default env는 로컬 miniflare용. `wrangler dev` 사용 시 wrangler v4는
+# database_id 필드 없이 local 시뮬레이터를 띄운다. `deploy --dry-run` 은 CI
+# 빌드 검증용이며 실제 배포가 아니므로 placeholder database_id 허용.
 [vars]
 ENVIRONMENT = "development"
 API_VERSION = "0.1.0"
@@ -10,11 +18,12 @@ API_VERSION = "0.1.0"
 [[d1_databases]]
 binding = "DB"
 database_name = "thepick-db-dev"
-database_id = "local"
+database_id = "0000000000-0000-0000-0000-000000000000"  # miniflare local placeholder
+migrations_dir = "../../migrations"
 
 [[kv_namespaces]]
 binding = "CACHE"
-id = "local"
+id = "0000000000000000000000000000000000"  # miniflare local placeholder
 
 [dev]
 port = 8787
@@ -23,4 +32,84 @@ ip = "localhost"
 
 [observability]
 enabled = true
+head_sampling_rate = 0.1  # dev는 10%만 기록 (CI/로컬 관측 비용 절감)
+
+# Auth Rate Limiting (Cloudflare Workers Rate Limit API — ADR-006 단일 벤더 준수)
+# namespace_id 는 프로젝트 고유 (임의 int). limit/period 는 정책 명시.
+[[unsafe.bindings]]
+name = "AUTH_RATE_LIMITER_IP"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 20, period = 60 }
+
+[[unsafe.bindings]]
+name = "AUTH_RATE_LIMITER_EMAIL"
+type = "ratelimit"
+namespace_id = "1002"
+simple = { limit = 5, period = 600 }
+
+# ============================================================
+# Staging (APAC) — remote D1
+# DB id: edacc775-b11c-4200-8a76-284c65fa0542
+# ============================================================
+[env.staging]
+name = "thepick-api-staging"
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+API_VERSION = "0.1.0"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "thepick-db-staging"
+database_id = "edacc775-b11c-4200-8a76-284c65fa0542"
+migrations_dir = "../../migrations"
+
+[env.staging.observability]
+enabled = true
 head_sampling_rate = 1
+
+[[env.staging.unsafe.bindings]]
+name = "AUTH_RATE_LIMITER_IP"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 20, period = 60 }
+
+[[env.staging.unsafe.bindings]]
+name = "AUTH_RATE_LIMITER_EMAIL"
+type = "ratelimit"
+namespace_id = "1002"
+simple = { limit = 5, period = 600 }
+
+# ============================================================
+# Production (APAC) — remote D1
+# DB id: a9b8d521-dc99-46f7-835c-1f226cebdbf8
+# ============================================================
+[env.production]
+name = "thepick-api-production"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+API_VERSION = "0.1.0"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "thepick-db-production"
+database_id = "a9b8d521-dc99-46f7-835c-1f226cebdbf8"
+migrations_dir = "../../migrations"
+
+[env.production.observability]
+enabled = true
+head_sampling_rate = 1
+
+[[env.production.unsafe.bindings]]
+name = "AUTH_RATE_LIMITER_IP"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 20, period = 60 }
+
+[[env.production.unsafe.bindings]]
+name = "AUTH_RATE_LIMITER_EMAIL"
+type = "ratelimit"
+namespace_id = "1002"
+simple = { limit = 5, period = 600 }
