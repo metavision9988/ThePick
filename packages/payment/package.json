@@ -1,9 +1,14 @@
 {
-  "name": "@thepick/formula-engine",
+  "name": "@thepick/payment",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",
   "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types.ts",
+    "./mock": "./src/providers/mock.ts"
+  },
   "scripts": {
     "test": "vitest run",
     "lint": "eslint src --ext .ts",
@@ -11,7 +16,7 @@
   },
   "dependencies": {
     "@thepick/shared": "workspace:*",
-    "mathjs": "^15.2.0"
+    "zod": "^3.24.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.0.0",

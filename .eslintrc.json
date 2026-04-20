@@ -10,7 +10,22 @@
   "rules": {
     "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
-    "no-console": ["error", { "allow": ["warn", "error"] }]
+    "no-console": ["error", { "allow": ["warn", "error"] }],
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "Literal[value='son-hae-pyeong-ga-sa']",
+        "message": "Hard Rule 17: 시험 ID 리터럴은 packages/shared/src/constants/exam-ids.ts 에서만 선언. 다른 코드는 `EXAM_IDS.SON_HAE_PYEONG_GA_SA` 경유."
+      }
+    ]
   },
-  "ignorePatterns": ["node_modules", "dist", ".turbo", "coverage"]
+  "overrides": [
+    {
+      "files": ["packages/shared/src/constants/exam-ids.ts"],
+      "rules": {
+        "no-restricted-syntax": "off"
+      }
+    }
+  ],
+  "ignorePatterns": ["node_modules", "dist", ".turbo", "coverage", "**/*.json", "**/*.md"]
 }

@@ -300,6 +300,7 @@ describe('processBatch', () => {
     const client = failingClient(2); // fail 2 times, succeed on 3rd
     const result = await processBatch(client, mockBatchInput(), {
       timeoutMs: 60_000, // generous timeout for test
+      baseBackoffMs: 10, // collapse exponential backoff for determinism
     });
 
     expect(result.error).toBeNull();
@@ -312,6 +313,7 @@ describe('processBatch', () => {
     const result = await processBatch(client, mockBatchInput(), {
       maxRetries: 1,
       timeoutMs: 60_000,
+      baseBackoffMs: 10,
     });
 
     expect(result.error).toContain('API error');

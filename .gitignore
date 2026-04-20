@@ -42,3 +42,6 @@ pnpm-debug.log*
 
 # Cloudflare
 .mf/
+
+# Cloudflare Workers generated types (regenerated via `pnpm --filter @thepick/api cf-typegen`)
+apps/api/worker-configuration.d.ts

@@ -347,6 +347,90 @@ graph LR
 
 ---
 
+## 7. Graceful Degradation 정책 (계층별)
+
+외부 의존성 장애 시 사용자 경험을 보존하는 계층별 폴백 전략.
+Phase 1 Step 1-1 본격 구현 전 ADR-008에서 정량 기준 확정 예정.
+
+```mermaid
+graph TB
+    Request["사용자 요청"]
+
+    subgraph L1["L1 — Edge Cache (Workers Cache API)"]
+        L1Check{"캐시 히트?"}
+        L1Hit["캐시 반환\n(stale-while-revalidate)"]
+        L1Check -->|Yes| L1Hit
+    end
+
+    subgraph L2["L2 — 주 데이터 경로"]
+        D1Query["D1 Query"]
+        VecQuery["Vectorize Query"]
+        ClaudeAPI["Claude API"]
+    end
+
+    subgraph L3["L3 — 폴백 (Graceful Degradation)"]
+        KVFallback["Workers KV 캐시\n(최근 24h 응답 스냅샷)"]
+        PageRefOnly["'교재 O장 O절 참고'\n안내 (유사도 < 0.60)"]
+        StaticError["정적 에러 페이지\n+ 재시도 안내"]
+    end
+
+    Request --> L1Check
+    L1Check -->|No| D1Query
+    L1Check -->|No| VecQuery
+    L1Check -->|No| ClaudeAPI
+
+    D1Query -.->|"5xx or timeout"| KVFallback
+    VecQuery -.->|"유사도 < 0.60"| PageRefOnly
+    ClaudeAPI -.->|"rate-limit or 5xx"| KVFallback
+    KVFallback -.->|"캐시 miss"| StaticError
+
+    style L3 fill:#fff2e5,stroke:#f90
+    style StaticError fill:#fee,stroke:#c00
+```
+
+**원칙:**
+
+1. **L1 Edge Cache 먼저** — stale-while-revalidate로 지연 최소화
+2. **L2 실패 시 L3로 단계적 저하** — 정적 5xx 페이지는 최후 수단
+3. **조용한 실패 금지** — 모든 폴백 경로에 `logger.warn(DEGRADED_RESPONSE, { reason })` 기록
+4. **사용자 안내 표준화** — 에러가 아닌 "교재 O장 O절 참고" 형태 (재정립서 Graceful Degradation 원칙)
+5. **정량 기준은 ADR-008** — 재시도 횟수, 캐시 TTL, 폴백 판단 기준 등
+
+> ### ⚠️ KV 폴백 적용 범위 (Hard Limit)
+>
+> L3 Workers KV 캐시 폴백은 **read-only 공용 데이터만** 대상으로 한다.
+> 사용자별 데이터 및 Write-path는 KV 폴백을 엄격히 금지.
+>
+> **KV 폴백 허용 (read-only 공용):**
+>
+> - `knowledge_nodes`, `knowledge_edges`
+> - `formulas`, `constants`
+> - `exam_questions`, `mnemonic_cards`
+> - `topic_clusters`
+>
+> **KV 폴백 금지 (사용자별 / Write-path):**
+>
+> - `users`, `user_progress` — 사용자별 PII. stale 캐시가 로그아웃 후
+>   Bob 로그인 시 Alice 응답 반환 위험 (Broken Access Control, OWASP A01)
+> - `payment_events` / 구독 상태 — stale "구독 활성" 캐시 반환 시 결제 우회 경로
+> - Webhook 수신 (`/webhooks/payment` 등) — write-path. D1 5xx 시
+>   **503 Service Unavailable + Retry-After 헤더**로 PG 측 재시도 위임.
+>   Idempotency 키는 D1 단일 소스에만 보관 (KV 병행 저장 금지)
+> - 결제/진도 쓰기 요청 — 동일 원칙 (503 + Retry-After)
+>
+> **이유:** 사용자별 데이터의 stale 캐시 반환은 인증/결제 경계 침범.
+> CLAUDE.md CRITICAL RULE #3 ("try-catch에서 데이터 조용히 삭제 금지")과
+> 정답 안전 Hard Stop 원칙의 연장.
+
+**현재 구현 범위 (Year 1):**
+
+- ✅ Vectorize 유사도 < 0.60 거부 → "교재 O장 O절 참고" (ADR-004)
+- ⏳ D1 5xx 폴백 (ADR-008 수립 후 Phase 1 Step 1-1 이후) — **read-only 공용 데이터 한정**
+- ⏳ Write-path 503 + Retry-After 정책 (Phase 1 Step 1-2 webhook 구현 시)
+- ⏳ Claude API rate-limit 폴백 (Phase 2 batch 파이프라인 강화 시)
+
+---
+
 ## 다이어그램 관리 규칙
 
 1. **구현 변경 시 다이어그램도 함께 수정** — 코드 PR에 다이어그램 변경이 포함되어야 함

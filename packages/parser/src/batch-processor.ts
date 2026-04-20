@@ -57,6 +57,8 @@ export interface BatchConfig {
   maxTokens: number;
   timeoutMs: number;
   maxRetries: number;
+  /** Exponential backoff base. Production: 1000ms. Tests inject small value for determinism. */
+  baseBackoffMs: number;
 }
 
 export interface TokenUsage {
@@ -90,6 +92,7 @@ const DEFAULT_CONFIG: BatchConfig = {
   maxTokens: 4096,
   timeoutMs: 30_000,
   maxRetries: 3,
+  baseBackoffMs: 1000,
 };
 
 // --- System prompt ---
@@ -230,6 +233,7 @@ async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries: number,
   timeoutMs: number,
+  baseBackoffMs: number,
 ): Promise<{ result: T; retries: number }> {
   let lastError: Error | null = null;
 
@@ -241,7 +245,7 @@ async function withRetry<T>(
       lastError = err instanceof Error ? err : new Error(String(err));
 
       if (attempt < maxRetries) {
-        const delayMs = Math.min(1000 * Math.pow(2, attempt), 16_000);
+        const delayMs = Math.min(baseBackoffMs * Math.pow(2, attempt), 16_000);
         await sleep(delayMs);
       }
     }
@@ -339,6 +343,7 @@ export async function processBatch(
         }),
       cfg.maxRetries,
       cfg.timeoutMs,
+      cfg.baseBackoffMs,
     );
     retries = retryCount;
 

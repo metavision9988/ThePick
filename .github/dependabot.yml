@@ -1,0 +1,41 @@
+version: 2
+
+updates:
+  # npm workspaces — 그룹 단위 주간 업데이트
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Seoul
+    open-pull-requests-limit: 5
+    groups:
+      dev-deps:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+      prod-minor-patch:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+      security-majors:
+        applies-to: security-updates
+        update-types:
+          - major
+    ignore:
+      # major 업그레이드는 수동 검토 (Session 7 mathjs 13→15 사례 참조)
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    labels:
+      - dependencies
+
+  # GitHub Actions — 월 1회
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels:
+      - ci

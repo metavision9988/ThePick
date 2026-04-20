@@ -5,15 +5,39 @@
  *
  * DEFCON L3: 이 파일 변경 시 반드시 보안 리뷰 필수.
  *
- * 보안 전략:
- *   1. create(all)로 전체 인스턴스 생성
- *   2. parse/compile 참조를 내부에 보관
- *   3. 위험 함수를 throwing stub으로 교체
- *   4. safeParse()에서 AST 노드를 화이트리스트로 검증
- *   5. 외부에는 safeParse + safeEvaluate만 노출
+ * 보안 + 번들 최적화 전략:
+ *   1. `*Dependencies` 선택 임포트로 필요한 17개 함수만 포함 (mathjs custom_bundling).
+ *      이전 `create(all)` 패턴은 전체 번들(160KB gz) 포함 → 선택 임포트로 절감.
+ *   2. parse 참조를 내부에 보관 (internalParse).
+ *   3. 위험 함수(evaluate/compile/simplify 등)를 throwing stub으로 덮어씀.
+ *   4. safeParse()에서 AST 노드를 화이트리스트로 검증.
+ *   5. 외부에는 safeParse + safeEvaluate만 노출.
+ *
+ * ALLOWED_FUNCTIONS 와 *Dependencies 리스트는 반드시 1:1 동기 유지.
  */
 
-import { create, all, type MathNode } from 'mathjs';
+import {
+  create,
+  parseDependencies,
+  typedDependencies,
+  addDependencies,
+  subtractDependencies,
+  multiplyDependencies,
+  divideDependencies,
+  modDependencies,
+  ceilDependencies,
+  floorDependencies,
+  roundDependencies,
+  maxDependencies,
+  minDependencies,
+  absDependencies,
+  sqrtDependencies,
+  powDependencies,
+  logDependencies,
+  unaryMinusDependencies,
+  unaryPlusDependencies,
+  type MathNode,
+} from 'mathjs';
 
 // --- 허용 함수 화이트리스트 ---
 
@@ -57,9 +81,33 @@ const BLOCKED_SYMBOL_NAMES = new Set([
   'toLocaleString',
 ]);
 
-// --- math.js 인스턴스 생성 ---
+// --- math.js 인스턴스 생성 (선택 임포트) ---
 
-const math = create(all);
+/**
+ * ALLOWED_FUNCTIONS 와 1:1 매핑되는 dependency 묶음.
+ * parse + typed 는 AST 파서가 반드시 필요.
+ * 함수 추가 시 여기 + ALLOWED_FUNCTIONS 양쪽 동기 업데이트.
+ */
+const math = create({
+  parseDependencies,
+  typedDependencies,
+  addDependencies,
+  subtractDependencies,
+  multiplyDependencies,
+  divideDependencies,
+  modDependencies,
+  ceilDependencies,
+  floorDependencies,
+  roundDependencies,
+  maxDependencies,
+  minDependencies,
+  absDependencies,
+  sqrtDependencies,
+  powDependencies,
+  logDependencies,
+  unaryMinusDependencies,
+  unaryPlusDependencies,
+});
 
 // parse 참조를 교체 전에 확보
 const internalParse = math.parse;
