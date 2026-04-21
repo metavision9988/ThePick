@@ -29,7 +29,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { AUTH_MESSAGES, createLogger, type Logger, type LoggerEnvironment } from '@thepick/shared';
-import { withRetry } from '../middleware/retry.js';
+import { D1_UNIQUE_CONSTRAINT_PATTERN, withRetry } from '../middleware/retry.js';
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from './constants.js';
 import { performDummyVerify } from './dummy-verify.js';
 import { checkPwned } from './hibp.js';
@@ -94,7 +94,12 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
   router.post('/register', async (c) => {
     const logger = buildLogger(c.env).child({ route: 'register' });
     const ip = getClientIp(c);
-    const ipAllowed = await checkIpRateLimit(c.env.AUTH_RATE_LIMITER_IP, ip, c.env.ENVIRONMENT);
+    const ipAllowed = await checkIpRateLimit(
+      c.env.AUTH_RATE_LIMITER_IP,
+      ip,
+      c.env.ENVIRONMENT,
+      logger,
+    );
     if (!ipAllowed) {
       c.header('Retry-After', '60');
       return c.json({ error: 'TOO_MANY_REQUESTS' }, 429);
@@ -108,7 +113,7 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
     const { email, password, name } = parsed.data;
     const normalizedEmail = email.trim().toLowerCase();
 
-    const pwned = await checkPwned(password);
+    const pwned = await checkPwned(password, logger);
     if (pwned.status === 'pwned') {
       return c.json(
         { error: 'PASSWORD_PWNED', message: AUTH_MESSAGES.REGISTER_PASSWORD_PWNED },
@@ -149,7 +154,8 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
         throw new Error('D1_INSERT_FAILED');
       }
     } catch (err) {
-      if (err instanceof Error && /UNIQUE constraint failed/.test(err.message)) {
+      // M-8 — retry.ts 공유 상수 사용 (D1 에러 포맷 변경 시 silent drift 방지).
+      if (err instanceof Error && D1_UNIQUE_CONSTRAINT_PATTERN.test(err.message)) {
         return c.json({ error: 'EMAIL_TAKEN', message: AUTH_MESSAGES.REGISTER_EMAIL_TAKEN }, 409);
       }
       logger.error('register write failed', err, { email: normalizedEmail });
@@ -175,7 +181,12 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
   router.post('/login', async (c) => {
     const logger = buildLogger(c.env).child({ route: 'login' });
     const ip = getClientIp(c);
-    const ipAllowed = await checkIpRateLimit(c.env.AUTH_RATE_LIMITER_IP, ip, c.env.ENVIRONMENT);
+    const ipAllowed = await checkIpRateLimit(
+      c.env.AUTH_RATE_LIMITER_IP,
+      ip,
+      c.env.ENVIRONMENT,
+      logger,
+    );
     if (!ipAllowed) {
       c.header('Retry-After', '60');
       return c.json({ error: 'TOO_MANY_REQUESTS' }, 429);
@@ -193,6 +204,7 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
       c.env.AUTH_RATE_LIMITER_EMAIL,
       normalizedEmail,
       c.env.ENVIRONMENT,
+      logger,
     );
     if (!emailAllowed) {
       c.header('Retry-After', '600');

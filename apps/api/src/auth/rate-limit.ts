@@ -1,5 +1,6 @@
 /**
- * Cloudflare Rate Limiting API 바인딩 (4-Pass 리뷰 C-5, Step 1-2 M-2/C-1 확장).
+ * Cloudflare Rate Limiting API 바인딩 (4-Pass 리뷰 C-5, Step 1-2 M-2/C-1 확장,
+ * Step 1-3 M-5 request-scoped logger 주입).
  *
  * Workers Rate Limiting API (beta, Free tier 지원).
  * ADR-006 단일 벤더 원칙 준수 — 외부 SaaS 불필요.
@@ -14,12 +15,14 @@
  *
  * 파일명은 레거시 이유로 `auth/rate-limit.ts` 이지만 webhook 까지 포함한다.
  * (webhook 전용 파일 분리는 over-engineering — 공통 RateLimiter 타입 재사용)
+ *
+ * Step 1-3 M-5 — logger 는 **필수 파라미터**:
+ *   과거 모듈 레벨 싱글톤은 environment 미전달로 `'development'` 고정 → 프로덕션
+ *   로그 오염. 호출 측에서 request-scoped logger 를 주입하여 environment 반영.
  */
 
 import type { Context } from 'hono';
-import { createLogger, type Logger } from '@thepick/shared';
-
-const logger: Logger = createLogger({ service: 'thepick-api' }).child({ module: 'rate-limit' });
+import type { Logger } from '@thepick/shared';
 
 /** Cloudflare Rate Limit API 응답. */
 interface RateLimitResponse {
@@ -47,10 +50,8 @@ export function getClientIp(c: Context): string {
  *
  * 이유: 프로덕션 배포 시 wrangler.toml binding 오타·누락이 발견 전 실제 트래픽을
  * 받으면 rate limit 부재로 brute force 가 통과. 2차 재리뷰 M-1 해소.
- *
- * Step 1-2 M-2: console.* → @thepick/shared logger (PII 자동 마스킹 + 구조화).
  */
-function handleMissingBinding(kind: string, env: string | undefined): boolean {
+function handleMissingBinding(kind: string, env: string | undefined, logger: Logger): boolean {
   const isProduction = env === 'production' || env === 'staging';
   if (isProduction) {
     logger.error(`${kind} binding not configured — fail-closed`, undefined, {
@@ -73,10 +74,11 @@ function handleMissingBinding(kind: string, env: string | undefined): boolean {
 export async function checkIpRateLimit(
   limiter: RateLimiter | undefined,
   ip: string,
-  environment?: string,
+  environment: string | undefined,
+  logger: Logger,
 ): Promise<boolean> {
   if (limiter === undefined) {
-    return handleMissingBinding('AUTH_RATE_LIMITER_IP', environment);
+    return handleMissingBinding('AUTH_RATE_LIMITER_IP', environment, logger);
   }
   const { success } = await limiter.limit({ key: ip });
   return success;
@@ -89,10 +91,11 @@ export async function checkIpRateLimit(
 export async function checkEmailRateLimit(
   limiter: RateLimiter | undefined,
   email: string,
-  environment?: string,
+  environment: string | undefined,
+  logger: Logger,
 ): Promise<boolean> {
   if (limiter === undefined) {
-    return handleMissingBinding('AUTH_RATE_LIMITER_EMAIL', environment);
+    return handleMissingBinding('AUTH_RATE_LIMITER_EMAIL', environment, logger);
   }
   const { success } = await limiter.limit({ key: `email:${email}` });
   return success;
@@ -114,10 +117,11 @@ export async function checkEmailRateLimit(
 export async function checkWebhookIpRateLimit(
   limiter: RateLimiter | undefined,
   ip: string,
-  environment?: string,
+  environment: string | undefined,
+  logger: Logger,
 ): Promise<boolean> {
   if (limiter === undefined) {
-    return handleMissingBinding('WEBHOOK_RATE_LIMITER_IP', environment);
+    return handleMissingBinding('WEBHOOK_RATE_LIMITER_IP', environment, logger);
   }
   const { success } = await limiter.limit({ key: `webhook:${ip}` });
   return success;

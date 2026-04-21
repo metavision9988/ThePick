@@ -28,7 +28,7 @@ import { z } from 'zod';
 import { createLogger, type Logger, type LoggerEnvironment } from '@thepick/shared';
 import { timingSafeEqual } from '../auth/password.js';
 import { checkWebhookIpRateLimit, getClientIp, type RateLimiter } from '../auth/rate-limit.js';
-import { withRetry } from '../middleware/retry.js';
+import { D1_UNIQUE_CONSTRAINT_PATTERN, withRetry } from '../middleware/retry.js';
 
 /** 지원 PG. schema.ts WEBHOOK_PROVIDERS 과 동기화 필수. */
 const SUPPORTED_PROVIDERS = ['mock', 'polar', 'portone', 'tosspayments'] as const;
@@ -44,6 +44,20 @@ const WEBHOOK_SECRET_ENV_KEYS: Readonly<Record<WebhookProvider, string>> = {
 
 /** HMAC hex 문자열 길이 (SHA-256 = 32바이트 = 64 hex chars). */
 const HMAC_SHA256_HEX_LENGTH = 64;
+
+/**
+ * Webhook HMAC secret 최소 길이 (Step 1-3 M-4, D-3-1 해소).
+ *
+ * 32 = HMAC-SHA256 key entropy 하한 (256-bit). 이보다 짧은 secret (예: "test",
+ * "abc123") 이 주입되면 공격자가 전수 조사로 valid HMAC 생성 가능.
+ * 모든 환경에서 fail-closed (500 WEBHOOK_WEAK_SECRET).
+ *
+ * 측정 단위 주의 (Step 1-3 D-3 Minor): `secret.length` 는 UTF-16 code unit 수.
+ * ASCII 운영 정책에서는 `length === UTF-8 byte`. 비-ASCII (한글/이모지) secret
+ * 운영 시 length 는 code unit 이므로 실제 byte 는 더 크며 entropy 충분.
+ * 상수명 `_BYTES` 는 ASCII 전제 — `wrangler secret put` 운영 가이드에 ASCII 권장.
+ */
+const MIN_WEBHOOK_SECRET_BYTES = 32;
 
 /** webhook payload 최대 크기 — 32KB (ADR-002 §PaymentEvent.rawPayload 주석 권고). */
 const PAYLOAD_MAX_BYTES = 32 * 1024;
@@ -272,6 +286,7 @@ export function createWebhookRoutes(deps: RouteDeps = {}): Hono<{ Bindings: Webh
       c.env.WEBHOOK_RATE_LIMITER_IP,
       ip,
       c.env.ENVIRONMENT,
+      reqLog,
     );
     if (!ipAllowed) {
       reqLog.warn('webhook rate limit exceeded', { ip });
@@ -286,6 +301,15 @@ export function createWebhookRoutes(deps: RouteDeps = {}): Hono<{ Bindings: Webh
         envKey: WEBHOOK_SECRET_ENV_KEYS[provider],
       });
       return c.json({ error: 'WEBHOOK_NOT_CONFIGURED' }, 500);
+    }
+    // M-4 — secret 길이 하한 검증. 약한 secret 은 공격자가 전수 조사 가능.
+    //       secret 내용/길이 절대 로그에 기록 금지 (envKey 만).
+    if (secret.length < MIN_WEBHOOK_SECRET_BYTES) {
+      reqLog.error('webhook secret below minimum length', undefined, {
+        envKey: WEBHOOK_SECRET_ENV_KEYS[provider],
+        minBytes: MIN_WEBHOOK_SECRET_BYTES,
+      });
+      return c.json({ error: 'WEBHOOK_WEAK_SECRET' }, 500);
     }
 
     // [C-2] byte-based size guard — HMAC 연산 이전에 수행하여 CPU amplification 방어.
@@ -354,7 +378,8 @@ export function createWebhookRoutes(deps: RouteDeps = {}): Hono<{ Bindings: Webh
           .run(),
       );
     } catch (err) {
-      if (err instanceof Error && /UNIQUE constraint failed/i.test(err.message)) {
+      // M-8: retry.ts 의 NON_RETRYABLE 패턴과 공유 상수 사용 (silent drift 방지).
+      if (err instanceof Error && D1_UNIQUE_CONSTRAINT_PATTERN.test(err.message)) {
         // Replay — 동일 (provider, event_id) 재수신.
         reqLog.info('webhook replay detected', {
           eventType: parsed.eventType,

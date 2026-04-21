@@ -223,10 +223,21 @@ plan §5 Step 2 "서명 실패 후에도 body 파싱 (timing attack 완화)" 요
 - **Payload raw 저장 PCI-DSS 리스크**: `webhook_events.payload` 에 PG 원본 JSON
   저장. Phase 3 adapter 는 저장 전 PCI-DSS 마스킹 (카드번호·CVV 등) 선행 의무.
   타입 시스템 레벨 강제 (`SanitizedPayload` 래퍼) 도입 여부 결정 (D-4-4).
-- **Secret 길이 하한 강제**: `WEBHOOK_HMAC_SECRET_*` 최소 32자 검증은 Step 1-3
-  초기 태스크로 이월 (D-3-1).
-- **wrangler.toml secret placeholder**: dev 전용 mock secret 선언 추가 여부
-  결정 — onboarding UX 개선 (D-3-2).
+- **~~Secret 길이 하한 강제~~**: ✅ **Step 1-3 M-4 로 해소** (2026-04-21).
+  `MIN_WEBHOOK_SECRET_BYTES = 32` 검증 추가 → `WEBHOOK_WEAK_SECRET` 500.
+  모든 환경 fail-closed.
+- **~~wrangler.toml secret placeholder~~**: ✅ **Step 1-3 M-4 로 해소** (2026-04-21).
+  default `[vars]` 에 4개 provider 별 dev 전용 placeholder (32B 이상, `do-not-use-in-production` 명시) 선언.
+- **Webhook_events TTL / processed_at 청소 정책**: 현재 `status='received'` 만 INSERT
+  되고 `processed_at` 영원히 NULL (Phase 1 인프라 범위). 10K 유저 / 1년 누적 시
+  약 130,000 rows 예상 — D1 Free tier 5GB 대비 여유. 그러나 `idx_webhook_events_status`
+  인덱스가 단일 status 값만 가지므로 카디널리티 1 → 쿼리 효율 0. Phase 3 adapter
+  구현 시 다음 2가지를 동시 확정:
+  1. Status 전이 로직 (received → processing → processed/failed) 활성화
+  2. TTL 정책: `receivedAt < now() - 90days AND status IN ('processed','failed')`
+     를 Cloudflare Workflow/Cron 으로 주기 삭제. 별도 마이그레이션으로 `ttl_expires_at`
+     컬럼을 선제 추가하는 대안도 가능하나, Phase 3 비즈니스 로직 없이 선제 도입은
+     over-engineering — Phase 3 와 함께 도입 권고.
 
 ### 7. 구현 참조
 
@@ -244,3 +255,5 @@ plan §5 Step 2 "서명 실패 후에도 body 파싱 (timing attack 완화)" 요
 - 2026-04-21: Phase 1 Step 1-2 webhook receiver 인프라 구현 반영 — §Addendum 추가
   (webhook_events vs payment_events 분리, Phase 3 전환 계약, 서명 검증 Silent
   Pivot 근거, 남은 결정 사항 4건 명시)
+- 2026-04-21 (Step 1-3): §Addendum §6 갱신 — secret 길이 하한 + wrangler placeholder
+  항목 해소 표시, webhook_events TTL 정책 항목 신규 추가 (Phase 3 권고).

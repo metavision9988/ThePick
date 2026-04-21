@@ -18,10 +18,25 @@ const MAX_RETRY_ATTEMPTS = 2;
 const INITIAL_BACKOFF_MS = 100;
 const BACKOFF_MULTIPLIER = 4;
 
+/**
+ * D1 UNIQUE 제약 위반 에러 메시지 패턴.
+ *
+ * **중요 — webhook replay idempotency 의존성 (Step 1-2 C-1 / Step 1-3 M-8)**:
+ * 이 패턴을 제거하거나 `NON_RETRYABLE_MESSAGE_PATTERNS` 에서 빼면
+ * `webhooks/payment.ts` 의 replay 감지가 오작동한다:
+ *   - retry 가 UNIQUE 를 재시도 → 최종 503 + Retry-After
+ *   - PG 입장에서는 동일 event_id 로 지수 백오프 재전송 → 트래픽 폭증
+ *   - UNIQUE 는 "이벤트가 이미 도착했다" 는 signal 이므로 즉시 throw 가 정책.
+ *
+ * payment.ts 의 replay catch 블록에서도 이 상수를 직접 import 하여 사용한다
+ * (문자열 regex 를 각자 작성하지 말 것 — silent drift 방지).
+ */
+export const D1_UNIQUE_CONSTRAINT_PATTERN: RegExp = /UNIQUE constraint failed/i;
+
 const NON_RETRYABLE_MESSAGE_PATTERNS: readonly RegExp[] = [
   /D1_CONSTRAINT/i,
   /D1_TRIGGER/i,
-  /UNIQUE constraint failed/i,
+  D1_UNIQUE_CONSTRAINT_PATTERN,
   /NOT NULL constraint failed/i,
   /CHECK constraint failed/i,
   /FOREIGN KEY constraint failed/i,

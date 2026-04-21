@@ -10,7 +10,7 @@ Phase/Step 리뷰에서 "수용" 판정된 Minor 항목 누적 등록.
 ### 수정 과정에서 파생된 2건
 
 - [ ] **TD-001** `schema.ts` ↔ `migrations/0008` UNIQUE index 이름 이원화 — 인라인 `UNIQUE (provider, event_id)` 은 SQLite autoindex 이름 사용, Drizzle `uniqueIndex('webhook_events_provider_event_id_unique')` 은 명시 이름. 수동 migration 실행에서는 무해하나 `drizzle-kit push` 도입 시 이중 인덱스 생성 가능. 해소안: migrations/0008 를 `CREATE UNIQUE INDEX webhook_events_provider_event_id_unique ON ...` 로 교체 (rollback 스크립트도 조정).
-- [ ] **TD-002** 모듈 레벨 logger 의 environment 고정 — `auth/hibp.ts:22`, `auth/rate-limit.ts:22` 가 `createLogger({ service })` 만 호출 → 기본값 `'development'` 로 고정. 프로덕션 Observability 에 `environment=development` 로 찍혀 필터링 불가. 해소안: request-scoped logger 주입 패턴으로 전환 (M-5 이월 항목과 동일 작업으로 병합 가능).
+- [x] **TD-002** 모듈 레벨 logger 의 environment 고정 — ~~`auth/hibp.ts:22`, `auth/rate-limit.ts:22` 가 `createLogger({ service })` 만 호출 → 기본값 `'development'` 로 고정~~. ✅ **해소 — Step 1-3 M-5 (2026-04-21)**: 모듈 레벨 logger 제거, `checkPwned/checkIpRateLimit/checkEmailRateLimit/checkWebhookIpRateLimit` 시그니처에 `logger: Logger` 필수 인자 추가. 호출 측(`routes.ts`, `payment.ts`)에서 request-scoped logger 주입. 커밋 해시는 Step 1-3 본 커밋 기록 후 업데이트.
 
 ### Level 2 리뷰에서 Minor 판정 12건
 
@@ -27,6 +27,22 @@ Phase/Step 리뷰에서 "수용" 판정된 Minor 항목 누적 등록.
 - [ ] **TD-013** Rate limiter namespace 교체 (1001→2001/3001) 배포 시 카운터 reset 으로 일시적 공격 창 확장 — plan 에 기록됨 (수용). 해소안: 불필요 (의도된 동작).
 - [ ] **TD-014** `withRetry` 지수 백오프 jitter 부재 — D1 장애 탐지 사이드채널 제공 가능. 해소안: `retry.ts sleep(backoff)` 에 +/-20% jitter 추가.
 - [ ] **TD-015** webhook `status='received'` 직접 `failed` 전이 허용 — plan §6 문구 "received to processing to processed/failed" 와 엄밀히 다름. 해소안: 트리거 주석 추가 또는 plan 문구 조정.
+
+---
+
+## Phase 1 Step 1-3 — Level 2 축약 리뷰 (2026-04-21)
+
+### Phase D 에서 Major 1건 이월
+
+- [ ] **TD-016** Logger 회귀 방지 ESLint rule 부재 (Phase D D-7-4) — `auth/hibp.ts`, `auth/rate-limit.ts` 에 모듈 레벨 `createLogger(...)` 재도입 시 TS 컴파일 통과 + 테스트 통과로 silent regression 가능. M-5 주석/문서 + 코드리뷰 의존만 있음. 해소안: `.eslintrc` 에 `no-restricted-syntax` rule 추가하여 `Program > VariableDeclaration > VariableDeclarator[init.callee.name='createLogger']` 를 특정 파일에서 차단 (routes.ts/payment.ts/index.ts 의 `buildLogger` 내부는 allowlist). Phase 2 초기 태스크로 이월 (Step 1-3 plan 검증 후 확정).
+
+### Phase D Minor 1건
+
+- [ ] **TD-017** wrangler.toml secret 운영 정책 문서 승격 (Phase D D-8) — 현재 plan.md 에만 "staging/prod 는 `wrangler secret put` 경유" 기재. Phase 2 에 `docs/security/webhook-secret-policy.md` 로 승격하여 팀 온보딩 문서화.
+
+### Phase C Minor 1건 (남은 오기 정정)
+
+- [ ] **TD-018** ADR-002 §Addendum §6 "나머지 4건 유지" 표현 정합성 (Phase C P-2) — Step 1-3 에서 2건은 해소 표시(`~~취소선~~`)로 갱신, 1건 신규 추가. plan §4 "나머지 4건 유지" 표현과 완전 일치하지 않음 (기록성 문제, 기능 회귀 없음). Phase 2 정기 ADR 감사에서 정정.
 
 ---
 

@@ -16,7 +16,8 @@ import { createWebhookRoutes, type WebhookBindings } from '../payment.js';
 import type { RateLimiter } from '../../auth/rate-limit.js';
 
 const PROVIDER = 'mock';
-const SECRET = 'test-webhook-secret-v1';
+/** Step 1-3 M-4 — MIN_WEBHOOK_SECRET_BYTES(32) 를 충족하는 32+ 바이트 secret. */
+const SECRET = 'test-webhook-secret-32bytes-plus-v1';
 
 /** 항상 허용하는 limiter — 대부분의 테스트에서 rate-limit 비관여. */
 const allowAllLimiter: RateLimiter = {
@@ -274,6 +275,39 @@ describe('POST /api/webhooks/payment/:provider', () => {
     expect(res.status).toBe(500);
     const json = await res.json();
     expect(json).toEqual({ error: 'WEBHOOK_NOT_CONFIGURED' });
+  });
+
+  it('returns 500 WEBHOOK_WEAK_SECRET when secret shorter than 32 bytes (Step 1-3 M-4)', async () => {
+    const app = createWebhookRoutes();
+    const weakSecret = 'short-secret-10b'; // 16 bytes < 32
+    const env: WebhookBindings = {
+      DB: buildFakeDb().db,
+      ENVIRONMENT: 'test',
+      WEBHOOK_RATE_LIMITER_IP: allowAllLimiter,
+      WEBHOOK_HMAC_SECRET_MOCK: weakSecret,
+    };
+    const body = buildPayload({ event_id: 'evt_weak_secret' });
+    // 공격자 관점: weak secret 을 안다 해도 응답은 여전히 500 (valid signature 로 시도).
+    const sig = await hmacSha256Hex(weakSecret, body);
+    const res = await postWebhook(app, env, body, { 'x-payment-signature': sig });
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json).toEqual({ error: 'WEBHOOK_WEAK_SECRET' });
+  });
+
+  it('accepts when secret length exactly at MIN_WEBHOOK_SECRET_BYTES threshold (boundary)', async () => {
+    const app = createWebhookRoutes();
+    const exactlyMinSecret = 'a'.repeat(32); // 정확히 32 바이트
+    const env: WebhookBindings = {
+      DB: buildFakeDb().db,
+      ENVIRONMENT: 'test',
+      WEBHOOK_RATE_LIMITER_IP: allowAllLimiter,
+      WEBHOOK_HMAC_SECRET_MOCK: exactlyMinSecret,
+    };
+    const body = buildPayload({ event_id: 'evt_boundary_secret' });
+    const sig = await hmacSha256Hex(exactlyMinSecret, body);
+    const res = await postWebhook(app, env, body, { 'x-payment-signature': sig });
+    expect(res.status).toBe(200);
   });
 
   it('returns 503 + Retry-After on D1 transient failure', async () => {

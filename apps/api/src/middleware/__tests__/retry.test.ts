@@ -1,5 +1,35 @@
 import { describe, expect, it, vi } from 'vitest';
-import { isRetryable, withRetry } from '../retry.js';
+import { D1_UNIQUE_CONSTRAINT_PATTERN, isRetryable, withRetry } from '../retry.js';
+
+describe('D1_UNIQUE_CONSTRAINT_PATTERN (M-8 공유 상수)', () => {
+  it('matches common D1 UNIQUE constraint error messages', () => {
+    expect(D1_UNIQUE_CONSTRAINT_PATTERN.test('UNIQUE constraint failed: users.email')).toBe(true);
+    expect(
+      D1_UNIQUE_CONSTRAINT_PATTERN.test(
+        'UNIQUE constraint failed: webhook_events.provider, webhook_events.event_id',
+      ),
+    ).toBe(true);
+    expect(
+      D1_UNIQUE_CONSTRAINT_PATTERN.test('D1_ERROR: UNIQUE constraint failed: users.email'),
+    ).toBe(true);
+  });
+
+  it('is case-insensitive (D1 runtime may vary)', () => {
+    expect(D1_UNIQUE_CONSTRAINT_PATTERN.test('unique constraint failed: x')).toBe(true);
+    expect(D1_UNIQUE_CONSTRAINT_PATTERN.test('UNIQUE CONSTRAINT FAILED: x')).toBe(true);
+  });
+
+  it('does not match unrelated errors', () => {
+    expect(D1_UNIQUE_CONSTRAINT_PATTERN.test('NOT NULL constraint failed')).toBe(false);
+    expect(D1_UNIQUE_CONSTRAINT_PATTERN.test('FOREIGN KEY constraint failed')).toBe(false);
+    expect(D1_UNIQUE_CONSTRAINT_PATTERN.test('some random error')).toBe(false);
+  });
+
+  it('drives isRetryable: UNIQUE errors are non-retryable (webhook replay 의존성)', () => {
+    // 이 계약이 깨지면 webhooks/payment.ts replay 감지가 503 오판으로 회귀.
+    expect(isRetryable(new Error('UNIQUE constraint failed: webhook_events.event_id'))).toBe(false);
+  });
+});
 
 describe('isRetryable', () => {
   it('rejects non-Error values', () => {

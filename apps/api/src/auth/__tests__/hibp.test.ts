@@ -1,5 +1,30 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { Logger } from '@thepick/shared';
 import { checkPwned, parsePwnedResponse } from '../hibp.js';
+
+/** Step 1-3 M-5 — request-scoped logger 주입 검증용 mock. */
+function createMockLogger(): Logger & {
+  readonly _warn: ReturnType<typeof vi.fn>;
+  readonly _error: ReturnType<typeof vi.fn>;
+} {
+  const warn = vi.fn();
+  const error = vi.fn();
+  const info = vi.fn();
+  const debug = vi.fn();
+  const logger = {
+    warn,
+    error,
+    info,
+    debug,
+    child: () => logger,
+    _warn: warn,
+    _error: error,
+  };
+  return logger as unknown as Logger & {
+    readonly _warn: ReturnType<typeof vi.fn>;
+    readonly _error: ReturnType<typeof vi.fn>;
+  };
+}
 
 describe('parsePwnedResponse', () => {
   // SHA-1 of 'password' is 5BAA61E4C9B93F3F0682250B6CF8331B7EE68FD8 (40 hex chars).
@@ -61,18 +86,11 @@ describe('parsePwnedResponse', () => {
 
 describe('checkPwned', () => {
   const originalFetch = globalThis.fetch;
-  const originalError = console.error;
-  let errorSpy: ReturnType<typeof vi.fn>;
 
-  beforeEach(() => {
-    errorSpy = vi.fn();
-    // logger 는 warn 레벨도 sink.error 로 보내므로 console.error 를 스파이.
-    console.error = errorSpy;
-  });
+  // Step 1-3 M-5 — console.error spy 제거. 주입된 mock logger 로 직접 검증.
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
-    console.error = originalError;
     vi.restoreAllMocks();
   });
 
@@ -83,7 +101,7 @@ describe('checkPwned', () => {
         new Response('1E4C9B93F3F0682250B6CF8331B7EE68FD8:9545824\n', { status: 200 }),
       );
 
-    const result = await checkPwned('password');
+    const result = await checkPwned('password', createMockLogger());
     expect(result.status).toBe('pwned');
     expect(result.count).toBeGreaterThan(0);
   });
@@ -95,25 +113,28 @@ describe('checkPwned', () => {
         new Response('FFFFF99999999999999999999999999999FFFF:1\n', { status: 200 }),
       );
 
-    const result = await checkPwned('password');
+    const result = await checkPwned('password', createMockLogger());
     expect(result.status).toBe('safe');
   });
 
-  it('returns unavailable on HIBP 5xx', async () => {
+  it('returns unavailable on HIBP 5xx + logs warn on injected logger (Step 1-3 M-5)', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue(new Response('', { status: 503 }));
+    const log = createMockLogger();
 
-    const result = await checkPwned('password');
+    const result = await checkPwned('password', log);
     expect(result.status).toBe('unavailable');
-    expect(errorSpy).toHaveBeenCalled();
-    const line = String(errorSpy.mock.calls[0]?.[0] ?? '');
-    expect(line).toContain('"level":"warn"');
-    expect(line).toContain('hibp non-2xx response');
+    expect(log._warn).toHaveBeenCalledWith('hibp non-2xx response', { status: 503 });
   });
 
-  it('returns unavailable on fetch network error', async () => {
+  it('returns unavailable on fetch network error + logs warn on injected logger', async () => {
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('network fail'));
+    const log = createMockLogger();
 
-    const result = await checkPwned('password');
+    const result = await checkPwned('password', log);
     expect(result.status).toBe('unavailable');
+    expect(log._warn).toHaveBeenCalled();
+    const call = log._warn.mock.calls[0];
+    expect(call?.[0]).toBe('hibp fetch failed');
+    expect(call?.[1]).toMatchObject({ cause: 'network fail' });
   });
 });

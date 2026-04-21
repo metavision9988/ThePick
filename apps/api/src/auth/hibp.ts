@@ -11,7 +11,7 @@
  *     대신 Phase 2 배치로 주기 재확인 (ADR-005 Addendum).
  */
 
-import { createLogger } from '@thepick/shared';
+import type { Logger } from '@thepick/shared';
 import {
   HIBP_API_BASE_URL,
   HIBP_HASH_PREFIX_LENGTH,
@@ -19,14 +19,15 @@ import {
 } from './constants.js';
 import type { PwnedResult } from './types.js';
 
-const logger = createLogger({ service: 'thepick-api' }).child({ module: 'auth/hibp' });
-
 /**
  * 주어진 평문 비밀번호가 HIBP DB 에 유출 이력이 있는지 확인.
  *
+ * @param plaintext 검사할 비밀번호 평문
+ * @param logger request-scoped logger — 호출 측에서 environment 주입된 인스턴스 전달 (Step 1-3 M-5).
+ *   과거 모듈 레벨 싱글톤은 `environment='development'` 로 고정되어 프로덕션 로그가 오염됨.
  * @returns `status='pwned'` + count / `'safe'` / `'unavailable'`
  */
-export async function checkPwned(plaintext: string): Promise<PwnedResult> {
+export async function checkPwned(plaintext: string, logger: Logger): Promise<PwnedResult> {
   const sha1Hex = await computeSha1Hex(plaintext);
   const prefix = sha1Hex.substring(0, HIBP_HASH_PREFIX_LENGTH).toUpperCase();
   const suffix = sha1Hex.substring(HIBP_HASH_PREFIX_LENGTH).toUpperCase();
