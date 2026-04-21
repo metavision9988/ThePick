@@ -24,6 +24,12 @@ WEBHOOK_HMAC_SECRET_MOCK = "dev-mock-secret-do-not-use-in-production-v1"
 WEBHOOK_HMAC_SECRET_POLAR = "dev-polar-secret-do-not-use-in-production-v1"
 WEBHOOK_HMAC_SECRET_PORTONE = "dev-portone-secret-do-not-use-in-production-v1"
 WEBHOOK_HMAC_SECRET_TOSSPAYMENTS = "dev-toss-secret-do-not-use-in-production-v1"
+# ------------------------------------------------------------
+# Step 1-4 M-4 — JWT + IP hash dev placeholder (≥32B)
+# staging/production 은 `wrangler secret put JWT_SECRET --env <env>` 경유 주입.
+# ------------------------------------------------------------
+JWT_SECRET = "dev-jwt-secret-do-not-use-in-production-32chars+v1"
+IP_PEPPER = "dev-ip-pepper-do-not-use-in-production-32chars+v1"
 
 [[d1_databases]]
 binding = "DB"

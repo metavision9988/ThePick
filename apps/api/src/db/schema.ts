@@ -1,12 +1,13 @@
 /**
  * ThePick Graph RAG — Drizzle ORM Schema
  *
- * 11 tables (base 6 + extension 3 + auth 1 + webhook 1):
+ * 12 tables (base 6 + extension 3 + auth 2 + webhook 1):
  *   knowledge_nodes, knowledge_edges, formulas, constants,
  *   revision_changes, exam_questions,
  *   mnemonic_cards, user_progress, topic_clusters,
  *   users (Phase 1 Step 1-1 — migrations/0006),
- *   webhook_events (Phase 1 Step 1-2 — migrations/0008)
+ *   webhook_events (Phase 1 Step 1-2 — migrations/0008),
+ *   sessions (Phase 1 Step 1-4 — migrations/0009)
  *
  * Temporal Graph pattern: UPDATE 금지 → INSERT + SUPERSEDES edge
  * (users 테이블은 예외 — last_login_at / subscription_* 변경 빈도로 일반 UPDATE 허용)
@@ -386,3 +387,55 @@ export const webhookEvents = sqliteTable(
 
 export type WebhookEvent = typeof webhookEvents.$inferSelect;
 export type NewWebhookEvent = typeof webhookEvents.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// 12. Sessions (Phase 1 Step 1-4 — migrations/0009)
+// JWT Access (stateless) + Refresh Token (D1-backed, rotation) — ADR-005 §Addendum
+//
+// DB 추가 제약 (Drizzle 에서 선언 불가하여 migrations/0009 에만 존재):
+//   - TRIGGER enforce_sessions_{user_id,refresh_token_hash,expires_at}_not_empty
+//   - TRIGGER enforce_sessions_refresh_token_hash_length (SHA-256 hex = 64자)
+//   - TRIGGER enforce_sessions_immutable_{user_id,refresh_token_hash,created_at,expires_at}
+//     (rotation = INSERT 신규 + UPDATE 이전.revoked_at; 컬럼값 변경 금지)
+//   - TRIGGER enforce_sessions_revoked_at_one_way (NULL → timestamp 만, 복원 금지)
+// ---------------------------------------------------------------------------
+
+export const sessions = sqliteTable(
+  'sessions',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    refreshTokenHash: text('refresh_token_hash').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
+    lastUsedAt: text('last_used_at')
+      .notNull()
+      .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
+    expiresAt: text('expires_at').notNull(),
+    revokedAt: text('revoked_at'),
+    userAgent: text('user_agent'),
+    ipHash: text('ip_hash'),
+  },
+  (table) => ({
+    // rotation 시 새 refresh 의 해시 충돌 방지. migrations/0009 의 명시 UNIQUE INDEX 와 이름 일치 (drift 0).
+    refreshTokenHashUnique: uniqueIndex('sessions_refresh_token_hash_unique').on(
+      table.refreshTokenHash,
+    ),
+    // revokeAllUserSessions + 사용자 활성 세션 조회
+    userActiveIdx: index('idx_sessions_user_active').on(
+      table.userId,
+      table.revokedAt,
+      table.expiresAt,
+    ),
+    // TTL cron 삭제 (Step 1-5+). Partial index — migrations/0009 의 WHERE revoked_at IS NULL 절 동기.
+    expiresActiveIdx: index('idx_sessions_expires_active')
+      .on(table.expiresAt)
+      .where(sql`revoked_at IS NULL`),
+  }),
+);
+
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;

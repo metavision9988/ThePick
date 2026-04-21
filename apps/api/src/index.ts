@@ -15,6 +15,8 @@ type Bindings = {
   WEBHOOK_HMAC_SECRET_POLAR?: string;
   WEBHOOK_HMAC_SECRET_PORTONE?: string;
   WEBHOOK_HMAC_SECRET_TOSSPAYMENTS?: string;
+  JWT_SECRET?: string;
+  IP_PEPPER?: string;
 };
 
 const KNOWN_ENVIRONMENTS: ReadonlySet<LoggerEnvironment> = new Set<LoggerEnvironment>([

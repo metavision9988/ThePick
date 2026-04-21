@@ -46,6 +46,35 @@ Phase/Step 리뷰에서 "수용" 판정된 Minor 항목 누적 등록.
 
 ---
 
+## Phase 1 Step 1-4 — Level 2 4-Phase 리뷰 (2026-04-22)
+
+### Scope 내 해소 (Critical 4 + Major 4)
+
+- ✅ **Critical 해소됨 (2026-04-22, 본 Step 커밋)**:
+  - C-1 (D-6-2) BAN 우회 — `/refresh` user status 재검증 추가 + revokeAllUserSessions 통합
+  - C-2 (D-5-1 / B-2) Reuse detection 오탐 — `REFRESH_ROTATION_GRACE_SECONDS = 60` grace window 도입, `rotated_recently` reason 추가
+  - C-3 (A-2) NaN expires_at 영구 유효 통과 — `!Number.isFinite || expiresAt <= now` fail-safe
+  - C-4 (B-5 / B-1) Drizzle drift — inline UNIQUE → 명시 `CREATE UNIQUE INDEX` + Drizzle partial index `.where(sql\`revoked_at IS NULL\`)` 추가
+- ✅ **Major 해소됨**:
+  - A-4 signAccessToken 빈 userId/sessionId fail-fast (`SIGN_EMPTY_USER_ID` / `SIGN_EMPTY_SESSION_ID`)
+  - A-1 / C-M1 `routes.ts:350` 무의미한 삼항식 제거
+  - D-7-1 IP_PEPPER 미설정 silent → `logger.warn` 추가 (login/refresh 양쪽)
+  - B-2 `revokeAllUserSessions` 실패 → `withRetry` 래핑 (재시도 2회)
+
+### Step 1-5+ 이월 신규 등록
+
+- [ ] **TD-019** 사용자당 활성 세션 상한 부재 (Phase D D-1-1) — `MAX_ACTIVE_SESSIONS_PER_USER` 미정의. 공격자가 동일 user 로 login 반복 시 sessions 테이블 무한 증가. 해소안: login 시점 `COUNT(*) WHERE user_id = ? AND revoked_at IS NULL` 체크 + 상한 초과 시 가장 오래된 세션 revoke. Phase 2.
+- [ ] **TD-020** `decodeAccessTokenUnsafe` 프로덕션 미사용 dead code (Phase D D-4-4) — session.ts:144-151. 감사용으로 선언됐으나 호출처 없음. 해소안: `@deprecated` 태그 + 다음 Phase 에 삭제 or 실제 감사 로그에서 사용.
+- [ ] **TD-021** JWT_SECRET 운영 중 rotation 절차 문서 부재 (Phase D D-7-2) — 유출 시 전체 sessions 강제 revoke 필요하나 `DELETE FROM sessions` 운영 도구 없음. 해소안: `docs/security/jwt-rotation.md` 작성 + `wrangler d1 execute` 수동 절차.
+- [ ] **TD-022** `sessions.last_used_at` UPDATE 경로 부재 (Phase B B-3) — 스키마/트리거는 있으나 코드에서 UPDATE 안 함. Phase 2 세션 관리 UI 구현 시 "마지막 사용 X분 전" 표시 전 활성화 필요.
+- [ ] **TD-023** `RequireAuthEnv.Bindings` / `index.ts Bindings` / `AuthBindings` 3중 선언 (Phase B B-1) — Step 1-3 TD-004 (KNOWN_ENVIRONMENTS 3중 복제) 유사 패턴. 해소안: 공통 `ApiBindings` 타입 정의하여 interface merging.
+- [ ] **TD-024** `hono/utils/jwt/jwt` 내부 경로 의존 (Phase A #5) — Hono 4.x minor 업그레이드 시 경로 변경 가능. 해소안: `package.json` 에서 `hono` 버전 exact pin (예: `4.12.12`) 또는 공개 `hono/jwt` 미들웨어 검토. 현재는 runtime 동작 정상.
+- [ ] **TD-025** Access JWT revoke 지연 창 최대 15분 (Phase B B-3 이월) — JWT stateless 검증 특성상 revokeSession 후 access token 은 exp + leeway (60s) 까지 유효. 환불/계정 정지 시 최대 16분 창. 완화안: require-auth 에 선택적 D1 session existence 체크 (민감 write-path 라우트만) or access TTL 단축 (5min).
+- [ ] **TD-026** `session.ts verifyAndRotateRefreshSession` 명세 함수 미구현 (Phase C m-2) — plan.md:93/118 명시 함수가 `session.ts` 에 없음. routes.ts 에 inline rotation. 해소안: session.ts 에 orchestration 함수 추가 (향후 OAuth 엔드포인트에서 재사용).
+- [ ] **TD-027** `cache-policy.ts` 주석 vs `index.ts` 등록 순서 설명 모순 (Phase C m-4) — cache-policy.ts:36-37 "마지막 미들웨어" 설명 vs index.ts:39 "첫 번째" 등록. 실제 동작은 올바름 (after-next 패턴). 주석 명료화 필요.
+
+---
+
 ## 처리 원칙
 
 - 분기별 1회 (phase 종료 시점) 상위 3건 해소
