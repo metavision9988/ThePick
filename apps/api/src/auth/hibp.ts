@@ -11,12 +11,15 @@
  *     대신 Phase 2 배치로 주기 재확인 (ADR-005 Addendum).
  */
 
+import { createLogger } from '@thepick/shared';
 import {
   HIBP_API_BASE_URL,
   HIBP_HASH_PREFIX_LENGTH,
   HIBP_REQUEST_TIMEOUT_MS,
 } from './constants.js';
 import type { PwnedResult } from './types.js';
+
+const logger = createLogger({ service: 'thepick-api' }).child({ module: 'auth/hibp' });
 
 /**
  * 주어진 평문 비밀번호가 HIBP DB 에 유출 이력이 있는지 확인.
@@ -40,14 +43,17 @@ export async function checkPwned(plaintext: string): Promise<PwnedResult> {
     });
 
     if (!response.ok) {
-      console.warn(`[hibp] non-2xx response: ${response.status}`);
+      logger.warn('hibp non-2xx response', { status: response.status });
       return { status: 'unavailable', count: 0 };
     }
 
     const body = await response.text();
     return parsePwnedResponse(body, suffix);
   } catch (err) {
-    console.warn('[hibp] fetch failed', err);
+    logger.warn('hibp fetch failed', {
+      cause: err instanceof Error ? err.message : String(err),
+      name: err instanceof Error ? err.name : 'Unknown',
+    });
     return { status: 'unavailable', count: 0 };
   } finally {
     clearTimeout(timeoutId);

@@ -28,7 +28,7 @@
 
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { AUTH_MESSAGES } from '@thepick/shared';
+import { AUTH_MESSAGES, createLogger, type Logger, type LoggerEnvironment } from '@thepick/shared';
 import { withRetry } from '../middleware/retry.js';
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from './constants.js';
 import { performDummyVerify } from './dummy-verify.js';
@@ -46,6 +46,26 @@ interface AuthBindings {
   readonly AUTH_RATE_LIMITER_IP?: RateLimiter;
   readonly AUTH_RATE_LIMITER_EMAIL?: RateLimiter;
   readonly ENVIRONMENT?: string;
+}
+
+const KNOWN_ENVIRONMENTS: ReadonlySet<LoggerEnvironment> = new Set<LoggerEnvironment>([
+  'development',
+  'staging',
+  'production',
+  'test',
+]);
+
+function resolveLoggerEnv(envName: string | undefined): LoggerEnvironment {
+  return envName !== undefined && KNOWN_ENVIRONMENTS.has(envName as LoggerEnvironment)
+    ? (envName as LoggerEnvironment)
+    : 'development';
+}
+
+function buildLogger(env: AuthBindings): Logger {
+  return createLogger({
+    service: 'thepick-api',
+    environment: resolveLoggerEnv(env.ENVIRONMENT),
+  }).child({ module: 'auth' });
 }
 
 const registerSchema = z.object({
@@ -68,18 +88,11 @@ interface StoredUserRow {
   readonly status: 'active' | 'suspended' | 'deleted';
 }
 
-/**
- * email 부분 마스킹 (임시 — Step 1-2 logger 마이그레이션 전).
- * ADR-009 EMAIL_PATTERN 준수: 앞 2자 + @ 도메인.
- */
-function maskEmail(email: string): string {
-  return email.replace(/^([^@]{0,2})[^@]*(@.*)$/, '$1***$2');
-}
-
 export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
   const router = new Hono<{ Bindings: AuthBindings }>();
 
   router.post('/register', async (c) => {
+    const logger = buildLogger(c.env).child({ route: 'register' });
     const ip = getClientIp(c);
     const ipAllowed = await checkIpRateLimit(c.env.AUTH_RATE_LIMITER_IP, ip, c.env.ENVIRONMENT);
     if (!ipAllowed) {
@@ -107,7 +120,7 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
     try {
       hashed = await hashPassword(password);
     } catch (err) {
-      console.error('[auth] hashPassword failed', err);
+      logger.error('hashPassword failed', err, { email: normalizedEmail });
       return c.json({ error: 'HASH_ERROR' }, 500);
     }
 
@@ -139,7 +152,7 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
       if (err instanceof Error && /UNIQUE constraint failed/.test(err.message)) {
         return c.json({ error: 'EMAIL_TAKEN', message: AUTH_MESSAGES.REGISTER_EMAIL_TAKEN }, 409);
       }
-      console.error('[auth] register write failed for', maskEmail(normalizedEmail), err);
+      logger.error('register write failed', err, { email: normalizedEmail });
       c.header('Retry-After', '5');
       return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
     }
@@ -160,6 +173,7 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
   });
 
   router.post('/login', async (c) => {
+    const logger = buildLogger(c.env).child({ route: 'login' });
     const ip = getClientIp(c);
     const ipAllowed = await checkIpRateLimit(c.env.AUTH_RATE_LIMITER_IP, ip, c.env.ENVIRONMENT);
     if (!ipAllowed) {
@@ -196,7 +210,7 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
       );
       row = retrieval.value;
     } catch (err) {
-      console.error('[auth] login read failed for', maskEmail(normalizedEmail), err);
+      logger.error('login read failed', err, { email: normalizedEmail });
       c.header('Retry-After', '5');
       return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
     }
@@ -210,14 +224,28 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
     } as const;
 
     if (row === null) {
-      await performDummyVerify(password);
+      // dummy verify 실패가 발생해도 timing 평탄화는 best-effort 이므로 swallow.
+      // catch 없으면 500 누수 → account enumeration 재개 (D-7-3).
+      try {
+        await performDummyVerify(password);
+      } catch (err) {
+        logger.warn('dummy verify failed on missing-row branch', {
+          cause: err instanceof Error ? err.message : String(err),
+        });
+      }
       return c.json(genericFailure, 401);
     }
 
     if (row.status !== 'active') {
       // suspended / deleted 모두 동일한 401 generic 응답 (enumeration 방어).
       // 더미 verify 로 timing 평탄화 유지.
-      await performDummyVerify(password);
+      try {
+        await performDummyVerify(password);
+      } catch (err) {
+        logger.warn('dummy verify failed on inactive-status branch', {
+          cause: err instanceof Error ? err.message : String(err),
+        });
+      }
       return c.json(genericFailure, 401);
     }
 
@@ -238,8 +266,11 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
           .run(),
       );
     } catch (err) {
-      console.warn('[auth] last_login_at update failed for user', row.id, err);
-      // 로그인 자체는 성공 — last_login_at 업데이트 실패는 무시 (관찰성 손실만)
+      // 로그인 자체는 성공 — last_login_at 업데이트 실패는 관찰성 손실만
+      logger.warn('last_login_at update failed', {
+        userId: row.id,
+        cause: err instanceof Error ? err.message : String(err),
+      });
     }
 
     return c.json({

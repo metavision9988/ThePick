@@ -143,6 +143,104 @@ PG사 선정 기준 (Phase 3 재검토 시):
 - PortOne(구 아임포트): https://portone.io/
 - 토스페이먼츠: https://docs.tosspayments.com/
 
+## Addendum — Phase 1 Step 1-2 Webhook Receiver (2026-04-21)
+
+본 addendum 은 Phase 1 Step 1-2 에 `POST /api/webhooks/payment/:provider`
+webhook receiver 를 구현하면서 §2 `PaymentProvider.verifyWebhook` 어댑터 계약
+과의 관계를 명확히 하기 위해 추가되었다.
+
+### 1. 결정 — 인프라 레이어와 어댑터 레이어 분리
+
+**결정**: webhook receiver 는 §2 의 `PaymentProvider.verifyWebhook` 을
+Phase 1 에서 호출하지 않는다. receiver 는 다음만 책임진다:
+
+- HMAC-SHA256 서명 검증 (Web Crypto 직접 구현, ADR-006 단일 벤더 준수)
+- Replay/Idempotency 보장 (`webhook_events.UNIQUE(provider, event_id)`)
+- per-IP rate limiting (DoS 방어)
+- 원본 payload + 메타 영속화 (`webhook_events` 테이블, PG-중립 로그)
+
+실제 결제 비즈니스 처리 (`PaymentProvider.verifyWebhook`, 구독 상태 갱신)는
+Phase 3 에 `webhook_events.status` 전이(`received → processing → processed`)로
+연결한다.
+
+### 2. 근거 (왜 어댑터 호출을 Phase 1 에 포함하지 않는가)
+
+- **Phase 3 까지 adapter 구현체 부재**: `packages/payment` 는 §2 의 인터페이스와
+  `MockPaymentProvider` 만 존재. 실제 PG (Polar/PortOne/Toss) 구현은
+  Phase 3 착수 시점에 시장 데이터 기반으로 결정.
+- **Webhook 수신 인프라의 비가역성**: Replay/Idempotency 는 DB 스키마 + 트리거
+  - receiver 라우트가 일관되어야 동작. 이 3 요소는 adapter 선택과 무관하게
+    먼저 확정 가능 — Phase 1 에 확정하면 Phase 3 구현 시 "수신 받은 이벤트는
+    이미 idempotent 저장됨" 을 전제로 비즈니스 로직에 집중 가능.
+- **공격 표면 조기 노출**: webhook 엔드포인트는 공개 URL 이므로 Phase 1 단계에서
+  HMAC + rate limit 인프라를 두지 않으면 staging/prod 배포 시점에 공격 대상.
+  adapter 구현 완료까지 비공개 유지는 불가.
+
+### 3. Phase 3 전환 계약 (Phase 3 작업자 지침)
+
+Phase 1 webhook receiver 와 Phase 3 adapter 통합 시 다음 순서:
+
+1. `webhook_events` 레코드에 `'received'` 로 저장된 이벤트를 `'processing'` 으로
+   전이 (트리거 `enforce_webhook_events_status_transition` 통과).
+2. `providers[provider].verifyWebhook(rawBody, signature)` 호출하여
+   `PaymentEvent` 파싱 — 실패 시 `'failed'` 전이 + `error_message` 기록.
+3. 파싱 성공 시 비즈니스 테이블 (`payment_events`, `user_progress` 등)
+   업데이트 → `'processed'` 전이.
+
+**주의**: Phase 1 의 HMAC 검증은 공통 (모든 PG 가 HMAC-SHA256 지원).
+PG 별 고유 서명 방식 (예: PortOne V2 는 timestamp + tolerance window 필요)
+이 필요하면 Phase 3 에서 `verifyWebhook` 내부에 추가 검증 로직 배치 — receiver
+는 공통 HMAC 만 책임지고, adapter 는 PG 특화 검증 수행 (계층 분리).
+
+### 4. `webhook_events` vs `payment_events` 분리
+
+| 테이블           | 레이어             | 스키마 소유       | 목적                                        |
+| ---------------- | ------------------ | ----------------- | ------------------------------------------- |
+| `webhook_events` | 인프라 (Phase 1)   | `migrations/0008` | Replay/Idempotency/감사 — PG-중립 수신 로그 |
+| `payment_events` | 비즈니스 (Phase 3) | ADR-002 §3 (TBD)  | 결제 상태 전이 — PG 별 파싱 결과            |
+
+두 테이블은 1:N 관계 (한 webhook_events 레코드가 여러 payment_events 생성 가능 —
+예: Polar 가 단일 webhook 에 `subscription.created` + `order.paid` 동시 포함).
+
+### 5. 서명 검증 방식의 Silent Pivot 경고
+
+plan §5 Step 2 "서명 실패 후에도 body 파싱 (timing attack 완화)" 요구사항과
+달리, Phase 1 구현은 서명 실패 즉시 401 반환한다. 근거:
+
+- `verifySignature` 자체가 full HMAC 계산 + dummy compare 를 수행하여 timing-
+  safe (공격자가 "서명이 valid 였다면 어디까지 처리됐는가" 를 timing 으로 추론 불가).
+- Body 파싱까지 수행하면 Zod/JSON.parse 의 variable-time 특성이 오히려 timing
+  side-channel 을 확장.
+
+단, 현재 설계는 **PG 가 legitimate 서명을 보냈지만 payload 가 깨진 경우를
+"서명 무효" 와 구분하지 못함**. Phase 2 쯤 PG 현장 테스트에서 이 경계 재검토.
+
+### 6. 남은 결정 사항 (Phase 2/3 전 확정 필요)
+
+- **Timestamp-based replay window**: 현재 UNIQUE 만으로 replay 방어 — 오래된
+  webhook_events 를 purge 한 후 재전송 공격 가능. Phase 3 전 `X-Payment-Timestamp`
+  헤더 + 300s window 검증 추가 여부 결정 (D-5-2).
+- **Payload raw 저장 PCI-DSS 리스크**: `webhook_events.payload` 에 PG 원본 JSON
+  저장. Phase 3 adapter 는 저장 전 PCI-DSS 마스킹 (카드번호·CVV 등) 선행 의무.
+  타입 시스템 레벨 강제 (`SanitizedPayload` 래퍼) 도입 여부 결정 (D-4-4).
+- **Secret 길이 하한 강제**: `WEBHOOK_HMAC_SECRET_*` 최소 32자 검증은 Step 1-3
+  초기 태스크로 이월 (D-3-1).
+- **wrangler.toml secret placeholder**: dev 전용 mock secret 선언 추가 여부
+  결정 — onboarding UX 개선 (D-3-2).
+
+### 7. 구현 참조
+
+- Receiver: `apps/api/src/webhooks/payment.ts`
+- 테스트: `apps/api/src/webhooks/__tests__/payment.test.ts`
+- Migration: `migrations/0008_webhook_events.sql`
+- Drizzle schema: `apps/api/src/db/schema.ts` §11
+- Rate limit: `apps/api/src/auth/rate-limit.ts` `checkWebhookIpRateLimit`
+- wrangler binding: `apps/api/wrangler.toml` `WEBHOOK_RATE_LIMITER_IP`
+  (dev 1003 / staging 2003 / production 3003)
+
 ## 수정 이력
 
 - 2026-04-18: 초안 작성
+- 2026-04-21: Phase 1 Step 1-2 webhook receiver 인프라 구현 반영 — §Addendum 추가
+  (webhook_events vs payment_events 분리, Phase 3 전환 계약, 서명 검증 Silent
+  Pivot 근거, 남은 결정 사항 4건 명시)

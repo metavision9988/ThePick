@@ -61,15 +61,18 @@ describe('parsePwnedResponse', () => {
 
 describe('checkPwned', () => {
   const originalFetch = globalThis.fetch;
-  const originalWarn = console.warn;
+  const originalError = console.error;
+  let errorSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    console.warn = vi.fn();
+    errorSpy = vi.fn();
+    // logger 는 warn 레벨도 sink.error 로 보내므로 console.error 를 스파이.
+    console.error = errorSpy;
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
-    console.warn = originalWarn;
+    console.error = originalError;
     vi.restoreAllMocks();
   });
 
@@ -101,7 +104,10 @@ describe('checkPwned', () => {
 
     const result = await checkPwned('password');
     expect(result.status).toBe('unavailable');
-    expect(console.warn).toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalled();
+    const line = String(errorSpy.mock.calls[0]?.[0] ?? '');
+    expect(line).toContain('"level":"warn"');
+    expect(line).toContain('hibp non-2xx response');
   });
 
   it('returns unavailable on fetch network error', async () => {

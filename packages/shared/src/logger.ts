@@ -97,6 +97,7 @@ const PII_KEY_NAMES: readonly string[] = [
  */
 const RAW_DUMP_KEY_NAMES: readonly string[] = [
   'rawpayload',
+  'payload',
   'body',
   'headers',
   'params',

@@ -1,17 +1,18 @@
 /**
  * ThePick Graph RAG — Drizzle ORM Schema
  *
- * 10 tables (base 6 + extension 3 + auth 1):
+ * 11 tables (base 6 + extension 3 + auth 1 + webhook 1):
  *   knowledge_nodes, knowledge_edges, formulas, constants,
  *   revision_changes, exam_questions,
  *   mnemonic_cards, user_progress, topic_clusters,
- *   users (Phase 1 Step 1-1 — migrations/0006)
+ *   users (Phase 1 Step 1-1 — migrations/0006),
+ *   webhook_events (Phase 1 Step 1-2 — migrations/0008)
  *
  * Temporal Graph pattern: UPDATE 금지 → INSERT + SUPERSEDES edge
  * (users 테이블은 예외 — last_login_at / subscription_* 변경 빈도로 일반 UPDATE 허용)
  */
 
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 // --- Enum values (must match SQL CHECK constraints + shared/types.ts) ---
@@ -55,6 +56,8 @@ const CONSTANT_CATEGORIES = [
 const CHANGE_TYPES = ['added', 'modified', 'deleted', 'clarified'] as const;
 const USER_STATUSES = ['active', 'suspended', 'deleted'] as const;
 const SUBSCRIPTION_PLANS = ['single', 'combo', 'all_access'] as const;
+const WEBHOOK_PROVIDERS = ['mock', 'polar', 'portone', 'tosspayments'] as const;
+const WEBHOOK_STATUSES = ['received', 'processing', 'processed', 'failed'] as const;
 const EXAM_SCOPES = ['1st_sub1', '1st_sub2', '1st_sub3', '2nd', 'shared'] as const;
 const EXAM_TYPES = ['1st', '2nd'] as const;
 const CONFUSION_TYPES = [
@@ -336,3 +339,50 @@ export type NewTopicCluster = typeof topicClusters.$inferInsert;
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// 11. Webhook Events (Phase 1 Step 1-2 — migrations/0008)
+// PG-중립 수신 로그 + Replay/Idempotency 보장 (ADR-002 §Migrations 연결)
+// 비즈니스 payment_events 는 Phase 3 에 별도 테이블 추가 예정.
+//
+// DB 추가 제약 (Drizzle 에서 선언 불가하여 migrations/0008 에만 존재):
+//   - TRIGGER enforce_webhook_events_{provider,event_id,event_type,payload}_not_empty
+//   - TRIGGER enforce_webhook_events_status_enum_insert
+//   - TRIGGER enforce_webhook_events_status_transition
+//     (received → processing → processed|failed; received → failed 직접 전이 허용)
+//   - TRIGGER webhook_events_auto_processed_at (status 전이 시 timestamp 자동 설정)
+// ---------------------------------------------------------------------------
+
+export const webhookEvents = sqliteTable(
+  'webhook_events',
+  {
+    id: text('id').primaryKey(),
+    provider: text('provider', { enum: WEBHOOK_PROVIDERS }).notNull(),
+    eventId: text('event_id').notNull(),
+    eventType: text('event_type').notNull(),
+    payload: text('payload').notNull(),
+    signature: text('signature'),
+    receivedAt: text('received_at')
+      .notNull()
+      .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
+    processedAt: text('processed_at'),
+    status: text('status', { enum: WEBHOOK_STATUSES }).notNull().default('received'),
+    errorMessage: text('error_message'),
+  },
+  (table) => ({
+    // composite UNIQUE — Idempotency/Replay 방어 핵심 (migrations/0008:32)
+    providerEventIdUnique: uniqueIndex('webhook_events_provider_event_id_unique').on(
+      table.provider,
+      table.eventId,
+    ),
+    // migrations/0008:35-38 과 1:1 대응 (drizzle-kit generate 시 drop 방지)
+    statusReceivedAtIdx: index('idx_webhook_events_status').on(table.status, table.receivedAt),
+    providerReceivedAtIdx: index('idx_webhook_events_provider').on(
+      table.provider,
+      table.receivedAt,
+    ),
+  }),
+);
+
+export type WebhookEvent = typeof webhookEvents.$inferSelect;
+export type NewWebhookEvent = typeof webhookEvents.$inferInsert;

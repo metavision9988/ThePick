@@ -34,8 +34,13 @@ ip = "localhost"
 enabled = true
 head_sampling_rate = 0.1  # dev는 10%만 기록 (CI/로컬 관측 비용 절감)
 
-# Auth Rate Limiting (Cloudflare Workers Rate Limit API — ADR-006 단일 벤더 준수)
+# Auth + Webhook Rate Limiting (Cloudflare Workers Rate Limit API — ADR-006 단일 벤더 준수)
 # namespace_id 는 프로젝트 고유 (임의 int). limit/period 는 정책 명시.
+# 환경별 namespace 분리 (Step 1-2 M-rate-limit-namespace 해소):
+#   - dev      : 1001 / 1002 / 1003 (로컬 miniflare)
+#   - staging  : 2001 / 2002 / 2003
+#   - production: 3001 / 3002 / 3003
+# 같은 namespace 공유 시 staging 자동화 테스트가 prod 카운터를 소모할 수 있음.
 [[unsafe.bindings]]
 name = "AUTH_RATE_LIMITER_IP"
 type = "ratelimit"
@@ -47,6 +52,14 @@ name = "AUTH_RATE_LIMITER_EMAIL"
 type = "ratelimit"
 namespace_id = "1002"
 simple = { limit = 5, period = 600 }
+
+# Step 1-2 C-1 — webhook DoS 방어 (HMAC 암호 연산 CPU 폭증 차단)
+# 300 req/60s: PG 정상 트래픽 대비 여유, 공격자 단일 IP 기준 저지 가능
+[[unsafe.bindings]]
+name = "WEBHOOK_RATE_LIMITER_IP"
+type = "ratelimit"
+namespace_id = "1003"
+simple = { limit = 300, period = 60 }
 
 # ============================================================
 # Staging (APAC) — remote D1
@@ -72,14 +85,20 @@ head_sampling_rate = 1
 [[env.staging.unsafe.bindings]]
 name = "AUTH_RATE_LIMITER_IP"
 type = "ratelimit"
-namespace_id = "1001"
+namespace_id = "2001"
 simple = { limit = 20, period = 60 }
 
 [[env.staging.unsafe.bindings]]
 name = "AUTH_RATE_LIMITER_EMAIL"
 type = "ratelimit"
-namespace_id = "1002"
+namespace_id = "2002"
 simple = { limit = 5, period = 600 }
+
+[[env.staging.unsafe.bindings]]
+name = "WEBHOOK_RATE_LIMITER_IP"
+type = "ratelimit"
+namespace_id = "2003"
+simple = { limit = 300, period = 60 }
 
 # ============================================================
 # Production (APAC) — remote D1
@@ -105,11 +124,17 @@ head_sampling_rate = 1
 [[env.production.unsafe.bindings]]
 name = "AUTH_RATE_LIMITER_IP"
 type = "ratelimit"
-namespace_id = "1001"
+namespace_id = "3001"
 simple = { limit = 20, period = 60 }
 
 [[env.production.unsafe.bindings]]
 name = "AUTH_RATE_LIMITER_EMAIL"
 type = "ratelimit"
-namespace_id = "1002"
+namespace_id = "3002"
 simple = { limit = 5, period = 600 }
+
+[[env.production.unsafe.bindings]]
+name = "WEBHOOK_RATE_LIMITER_IP"
+type = "ratelimit"
+namespace_id = "3003"
+simple = { limit = 300, period = 60 }
