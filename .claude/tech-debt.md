@@ -75,6 +75,23 @@ Phase/Step 리뷰에서 "수용" 판정된 Minor 항목 누적 등록.
 
 ---
 
+## Phase 1 전반전 — Level 3 전체 감사 (2026-04-22)
+
+### 즉시 해소됨
+
+- ✅ **M-A1** `cache-policy.ts` `/api/webhooks/*` private 경계 누락 — `PRIVATE_PATH_PREFIXES` 에 추가 (`cache-policy.ts:26-28`)
+- ✅ **M-A4** CORS 완전 부재 — `hono/cors` 미들웨어 + allowlist (`index.ts:9, 24-39`) + credentials=true
+
+### Step 1-5 이월
+
+- [ ] **TD-028** `/refresh` rotation 순서 비원자 (M-A2) — `routes.ts:468-485` `revokeSession → createRefreshSession` 순서에서 insert 실패 시 사용자 강제 로그아웃. 해소안: INSERT 먼저 → 성공 후 revoke 순서 역전. 실패 시 중복 활성 세션만 남음 (보안 손실 없음). Step 1-5 초기 태스크.
+
+### 기존 TD 와 중복
+
+- **M-A3** `verifyAndRotateRefreshSession` 함수 inline — 이미 TD-026 으로 등록됨.
+
+---
+
 ## 처리 원칙
 
 - 분기별 1회 (phase 종료 시점) 상위 3건 해소

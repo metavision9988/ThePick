@@ -22,6 +22,9 @@ const PRIVATE_PATH_PREFIXES: readonly string[] = [
   '/api/user/',
   '/api/progress/',
   '/api/payment/',
+  // Level 3 감사 M-A1 (2026-04-22): webhook 응답은 {id: rowId, replayed} 포함 →
+  // 공용 캐시 오염 방지 위해 private 경계 명시.
+  '/api/webhooks/',
 ];
 
 /** 공용 경로 TTL 매핑 (초). */

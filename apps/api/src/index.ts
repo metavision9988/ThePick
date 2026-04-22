@@ -1,9 +1,26 @@
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { createLogger, type LoggerEnvironment } from '@thepick/shared';
 import type { RateLimiter } from './auth/rate-limit.js';
 import { createAuthRoutes } from './auth/routes.js';
 import { cachePolicyMiddleware } from './middleware/cache-policy.js';
 import { createWebhookRoutes } from './webhooks/payment.js';
+
+/**
+ * 허용 Origin 목록 (Level 3 감사 M-A4 해소, 2026-04-22).
+ *
+ * - dev: localhost:4321 (Astro) + 127.0.0.1:4321
+ * - staging: thepick-staging.pages.dev (Cloudflare Pages 기본)
+ * - production: thepick.app (도메인 확정 시 업데이트)
+ *
+ * 웹훅 경로는 CORS 대상 아님 (PG 서버 → 서버, 브라우저 무관).
+ */
+const CORS_ALLOWED_ORIGINS: readonly string[] = [
+  'http://localhost:4321',
+  'http://127.0.0.1:4321',
+  'https://thepick-staging.pages.dev',
+  'https://thepick.app',
+];
 
 type Bindings = {
   DB: D1Database;
@@ -33,6 +50,24 @@ function resolveLoggerEnv(envName: string | undefined): LoggerEnvironment {
 }
 
 const app = new Hono<{ Bindings: Bindings }>();
+
+// CORS — Level 3 감사 M-A4 해소 (2026-04-22)
+// /api/auth/* 만 적용. webhook 은 서버→서버라 CORS 불필요.
+// credentials=true: refresh/access 쿠키 전송 필수.
+app.use(
+  '/api/auth/*',
+  cors({
+    origin: (origin): string | null => {
+      if (!origin) return null;
+      return CORS_ALLOWED_ORIGINS.includes(origin) ? origin : null;
+    },
+    credentials: true,
+    allowHeaders: ['Content-Type', 'Authorization'],
+    allowMethods: ['GET', 'POST', 'OPTIONS'],
+    exposeHeaders: ['Retry-After'],
+    maxAge: 600,
+  }),
+);
 
 // L1 Edge Cache 헤더 자동 주입 (ADR-008 §8) — 4-Pass C-3 반영
 // **첫 번째** 미들웨어로 등록: 어떤 경로에서 어떤 이유로 early-return 되어도
