@@ -63,11 +63,14 @@ type = "ratelimit"
 namespace_id = "1001"
 simple = { limit = 20, period = 60 }
 
+# 주의: wrangler dev (miniflare) emulation 은 period 를 `10 | 60` 만 허용.
+# staging/production 은 600 (10분) 유지 — Cloudflare Edge 에서 더 큰 값 허용.
+# 로컬 dev 에서는 period=60 으로 축소 (테스트 편의). 실제 policy 는 env 섹션 참조.
 [[unsafe.bindings]]
 name = "AUTH_RATE_LIMITER_EMAIL"
 type = "ratelimit"
 namespace_id = "1002"
-simple = { limit = 5, period = 600 }
+simple = { limit = 5, period = 60 }
 
 # Step 1-2 C-1 — webhook DoS 방어 (HMAC 암호 연산 CPU 폭증 차단)
 # 300 req/60s: PG 정상 트래픽 대비 여유, 공격자 단일 IP 기준 저지 가능
