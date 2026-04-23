@@ -92,6 +92,27 @@ Phase/Step 리뷰에서 "수용" 판정된 Minor 항목 누적 등록.
 
 ---
 
+## Step 1-5 (나) — 4-Pass 독립 리뷰 (2026-04-23)
+
+### 즉시 해소됨
+
+- ✅ **Pass 1 C-1** `/api/progress/*` CORS 미적용 — `index.ts` 에 `cors(buildCorsOptions())` 추가. auth + progress 공유 옵션 팩토리.
+- ✅ **Pass 1 M-1** `require-auth` 가 빈 `sub`/`sid` JWT 통과 — fail-closed 분기 추가 (`require-auth.ts` 수정).
+- ✅ **Pass 1 M-2** `seedProgress` 테스트 픽스처 FSRS 필드 DEFAULT 의존 — `fsrs_difficulty/stability/interval` 명시 INSERT.
+
+### Phase 1 후반전 이월
+
+- [ ] **TD-029** Progress /review CSRF 방어 미게이트 (Pass 3 M1) — SameSite=Strict 쿠키로 cross-origin 은 방어되나 same-origin XSS/extension 취약. 해소안: Origin allowlist 미들웨어 or X-Requested-With 요구 or double-submit 토큰. Phase 2 프론트엔드 통합 전 필수.
+- [ ] **TD-030** Progress /review `knowledge_nodes.id` enumeration oracle (Pass 3 M2) — 인증 사용자가 404 ↔ 200 응답 차이로 교재 노드 ID 열거 가능. 해소안: per-user rate-limit + 404 응답 jitter 50~150ms. Step 1-5 (가) 교재 Graph 적재 전 차단.
+- [ ] **TD-031** Progress /review UPSERT lost-update race (Pass 1/2/4 반론) — SELECT-then-UPDATE 복합 UNIQUE 부재. 동시 리뷰 2건 시 `total_reviews` 손실 가능. 해소안: `UNIQUE(user_id, node_id, card_type)` 추가 + `INSERT ... ON CONFLICT DO UPDATE SET total_reviews = total_reviews + 1` atomic 전환. Phase 2 FSRS 알고리즘 도입과 동시에.
+- [ ] **TD-032** `require-auth` 실패 reason 노출 범위 (Pass 3 Minor) — production 에서 `expired` 만 유지, `invalid/malformed` 는 generic 'unauthorized' 로 마스킹.
+- [ ] **TD-033** FSRS 초기값 인라인 하드코딩 (Pass 2/4 Minor) — `progress/routes.ts` INSERT 시 `0.3, 1.0, 1` 리터럴. `packages/shared` 명명 상수 추출 (Phase 2 FSRS 설계 시 단일 소스).
+- [ ] **TD-034** `resolveLoggerEnv` 3~4중 중복 선언 (Pass 1 Minor) — `index.ts` / `auth/routes.ts` / `progress/routes.ts` / `webhooks/payment.ts`. `@thepick/shared` 로 이전. TD-023 와 함께.
+- [ ] **TD-035** `PRAGMA foreign_keys = ON` 요청마다 실행 (Pass 2 반론) — Workers 부트 1회로 압축 가능한지 D1 semantics 재조사.
+- [ ] **TD-036** Year 2 멀티시험 전환 시 user_progress 시그니처 변경 (Pass 2 반론) — Year 2 Phase 4 에서 `summary(examId, userId)` 로 전환 시 호출처 전수 수정. Hard Rule 16 Year 1 한시 예외 만료 시점 작업 목록에 포함.
+
+---
+
 ## 처리 원칙
 
 - 분기별 1회 (phase 종료 시점) 상위 3건 해소

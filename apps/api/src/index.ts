@@ -4,6 +4,7 @@ import { createLogger, type LoggerEnvironment } from '@thepick/shared';
 import type { RateLimiter } from './auth/rate-limit.js';
 import { createAuthRoutes } from './auth/routes.js';
 import { cachePolicyMiddleware } from './middleware/cache-policy.js';
+import { createProgressRoutes } from './progress/routes.js';
 import { createWebhookRoutes } from './webhooks/payment.js';
 
 /**
@@ -51,13 +52,12 @@ function resolveLoggerEnv(envName: string | undefined): LoggerEnvironment {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// CORS — Level 3 감사 M-A4 해소 (2026-04-22)
-// /api/auth/* 만 적용. webhook 은 서버→서버라 CORS 불필요.
-// credentials=true: refresh/access 쿠키 전송 필수.
-app.use(
-  '/api/auth/*',
-  cors({
-    origin: (origin): string | null => {
+// CORS — Level 3 감사 M-A4 해소 (2026-04-22) + Step 1-5 (나) Pass 1 C-1 확장 (2026-04-23)
+// 인증 쿠키 기반 보호 라우트 전체에 적용. webhook 은 서버→서버라 CORS 불필요.
+// credentials=true: tp_access / tp_refresh 쿠키 전송 필수.
+function buildCorsOptions() {
+  return {
+    origin: (origin: string | undefined): string | null => {
       if (!origin) return null;
       return CORS_ALLOWED_ORIGINS.includes(origin) ? origin : null;
     },
@@ -66,8 +66,10 @@ app.use(
     allowMethods: ['GET', 'POST', 'OPTIONS'],
     exposeHeaders: ['Retry-After'],
     maxAge: 600,
-  }),
-);
+  };
+}
+app.use('/api/auth/*', cors(buildCorsOptions()));
+app.use('/api/progress/*', cors(buildCorsOptions()));
 
 // L1 Edge Cache 헤더 자동 주입 (ADR-008 §8) — 4-Pass C-3 반영
 // **첫 번째** 미들웨어로 등록: 어떤 경로에서 어떤 이유로 early-return 되어도
@@ -97,6 +99,7 @@ app.use('*', async (c, next): Promise<void | Response> => {
 });
 
 app.route('/api/auth', createAuthRoutes());
+app.route('/api/progress', createProgressRoutes());
 app.route('/api/webhooks', createWebhookRoutes());
 
 app.get('/', (c) => {

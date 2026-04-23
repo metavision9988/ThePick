@@ -1,178 +1,156 @@
 ---
 phase: 1
-step: 1-4
-approved_by: Session 10 진산 "plan 대로 진행해" (2026-04-22 KST)
+step: 1-5 (나) — 진도 API 엔진 통합 검증
+approved_by: 진산 "승인할 테니 진행해줘" (2026-04-23 KST)
 scope:
-  - docs/plans/current.plan.md (본 파일 — Step 1-4 정의)
-  - docs/adr/ADR-005-authentication-pbkdf2-sha256.md (§Addendum — JWT Phase 2 → Phase 1 조기 도입)
-  - migrations/0009_sessions.sql (신규 — sessions 테이블 + UNIQUE + INDEX + NOT NULL/status 트리거)
-  - apps/api/src/db/schema.ts (Drizzle sessions 테이블 선언)
-  - packages/shared/src/constants/auth.ts (신규 — JWT/세션 상수)
-  - packages/shared/src/index.ts (신규 상수 재노출)
-  - apps/api/src/auth/session.ts (신규 — JWT sign/verify + refresh session CRUD + rotation + revoke)
-  - apps/api/src/auth/__tests__/session.test.ts (신규)
-  - apps/api/src/auth/middleware/require-auth.ts (신규 — access token 검증 미들웨어)
-  - apps/api/src/auth/middleware/__tests__/require-auth.test.ts (신규)
-  - apps/api/src/auth/routes.ts (기존 /login, /logout 수정 + /refresh 신설)
-  - apps/api/src/auth/__tests__/routes.test.ts (기존, Set-Cookie / Clear-Cookie / refresh rotation 추가)
-  - apps/api/src/index.ts (Bindings 타입에 JWT_SECRET 추가)
-  - apps/api/wrangler.toml (dev JWT_SECRET placeholder + 32B 이상)
-  - .claude/tech-debt.md (해소 체크 + 신규 TD 등록)
+  - docs/plans/current.plan.md (본 파일)
+  - apps/api/src/progress/routes.ts (신규 — /api/progress/* 3 엔드포인트)
+  - apps/api/src/progress/__tests__/routes.test.ts (신규 단위 테스트)
+  - apps/api/src/index.ts (progress 라우터 마운트 + require-auth 연결)
+  - apps/api/src/__tests__/scenarios.test.ts (S22~S27 추가)
+  - apps/api/src/db/schema.ts (변경 없음 — user_progress 기존 테이블 활용)
+  - .claude/tech-debt.md (TD-028 해소 경로 진척 / 신규 TD 등록)
 risk_level: L3
 ---
 
 ## 목적
 
-Phase 1 Step 1-1 이후 `/api/auth/login` 은 사용자를 DB 검증만 수행하고 **세션 토큰을 발급하지 않는다**.
-`/api/auth/logout` 은 204 stub (Step 1-2 C-Minor, CRITICAL RULE #2 경계).
-결과: Phase 1 downstream (`/api/progress/*`, 구독 상태, 사용자 대면 학습 기능) 모두 blocked.
+Step 1-4 까지 구축한 **인증 엔진(Access JWT + D1 Refresh + require-auth 미들웨어)** 을 실제 보호 라우트에 **처음 마운트** 하여 엔진이 E2E 로 동작함을 검증한다.
 
-ADR-005:187 원안은 **JWT HttpOnly+Secure+SameSite=Strict 쿠키 (Phase 2)** 였으나,
-실제 Phase 1 완결을 위해 **Phase 1 Step 1-4 로 조기 도입**한다. 기획 경계 이동이므로
-`ADR-005 §Addendum` 에 근거 기록 (CRITICAL RULE #1 준수).
+진산님 비전(= 자격증 도메인별 Graph RAG + 훈련 콘텐츠 자동 생성 엔진 MVP)의 **엔진 기초공사 최종 합격증**:
 
-## 기술 선택 근거 (PITR 결과)
+- 로그인 → 보호 API 호출 → D1 읽기/쓰기 → 응답 전체 파이프라인 실물 확인
+- `require-auth` 미들웨어가 실제 라우트에 연결되어 위조/만료/미인증을 차단하는지 검증
+- 시나리오 테스트로 수험생/공격자 관점에서 엔진이 기대대로 동작함을 증명
+- user_progress 기존 테이블을 그대로 활용 (FSRS 알고리즘은 Phase 2 이월 — 여기서는 read/write 경로만)
 
-**선정: Access JWT (HS256, 15min TTL) + D1-backed Refresh Token (opaque, 30day TTL, rotation).**
+**Step 1-5 (가) 교재 Graph 구축**(본격 콘텐츠 적재)은 본 (나) 통과 후 별도 plan 으로 진입.
 
-비교 대상 6종 (자체 JWT 단독 / JWT+D1 refresh / D1-only opaque / CF Access / iron-session / DO) 중:
+## 기술 선택 근거 (PITR 간단판)
 
-- D1-backed refresh = revocation 가능 (환불/구독 취소/기기 분실 시 즉시 세션 차단)
-- Access JWT 15min = 상태 없이 매 요청 검증, D1 lookup 불필요
-- Rotation = 탈취 시 무한 재발급 차단
-- Cloudflare Free tier 친화적 (ADR-006 준수, D1 5M reads/day 충분)
-- OAuth 2.0 표준 → 팀 온보딩 유리
-- `hono/utils/jwt` 내장 사용 (외부 의존성 0)
+**선정: 최소 3개 엔드포인트 + user_progress 기존 테이블 직접 사용 + 신규 study_events 테이블 만들지 않음.**
+
+비교:
+
+- (A) study_events 테이블 신규 + FSRS 엔진 본격 — 스코프 초과, Phase 2 본격 진입
+- (B) **user_progress 기존 테이블 활용 + 3 엔드포인트 최소 슬라이스** ← 선정
+- (C) 엔드포인트 1개(summary) 만 — require-auth 검증은 되나 write 경로 미검증
+
+B 선정 이유:
+
+- **엔진 통합 검증**이 목적. 콘텐츠 기능 구현이 아님.
+- user_progress 는 이미 schema 에 존재 (FSRS 필드 포함). 별도 migration 불필요.
+- write 경로(POST /review) + read 경로(GET /summary, /due) 둘 다 포함 → E2E 완결
+- Phase 2 에서 FSRS 알고리즘 본격 도입 시 본 구조 그대로 확장 가능
 
 ## 대상 변경 상세
 
-### 1. migrations/0009_sessions.sql (L3, 신규)
+### 1. `apps/api/src/progress/routes.ts` (신규)
 
-```sql
-CREATE TABLE sessions (
-  id TEXT PRIMARY KEY,                      -- uuid v7
-  user_id TEXT NOT NULL,                    -- FK users.id
-  refresh_token_hash TEXT NOT NULL UNIQUE,  -- SHA-256(refresh_token) hex, 원본 미저장
-  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-  last_used_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-  expires_at TEXT NOT NULL,                 -- created_at + 30day
-  revoked_at TEXT,                          -- NULL = active
-  user_agent TEXT,                          -- 감사용 (잘림: 첫 256자)
-  ip_hash TEXT,                             -- SHA-256(ip + pepper) hex, PII 방어
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+3 엔드포인트:
 
-CREATE INDEX idx_sessions_user_active ON sessions(user_id, revoked_at, expires_at);
-CREATE INDEX idx_sessions_expires ON sessions(expires_at) WHERE revoked_at IS NULL;
+**`GET /api/progress/summary`**
+
+- 입력: 인증된 사용자 (userId from require-auth)
+- D1: `SELECT COUNT(*), SUM(correct_count), SUM(total_reviews) FROM user_progress WHERE user_id = ?`
+- 출력: `{ totalCards, totalReviews, correctCount, accuracy }` (0건이면 0으로)
+
+**`POST /api/progress/review`**
+
+- 입력: `{ nodeId: string, cardType: CardType, correct: boolean }`
+- 검증: Zod schema. cardType enum 확인. nodeId 존재 확인 (knowledge_nodes FK — Step 1-5 가 진입 전에는 빈 테이블일 수 있으므로 FK 확인은 graceful)
+- D1: user_progress 행이 있으면 `totalReviews += 1, correctCount += correct ? 1 : 0, updatedAt = now` UPDATE. 없으면 INSERT.
+- 출력: `{ ok: true, progressId }`
+- **출처 추적성 메모**: nodeId → knowledge_nodes.page_ref 를 응답에 surface 할 수 있는 경로 예약 (현재 빈 테이블이라 null). Phase 2 교재 Graph 적재 후 즉시 활성.
+
+**`GET /api/progress/due`**
+
+- 입력: 인증된 사용자
+- D1: `SELECT id, node_id, card_type, fsrs_next_review FROM user_progress WHERE user_id = ? AND (fsrs_next_review IS NULL OR fsrs_next_review <= datetime('now')) LIMIT 50`
+- 출력: `{ items: [...], count }` (0건이면 빈 배열)
+- **FSRS 알고리즘은 Phase 2 이월.** 본 Step 은 next_review 시각 비교만 (단순 SQL).
+
+### 2. `apps/api/src/index.ts` (수정)
+
+```typescript
+import { progressRoutes } from './progress/routes';
+import { requireAuth } from './auth/middleware/require-auth';
+
+// /api/progress 이하 전체에 require-auth 미들웨어 마운트 (엔진 첫 보호 경로)
+app.use('/api/progress/*', requireAuth);
+app.route('/api/progress', progressRoutes);
 ```
 
-트리거: NOT NULL 방어 (user_id/refresh_token_hash/expires_at 빈문자열 거부), revoked_at UPDATE 허용 (운영 메타).
+### 3. `apps/api/src/progress/__tests__/routes.test.ts` (신규)
 
-### 2. packages/shared/src/constants/auth.ts (신규)
+테스트 시나리오 (8~10건):
 
-- `ACCESS_TOKEN_TTL_SECONDS = 900` (15min)
-- `REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 3600` (30day)
-- `ACCESS_TOKEN_COOKIE = 'tp_access'`
-- `REFRESH_TOKEN_COOKIE = 'tp_refresh'`
-- `MIN_JWT_SECRET_BYTES = 32` (HS256 key entropy 하한 — Step 1-3 M-4 동일 원칙)
-- `JWT_ALG = 'HS256'`
-- `REFRESH_TOKEN_BYTES = 32` (256-bit opaque)
-- `JWT_CLOCK_SKEW_SECONDS = 60` (clock skew leeway)
-- `USER_AGENT_MAX_LENGTH = 256`
+- GET /summary: 인증 성공 → 200 + 0건 집계 / INSERT 후 증가 확인
+- GET /summary: 미인증(쿠키 없음) → 401
+- GET /summary: 위조 JWT → 401
+- POST /review: 유효 payload → 200 + DB row 1건
+- POST /review: 동일 userId+nodeId+cardType 재요청 → UPDATE (row 증가 없음, totalReviews +1)
+- POST /review: 잘못된 cardType → 400 (Zod)
+- POST /review: 미인증 → 401
+- GET /due: due 없음 → 200 + 빈 배열
+- GET /due: due 1건 (fsrs_next_review 과거) → 200 + 1건 반환
+- GET /due: 다른 유저 데이터 격리 (user B 의 due 가 user A 응답에 섞이지 않음)
 
-### 3. apps/api/src/auth/session.ts (L3, 신규)
+### 4. `apps/api/src/__tests__/scenarios.test.ts` (기존 파일 확장)
 
-핵심 함수:
+**🎯 엔진 통합 검증 (S22~S27) 신규 그룹:**
 
-- `signAccessToken(userId, sessionId, secret)` → HS256 JWT 문자열
-- `verifyAccessToken(token, secret)` → `{ sub, sid, iat, exp }` 또는 null (만료/위조 모두 null)
-- `createRefreshSession(db, userId, userAgent, ipHash)` → `{ refreshToken, sessionId }`
-  - crypto.getRandomValues 32B → base64url
-  - SHA-256(token) → D1 INSERT
-  - TTL 30day
-- `verifyAndRotateRefreshSession(db, refreshToken)` → `{ sessionId, userId, newRefreshToken }` 또는 null
-  - 기존 session revoked_at UPDATE (rotation)
-  - 새 session INSERT
-- `revokeSession(db, sessionId)` → UPDATE revoked_at
-- `revokeAllUserSessions(db, userId)` → 환불/계정정지 시 사용
-- `hashRefreshToken(token)` / `hashIp(ip, pepper)` 유틸
+- **S22. 수험생이 로그인하고 학습 진도를 조회한다** — 엔진 첫 실전 호출
+- **S23. 수험생이 문제를 풀고 진도가 기록된다** — write 경로 E2E
+- **S24. 수험생이 오늘 복습할 카드를 조회한다** — read 경로 E2E
+- **S25. 로그인하지 않은 방문자가 진도 API 호출 → 401 차단** — require-auth 검증
+- **S26. 수험생 A 가 수험생 B 의 학습 데이터 접근 불가** — 격리 검증 (보안 크리티컬)
+- **S27. Access 토큰 만료 후 /refresh 갱신 → 학습 이어짐** — rotation E2E (Step 1-4 엔진 합류 검증)
 
-**JWT 서명/검증**: `hono/utils/jwt` 의 `sign` / `verify` 사용 (HS256). 외부 의존 없음.
+### 5. `.claude/tech-debt.md` (갱신)
 
-### 4. apps/api/src/auth/middleware/require-auth.ts (L3, 신규)
-
-- 쿠키 `tp_access` 읽기 → `verifyAccessToken` → `c.set('userId', ...)` / `c.set('sessionId', ...)`
-- 실패 시 401 `{ error: 'UNAUTHORIZED' }` + `WWW-Authenticate: Bearer`
-- ADR-008 §8 준수: 모든 인증 응답에 `Cache-Control: private, no-store`, `Vary: Cookie`
-
-### 5. apps/api/src/auth/routes.ts 수정
-
-- `/login` 성공 시:
-  - `createRefreshSession` → cookie `tp_refresh` (HttpOnly, Secure, SameSite=Strict, Path=/api/auth, Max-Age=30day)
-  - `signAccessToken` → cookie `tp_access` (동일 속성, Max-Age=15min, Path=/api)
-  - response body 에 `{ ok: true, userId }`
-- `/logout` (stub 해소):
-  - 쿠키에서 `tp_refresh` 읽기 → `revokeSession` (best-effort, 무효 refresh 도 204)
-  - `Set-Cookie: tp_access=; Max-Age=0` + `tp_refresh=; Max-Age=0`
-- `/refresh` (신규):
-  - `tp_refresh` 쿠키 읽기 → `verifyAndRotateRefreshSession`
-  - 성공: 새 access + refresh 쿠키 재발급 (rotation)
-  - 실패: 401 + 쿠키 clear
-
-### 6. apps/api/wrangler.toml
-
-- `[vars]` (dev): `JWT_SECRET = "dev-jwt-secret-do-not-use-in-production-32chars+"` (≥32B, mock)
-- `IP_PEPPER = "dev-ip-pepper-for-sha256-ip-hashing-32bytes+"` (IP 해시용 salt)
-- staging/production: `wrangler secret put` 경유 주입 (`[vars]` 에 올리지 않음)
-
-### 7. apps/api/src/db/schema.ts + apps/api/src/index.ts
-
-- `sessions` Drizzle 테이블 선언 (인덱스 + UNIQUE 포함, Step 1-3 M-C3 교훈)
-- `Bindings` 타입에 `JWT_SECRET?: string`, `IP_PEPPER?: string` 추가
+- TD-028 (rotation 비원자) 상태 확인 — 본 Step 은 rotation 변경 없음
+- 신규 TD: FSRS 알고리즘 Phase 2 이월 명시 (현재 fsrsInterval/fsrsStability/fsrsDifficulty 는 기본값 유지, review 시 SM-2/FSRS 미적용)
+- 신규 TD: study_events 별도 테이블(감사 로그) Phase 2 이후 검토
 
 ## 위험 분석
 
-| 위험                                               | 완화                                                                                                                                                                   |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| JWT_SECRET 유출 → 모든 기존 access token 위조 가능 | `wrangler secret put` 경유 전용. session 발급 시 `sessionId` 도 JWT payload 에 포함 → secret 교체 시 기존 access 전부 무효. Refresh 는 D1 기반이라 재로그인 없이 복구. |
-| Refresh token 탈취 후 연속 사용                    | Rotation: 매 refresh 시 이전 refresh invalidate. 동일 refresh 2회 사용 감지 시 사용자 전체 세션 파기 (revokeAllUserSessions) + 경고 로그.                              |
-| SameSite=Strict 가 이메일 링크에서 세션 날림       | login/auth 경로만 Strict. 추후 외부 링크 대응 필요 시 Lax 로 조정 (별도 ADR).                                                                                          |
-| D1 `sessions` 테이블 무한 증가                     | Step 1-5 이후 cron `DELETE WHERE expires_at < now() OR (revoked_at IS NOT NULL AND revoked_at < now()-7day)`. 우선은 INSERT.                                           |
-| 환불/구독 취소 시 세션 차단 미연동                 | `revokeAllUserSessions(userId)` 유틸 제공. Phase 3 결제 이벤트 처리기에서 호출. 본 Step 은 함수만 제공.                                                                |
-| Clock skew (서버/클라이언트 시간 불일치)           | `verifyAccessToken` 에 60s leeway 허용. JWT iat/exp 에 여유 반영.                                                                                                      |
-| `hono/utils/jwt` API 미지원/변경                   | Hono 4.12.14 기준 안정. 실패 시 Web Crypto 직접 구현 (fallback 코드는 작성 보류 — over-engineering).                                                                   |
-| IP_PEPPER 유출 시 IP hash 역산                     | D1 dump + PEPPER 둘 다 leak 해야 위험. PEPPER 는 Cloudflare secret. PII 최소화 원칙 — IP hash 는 감사/rate-limit 보조용.                                               |
-| 쿠키 SameSite=Strict + iOS PWA 호환성              | 현재 Phase 1 scope 외 (프론트엔드 미구축). Phase 2 프론트 구현 시 실측 필요.                                                                                           |
+| 위험                                                                    | 완화                                                                                                                                                                                                 |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| knowledge_nodes FK 확인 누락 → 임의 nodeId 로 user_progress INSERT 가능 | Zod 검증 + POST /review 에서 `SELECT id FROM knowledge_nodes WHERE id = ? LIMIT 1` 선확인. 미존재 시 404. Step 1-5 (가) 적재 전에는 빈 테이블이므로 모든 nodeId 404 — 정상 동작.                     |
+| 다른 사용자 데이터 유출                                                 | 모든 D1 쿼리 `WHERE user_id = ?` 첫 조건. 테스트 S26 에서 명시 검증.                                                                                                                                 |
+| FSRS 미구현 상태에서 /due 결과 의미 없음                                | 문서화: "FSRS 알고리즘 Phase 2 이월. 현 Step 은 next_review 시각 비교만". 응답 스키마는 유지하여 Phase 2 에 구현체만 교체.                                                                           |
+| user_progress UPSERT 경쟁 조건 (동시 요청 2건)                          | D1 serializes. `INSERT ... ON CONFLICT(user_id, node_id, card_type) DO UPDATE` 패턴. 유니크 인덱스는 본 Step 에서 추가하지 않음 — Phase 2 FSRS 설계 시 결정 (현재는 수동 SELECT then UPDATE/INSERT). |
+| require-auth 미들웨어 첫 실전 노출 → 예외 상황 미발견                   | 시나리오 S25/S27 로 미인증/만료 경로 커버. 4-Pass Surgeon 에서 null/undefined 경로 재점검.                                                                                                           |
+| 출처 추적성 구조가 이 Step 에서 미완성                                  | 본 Step 은 "엔진 확인"이 목적. citation surface 는 Phase 2 Step 1-5 (가) 교재 Graph 적재 시 본격. 스키마 변경 없음.                                                                                  |
+| Zod 의존성 이미 존재 확인 필요                                          | apps/api/package.json 확인 → 없으면 추가 (Hono 친화적, 번들 영향 ~14KB).                                                                                                                             |
 
 ## 검증 계획
 
 - [ ] `pnpm --filter @thepick/api typecheck` 0 errors
-- [ ] `pnpm -r lint` 14 packages 전부 통과 (Hard Rule 17 포함)
-- [ ] `pnpm --filter @thepick/api test` — 기존 93건 유지 + 신규 15~20건:
-  - session.test: sign/verify/expired/tampered/rotation/revoke/hash 8+ 케이스
-  - require-auth.test: 유효/만료/위조/미주입 4 케이스
-  - routes.test: login Set-Cookie 2종 / logout Clear-Cookie / refresh rotation / refresh after revoke 401 / refresh reuse (탈취 시나리오) 전체 세션 파기
-- [ ] `pnpm --filter @thepick/api build` 성공, Bindings 에 `JWT_SECRET` + `IP_PEPPER` 노출 확인
-- [ ] Hard Rule 15/16/17 준수 grep 0건
-- [ ] Level 2 **4-Phase 독립 에이전트 리뷰** (보안 크리티컬 → Phase A/B/C/D 전부 필수)
-- [ ] 재리뷰 Critical 0 / Major 0 확인
-- [ ] ADR-005 §Addendum 작성 완료
-- [ ] `.claude/tech-debt.md` 갱신 (해소 항목 + 신규 등록)
+- [ ] `pnpm -r lint` 14 packages 통과 (Hard Rule 15/16/17 grep 0건)
+- [ ] `pnpm --filter @thepick/api test` 기존 161+ tests 유지 + 신규 15~20 tests (routes.test + scenarios S22~S27)
+- [ ] `pnpm --filter @thepick/api build` 성공
+- [ ] require-auth 마운트 라우트에서 미인증 호출 전부 401 확인 (Grep으로 `/api/progress/*` 방어 경로 검증)
+- [ ] 시나리오 S26 (사용자 격리) 실제 통과 → 증거 캡처
+- [ ] **4-Pass 독립 에이전트 리뷰** 필수 (Surgeon / Architect / Advocate / Contract)
+- [ ] 재리뷰 Critical 0 / Major ≤ 2 (Minor 는 TD 이월 가능)
 
 ## 롤백 전략
 
-- migrations/0009 실패 시: `DROP TABLE sessions` (FK 없으므로 안전)
-- JWT 키 유출 의심 시: `wrangler secret put JWT_SECRET` 재발급 → 모든 access token 즉시 무효. Refresh 는 D1 기반이라 유지되지만 access 재발급 실패 시 강제 재로그인.
-- 쿠키 SameSite 정책 문제 발견 시: `routes.ts` 에서 `Strict` → `Lax` 단일 수정 후 deploy. 기존 세션 유지.
+- routes.ts 신규 파일 → 단순 삭제
+- index.ts `app.use` + `app.route` 2줄 제거
+- scenarios.test.ts 추가 블록 revert
+- DB 스키마 변경 **없음** — 롤백 리스크 최소
+
+## 범위 외 (Step 1-5 가 또는 Phase 2 이월)
+
+- **Step 1-5 (가)** 교재 Graph 구축 (BATCH 1~7 순차 적재) — 본 (나) 통과 후 별도 plan
+- **Phase 2** FSRS v4.5 알고리즘 본격 구현 (현재는 필드만 존재, 알고리즘 미적용)
+- **Phase 2** study_events 감사 로그 테이블 검토
+- **Phase 2** 출처 추적성 `citations` 구조 본격 설계 (수험자 "근거 보기" UX 포함)
+- **Phase 2** 문제 자동 생성기 + 근거 역방향 검증 레이어
 
 ## 승인 기록
 
-- Session 10 진산 "중요하고 급한 것 부터 순차적으로 진행" + "재평가 후보 순서대로" + "plan 대로 진행해" (2026-04-22)
-
-## 범위 명시 이월 (Step 1-4 scope 외)
-
-- **Step 1-5**: sessions 테이블 TTL cron 삭제 루틴 (Cloudflare Cron Trigger)
-- **Step 1-5 이후**: CSRF 토큰 (double-submit 패턴)
-- **Phase 2**: 프론트엔드 쿠키 처리 + PWA 오프라인 refresh 전략 + session 관리 UI
-- **Phase 3+**: OAuth Social Login (Google/Kakao), 2FA
-- **Phase 3 결제 연동**: 환불/구독 취소 시 `revokeAllUserSessions(userId)` 호출 지점 구현
+- 진산 "승인할 테니 진행해줘" (2026-04-23 KST, 6-페르소나 감사 재정렬 + 출처 추적성 요구 명시 직후)

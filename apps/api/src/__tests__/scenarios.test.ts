@@ -31,6 +31,7 @@ import {
 } from '@thepick/shared';
 import { createAuthRoutes } from '../auth/routes.js';
 import { createWebhookRoutes } from '../webhooks/payment.js';
+import { createProgressRoutes } from '../progress/routes.js';
 import { createRefreshSession, signAccessToken, verifyAccessToken } from '../auth/session.js';
 import type { RateLimiter } from '../auth/rate-limit.js';
 import { createD1FromSqlite, type SqliteBackedD1 } from './helpers/d1-from-sqlite.js';
@@ -798,5 +799,165 @@ describe('🔒 엔진 내부 검증', () => {
       webhookEnv(),
     );
     expect(resOver.status, '32KB 초과 → 413').toBe(413);
+  });
+});
+
+// ===========================================================================
+// 🎯 엔진 통합 검증 (S22 ~ S27) — Step 1-5 (나)
+// "로그인 → 보호 API 호출 → D1 조회/업데이트 → 응답" 파이프라인 실물 확인.
+// require-auth 미들웨어를 /api/progress/* 에 처음 마운트한 결과를 검증한다.
+// ===========================================================================
+
+function progressEnv(overrides: EnvOverrides = {}) {
+  return {
+    DB: ctx.db,
+    ENVIRONMENT: overrides.ENVIRONMENT ?? 'test',
+    JWT_SECRET: 'JWT_SECRET' in overrides ? overrides.JWT_SECRET : VALID_JWT_SECRET,
+  };
+}
+
+function seedKnowledgeNode(nodeId: string): void {
+  ctx.raw
+    .prepare(
+      `INSERT INTO knowledge_nodes (id, type, name, version_year, truth_weight, status)
+       VALUES (?, 'CONCEPT', '시나리오 테스트 노드', 2026, 5, 'approved')`,
+    )
+    .run(nodeId);
+}
+
+async function progressRequest(
+  path: string,
+  init: RequestInit,
+  token: string | null,
+): Promise<Response> {
+  const app = createProgressRoutes();
+  const headers = new Headers(init.headers);
+  if (token !== null) {
+    headers.set('cookie', `${ACCESS_TOKEN_COOKIE}=${token}`);
+  }
+  return app.request(path, { ...init, headers }, progressEnv());
+}
+
+describe('🎯 엔진 통합 검증 — 인증 + 진도 API E2E', () => {
+  beforeEach(() => mockHibpSafe());
+
+  it('S22. 수험생이 로그인하고 진도 요약을 조회한다 — 엔진 첫 실전 호출', async () => {
+    const regRes = await registerUser(TEST_EMAIL);
+    expect(regRes.status).toBe(201);
+
+    const loginRes = await login(TEST_EMAIL);
+    expect(loginRes.status).toBe(200);
+    const accessToken = parseCookie(loginRes.headers.get('set-cookie') ?? '', ACCESS_TOKEN_COOKIE);
+    expect(accessToken).not.toBeNull();
+
+    const res = await progressRequest('/summary', { method: 'GET' }, accessToken);
+    expect(res.status, '로그인 쿠키로 보호 API 호출 성공').toBe(200);
+    const body = (await res.json()) as {
+      totalCards: number;
+      totalReviews: number;
+      correctCount: number;
+    };
+    expect(body.totalCards).toBe(0);
+    expect(body.totalReviews).toBe(0);
+    expect(body.correctCount).toBe(0);
+  });
+
+  it('S23. 수험생이 문제를 풀고 진도가 기록된다 — write 경로 E2E', async () => {
+    await registerUser(TEST_EMAIL);
+    const loginRes = await login(TEST_EMAIL);
+    const accessToken = parseCookie(loginRes.headers.get('set-cookie') ?? '', ACCESS_TOKEN_COOKIE);
+    const nodeId = 'CONCEPT-SCENARIO-S23';
+    seedKnowledgeNode(nodeId);
+
+    const writeRes = await progressRequest(
+      '/review',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ nodeId, cardType: 'flashcard', correct: true }),
+      },
+      accessToken,
+    );
+    expect(writeRes.status, '정답 기록 성공').toBe(201);
+
+    const summaryRes = await progressRequest('/summary', { method: 'GET' }, accessToken);
+    const summary = (await summaryRes.json()) as { totalReviews: number; correctCount: number };
+    expect(summary.totalReviews, 'D1 반영 확인').toBe(1);
+    expect(summary.correctCount).toBe(1);
+  });
+
+  it('S24. 수험생이 오늘 복습할 카드를 조회한다 — read 경로 E2E', async () => {
+    await registerUser(TEST_EMAIL);
+    const loginRes = await login(TEST_EMAIL);
+    const accessToken = parseCookie(loginRes.headers.get('set-cookie') ?? '', ACCESS_TOKEN_COOKIE);
+    const userId = getUserId(TEST_EMAIL);
+    const nodeId = 'CONCEPT-SCENARIO-S24';
+    seedKnowledgeNode(nodeId);
+    ctx.raw
+      .prepare(
+        `INSERT INTO user_progress (id, user_id, node_id, card_type, fsrs_next_review)
+         VALUES (?, ?, ?, 'flashcard', datetime('now', '-1 day'))`,
+      )
+      .run(crypto.randomUUID(), userId, nodeId);
+
+    const res = await progressRequest('/due', { method: 'GET' }, accessToken);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { items: Array<{ nodeId: string }>; count: number };
+    expect(body.count, '오늘 복습 1건').toBe(1);
+    expect(body.items[0]!.nodeId).toBe(nodeId);
+  });
+
+  it('S25. 로그인하지 않은 방문자가 진도 API 호출 → 401 차단', async () => {
+    const res = await progressRequest('/summary', { method: 'GET' }, null);
+    expect(res.status, 'require-auth 마운트 검증').toBe(401);
+  });
+
+  it('S26. 수험생 A 는 수험생 B 의 학습 데이터에 접근할 수 없다 — 사용자 격리', async () => {
+    await registerUser('a@example.com');
+    await registerUser('b@example.com');
+    const loginA = await login('a@example.com');
+    const tokenA = parseCookie(loginA.headers.get('set-cookie') ?? '', ACCESS_TOKEN_COOKIE);
+    const userIdB = getUserId('b@example.com');
+    const nodeId = 'CONCEPT-SCENARIO-S26';
+    seedKnowledgeNode(nodeId);
+    // B 만 진도 있음
+    ctx.raw
+      .prepare(
+        `INSERT INTO user_progress (id, user_id, node_id, card_type, total_reviews, correct_count)
+         VALUES (?, ?, ?, 'flashcard', 100, 99)`,
+      )
+      .run(crypto.randomUUID(), userIdB, nodeId);
+
+    const res = await progressRequest('/summary', { method: 'GET' }, tokenA);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { totalCards: number; totalReviews: number };
+    expect(body.totalCards, 'A 응답에 B 데이터 없음').toBe(0);
+    expect(body.totalReviews).toBe(0);
+  });
+
+  it('S27. Access 만료 → /refresh 재발급 → 학습 이어짐 — rotation E2E', async () => {
+    await registerUser(TEST_EMAIL);
+    const loginRes = await login(TEST_EMAIL);
+    const setCookieLogin = loginRes.headers.get('set-cookie') ?? '';
+    const refreshBefore = parseCookie(setCookieLogin, REFRESH_TOKEN_COOKIE);
+    expect(refreshBefore).not.toBeNull();
+
+    const refreshApp = createAuthRoutes();
+    const refreshRes = await refreshApp.request(
+      '/refresh',
+      {
+        method: 'POST',
+        headers: { cookie: `${REFRESH_TOKEN_COOKIE}=${refreshBefore}` },
+      },
+      authEnv(),
+    );
+    expect(refreshRes.status, 'rotation 성공').toBe(200);
+    const setCookieRefresh = refreshRes.headers.get('set-cookie') ?? '';
+    const accessAfter = parseCookie(setCookieRefresh, ACCESS_TOKEN_COOKIE);
+    expect(accessAfter, '새 access 발급').not.toBeNull();
+
+    // 새 access 로 보호 API 호출 정상
+    const protectedRes = await progressRequest('/summary', { method: 'GET' }, accessAfter);
+    expect(protectedRes.status, '재발급 access 로 보호 API 정상').toBe(200);
   });
 });
