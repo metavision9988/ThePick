@@ -33,9 +33,17 @@ export interface RateLimitCheckOptions {
 /**
  * 현재 분(bucket) 의 요청 카운트를 1 증가시키고, 한도 초과 시 예외 throw.
  *
- * UPSERT 패턴: INSERT ... ON CONFLICT DO UPDATE.
- * 동시성: D1 은 단일 region serializable, race 도 크게 우려 없음.
- * 다만 Workers 간 동시 요청은 약간 초과 가능 (허용 오차 ±10%).
+ * UPSERT + RETURNING 단일 쿼리 (CR-2 수정): 이전에는 INSERT ... UPDATE 후 별도
+ * SELECT count 로 2 round-trip 이었다. 동시 요청 사이 window 에서 두 SELECT 가
+ * 서로의 증가분을 봐 실측 한도가 80~100/min 으로 확장되는 race 가 있었음.
+ * RETURNING count 로 원자적 1 round-trip 화 → Workers 간 동시성 오차 최소화.
+ *
+ * D1 RETURNING 지원: SQLite 3.35+ (D1 은 3.45+). UPSERT 의 DO UPDATE 분기에서도
+ * RETURNING 은 업데이트 후 값을 반환한다.
+ *
+ * 잔여 race (후속 TD): D1 이 Workers 간 트랜잭션 격리는 serializable 이나,
+ * 단일 UPSERT 문 내부도 여러 Workers 가 동시에 실행할 경우 SQLite 의
+ * BEGIN EXCLUSIVE 가 순차 처리 → 정상 증가. 데이터 무결성 OK, 처리량만 저하.
  */
 export async function checkAndIncrementRateLimit(
   db: D1Database,
@@ -46,24 +54,16 @@ export async function checkAndIncrementRateLimit(
   const now = (options.now ?? (() => new Date()))();
   const bucketMinute = formatBucketMinute(now);
 
-  // UPSERT — 카운트 1 증가 (없으면 1 로 생성).
-  await db
+  // UPSERT + RETURNING — 카운트 1 증가 (없으면 1 로 생성) 후 최종 count 원자 반환.
+  const row = await db
     .prepare(
       `INSERT INTO rate_limits (user_id, bucket_minute, count, last_updated_at)
        VALUES (?, ?, 1, ?)
        ON CONFLICT(user_id, bucket_minute)
-       DO UPDATE SET count = count + 1, last_updated_at = ?`,
+       DO UPDATE SET count = count + 1, last_updated_at = ?
+       RETURNING count`,
     )
     .bind(userId, bucketMinute, now.toISOString(), now.toISOString())
-    .run();
-
-  const row = await db
-    .prepare(
-      `SELECT count FROM rate_limits
-       WHERE user_id = ? AND bucket_minute = ?
-       LIMIT 1`,
-    )
-    .bind(userId, bucketMinute)
     .first<{ count: number }>();
 
   const count = Number(row?.count ?? 0);

@@ -338,7 +338,8 @@ async function cmdList(args: string[]): Promise<ExitCode> {
       LIMIT ${limit}
     `;
     const stmt = localDb.db.prepare(sql).bind(targetType, ...binds);
-    const result = await stmt.run<{ id: string; current_status: string }>();
+    // SELECT 는 all() 사용 — run() 은 DML 전용으로 results: [] 반환 (CR-1).
+    const result = await stmt.all<{ id: string; current_status: string }>();
     const rows = result.results ?? [];
     const filtered = values.status ? rows.filter((r) => r.current_status === values.status) : rows;
 

@@ -145,8 +145,9 @@ export function createProgressRoutes(): Hono<ProgressEnv> {
     const userId = c.var.userId;
 
     // TD-030 방어선 1: per-user 분당 요청 상한. enumeration oracle 열거 속도 제한.
+    // review 라우트는 hot-path enumeration 표적 — 기본 60/min 대신 20/min 으로 보수 하향 (CR-2).
     try {
-      await checkAndIncrementRateLimit(c.env.DB, userId);
+      await checkAndIncrementRateLimit(c.env.DB, userId, { limitPerMinute: 20 });
     } catch (err) {
       if (err instanceof RateLimitExceeded) {
         c.header('Retry-After', String(err.retryAfterSeconds));

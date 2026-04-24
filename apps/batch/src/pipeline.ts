@@ -186,6 +186,13 @@ export interface PipelineContext {
    * 가-0 단계 smoke test 및 통합 테스트용. 실제 Claude API 호출 없음.
    */
   readonly fixtureContract?: KnowledgeContract;
+  /**
+   * PDF pages 주입 (non-fixture 통합 테스트용 — CR-5b).
+   * 실제 pdfplumber subprocess 호출 없이 Stage 1 을 injected 상태로 표시한 뒤
+   * Stage 2 (section_split) / Stage 3 (batch_structurize) 를 **실경로로** 수행한다.
+   * fixtureContract 가 있으면 본 필드는 무시된다.
+   */
+  readonly pdfPagesOverride?: Awaited<ReturnType<typeof extractPdf>>;
 }
 
 /**
@@ -309,7 +316,19 @@ async function stagePdfExtract(
       durationMs: Date.now() - started,
     };
   }
-  if (!ctx.pdfPath) throw new Error('pdfPath is required (or use fixtureContract)');
+  if (ctx.pdfPagesOverride) {
+    // non-fixture 통합 테스트 경로 (CR-5b) — pdfplumber subprocess 우회 후
+    // Stage 2/3 는 실경로로 진행.
+    state.pdfPages = ctx.pdfPagesOverride;
+    return {
+      stage: 'pdf_extract',
+      status: 'success',
+      message: `Injected ${ctx.pdfPagesOverride.extractedPages}/${ctx.pdfPagesOverride.totalPages} pages (test override)`,
+      durationMs: Date.now() - started,
+    };
+  }
+  if (!ctx.pdfPath)
+    throw new Error('pdfPath is required (or use fixtureContract / pdfPagesOverride)');
   const pagesArg = `${ctx.config.pageStart}-${ctx.config.pageEnd}`;
   const extracted = await extractPdf(ctx.pdfPath, { pages: pagesArg });
   state.pdfPages = extracted;

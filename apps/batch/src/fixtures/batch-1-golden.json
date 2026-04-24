@@ -5,7 +5,9 @@
     "description": "적과전 종합위험 Golden Tests (교재 p.403~434 실데이터)",
     "source": "docs/manual/2026년도 이론서_수정본(26.3.31.).pdf",
     "relatedTests": "packages/formula-engine/src/__tests__/batch1-golden.test.ts",
-    "qg2Requirement": "100% accuracy vs 교재 예시값"
+    "qg2Requirement": "100% accuracy vs 교재 예시값",
+    "criterion": "각 테스트의 inputs/expectedValue 는 교재 해당 page_ref 원문 예시를 1:1 복제. 산식 정의·변수 의미는 교재 원문 기준이며 formulas 레지스트리 ID(F-NN)와 매칭. QG-2 게이트는 '파이프라인 산출 == 교재 예시값' 의 완전 일치 검증이지 유닛 연산 검증이 아니다.",
+    "verification_protocol": "신규 추가/수정 시 (1) 교재 원문 페이지 확인 후 source_page 정확히 기재, (2) inputs 변수명이 formulas 레지스트리 equation_template 의 변수명과 일치, (3) description 에 산식명 + 변수 해석 + 교재 계산 예시 명시. 원문 대조 없이 임의 값 주입 금지."
   },
   "tests": [
     {
@@ -38,7 +40,7 @@
       "expectedValue": 6,
       "tolerance": 0.0001,
       "source_page": 413,
-      "description": "침수주수: 20 × (300/1000) = 6"
+      "description": "침수주수 환산: flooded_trees × (flooded_fruits / total_fruits) → 20 × (300/1000) = 6. 침수 피해주수를 '침수 과실비율'로 환산한 주수 기준값. BATCH 1 dry-run 시 교재 p.413 원문 예시와 inputs/expectedValue 재대조 필요 (criterion 참조)."
     },
     {
       "formulaId": "F-06",

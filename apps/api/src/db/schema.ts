@@ -1,17 +1,19 @@
 /**
  * ThePick Graph RAG — Drizzle ORM Schema
  *
- * 13 tables (base 6 + extension 3 + auth 2 + webhook 1 + audit 1):
+ * 14 tables (base 6 + extension 3 + auth 2 + webhook 1 + audit 1 + rate 1):
  *   knowledge_nodes, knowledge_edges, formulas, constants,
  *   revision_changes, exam_questions,
  *   mnemonic_cards, user_progress, topic_clusters,
  *   users (Phase 1 Step 1-1 — migrations/0006),
  *   webhook_events (Phase 1 Step 1-2 — migrations/0008),
  *   sessions (Phase 1 Step 1-4 — migrations/0009),
- *   status_transitions (Phase 1 Step 1-5 — migrations/0010)
+ *   status_transitions (Phase 1 Step 1-5 — migrations/0010),
+ *   rate_limits (Phase 1 Step 1-5 가-0 — migrations/0012)
  *
  * Temporal Graph pattern: UPDATE 금지 → INSERT + SUPERSEDES edge
  * (users 테이블은 예외 — last_login_at / subscription_* 변경 빈도로 일반 UPDATE 허용)
+ * (rate_limits 테이블도 예외 — UPSERT count 증가 고빈도, Temporal 비대상)
  *
  * 상태 전이 패턴 (migrations/0010):
  *   knowledge_nodes/formulas/constants 는 UPDATE 전면 차단되므로
@@ -20,7 +22,15 @@
  *   실시간 현재 상태는 status_transitions 최신 레코드 (없으면 DEFAULT 'draft').
  */
 
-import { sqliteTable, text, integer, real, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
+import {
+  sqliteTable,
+  text,
+  integer,
+  real,
+  uniqueIndex,
+  index,
+  primaryKey,
+} from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import type { TransitionStatus, TransitionTargetType } from '@thepick/shared';
 
@@ -507,3 +517,30 @@ export type StatusTransition = typeof statusTransitions.$inferSelect;
 export type NewStatusTransition = typeof statusTransitions.$inferInsert;
 // 런타임 상수는 Drizzle enum 선언용으로 유지하되, 타입은 @thepick/shared 에서 단일 선언.
 export type { TransitionTargetType, TransitionStatus };
+
+// ============================================================
+// rate_limits — per-user 분 단위 요청 카운터 (migrations/0012)
+// ============================================================
+// UPSERT 대상, Temporal 예외. count 는 고빈도 증가 (UPDATE 차단 트리거 없음).
+// TD-030 enumeration oracle 방어: /api/progress/review 의 404 ↔ 200 분기를
+// per-user 분당 요청 상한으로 감쇠.
+//
+// GC 전략(TD 이월): 24시간 이상 경과한 bucket 은 Cron Trigger 로 주기 삭제 예정.
+export const rateLimits = sqliteTable(
+  'rate_limits',
+  {
+    userId: text('user_id').notNull(),
+    bucketMinute: text('bucket_minute').notNull(),
+    count: integer('count').notNull().default(0),
+    lastUpdatedAt: text('last_updated_at')
+      .notNull()
+      .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.bucketMinute] }),
+    bucketIdx: index('idx_rate_limits_bucket').on(table.bucketMinute),
+  }),
+);
+
+export type RateLimit = typeof rateLimits.$inferSelect;
+export type NewRateLimit = typeof rateLimits.$inferInsert;

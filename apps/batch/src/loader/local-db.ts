@@ -113,9 +113,26 @@ function wrapAsD1(raw: DatabaseSync): D1Db {
       return prepared;
     },
     async batch<T = unknown>(statements: D1Stmt[]): Promise<Array<D1RunResult<T>>> {
+      // D1 프로덕션의 atomic batch 와 정합 (CR-4): BEGIN/COMMIT/ROLLBACK 으로 감쌈.
+      // 이전에는 순차 run() 만 실행해 중간 실패 시 앞 문장 commit 채로 throw 되어
+      // "원자적 적재" 주석과 실동작 괴리 — 테스트는 통과해도 프로덕션 정합 아님.
+      // SQLite BEGIN IMMEDIATE: 쓰기 잠금 즉시 획득 (동시 writer race 차단).
+      // applySqlBatch = node:sqlite raw.exec 래퍼 (child_process.exec 과 무관).
+      applySqlBatch(raw, 'BEGIN IMMEDIATE');
       const results: Array<D1RunResult<T>> = [];
-      for (const s of statements) {
-        results.push(await s.run<T>());
+      try {
+        for (const s of statements) {
+          results.push(await s.run<T>());
+        }
+        applySqlBatch(raw, 'COMMIT');
+      } catch (err) {
+        // 안전한 롤백 — 롤백 자체가 실패해도 원래 에러를 보존한다.
+        try {
+          applySqlBatch(raw, 'ROLLBACK');
+        } catch {
+          /* rollback 실패는 원래 에러 외 추가 정보 가치 없음 */
+        }
+        throw err;
       }
       return results;
     },
