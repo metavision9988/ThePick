@@ -113,6 +113,42 @@ Phase/Step 리뷰에서 "수용" 판정된 Minor 항목 누적 등록.
 
 ---
 
+---
+
+## Step 1-5 (가-0) — 3차 독립 리뷰 이월 (2026-04-24)
+
+### 해소됨 (커밋 0f62860 + a6ffc3d)
+
+- ✅ **CR-1** list 명령 stmt.all()
+- ✅ **CR-2** rate-limit UPSERT RETURNING + limitPerMinute 20 하향 + 429 sleepJitter
+- ✅ **CR-3** Drizzle schema rateLimits + NC-1 drizzle-kit 정책 주석
+- ✅ **CR-4** local-db batch BEGIN/COMMIT/ROLLBACK
+- ✅ **CR-5a** Golden F-05 criterion 주석 + verification_protocol
+- ✅ **CR-5b** non-fixture 통합 테스트 (pdfPagesOverride + mock ClaudeClient)
+- ✅ **CR-5c** ADR-010 formulas/constants status canonical
+- ✅ **NC-2** rate_limits Cron Trigger GC (+ F1 retentionDays 검증 + F4 scheduled 이중 로깅 + 비정상 count 경보)
+- ✅ **knowledge_nodes.status** `@deprecated` JSDoc (ADR-010)
+- ✅ **local-db.batch** 중첩 호출 금지 주석
+- ✅ **limitPerMinute=20** E2E 회귀 방지 테스트
+
+### 이월 — 3차 리뷰 신규 (완료 선언 가능하나 가-1 진입 전 해결 권장)
+
+- [ ] **TD-037** Scheduled 모니터링 외부 알림 (F4/NEW-S1) — Cloudflare Email Routing 또는 webhook 으로 GC 실패 실시간 알림. 현재는 logger.error + console.error 이중 로깅 + 비정상 deletedCount 경보까지만 앱 레벨 방어선. 연속 N회 실패 시 운영자 페이저로 전달 필요. Phase 2 프로덕션 런칭 전 필수.
+- [ ] **TD-038** 200/201 응답 타이밍 oracle (NEW-S2) — 404/429 는 sleepJitter 적용하나 정상 응답은 즉시. 통계 oracle 통한 nodeId 존재 여부 추정 가능(1000+ 시도 필요, rate-limit 20/min 방어로 실효 리스크 낮음). 해소안: 200 에도 jitter 또는 jitter 분포를 D1 latency p99 보다 크게.
+- [ ] **TD-039** 422/503 응답 jitter 미적용 (F7) — validation 실패 / 업스트림 실패 경로에도 일관된 jitter 적용. oracle 가치 낮으나 방어 일관성.
+- [ ] **TD-040** local-db.batch 중첩 트랜잭션 runtime 가드 (F9) — 현재 주석만 존재. 외부 BEGIN 상태에서 호출 시 silent partial commit 위험. node:sqlite 의 inTransaction API 또는 module 변수 카운터로 가드.
+- [ ] **TD-041** `@deprecated` 정적 검증 (F10/NEW-S3) — ESLint `@typescript-eslint/no-deprecated` 또는 커스텀 룰로 `knowledge_nodes.status` 사용 빌드 차단. Phase 2 status 컬럼 DROP 시까지 방어선.
+- [ ] **TD-042** Rule 16 examId 시그니처 주입 (MJ-1) — loadDraft/transitionStatus/checkAndIncrementRateLimit 래퍼 1번째 인자에 `examId: ExamId` 추가. Year 2 전환 제로코스트화.
+- [ ] **TD-043** batch-processor withRetry non-retryable 즉시 throw (MJ-3) — 400/401/403/404/422 에러는 재시도 차단. `err?.name === 'AnthropicNonRetryableError'` 문자열 비교로 역의존 회피.
+- [ ] **TD-044** draft-loader lost-update race (MJ-6) — SELECT→INSERT 사이 ID 충돌 시 `nodesInserted` 거짓 집계. `meta.changes` 기반 실 삽입 수 측정 + race 테스트 fixture.
+- [ ] **TD-045** migrations/0011 SUPERSEDES 엣지 추가 (MJ-7) — CONST-900→901 Temporal Graph 엣지 미생성. 조회 시 "어떤 상수가 어떤 상수 대체" 쿼리 실패.
+- [ ] **TD-046** mnemonic 역방향 검증 누락 (MJ-8) — Hard Limit "암기법 역방향 검증 실패 시 폐기" 미구현. 가-N 이월 명시 ADR 또는 schema-validator 확장.
+- [ ] **TD-047** 재정립서 v2.0 본문 "9 테이블" → "9 + 5 확장" 정본 갱신 — 2년차 감사 시 Silent Pivot 의심 방지. v2.1 패치 섹션 추가.
+- [ ] **TD-048** BATCH_CONFIGS 시험특화 한국어 리터럴 분리 (MJ-2) — `apps/batch/src/configs/son-hae-pyeong-ga-sa.ts` 로 이전. Rule 15 정신 준수.
+- [ ] **TD-049** F1 보강 10건 추가 통합 테스트 — Golden 불일치/고아/SUPERSEDES 순환/page_ref 누락/Ontology Lock 위반/Rule 17 정적 체크/Vision 트리거/token-cost 실패 경로/상태 downgrade 거부/migrations 멱등성. 가-1 착수 전 회귀 방지선.
+
+---
+
 ## 처리 원칙
 
 - 분기별 1회 (phase 종료 시점) 상위 3건 해소

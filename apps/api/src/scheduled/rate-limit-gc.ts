@@ -38,6 +38,15 @@ export async function purgeOldRateLimits(
   const now = (options.now ?? (() => new Date()))();
   const retentionDays = options.retentionDays ?? 2;
 
+  // F1 (3차 리뷰): retentionDays 입력 검증 — 0/음수/NaN 시 활성 bucket 삭제 방지.
+  // 현재 호출자는 default=2 만 사용하나, 향후 env var 주입 등 확장 시 silent destructive
+  // 분기를 막는다. CLAUDE.md "try-catch 에서 데이터 조용히 삭제 금지" 정신.
+  if (!Number.isFinite(retentionDays) || retentionDays < 1 || !Number.isInteger(retentionDays)) {
+    throw new Error(
+      `purgeOldRateLimits: invalid retentionDays=${retentionDays} (must be positive integer)`,
+    );
+  }
+
   const cutoffTime = new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000);
   // bucket_minute 컬럼은 'YYYY-MM-DDTHH:MM' 16자 ISO 접두사. 사전식 비교가 시각 순서와 동등.
   const cutoffBucket = cutoffTime.toISOString().slice(0, 16);

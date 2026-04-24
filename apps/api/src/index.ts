@@ -116,14 +116,28 @@ app.get('/health', (c) => {
 });
 
 /**
- * Cloudflare Workers Cron Trigger 핸들러 (NC-2).
+ * Cloudflare Workers Cron Trigger 핸들러 (NC-2 + F4 보강).
  *
  * 스케줄: wrangler.toml [triggers] crons = ["0 3 * * *"] (매일 UTC 03:00 = KST 12:00).
  * 작업: rate_limits 테이블의 2일 이전 bucket 삭제 (D1 10GB 한도 포화 방지).
  *
- * event.cron 필드로 여러 cron 을 구분할 수 있으나 현재는 단일 cron 뿐. 향후 추가 시
- * switch 로 라우팅.
+ * ## Silent failure 방어 (F4, 3차 리뷰)
+ *
+ * scheduled 는 Workers 런타임에서 at-most-once — 실패 시 자동 재시도 없음. 이 함수
+ * 내부에서 throw 를 삼키면 NC-2 본래의 가용성 보장이 silent 무력화되므로:
+ *
+ * 1. 미지 cron 은 명시적 warn 후 early-return (silent over-execution 방지)
+ * 2. 실패 시 `console.error` 동시 호출 → wrangler tail / Cloudflare Logs 에 stderr 즉시
+ *    노출 (logger.error 가 logpush 미설정 환경에서 휘발될 위험 대비 2차 방어선)
+ * 3. 정상 실행에서도 `deletedCount` 가 비정상적으로 큰 경우(>2일치 상한) warn — 연속
+ *    실패 후 catch-up 상황 감지
+ *
+ * 완전한 운영 모니터링(Email Routing / 외부 알림)은 별도 인프라 작업 — tech-debt
+ * 이월 (TD-Scheduled-Monitoring). 본 방어선은 앱 레벨 최대치.
  */
+const CRON_GC_DAILY = '0 3 * * *';
+const GC_DELETE_COUNT_WARN_THRESHOLD = 30_000_000; // 2일치(28.8M) 초과 시 누적 의심
+
 async function scheduled(
   event: ScheduledEvent,
   env: Bindings,
@@ -134,19 +148,37 @@ async function scheduled(
     environment: resolveLoggerEnv(env.ENVIRONMENT),
   }).child({ module: 'scheduled', cron: event.cron });
 
-  // waitUntil 로 cron 실행이 네트워크/실행 윈도우를 넘겨도 완료 보장.
+  if (event.cron !== CRON_GC_DAILY) {
+    logger.warn('unknown cron fired — skipping', { received: event.cron });
+    return;
+  }
+
   ctx.waitUntil(
     (async () => {
       try {
         const result = await purgeOldRateLimits(env.DB);
-        logger.info('rate_limits GC complete', {
-          deleted: result.deletedCount,
-          cutoff: result.cutoffBucket,
-        });
+        if (result.deletedCount > GC_DELETE_COUNT_WARN_THRESHOLD) {
+          // 연속 실패 후 catch-up 가능성 — 운영자 즉시 확인 필요.
+          logger.warn('rate_limits GC deleted unusually large row count', {
+            deleted: result.deletedCount,
+            threshold: GC_DELETE_COUNT_WARN_THRESHOLD,
+            cutoff: result.cutoffBucket,
+          });
+          console.warn(
+            `[scheduled] rate_limits GC anomaly: deleted=${result.deletedCount} > threshold=${GC_DELETE_COUNT_WARN_THRESHOLD}`,
+          );
+        } else {
+          logger.info('rate_limits GC complete', {
+            deleted: result.deletedCount,
+            cutoff: result.cutoffBucket,
+          });
+        }
       } catch (err) {
-        // 실패해도 Workers 는 자동 재시도하지 않음 (scheduled 는 at-most-once).
-        // 운영자 대시보드로 에러 감지 후 수동 재실행 또는 다음 cron 주기 대기.
+        // logger.error + console.error 이중 — logpush 미설정 환경에서도 stderr 로 노출.
         logger.error('rate_limits GC failed', err);
+        console.error('[scheduled] rate_limits GC failed', err);
+        // throw 재전파는 하지 않음 (waitUntil 은 throw 해도 Workers 가 재시도 안 함).
+        // 운영 모니터링(Email Routing 등) 은 별도 인프라 TD 로 이월.
       }
     })(),
   );

@@ -71,6 +71,31 @@ describe('purgeOldRateLimits', () => {
     expect(await countRateLimits()).toBe(2);
   });
 
+  it('retentionDays = 0 → 즉시 throw (활성 bucket 삭제 방지, F1)', async () => {
+    const now = () => new Date('2026-04-24T12:00:00Z');
+    await seedRateLimit('user-a', '2026-04-24T11:55', 5);
+
+    await expect(purgeOldRateLimits(ctx.db, { now, retentionDays: 0 })).rejects.toThrow(
+      /invalid retentionDays/,
+    );
+    // 활성 bucket 은 보존되어야 함
+    expect(await countRateLimits()).toBe(1);
+  });
+
+  it('retentionDays = -1 → throw', async () => {
+    const now = () => new Date('2026-04-24T12:00:00Z');
+    await expect(purgeOldRateLimits(ctx.db, { now, retentionDays: -1 })).rejects.toThrow(
+      /invalid retentionDays/,
+    );
+  });
+
+  it('retentionDays = NaN → throw (문자열 env var 파싱 실패 시 방어)', async () => {
+    const now = () => new Date('2026-04-24T12:00:00Z');
+    await expect(purgeOldRateLimits(ctx.db, { now, retentionDays: NaN })).rejects.toThrow(
+      /invalid retentionDays/,
+    );
+  });
+
   it('retentionDays 커스텀 — 1일 경계 적용', async () => {
     const now = () => new Date('2026-04-24T12:00:00Z');
     // 23시간 전 (1일 보존 시 통과)
