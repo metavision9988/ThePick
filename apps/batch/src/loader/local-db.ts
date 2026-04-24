@@ -59,12 +59,21 @@ export function openLocalDb(options: OpenLocalDbOptions = {}): LocalD1 {
         // 이미 적용된 마이그레이션은 re-run 시 idempotent 에러 — 명시 allowlist 로만 무시.
         // (CREATE TABLE IF NOT EXISTS / CREATE TRIGGER IF NOT EXISTS 패턴 전제, 다만
         //  ALTER TABLE ADD COLUMN 은 IF NOT EXISTS 미지원이라 "duplicate column" 별도 허용.)
+        //
+        // ⚠️ 한시 완화 — 4차 리뷰 CRITICAL S-1 + MJ-5 역회귀 인지 (2026-04-24):
+        //   `/duplicate column name/` 는 ALTER 재실행(의도) 과 CREATE TABLE 내부 컬럼 타이포
+        //   (버그) 를 구분 못 한다 (SQLite 가 동일 메시지 반환). 따라서 silent skip 시
+        //   반드시 `console.warn` 으로 노출 — CREATE 타이포도 로그에 뜨도록 하여 debugging
+        //   경로 확보. 근본 해결은 TD-052 (migration 에 `CREATE TABLE IF NOT EXISTS`
+        //   또는 `__drizzle_migrations` 해시 추적 도입).
         const msg = err instanceof Error ? err.message : String(err);
         const isIdempotentReapply =
           /already exists/i.test(msg) || /duplicate column name/i.test(msg);
         if (!isIdempotentReapply) {
           throw new Error(`migration failed (${fileName}): ${msg}`);
         }
+        // silent skip 금지 — 감사 흔적 남김 (CLAUDE.md "빈 catch 금지" 정신).
+        console.warn(`[migrations] idempotent skip: ${fileName} — ${msg}`);
       }
     }
   }
