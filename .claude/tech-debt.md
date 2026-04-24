@@ -147,6 +147,12 @@ Phase/Step 리뷰에서 "수용" 판정된 Minor 항목 누적 등록.
 - [ ] **TD-048** BATCH_CONFIGS 시험특화 한국어 리터럴 분리 (MJ-2) — `apps/batch/src/configs/son-hae-pyeong-ga-sa.ts` 로 이전. Rule 15 정신 준수.
 - [ ] **TD-049** F1 보강 10건 추가 통합 테스트 — Golden 불일치/고아/SUPERSEDES 순환/page_ref 누락/Ontology Lock 위반/Rule 17 정적 체크/Vision 트리거/token-cost 실패 경로/상태 downgrade 거부/migrations 멱등성. 가-1 착수 전 회귀 방지선.
 
+### 가-0 smoke test 파생 (2026-04-24 CLI 실행 중 발견)
+
+- [ ] **TD-050** /simulate pipeline.ts 1000 시드 adversarial — **가-1 Hard Gate** (tasks/step-1-5-ga-1.gates.yaml Gate B). 실 Claude API 호출 계약 실측 후 Mock 설계. "상상 adversarial" 금지 — 실측값 기반.
+- [ ] **TD-051** CLI spawn 기반 자동 회귀 테스트 — smoke test 로 BATCH-1 dry-run / list / status 전이 E2E 검증됨 (증거: handoff-session-011 §smoke test 결과). 자동화는 child_process.spawn + tsx 구조가 무거워 이월. 가-1 이후 CI 통합 시 설계.
+- [ ] **TD-052** migrations 재적용 시 idempotent 실패 처리 — local-db.ts 의 `/already exists/ OR /duplicate column name/` 정규식 allowlist 방식으로 해소 (가-0 세션). 하지만 근본적으로 ALTER TABLE ADD COLUMN 에 IF NOT EXISTS 가드 추가가 SQLite 3.35+ 에서 가능. 마이그레이션 재작성이 더 안전하나 L3 영역이라 별도 ADR 필요.
+
 ---
 
 ## 처리 원칙

@@ -56,10 +56,13 @@ export function openLocalDb(options: OpenLocalDbOptions = {}): LocalD1 {
       try {
         applySqlBatch(raw, sqlText);
       } catch (err) {
-        // 이미 적용된 마이그레이션은 re-run 시 "table already exists" — 무시해도 안전
-        // (CREATE TABLE IF NOT EXISTS / CREATE TRIGGER IF NOT EXISTS 패턴 전제).
+        // 이미 적용된 마이그레이션은 re-run 시 idempotent 에러 — 명시 allowlist 로만 무시.
+        // (CREATE TABLE IF NOT EXISTS / CREATE TRIGGER IF NOT EXISTS 패턴 전제, 다만
+        //  ALTER TABLE ADD COLUMN 은 IF NOT EXISTS 미지원이라 "duplicate column" 별도 허용.)
         const msg = err instanceof Error ? err.message : String(err);
-        if (!/already exists/i.test(msg)) {
+        const isIdempotentReapply =
+          /already exists/i.test(msg) || /duplicate column name/i.test(msg);
+        if (!isIdempotentReapply) {
           throw new Error(`migration failed (${fileName}): ${msg}`);
         }
       }

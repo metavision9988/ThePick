@@ -1,0 +1,164 @@
+# ============================================================
+# Phase 1 Step 1-5 (가-1) 진입 Hard Gates
+# ============================================================
+# CLAUDE.md CRITICAL RULE #7: "tasks/*.gates.yaml 이 있는 Task 는 gate 전부
+# 통과 전 '완료' 선언 금지." 본 파일은 가-1 (BATCH 1~5 실적재) 진입의
+# 기계적 Gatekeeper 다.
+#
+# 가-0 (스켈레톤) vs 가-1 (실적재) 분리 이유:
+#   - 가-0: fixture + mock 기반 파이프라인 골격 검증
+#   - 가-1: 실 Claude API + 실 pdfplumber + 실 Vision OCR + 실 D1 적재
+#
+# "실 API 호출 계약 없이 상상한 adversarial 1000 시드"는 가치 없음
+# (2026-04-24 3차 리뷰 결론). 가-1 진입 전 아래 gates 전부 기계적 통과 필수.
+# ============================================================
+
+step: "Phase 1 Step 1-5 (가-1) — BATCH 1 실적재"
+risk_level: L3
+depends_on:
+  - "Phase 1 Step 1-5 (가-0) 인프라 스켈레톤" # ✅ 완료 (2026-04-24)
+
+# ============================================================
+# Gate Group A — 외부 세계 계약 확정 (실 호출 smoke)
+# ============================================================
+# /simulate Mock 설계의 기반이 되는 실 API 응답 shape / latency / 에러 종류
+# 를 실측한 뒤 adversarial 파라미터로 역산한다.
+gates_a_external_contracts:
+  - id: A-1
+    name: "실 Claude API 소량 smoke 호출 (5~10회)"
+    input: "BATCH-1 1페이지 단위 processBatch 실 호출"
+    output: "응답 shape / stop_reason 분포 / input_tokens·output_tokens 실측값 / p50·p99 latency"
+    artifact: "docs/measurements/claude-api-smoke-{YYYYMMDD}.md"
+    pass_criteria:
+      - "10회 중 최소 8회 유효 JSON 파싱 성공 (markdown 코드펜스 포함 허용)"
+      - "실측 p99 < 30s (apps/batch BatchConfig.timeoutMs 기본값)"
+      - "input_tokens < maxTokens 근접 여부 확인 → 응답 잘림 케이스 1건 이상 확보"
+
+  - id: A-2
+    name: "실 pdfplumber subprocess smoke 호출"
+    input: "docs/manual/2026년도 이론서_수정본(26.3.31.).pdf p.403~405 범위"
+    output: "extractPdf 결과 shape / stderr 로그 / 실행 시간"
+    artifact: "docs/measurements/pdfplumber-smoke-{YYYYMMDD}.md"
+    pass_criteria:
+      - "403~405 페이지 추출 성공, text 필드 비어있지 않음"
+      - "table 추출 결과가 기대 shape(`string[][][]`) 과 일치"
+      - "subprocess 종료 시 stdout/stderr 분리 로깅 작동"
+
+  - id: A-3
+    name: "실 Vision OCR smoke 호출 (1회)"
+    input: "적과전 §의 도표 페이지 1장 (VisionTrigger 선별 결과 상위 1건)"
+    output: "Vision 응답 shape / 토큰 비용 / latency"
+    artifact: "docs/measurements/vision-ocr-smoke-{YYYYMMDD}.md"
+    pass_criteria:
+      - "도표 텍스트 추출 성공률 ≥ 80%"
+      - "token-cost-logger 기록 확인"
+      - "vision-client.enableRealCalls=true 안전 활성 경로 검증"
+
+# ============================================================
+# Gate Group B — /simulate 1000 시드 adversarial 검증
+# ============================================================
+# Gate Group A 에서 실측된 응답 shape / latency 분포 / 에러 종류를 기반으로
+# MockClaudeClient / MockPDF / VirtualClock 을 설계해 1000 시드 반복.
+gates_b_simulation:
+  - id: B-1
+    name: "pipeline.ts /simulate harness 설계"
+    scope: "sim/pipeline-adversarial.ts"
+    mock_boundaries:
+      - MockClaudeClient: "latency (실측 p50/p99 기반), malformed JSON (코드펜스 중복 / 내부 잘림), timeout, 429 rate-limit, retry-exhaustion"
+      - MockPDF: "가변 페이지 수 (1~500), 빈 페이지, 표 포함/비포함"
+      - MockVisionClient: "성공/실패 확률, 잘못된 페이지 응답"
+      - VirtualClock: "token-cost-logger 시간 흐름 통제"
+    adversarial_params_source: "Gate Group A 실측값 기반 (추측 금지)"
+
+  - id: B-2
+    name: "1000 시드 반복 실행 + Invariant 검증"
+    invariants:
+      - "각 시드의 최종 contract 가 schema-validator 통과 OR 명확한 에러로 fail-fast"
+      - "retry 예산 (maxRetries) 준수 — 초과 호출 0건"
+      - "메모리 피크 < 500MB (node heap 모니터링)"
+      - "token-cost-logger 기록 누락 0건 (성공/실패 모두)"
+      - "state-machine 불법 전이 0건 (approved→draft 등)"
+      - "qg2-validator 의 Golden Test 정확성 1000 시드 내내 100% 유지 (float drift 없음)"
+    pass_criteria:
+      - "1000 시드 중 Invariant violation 0건"
+      - "결정론적 재현 확인 — 실패 시드 N → 동일 시드 재실행 시 동일 실패"
+
+# ============================================================
+# Gate Group C — 남은 Tech-Debt 해소
+# ============================================================
+gates_c_tech_debt:
+  - id: C-1
+    name: "TD-042 Rule 16 examId 시그니처 주입"
+    rationale: "Year 2 멀티시험 제로코스트 전환 전제 — 본 gate 통과 없이는 Year 2 전환 불가"
+    target_files:
+      - "apps/batch/src/loader/draft-loader.ts"
+      - "apps/batch/src/loader/state-machine.ts"
+      - "apps/api/src/progress/rate-limit.ts"
+
+  - id: C-2
+    name: "TD-043 withRetry non-retryable 즉시 throw"
+    rationale: "토큰 비용 3배 + 14초 낭비 방지. 실 Claude 호출 전 필수 해결"
+
+  - id: C-3
+    name: "TD-044 draft-loader lost-update race"
+    rationale: "nodesInserted 메트릭 신뢰성 — 실적재 모니터링 전제"
+
+  - id: C-4
+    name: "TD-045 migrations/0011 SUPERSEDES 엣지"
+    rationale: "Temporal Graph 무결성 — BATCH 1 적재 시 개정 데이터 연결 필수"
+
+  - id: C-5
+    name: "TD-037 Scheduled 외부 알림 (GC 실패 감지)"
+    rationale: "NC-2 본래 가용성 보장 완성 — 연속 실패 감지 필수"
+
+# ============================================================
+# Gate Group D — 품질 검증 최종
+# ============================================================
+gates_d_quality:
+  - id: D-1
+    name: "전체 typecheck + lint + test 통과"
+    command: "pnpm typecheck && pnpm lint && pnpm -r test"
+    pass_criteria:
+      - "14 workspaces 전부 green"
+      - "전체 테스트 350+ PASS"
+
+  - id: D-2
+    name: "Guide Level 3 전면 점검 (Phase 완료 수준)"
+    rationale: "Guide/3단계리뷰.md Level 3 — 전체 서비스 배포 전"
+    scope:
+      - "1단계 인프라 (build/lint/test/type)"
+      - "2단계 아키텍처 (의존성, 에러 일관성, 데이터 흐름)"
+      - "3단계 비기능 (성능, 동시성, 장애 복원력)"
+      - "4단계 도메인 (기획 대조, 사용자 여정, 보안 최종)"
+    artifact: ".claude/reviews/review-{YYYYMMDD-HHMMSS}-step1-5-ga-1-level3.md"
+    pass_criteria:
+      - "CRITICAL 0건"
+      - "MAJOR ≤ 3건 (전부 TD 이월 명시)"
+
+  - id: D-3
+    name: "4-Pass 독립 에이전트 리뷰 (auto-review-protocol.md)"
+    rationale: "가-1 스코프 전체 변경 대상 Surgeon/Architect/Advocate/Contract"
+    pass_criteria:
+      - "CRITICAL 0건"
+      - "증거 3개+ 및 반론 1개+ 제출"
+
+# ============================================================
+# Gate Group E — 인간 승인 (L3 Final Gate)
+# ============================================================
+gates_e_human_approval:
+  - id: E-1
+    name: "진산님 최종 승인 (BATCH 1 실적재 착수)"
+    checklist:
+      - "Gate A/B/C/D 전부 통과 증거 제시"
+      - "실 Claude 호출 예상 비용 견적 제시 (BATCH 1 기준)"
+      - "롤백 전략 명시 (적재 실패 시 status_transitions 기반 복구)"
+    approval_record: "docs/plans/current.plan.md 갱신 + 대화 기록 인용"
+
+# ============================================================
+# 완료 선언 규칙
+# ============================================================
+completion_rule: |
+  - 모든 gate id 에 대해 "pass" 로 명시적 기록되기 전까지 가-1 "완료" 선언 금지
+  - 한 gate 가 실패하면 착수 중단 — "부분 통과" 개념 없음
+  - Gate Group 간 순서: A → B → C → D → E (역순 금지)
+  - Gate 문서화 위치: docs/measurements/, .claude/reviews/, tasks/ 중 명시된 곳
