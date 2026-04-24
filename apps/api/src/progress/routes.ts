@@ -30,6 +30,7 @@ import { z } from 'zod';
 import { createLogger, type Logger, type LoggerEnvironment } from '@thepick/shared';
 import { requireAuth, type RequireAuthVariables } from '../auth/middleware/require-auth.js';
 import { D1_UNIQUE_CONSTRAINT_PATTERN, withRetry } from '../middleware/retry.js';
+import { checkAndIncrementRateLimit, RateLimitExceeded, sleepJitter } from './rate-limit.js';
 
 const KNOWN_ENVIRONMENTS: ReadonlySet<LoggerEnvironment> = new Set<LoggerEnvironment>([
   'development',
@@ -143,6 +144,19 @@ export function createProgressRoutes(): Hono<ProgressEnv> {
     const logger = buildLogger(c.env).child({ route: 'review' });
     const userId = c.var.userId;
 
+    // TD-030 방어선 1: per-user 분당 요청 상한. enumeration oracle 열거 속도 제한.
+    try {
+      await checkAndIncrementRateLimit(c.env.DB, userId);
+    } catch (err) {
+      if (err instanceof RateLimitExceeded) {
+        c.header('Retry-After', String(err.retryAfterSeconds));
+        return c.json({ error: 'RATE_LIMIT_EXCEEDED' }, 429);
+      }
+      logger.error('rate-limit check failed', err, { userId });
+      c.header('Retry-After', '5');
+      return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
+    }
+
     const parsed = reviewSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) {
       return c.json({ error: 'VALIDATION_ERROR', issues: parsed.error.issues }, 422);
@@ -162,6 +176,8 @@ export function createProgressRoutes(): Hono<ProgressEnv> {
       return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
     }
     if (nodeRow === null) {
+      // TD-030 방어선 2: 404 응답 전 50~150ms 무작위 지연 (타이밍 oracle 방어).
+      await sleepJitter();
       return c.json({ error: 'NODE_NOT_FOUND' }, 404);
     }
 

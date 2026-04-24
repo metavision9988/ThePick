@@ -7,6 +7,9 @@ export type { Section, SectionLevel, SplitResult } from './section-splitter';
 export { extractTables } from './table-extractor';
 export type { ExtractedTable, TableExtractionResult } from './table-extractor';
 
+export { selectVisionCandidates } from './vision-trigger';
+export type { VisionCandidate, VisionTriggerOptions } from './vision-trigger';
+
 export {
   registry,
   isValidNodeType,

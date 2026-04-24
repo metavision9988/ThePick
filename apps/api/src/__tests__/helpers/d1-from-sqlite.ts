@@ -42,6 +42,9 @@ const SCENARIO_MIGRATIONS = [
   '0007_users_strict_hardening.sql',
   '0008_webhook_events.sql',
   '0009_sessions.sql',
+  '0010_status_transitions_and_page_ref_guard.sql',
+  '0011_revision_2026_constants_seed.sql',
+  '0012_rate_limits.sql',
 ];
 
 export interface SqliteBackedD1 {

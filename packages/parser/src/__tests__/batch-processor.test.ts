@@ -80,6 +80,7 @@ const VALID_CONTRACT_JSON = JSON.stringify({
       name: '보험가입금액',
       equation_template: 'standard_yield * base_price',
       variables_schema: '{"standard_yield": "number", "base_price": "number"}',
+      source_page: 412,
     },
   ],
   constants: [
@@ -88,6 +89,7 @@ const VALID_CONTRACT_JSON = JSON.stringify({
       name: '자기부담비율(20%)',
       value: '0.20',
       category: 'deductible',
+      source_page: 405,
     },
   ],
 });

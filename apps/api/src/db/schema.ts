@@ -1,20 +1,28 @@
 /**
  * ThePick Graph RAG — Drizzle ORM Schema
  *
- * 12 tables (base 6 + extension 3 + auth 2 + webhook 1):
+ * 13 tables (base 6 + extension 3 + auth 2 + webhook 1 + audit 1):
  *   knowledge_nodes, knowledge_edges, formulas, constants,
  *   revision_changes, exam_questions,
  *   mnemonic_cards, user_progress, topic_clusters,
  *   users (Phase 1 Step 1-1 — migrations/0006),
  *   webhook_events (Phase 1 Step 1-2 — migrations/0008),
- *   sessions (Phase 1 Step 1-4 — migrations/0009)
+ *   sessions (Phase 1 Step 1-4 — migrations/0009),
+ *   status_transitions (Phase 1 Step 1-5 — migrations/0010)
  *
  * Temporal Graph pattern: UPDATE 금지 → INSERT + SUPERSEDES edge
  * (users 테이블은 예외 — last_login_at / subscription_* 변경 빈도로 일반 UPDATE 허용)
+ *
+ * 상태 전이 패턴 (migrations/0010):
+ *   knowledge_nodes/formulas/constants 는 UPDATE 전면 차단되므로
+ *   status 전이(draft→review→approved)는 status_transitions append-only 로그로 외부화.
+ *   knowledge_nodes.status 컬럼은 INSERT 시 초기 상태 스냅샷으로만 남는다.
+ *   실시간 현재 상태는 status_transitions 최신 레코드 (없으면 DEFAULT 'draft').
  */
 
 import { sqliteTable, text, integer, real, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
+import type { TransitionStatus, TransitionTargetType } from '@thepick/shared';
 
 // --- Enum values (must match SQL CHECK constraints + shared/types.ts) ---
 
@@ -61,6 +69,8 @@ const WEBHOOK_PROVIDERS = ['mock', 'polar', 'portone', 'tosspayments'] as const;
 const WEBHOOK_STATUSES = ['received', 'processing', 'processed', 'failed'] as const;
 const EXAM_SCOPES = ['1st_sub1', '1st_sub2', '1st_sub3', '2nd', 'shared'] as const;
 const EXAM_TYPES = ['1st', '2nd'] as const;
+const TRANSITION_STATUSES = ['draft', 'review', 'approved', 'flagged'] as const;
+const TRANSITION_TARGET_TYPES = ['node', 'formula', 'constant'] as const;
 const CONFUSION_TYPES = [
   'numeric',
   'decimal_coefficient',
@@ -85,11 +95,13 @@ export const knowledgeNodes = sqliteTable('knowledge_nodes', {
   lv1Insurance: text('lv1_insurance'),
   lv2Crop: text('lv2_crop'),
   lv3Investigation: text('lv3_investigation'),
-  pageRef: text('page_ref'),
+  /** 출처 페이지 참조 — 북극성(출처 추적성) 강제. migrations/0010 INSERT 트리거에서 NULL/빈문자열 거부. */
+  pageRef: text('page_ref').notNull(),
   batchId: text('batch_id'),
   versionYear: integer('version_year').notNull(),
   supersededBy: text('superseded_by'),
   truthWeight: integer('truth_weight').notNull().default(5),
+  /** INSERT 시점 초기 상태 스냅샷 (항상 'draft'). 현재 상태는 status_transitions 에서 조회. */
   status: text('status', { enum: CONTENT_STATUSES }).notNull().default('draft'),
   examScope: text('exam_scope', { enum: EXAM_SCOPES }).default('2nd'),
   createdAt: text('created_at')
@@ -134,7 +146,8 @@ export const formulas = sqliteTable('formulas', {
   constraints: text('constraints'),
   expectedInputs: text('expected_inputs'),
   gracefulDegradation: text('graceful_degradation'),
-  pageRef: text('page_ref'),
+  /** 출처 페이지 참조 — 북극성(출처 추적성) 강제. migrations/0010 INSERT 트리거에서 NULL/빈문자열 거부. */
+  pageRef: text('page_ref').notNull(),
   nodeId: text('node_id').references(() => knowledgeNodes.id),
   versionYear: integer('version_year').notNull(),
   supersededBy: text('superseded_by'),
@@ -158,7 +171,8 @@ export const constants = sqliteTable('constants', {
   confusionRisk: text('confusion_risk'),
   confusionLevel: text('confusion_level', { enum: CONFUSION_LEVELS }).default('safe'),
   unit: text('unit'),
-  pageRef: text('page_ref'),
+  /** 출처 페이지 참조 — 북극성(출처 추적성) 강제. migrations/0010 INSERT 트리거에서 NULL/빈문자열 거부. */
+  pageRef: text('page_ref').notNull(),
   versionYear: integer('version_year').notNull(),
   examFrequency: integer('exam_frequency').default(0),
   relatedFormula: text('related_formula'),
@@ -439,3 +453,57 @@ export const sessions = sqliteTable(
 
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// 13. Status Transitions (Phase 1 Step 1-5 가-0 — migrations/0010)
+// append-only 상태 전이 감사 로그.
+// knowledge_nodes/formulas/constants 는 UPDATE 전면 차단되므로
+// 상태 전이(draft→review→approved)를 별도 테이블에 기록한다.
+//
+// 최신 상태 조회 패턴:
+//   SELECT to_status
+//   FROM status_transitions
+//   WHERE target_type = ? AND target_id = ?
+//   ORDER BY transitioned_at DESC LIMIT 1;
+//   (없으면 초기 상태 'draft')
+//
+// DB 추가 제약 (Drizzle 에서 선언 불가하여 migrations/0010 에만 존재):
+//   - TRIGGER prevent_status_transitions_update/delete (append-only 보장)
+//   - TRIGGER enforce_status_transitions_*_not_null (target_type/id/statuses/reviewer_id)
+//   - TRIGGER enforce_status_transitions_one_way
+//     (허용: draft→review→approved, any→flagged; downgrade 금지)
+// ---------------------------------------------------------------------------
+
+export const statusTransitions = sqliteTable(
+  'status_transitions',
+  {
+    id: text('id').primaryKey(),
+    targetType: text('target_type', { enum: TRANSITION_TARGET_TYPES }).notNull(),
+    targetId: text('target_id').notNull(),
+    fromStatus: text('from_status', { enum: TRANSITION_STATUSES }).notNull(),
+    toStatus: text('to_status', { enum: TRANSITION_STATUSES }).notNull(),
+    reviewerId: text('reviewer_id').notNull(),
+    reason: text('reason'),
+    transitionedAt: text('transitioned_at')
+      .notNull()
+      .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
+  },
+  (table) => ({
+    // 최신 상태 조회 핵심 인덱스 (migrations/0010 idx_status_transitions_target 동기)
+    targetIdx: index('idx_status_transitions_target').on(
+      table.targetType,
+      table.targetId,
+      table.transitionedAt,
+    ),
+    reviewerIdx: index('idx_status_transitions_reviewer').on(
+      table.reviewerId,
+      table.transitionedAt,
+    ),
+    toStatusIdx: index('idx_status_transitions_to_status').on(table.toStatus, table.transitionedAt),
+  }),
+);
+
+export type StatusTransition = typeof statusTransitions.$inferSelect;
+export type NewStatusTransition = typeof statusTransitions.$inferInsert;
+// 런타임 상수는 Drizzle enum 선언용으로 유지하되, 타입은 @thepick/shared 에서 단일 선언.
+export type { TransitionTargetType, TransitionStatus };

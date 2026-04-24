@@ -23,9 +23,10 @@ const DANGER: ConfusionLevel = 'danger';
 /**
  * 후처리된 상수.
  *
+ * source_page 는 KnowledgeContractConstant 에서 상속받아 상수 자체에 결합되어 있음.
  * 주의: 이 타입은 중간 결과물이며, DB constants 테이블에 직접 삽입할 수 없음.
- * DB 적재 시 appliesTo(NOT NULL), versionYear(NOT NULL), pageRef 등
- * 배치 컨텍스트 필드를 별도로 추가해야 함 (db-loader 단계에서 처리).
+ * DB 적재 시 appliesTo(NOT NULL), versionYear(NOT NULL) 등 배치 컨텍스트 필드를
+ * 별도로 추가해야 함 (draft-loader 단계에서 처리).
  */
 export interface EnrichedConstant extends KnowledgeContractConstant {
   numeric_value: number | null;

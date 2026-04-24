@@ -1,0 +1,68 @@
+{
+  "$schema_version": "1",
+  "_meta": {
+    "batchId": "BATCH-1",
+    "description": "적과전 종합위험 Golden Tests (교재 p.403~434 실데이터)",
+    "source": "docs/manual/2026년도 이론서_수정본(26.3.31.).pdf",
+    "relatedTests": "packages/formula-engine/src/__tests__/batch1-golden.test.ts",
+    "qg2Requirement": "100% accuracy vs 교재 예시값"
+  },
+  "tests": [
+    {
+      "formulaId": "F-01",
+      "inputs": { "damaged_fruits": 30, "normal_fruits": 70 },
+      "expectedValue": 0.3,
+      "tolerance": 0.0001,
+      "source_page": 414,
+      "description": "유과타박률: 피해30 + 정상70 → 0.3"
+    },
+    {
+      "formulaId": "F-02",
+      "inputs": { "defoliated": 45, "attached": 55 },
+      "expectedValue": 0.45,
+      "tolerance": 0.0001,
+      "source_page": 415,
+      "description": "낙엽률: 낙엽45 + 착엽55 → 0.45"
+    },
+    {
+      "formulaId": "F-03",
+      "inputs": { "total_sample": 12, "variety_target": 100, "total_target": 550 },
+      "expectedValue": 3,
+      "tolerance": 0.0001,
+      "source_page": 417,
+      "description": "적정표본주수 (교재 p.417 쓰가루 100/550 → 올림 3)"
+    },
+    {
+      "formulaId": "F-05",
+      "inputs": { "flooded_trees": 20, "flooded_fruits": 300, "total_fruits": 1000 },
+      "expectedValue": 6,
+      "tolerance": 0.0001,
+      "source_page": 413,
+      "description": "침수주수: 20 × (300/1000) = 6"
+    },
+    {
+      "formulaId": "F-06",
+      "inputs": { "defoliation_rate": 0.45, "elapsed_days": 30 },
+      "expectedValue": 0.413175,
+      "tolerance": 0.0001,
+      "source_page": 422,
+      "description": "단감 인정피해율 (1.0115 × 0.45 - 0.0014 × 30)"
+    },
+    {
+      "formulaId": "F-07",
+      "inputs": { "defoliation_rate": 0.45 },
+      "expectedValue": 0.36449,
+      "tolerance": 0.0001,
+      "source_page": 422,
+      "description": "떫은감 인정피해율 (0.9662 × 0.45 - 0.0703)"
+    },
+    {
+      "formulaId": "F-11",
+      "inputs": { "insured_amount": 10000000, "damage_rate": 0.15 },
+      "expectedValue": 1000000,
+      "tolerance": 0.0001,
+      "source_page": 434,
+      "description": "나무손해보험금 (10,000,000 × max(0.15 - 0.05, 0))"
+    }
+  ]
+}

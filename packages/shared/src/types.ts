@@ -43,6 +43,16 @@ export const TRUTH_WEIGHTS: Record<NodeType, number> = {
 /** Content status workflow: draft → review → approved → published */
 export type ContentStatus = 'draft' | 'review' | 'approved' | 'published' | 'flagged';
 
+/**
+ * Status transition workflow (migrations/0010 status_transitions).
+ * knowledge_nodes/formulas/constants 의 상태 전이에 사용.
+ * 'published' 는 Phase 2 에서 별도 승격 — status_transitions 는 approved 까지만 관리.
+ */
+export type TransitionStatus = 'draft' | 'review' | 'approved' | 'flagged';
+
+/** status_transitions.target_type 의 허용값. */
+export type TransitionTargetType = 'node' | 'formula' | 'constant';
+
 /** Exam scope identifiers */
 export type ExamScope = '1st_sub1' | '1st_sub2' | '1st_sub3' | '2nd' | 'shared';
 

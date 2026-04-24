@@ -48,6 +48,7 @@ function validContract(): KnowledgeContract {
         name: '보험가입금액',
         equation_template: 'standard_yield * base_price',
         variables_schema: '{"standard_yield": "number", "base_price": "number"}',
+        source_page: 412,
       },
     ],
     constants: [
@@ -56,6 +57,7 @@ function validContract(): KnowledgeContract {
         name: '자기부담비율(20%)',
         value: '0.20',
         category: 'deductible',
+        source_page: 405,
       },
     ],
   };
@@ -639,8 +641,24 @@ describe('validateKnowledgeContract', () => {
           },
         ],
         edges: [{ source_id: '', target_id: '', edge_type: 'FAKE_EDGE' }],
-        formulas: [{ id: 'FORMULA-LONG', name: '', equation_template: '', variables_schema: '' }],
-        constants: [{ id: 'BAD', name: '', value: '', category: 'fake' }],
+        formulas: [
+          {
+            id: 'FORMULA-LONG',
+            name: '',
+            equation_template: '',
+            variables_schema: '',
+            source_page: 0, // invalid — MISSING_SOURCE_PAGE 에러 기대
+          },
+        ],
+        constants: [
+          {
+            id: 'BAD',
+            name: '',
+            value: '',
+            category: 'fake',
+            source_page: 0, // invalid — MISSING_SOURCE_PAGE 에러 기대
+          },
+        ],
       };
 
       const result = validateKnowledgeContract(contract);
@@ -654,6 +672,7 @@ describe('validateKnowledgeContract', () => {
       expect(codes.has('INVALID_FORMULA_ID')).toBe(true);
       expect(codes.has('INVALID_CONSTANT_ID')).toBe(true);
       expect(codes.has('INVALID_CONSTANT_CATEGORY')).toBe(true);
+      expect(codes.has('MISSING_SOURCE_PAGE')).toBe(true);
     });
   });
 });

@@ -159,7 +159,8 @@ threshold, coefficient, date, ratio, sample, deductible, insurance_rate
       "id": "F-01",
       "name": "산식명",
       "equation_template": "math.js 파서 호환 수식",
-      "variables_schema": "{\\"var1\\": \\"number\\", \\"var2\\": \\"number\\"}"
+      "variables_schema": "{\\"var1\\": \\"number\\", \\"var2\\": \\"number\\"}",
+      "source_page": 403
     }
   ],
   "constants": [
@@ -167,7 +168,8 @@ threshold, coefficient, date, ratio, sample, deductible, insurance_rate
       "id": "CONST-001",
       "name": "상수명",
       "value": "원문 그대로",
-      "category": "coefficient"
+      "category": "coefficient",
+      "source_page": 403
     }
   ]
 }
@@ -177,7 +179,8 @@ threshold, coefficient, date, ratio, sample, deductible, insurance_rate
 - 반드시 위 JSON 스키마만 출력하세요. 설명 텍스트 없이 JSON만 반환.
 - ID 규칙을 벗어나면 검증 실패로 거부됩니다.
 - 수치는 교재 원문 그대로 추출하세요. 절대 계산하거나 변환하지 마세요.
-- source_page는 해당 내용이 있는 실제 페이지 번호입니다.`;
+- source_page 는 모든 노드/산식/상수에 필수입니다 (양의 정수). 추적성 위반 시 거부.
+- source_page 가 범위인 경우 시작 페이지 정수를 사용하세요 (예: p.403~404 → 403).`;
 }
 
 // --- User prompt ---

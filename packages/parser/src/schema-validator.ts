@@ -48,6 +48,8 @@ export interface KnowledgeContractFormula {
   name: string;
   equation_template: string;
   variables_schema: string;
+  /** 출처 페이지 — 북극성(출처 추적성) 강제. 비어 있으면 MISSING_SOURCE_PAGE 에러. */
+  source_page: number;
 }
 
 export interface KnowledgeContractConstant {
@@ -55,6 +57,8 @@ export interface KnowledgeContractConstant {
   name: string;
   value: string;
   category: string;
+  /** 출처 페이지 — 북극성(출처 추적성) 강제. 비어 있으면 MISSING_SOURCE_PAGE 에러. */
+  source_page: number;
 }
 
 export interface KnowledgeContract {
@@ -76,6 +80,7 @@ export type ValidationErrorCode =
   | 'INVALID_CONSTANT_ID'
   | 'INVALID_CONSTANT_CATEGORY'
   | 'MISSING_REQUIRED_FIELD'
+  | 'MISSING_SOURCE_PAGE'
   | 'INVALID_TRUTH_WEIGHT'
   | 'DANGLING_EDGE_REFERENCE'
   | 'DUPLICATE_NODE_ID'
@@ -116,6 +121,16 @@ const emptyStats = {
   formulasValidated: 0,
   constantsValidated: 0,
 };
+
+/**
+ * 출처 페이지 검증 — 양의 정수만 허용 (0, 음수, NaN, Infinity, null, undefined 거부).
+ * 북극성(출처 추적성) 1차 방어선으로, schema-validator 단계에서 먼저 걸러 DB 트리거 의존을 줄인다.
+ */
+function isValidSourcePage(value: unknown): boolean {
+  return (
+    typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value) && value > 0
+  );
+}
 
 // --- Validator ---
 
@@ -254,6 +269,18 @@ export function validateKnowledgeContract(contract: KnowledgeContract): Validati
       );
     }
 
+    // source_page: 출처 추적성 강제 (북극성). 정수 + 양수.
+    if (!isValidSourcePage(node.source_page)) {
+      errors.push(
+        err(
+          `${prefix}.source_page`,
+          'MISSING_SOURCE_PAGE',
+          'source_page is required (source citation). Must be a positive integer.',
+          node.source_page,
+        ),
+      );
+    }
+
     declaredNodeIds.add(node.id);
   }
 
@@ -358,6 +385,17 @@ export function validateKnowledgeContract(contract: KnowledgeContract): Validati
         ),
       );
     }
+
+    if (!isValidSourcePage(formula.source_page)) {
+      errors.push(
+        err(
+          `${prefix}.source_page`,
+          'MISSING_SOURCE_PAGE',
+          'source_page is required (source citation). Must be a positive integer.',
+          formula.source_page,
+        ),
+      );
+    }
   }
 
   // 4. Validate constants
@@ -383,6 +421,17 @@ export function validateKnowledgeContract(contract: KnowledgeContract): Validati
           'INVALID_CONSTANT_CATEGORY',
           `Unknown constant category: "${constant.category}". Allowed: ${registry.constant_categories.join(', ')}`,
           constant.category,
+        ),
+      );
+    }
+
+    if (!isValidSourcePage(constant.source_page)) {
+      errors.push(
+        err(
+          `${prefix}.source_page`,
+          'MISSING_SOURCE_PAGE',
+          'source_page is required (source citation). Must be a positive integer.',
+          constant.source_page,
         ),
       );
     }

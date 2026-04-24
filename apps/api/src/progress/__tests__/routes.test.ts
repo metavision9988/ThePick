@@ -48,8 +48,8 @@ function seedUser(id: string, email: string): void {
 function seedNode(id: string): void {
   ctx.raw
     .prepare(
-      `INSERT INTO knowledge_nodes (id, type, name, version_year, truth_weight, status)
-       VALUES (?, 'CONCEPT', '테스트 노드', 2026, 5, 'approved')`,
+      `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status)
+       VALUES (?, 'CONCEPT', '테스트 노드', '999', 2026, 5, 'approved')`,
     )
     .run(id);
 }

@@ -819,8 +819,8 @@ function progressEnv(overrides: EnvOverrides = {}) {
 function seedKnowledgeNode(nodeId: string): void {
   ctx.raw
     .prepare(
-      `INSERT INTO knowledge_nodes (id, type, name, version_year, truth_weight, status)
-       VALUES (?, 'CONCEPT', '시나리오 테스트 노드', 2026, 5, 'approved')`,
+      `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status)
+       VALUES (?, 'CONCEPT', '시나리오 테스트 노드', '999', 2026, 5, 'approved')`,
     )
     .run(nodeId);
 }

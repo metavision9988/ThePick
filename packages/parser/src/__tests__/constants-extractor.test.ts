@@ -192,6 +192,7 @@ describe('enrichConstants', () => {
       name: '자기부담비율',
       value: '20%',
       category: 'deductible',
+      source_page: 405,
       ...overrides,
     };
   }
@@ -272,7 +273,13 @@ describe('enrichConstants', () => {
 
   it('handles non-string value gracefully', () => {
     const result = enrichConstants([
-      { id: 'CONST-001', name: 'bad', value: null as unknown as string, category: 'threshold' },
+      {
+        id: 'CONST-001',
+        name: 'bad',
+        value: null as unknown as string,
+        category: 'threshold',
+        source_page: 405,
+      },
     ]);
 
     expect(result.constants[0].numeric_value).toBeNull();
