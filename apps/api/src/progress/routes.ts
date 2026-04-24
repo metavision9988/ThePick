@@ -150,6 +150,9 @@ export function createProgressRoutes(): Hono<ProgressEnv> {
       await checkAndIncrementRateLimit(c.env.DB, userId, { limitPerMinute: 20 });
     } catch (err) {
       if (err instanceof RateLimitExceeded) {
+        // 429 응답 전 jitter — 404 경로와 동일 타이밍 분포로 oracle 차단 (MAJOR 방어).
+        // 공격자가 "429 = 한도 도달 직전 요청 있었음" 을 타이밍 차이로 감지하는 경로 봉쇄.
+        await sleepJitter();
         c.header('Retry-After', String(err.retryAfterSeconds));
         return c.json({ error: 'RATE_LIMIT_EXCEEDED' }, 429);
       }

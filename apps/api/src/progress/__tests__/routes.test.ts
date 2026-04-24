@@ -340,6 +340,50 @@ describe('POST /api/progress/review', () => {
     expect(row.total_reviews).toBe(2);
     expect(row.correct_count).toBe(1);
   });
+
+  // limitPerMinute=20 E2E 회귀 방지 (NC-신규 MAJOR, 2026-04-24).
+  // review 라우트에 하향된 20/min 한도가 실제로 적용되는지 검증. 60 이 아닌
+  // 20 경계에서 차단되는지 확인 — 향후 routes.ts:150 의 limitPerMinute: 20
+  // 가 실수로 60/min 기본으로 환원되면 본 테스트가 회귀 감지한다.
+  it('review 라우트는 20/min 한도 적용 — 21번째 요청 429 Retry-After', async () => {
+    const userId = crypto.randomUUID();
+    seedUser(userId, 'ratelimit@example.com');
+    seedNode('CONCEPT-RL-1');
+    const token = await accessToken(userId);
+
+    // 20회까지 정상 처리 (유효 nodeId 로 201/200 응답 — rate-limit 전 카운트만 소비)
+    for (let i = 0; i < 20; i++) {
+      const r = await call(
+        '/review',
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            nodeId: 'CONCEPT-RL-1',
+            cardType: 'flashcard',
+            correct: i % 2 === 0,
+          }),
+        },
+        token,
+      );
+      expect([200, 201]).toContain(r.status);
+    }
+
+    // 21번째는 20/min 한도 초과 — 429 + Retry-After 헤더
+    const blocked = await call(
+      '/review',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ nodeId: 'CONCEPT-RL-1', cardType: 'flashcard', correct: true }),
+      },
+      token,
+    );
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers.get('Retry-After')).not.toBeNull();
+    const blockedBody = (await blocked.json()) as { error: string };
+    expect(blockedBody.error).toBe('RATE_LIMIT_EXCEEDED');
+  });
 });
 
 // ---------------------------------------------------------------------------

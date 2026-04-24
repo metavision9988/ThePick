@@ -41,9 +41,14 @@ export interface RateLimitCheckOptions {
  * D1 RETURNING 지원: SQLite 3.35+ (D1 은 3.45+). UPSERT 의 DO UPDATE 분기에서도
  * RETURNING 은 업데이트 후 값을 반환한다.
  *
- * 잔여 race (후속 TD): D1 이 Workers 간 트랜잭션 격리는 serializable 이나,
- * 단일 UPSERT 문 내부도 여러 Workers 가 동시에 실행할 경우 SQLite 의
- * BEGIN EXCLUSIVE 가 순차 처리 → 정상 증가. 데이터 무결성 OK, 처리량만 저하.
+ * 잔여 race: D1 은 SQLite WAL 모드 기반 단일 primary replica 구조로, UPSERT 문 전체가
+ * 암묵 트랜잭션에서 실행되고 동일 PK `(user_id, bucket_minute)` 에 대해 writer 가
+ * 직렬화된다 (D1 primary Durable Object queue). 따라서 단일 사용자 기준 lost update 없음.
+ * D1 primary failover 1~2초 window 에서 503 실패 → 카운트 증가 누락 가능하나 실무적 영향 미미.
+ *
+ * 🚫 `DO UPDATE` 분기 유지 필수: 본 SQL 이 `DO NOTHING` 으로 바뀌면 ON CONFLICT 시
+ * RETURNING 이 행을 반환하지 않아 `row?.count ?? 0` 이 0 으로 읽히고 rate-limit 이
+ * 완전 무력화된다. 변경 시 반드시 본 주석 함께 갱신.
  */
 export async function checkAndIncrementRateLimit(
   db: D1Database,

@@ -157,3 +157,18 @@ name = "WEBHOOK_RATE_LIMITER_IP"
 type = "ratelimit"
 namespace_id = "3003"
 simple = { limit = 300, period = 60 }
+
+# ============================================================
+# Cron Triggers (NC-2 — 2026-04-24)
+# ============================================================
+# rate_limits 테이블 GC — 2일 이전 bucket 삭제 (D1 10GB 한도 포화 방지).
+# UTC 03:00 = KST 12:00 (트래픽 저점) 매일 1회 실행.
+# 핸들러: src/index.ts 의 scheduled(event, env, ctx).
+[triggers]
+crons = ["0 3 * * *"]
+
+[env.staging.triggers]
+crons = ["0 3 * * *"]
+
+[env.production.triggers]
+crons = ["0 3 * * *"]

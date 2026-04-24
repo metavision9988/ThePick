@@ -118,6 +118,14 @@ function wrapAsD1(raw: DatabaseSync): D1Db {
       // "원자적 적재" 주석과 실동작 괴리 — 테스트는 통과해도 프로덕션 정합 아님.
       // SQLite BEGIN IMMEDIATE: 쓰기 잠금 즉시 획득 (동시 writer race 차단).
       // applySqlBatch = node:sqlite raw.exec 래퍼 (child_process.exec 과 무관).
+      //
+      // 🚫 중첩 트랜잭션 미지원 (NC-신규 MAJOR, 2026-04-24):
+      //   호출자가 이미 외부에서 BEGIN 상태인 채로 본 batch() 를 호출하면 SQLite 가
+      //   `cannot start a transaction within a transaction` 으로 즉시 throw 한다.
+      //   이 경우 catch 블록이 실행되기 **전**이므로 ROLLBACK 도 호출되지 않는다 —
+      //   호출자의 외부 트랜잭션 정리 책임은 호출자에게 있다.
+      //   현재 유일 호출자는 draft-loader.ts 로 외부 BEGIN 없음. 새 호출자 추가 시
+      //   본 규약 준수 필수.
       applySqlBatch(raw, 'BEGIN IMMEDIATE');
       const results: Array<D1RunResult<T>> = [];
       try {

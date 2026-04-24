@@ -5,6 +5,7 @@ import type { RateLimiter } from './auth/rate-limit.js';
 import { createAuthRoutes } from './auth/routes.js';
 import { cachePolicyMiddleware } from './middleware/cache-policy.js';
 import { createProgressRoutes } from './progress/routes.js';
+import { purgeOldRateLimits } from './scheduled/rate-limit-gc.js';
 import { createWebhookRoutes } from './webhooks/payment.js';
 
 /**
@@ -114,4 +115,44 @@ app.get('/health', (c) => {
   return c.json({ status: 'healthy' });
 });
 
-export default app;
+/**
+ * Cloudflare Workers Cron Trigger 핸들러 (NC-2).
+ *
+ * 스케줄: wrangler.toml [triggers] crons = ["0 3 * * *"] (매일 UTC 03:00 = KST 12:00).
+ * 작업: rate_limits 테이블의 2일 이전 bucket 삭제 (D1 10GB 한도 포화 방지).
+ *
+ * event.cron 필드로 여러 cron 을 구분할 수 있으나 현재는 단일 cron 뿐. 향후 추가 시
+ * switch 로 라우팅.
+ */
+async function scheduled(
+  event: ScheduledEvent,
+  env: Bindings,
+  ctx: ExecutionContext,
+): Promise<void> {
+  const logger = createLogger({
+    service: 'thepick-api',
+    environment: resolveLoggerEnv(env.ENVIRONMENT),
+  }).child({ module: 'scheduled', cron: event.cron });
+
+  // waitUntil 로 cron 실행이 네트워크/실행 윈도우를 넘겨도 완료 보장.
+  ctx.waitUntil(
+    (async () => {
+      try {
+        const result = await purgeOldRateLimits(env.DB);
+        logger.info('rate_limits GC complete', {
+          deleted: result.deletedCount,
+          cutoff: result.cutoffBucket,
+        });
+      } catch (err) {
+        // 실패해도 Workers 는 자동 재시도하지 않음 (scheduled 는 at-most-once).
+        // 운영자 대시보드로 에러 감지 후 수동 재실행 또는 다음 cron 주기 대기.
+        logger.error('rate_limits GC failed', err);
+      }
+    })(),
+  );
+}
+
+export default {
+  fetch: app.fetch,
+  scheduled,
+};

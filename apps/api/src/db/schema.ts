@@ -1,6 +1,22 @@
 /**
  * ThePick Graph RAG — Drizzle ORM Schema
  *
+ * ## ⚠️ 마이그레이션 정책 (NC-1, 2026-04-24) — 반드시 준수
+ *
+ * - 본 파일은 **타입 파생 전용**: `$inferSelect` / `$inferInsert` 를 통해 Drizzle
+ *   ORM 쿼리 빌더에 타입을 제공한다.
+ * - **drizzle-kit generate / push 사용 금지**. 본 리포지토리의 마이그레이션 원천은
+ *   `migrations/NNNN_*.sql` 수동 SQL 이며, 여기에는 Drizzle 이 표현할 수 없는
+ *   트리거 12종 + CHECK 제약 + 복합 인덱스 + Temporal Graph 보호 장치가 포함된다.
+ *   drizzle-kit 이 schema.ts 와 실제 D1 상태를 diff 하면 이 구조들을 **drop** 한다.
+ * - 스키마 변경 절차: (1) `migrations/NNNN_*.sql` 수동 작성 → (2) `wrangler d1
+ *   migrations apply` → (3) 본 파일을 SQL 에 맞춰 수동 동기화 (CHECK 제약은 enum
+ *   배열로, 트리거는 주석으로만 표현).
+ * - drizzle.config.ts 는 의도적으로 생성하지 않는다. 누군가 추가 필요성을 느낀다면
+ *   먼저 ADR 로 기존 정책을 번복한 후 진행할 것.
+ *
+ * ## 테이블 구성
+ *
  * 14 tables (base 6 + extension 3 + auth 2 + webhook 1 + audit 1 + rate 1):
  *   knowledge_nodes, knowledge_edges, formulas, constants,
  *   revision_changes, exam_questions,
@@ -111,7 +127,23 @@ export const knowledgeNodes = sqliteTable('knowledge_nodes', {
   versionYear: integer('version_year').notNull(),
   supersededBy: text('superseded_by'),
   truthWeight: integer('truth_weight').notNull().default(5),
-  /** INSERT 시점 초기 상태 스냅샷 (항상 'draft'). 현재 상태는 status_transitions 에서 조회. */
+  /**
+   * @deprecated 현재 상태 조회에 **사용하지 말 것** (ADR-010).
+   *
+   * 본 컬럼은 INSERT 시점의 초기 상태 스냅샷(항상 'draft')일 뿐이며, migrations/0010
+   * 트리거 `prevent_nodes_update` 로 UPDATE 가 DB 레벨 차단된다. 실시간 현재 상태
+   * 조회는 **반드시** `status_transitions` 최신 레코드를 COALESCE 패턴으로 조회:
+   *
+   *   COALESCE(
+   *     (SELECT to_status FROM status_transitions
+   *       WHERE target_type = 'node' AND target_id = knowledge_nodes.id
+   *       ORDER BY transitioned_at DESC LIMIT 1),
+   *     'draft'
+   *   )
+   *
+   * `node.status === 'approved'` 같은 코드는 항상 false (모든 레코드가 'draft' 스냅샷).
+   * Phase 2 이후 DROP 고려.
+   */
   status: text('status', { enum: CONTENT_STATUSES }).notNull().default('draft'),
   examScope: text('exam_scope', { enum: EXAM_SCOPES }).default('2nd'),
   createdAt: text('created_at')
