@@ -45,3 +45,9 @@ pnpm-debug.log*
 
 # Cloudflare Workers generated types (regenerated via `pnpm --filter @thepick/api cf-typegen`)
 apps/api/worker-configuration.d.ts
+
+# Manual smoke harness — secrets and raw response payloads
+apps/batch/src/__manual__/.env*
+apps/batch/src/__manual__/secrets/
+apps/batch/src/__manual__/output/
+docs/measurements/raw/
