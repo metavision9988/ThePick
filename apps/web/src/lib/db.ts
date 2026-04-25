@@ -4,6 +4,11 @@
  * 9 stores mirroring D1 tables for offline-first PWA.
  * revision_changes는 관리자 전용 데이터로 클라이언트 동기화 대상에서 제외.
  * Only indexed fields are listed — Dexie stores all properties.
+ *
+ * ⚠️ 현 단계 (가-1) 동기화 방향: D1 → IndexedDB 단방향 read only.
+ * `offlineActions` 큐 schema 만 정의. enqueue/replay 로직은 Phase 2 본격 구현 (BE C-3 명시 이월).
+ * 클라이언트 진도 변경 → D1 동기화 경로는 현재 미구현 — 학습자 진도는 IndexedDB 만 갱신.
+ * Phase 2 진입 시 sync-engine 모듈 신설 + Background Sync API 활용 예정.
  */
 
 import Dexie, { type Table } from 'dexie';

@@ -83,6 +83,10 @@ gates_b_simulation:
       - "1000 시드 중 Invariant violation 0건"
       - "결정론적 재현 확인 — 실패 시드 N → 동일 시드 재실행 시 동일 실패"
 
+  # B-3 admin transitions API endpoint 추가 여부 — 진산님 결정 대기.
+  # plan §검토 흡수 B-2 (3차 5-페르소나 C-4) 참조.
+  # 결정 후 본 게이트에 정식 항목으로 추가 또는 별도 step 으로 분리.
+
 # ============================================================
 # Gate Group C — 남은 Tech-Debt 해소
 # ============================================================
@@ -100,8 +104,11 @@ gates_c_tech_debt:
     rationale: "토큰 비용 3배 + 14초 낭비 방지. 실 Claude 호출 전 필수 해결"
 
   - id: C-3
-    name: "TD-044 draft-loader lost-update race"
-    rationale: "nodesInserted 메트릭 신뢰성 — 실적재 모니터링 전제"
+    name: "TD-044 lost-update race (scope 확장 — 3차 5-페르소나 M-8)"
+    rationale: "(a) draft-loader nodesInserted 메트릭 신뢰성, (b) apps/api/src/progress/routes.ts /review UPSERT atomic counter — Year 1 배포 즉시 영향. 둘 다 동일 SELECT-then-UPDATE 패턴이라 같은 fix"
+    target_files:
+      - "apps/batch/src/loader/draft-loader.ts"
+      - "apps/api/src/progress/routes.ts"
 
   - id: C-4
     name: "TD-045 migrations/0013 SUPERSEDES 엣지 (0011 충돌 회피)"
@@ -141,6 +148,20 @@ gates_d_quality:
     pass_criteria:
       - "CRITICAL 0건"
       - "증거 3개+ 및 반론 1개+ 제출"
+
+  - id: D-4
+    name: "운영 회로 보강 (3차 5-페르소나 C-5 흡수 — DO OP-C-1 + OP-C-2)"
+    rationale: "Workers Logs 알림 도달 경로 + GD 케이스 KV 폴백. 단일 벤더 원칙 (Cloudflare Email Routing + Analytics Engine writeDataPoint) 준수. 가-1 본 적재 직전 운영 회로 가시화"
+    sub_gates:
+      - id: D-4-1
+        name: "Analytics Engine binding + scheduled writeDataPoint"
+        artifact: "apps/api/wrangler.toml + apps/api/src/scheduled/* 갱신"
+      - id: D-4-2
+        name: "Tail Worker → Email Routing 발송 (TD-037 매체 재선택)"
+        rationale: "단일 벤더 원칙 — Discord webhook 권장에서 Email Routing 으로 재선택"
+      - id: D-4-3
+        name: "read-only 핵심 테이블 KV 폴백 활성화 (knowledge_nodes / formulas / constants)"
+        artifact: "apps/api/src/middleware/retry.ts 의 KV 폴백 주석 코드화 + TTL 24h"
 
 # ============================================================
 # Gate Group E — 인간 승인 (L3 Final Gate)

@@ -94,13 +94,13 @@ A 선정 이유:
 
 ### Group C — Tech-Debt 5건 해소 (코드 변경 ~300 LoC)
 
-| ID     | 핵심 변경                                                                                                     | 예상 LoC |
-| :----- | :------------------------------------------------------------------------------------------------------------ | :------- |
-| TD-042 | loadDraft/transitionStatus/checkAndIncrementRateLimit 래퍼 1번째 인자 `examId: ExamId` 추가 (Rule 16)         | ~80      |
-| TD-043 | withRetry 에서 `AnthropicNonRetryableError` (400/401/403/404/422) 즉시 throw — 토큰 비용 3배 + 14초 낭비 차단 | ~40      |
-| TD-044 | draft-loader SELECT→INSERT lost-update race → `meta.changes` 기반 실삽입 수 측정 + race 테스트 fixture        | ~60      |
-| TD-045 | migrations/0013 — CONST-900→901 SUPERSEDES 엣지 (Temporal Graph 무결성, 0011 충돌 회피)                       | ~30 SQL  |
-| TD-037 | Scheduled 외부 알림 (Cloudflare Email Routing 또는 webhook) — GC 연속 N회 실패 시 운영자 페이저               | ~80      |
+| ID     | 핵심 변경                                                                                                                                                                                                                                                                                    | 예상 LoC |
+| :----- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------- |
+| TD-042 | loadDraft/transitionStatus/checkAndIncrementRateLimit 래퍼 1번째 인자 `examId: ExamId` 추가 (Rule 16)                                                                                                                                                                                        | ~80      |
+| TD-043 | withRetry 에서 `AnthropicNonRetryableError` (400/401/403/404/422) 즉시 throw — 토큰 비용 3배 + 14초 낭비 차단                                                                                                                                                                                | ~40      |
+| TD-044 | **scope 확장** (3차 5-페르소나 M-8): (a) draft-loader SELECT→INSERT race → `meta.changes` 기반 실삽입 수 측정, (b) `apps/api/src/progress/routes.ts` `/review` UPSERT atomic counter (`UPDATE ... SET total_reviews = total_reviews + 1`) — Year 1 배포 즉시 영향, draft-loader 와 동일 패턴 | ~90      |
+| TD-045 | migrations/0013 — CONST-900→901 SUPERSEDES 엣지 (Temporal Graph 무결성, 0011 충돌 회피)                                                                                                                                                                                                      | ~30 SQL  |
+| TD-037 | Scheduled 외부 알림 (Cloudflare Email Routing 또는 webhook) — GC 연속 N회 실패 시 운영자 페이저                                                                                                                                                                                              | ~80      |
 
 ### Group D — 품질 검증
 
@@ -176,6 +176,43 @@ E-1 체크리스트:
 - Phase 2 출처 추적성 `citations` 구조 본격 설계 (수험자 "근거 보기" UX)
 - Phase 2 문제 자동 생성기 + 근거 역방향 검증
 - SLM/LoRA 도입 (2027-04 재검토 — 동결)
+
+## 검토 흡수 — 3차 5-페르소나 Critical 5건 (2026-04-25)
+
+선행 산출물: `.claude/reviews/review-20260425-204720-step1-5-ga-1-mid-level3.md`
+
+옵션 A 4건 즉시 수정 + 옵션 B 5건 plan 보강 (코드 변경 0). 옵션 A 후속 검증: `review-20260425-211626-step1-5-ga-1-option-a-fix.md`.
+
+### B-1. C-3 IndexedDB → D1 sync 코드 0건 (BE C-1) — Phase 2 명시 이월
+
+- 본질: `apps/web/src/lib/db.ts` 헤더 "9 stores mirroring D1 tables for offline-first PWA" 가 양방향 mirroring 으로 보이나 실제로는 단방향 read. `offlineActions` 큐는 schema 만 정의 / enqueue/replay 0건.
+- 처리: `apps/web/src/lib/db.ts:1-12` 헤더 정정 (단방향 read 명시 + Phase 2 sync-engine 모듈 신설 예고).
+- 학습자 진도 무결성 보장 시점: Phase 2 진입 직전 별도 plan. 현 가-1~가-7 본 적재 동안 학습자 화면 자체가 Phase 2 책임이라 본 단계 영향 없음.
+
+### B-2. C-4 admin status 전이 API endpoint 부재 (BE C-2) — 가-1 Group B 책임 명시
+
+- 본질: `apps/admin-web/src/components/ContentQueue.tsx` 의 `onStatusChange` prop 정의됨 / `apps/admin-web/src/pages/index.astro:38-42` caller 비어 있음. `apps/api/src` 에 `POST /api/admin/transitions` 라우트 0건. BATCH-1 적재 후 검수 차단.
+- 처리: 가-1 **Group B (Simulation Harness)** 의 부산물로 admin transition API endpoint 작성 책임 명시. Group B 완료 정의에 추가:
+  - **B-3 (신규)**: `POST /api/admin/transitions` 라우트 + admin-web fetch 호출자 — BATCH-1 적재 직후 검수 가능 상태 보장. (LoC ~60)
+- 또는 별도 step 분리 — 진산님 결정 영역. 본 plan 은 "Group B 책임" 으로 우선 기록. 분리 시 plan 갱신.
+
+### B-3. C-5 운영 회로 부재 (DO OP-C-1 + OP-C-2) — Group D 진입 plan 보강
+
+- 본질: Workers Logs 알림 도달 경로 0 + GD 케이스 KV 폴백 0. `apps/api/wrangler.toml:49-51` `[observability]` 만 enable / `apps/api/src/middleware/retry.ts:11-14` "KV 폴백" 주석만. 단일 벤더 원칙 (메모리 등록) 준수 필요.
+- 처리: Group D **D-4 (신규)** 추가:
+  - D-4-1: `apps/api/wrangler.toml` 에 `analytics_engine_datasets` binding + scheduled 핸들러 `env.TELEMETRY.writeDataPoint(...)` 1줄 추가 (GC 실패 카운터 + deletedCount). (LoC ~10)
+  - D-4-2: Tail Worker 별도 작성 — error level 만 선별 → Email Routing 발송 (TD-037 Discord webhook 권장에서 **Email Routing 으로 재선택** — 단일 벤더 원칙). 별도 Worker 1개 (LoC ~50)
+  - D-4-3: read-only 핵심 테이블 (`knowledge_nodes`, `formulas`, `constants`) KV 폴백 활성화 — `retry.ts` 주석 코드화. TTL 24h, key=`{table}:{id}`. (LoC ~80)
+  - 통과 기준: 503 상황 시뮬 시 KV 폴백 응답 정상 + 임의 GC 실패 시 Email 도달 검증
+
+### B-4. M-8 progress lost-update race — TD-044 scope 확장
+
+- 본 plan §Group C 표 TD-044 행에 직접 반영 (위 §Group C 표 갱신 — `apps/api/src/progress/routes.ts` `/review` UPSERT atomic counter 추가 명시).
+
+### B-5. BE C-4 Year 2 백필 SQL 부재 — 명시 이월
+
+- 본질: ADR-007 §"Year 2 마이그레이션 0005" 가 docs 안에만 존재. 실제 SQL backfill 템플릿 0건. `prevent_X_update` 트리거가 `ALTER TABLE ADD COLUMN NOT NULL` 차단 — Year 2 진입 시 발견 위험.
+- 처리: `migrations/_year2_simulation/` 디렉토리 신설 (가-1 Group C 종결 시점) — 시뮬 fixtures (1년차 100행) + backfill SQL 스켈레톤 + golden test 1건. **Phase 2 종료 전 작성 의무**. 가-1 본 작업 외, Phase 1 후반전 별도 plan.
 
 ## 진행 권장 단계 (Group A 진입 시점부터)
 
