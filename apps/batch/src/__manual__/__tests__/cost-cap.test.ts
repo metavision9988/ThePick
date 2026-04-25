@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { CallCountExceededError, CostCap, CostCapExceededError } from '../cost-cap';
+import {
+  CallCountExceededError,
+  CostCap,
+  CostCapExceededError,
+  GuardedCallTimeoutError,
+} from '../cost-cap';
 
 describe('CostCap.guardedCall — 정상 경로', () => {
   it('호출 누적 / snapshot 갱신', async () => {
@@ -224,6 +229,112 @@ describe('CostCap — 동시 호출 직렬화 (NEW-C-2 race fix)', () => {
 
     expect(order).toEqual([1, 2, 3, 4, 5]);
     expect(cap.snapshot().callCount).toBe(5);
+  });
+});
+
+describe('CostCap.guardedCall — fn timeout (NEW-C-1 fix)', () => {
+  it('timeoutMs 미지정 시 fn 자체 hang 가능 (회귀 — 기존 호환)', async () => {
+    const cap = new CostCap({ maxUsd: 1.0, maxCalls: 10 });
+
+    const out = await cap.guardedCall(0.05, async () => ({
+      result: 'ok',
+      actualUsd: 0.01,
+    }));
+
+    expect(out).toBe('ok');
+  });
+
+  it('timeoutMs 초과 시 GuardedCallTimeoutError + 보수적 회계', async () => {
+    const cap = new CostCap({ maxUsd: 1.0, maxCalls: 10 });
+
+    await expect(
+      cap.guardedCall(
+        0.1,
+        () =>
+          new Promise<never>(() => {
+            // 영원히 resolve 안 함 — fn hang 시뮬
+          }),
+        { timeoutMs: 50 },
+      ),
+    ).rejects.toBeInstanceOf(GuardedCallTimeoutError);
+
+    expect(cap.snapshot().callCount).toBe(1);
+    expect(cap.snapshot().accumulatedUsd).toBeCloseTo(0.1, 10);
+  });
+
+  it('fn 이 signal 을 받아 자체 abort 가능', async () => {
+    const cap = new CostCap({ maxUsd: 1.0, maxCalls: 10 });
+    let signalAborted = false;
+
+    await expect(
+      cap.guardedCall(
+        0.1,
+        (signal) =>
+          new Promise<never>((_, reject) => {
+            signal?.addEventListener('abort', () => {
+              signalAborted = true;
+              reject(new Error('fn-side abort'));
+            });
+          }),
+        { timeoutMs: 50 },
+      ),
+    ).rejects.toThrow();
+
+    expect(signalAborted).toBe(true);
+    expect(cap.snapshot().callCount).toBe(1);
+    expect(cap.snapshot().accumulatedUsd).toBeCloseTo(0.1, 10);
+  });
+
+  it('timeout 전 fn 이 빠르게 완료되면 정상 통과', async () => {
+    const cap = new CostCap({ maxUsd: 1.0, maxCalls: 10 });
+
+    const out = await cap.guardedCall(0.05, async () => ({ result: 'fast', actualUsd: 0.01 }), {
+      timeoutMs: 1000,
+    });
+
+    expect(out).toBe('fast');
+    expect(cap.snapshot().accumulatedUsd).toBeCloseTo(0.01, 10);
+  });
+
+  it('timeoutMs 가 NaN/0/음수면 TypeError', async () => {
+    const cap = new CostCap();
+
+    await expect(
+      cap.guardedCall(0, async () => ({ result: 1, actualUsd: 0 }), {
+        timeoutMs: Number.NaN,
+      }),
+    ).rejects.toBeInstanceOf(TypeError);
+
+    await expect(
+      cap.guardedCall(0, async () => ({ result: 1, actualUsd: 0 }), {
+        timeoutMs: 0,
+      }),
+    ).rejects.toBeInstanceOf(TypeError);
+
+    await expect(
+      cap.guardedCall(0, async () => ({ result: 1, actualUsd: 0 }), {
+        timeoutMs: -100,
+      }),
+    ).rejects.toBeInstanceOf(TypeError);
+
+    // invalid timeoutMs 는 사전 검증 단계라 callCount 미증가
+    expect(cap.snapshot().callCount).toBe(0);
+  });
+
+  it('GuardedCallTimeoutError 가 timeoutMs 필드 보존', async () => {
+    const cap = new CostCap({ maxUsd: 1.0, maxCalls: 10 });
+
+    try {
+      await cap.guardedCall(0.05, () => new Promise<never>(() => {}), {
+        timeoutMs: 30,
+      });
+      expect.fail('should have thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(GuardedCallTimeoutError);
+      const e = err as GuardedCallTimeoutError;
+      expect(e.timeoutMs).toBe(30);
+      expect(e.message).toContain('30ms');
+    }
   });
 });
 

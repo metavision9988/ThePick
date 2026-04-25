@@ -44,6 +44,16 @@ export class CallCountExceededError extends Error {
   }
 }
 
+export class GuardedCallTimeoutError extends Error {
+  override readonly name = 'GuardedCallTimeoutError';
+  constructor(
+    message: string,
+    public readonly timeoutMs: number,
+  ) {
+    super(message);
+  }
+}
+
 export interface CostCapConfig {
   readonly maxUsd?: number;
   readonly maxCalls?: number;
@@ -52,6 +62,15 @@ export interface CostCapConfig {
 export interface SmokeCallResult<T> {
   readonly result: T;
   readonly actualUsd: number;
+}
+
+export interface GuardedCallOptions {
+  /**
+   * fn 자체의 timeout (ms). 초과 시 fn 의 AbortSignal 이 abort 되고 GuardedCallTimeoutError throw.
+   * 미지정 시 fn 자체 timeout 부재 — fn 이 hang 하면 inflight chain 이 매달림.
+   * Pass 3 NEW-C-1 fix: smoke 스크립트는 항상 명시 권장.
+   */
+  readonly timeoutMs?: number;
 }
 
 export interface CostCapSnapshot {
@@ -90,23 +109,31 @@ export class CostCap {
    * @throws CallCountExceededError 호출 횟수 한도 초과
    * @throws CostCapExceededError 누적 비용 한도 초과 (사전 또는 사후)
    */
-  async guardedCall<T>(estimatedMaxUsd: number, fn: () => Promise<SmokeCallResult<T>>): Promise<T> {
+  async guardedCall<T>(
+    estimatedMaxUsd: number,
+    fn: (signal?: AbortSignal) => Promise<SmokeCallResult<T>>,
+    opts?: GuardedCallOptions,
+  ): Promise<T> {
     // Promise queue 직렬화 — race 우회 차단. 이전 호출이 끝나야 사전 guard 가 정확함.
     // 본 클래스는 단일 사용자 수동 smoke 전용이므로 큐 길이 제약은 두지 않음.
     const previous = this.inflight;
     const next = previous
       .catch(() => undefined)
-      .then(() => this.executeGuarded(estimatedMaxUsd, fn));
+      .then(() => this.executeGuarded(estimatedMaxUsd, fn, opts?.timeoutMs));
     this.inflight = next;
     return next;
   }
 
   private async executeGuarded<T>(
     estimatedMaxUsd: number,
-    fn: () => Promise<SmokeCallResult<T>>,
+    fn: (signal?: AbortSignal) => Promise<SmokeCallResult<T>>,
+    timeoutMs: number | undefined,
   ): Promise<T> {
     if (!Number.isFinite(estimatedMaxUsd) || estimatedMaxUsd < 0) {
       throw new TypeError(`Invalid estimatedMaxUsd: ${estimatedMaxUsd}`);
+    }
+    if (timeoutMs !== undefined && (!Number.isFinite(timeoutMs) || timeoutMs <= 0)) {
+      throw new TypeError(`Invalid timeoutMs: ${timeoutMs}`);
     }
 
     if (this.callCount + 1 > this.maxCalls) {
@@ -134,10 +161,9 @@ export class CostCap {
 
     let callResult: SmokeCallResult<T>;
     try {
-      callResult = await fn();
+      callResult = await this.runWithOptionalTimeout(fn, timeoutMs);
     } catch (err) {
-      // fn 자체가 실패한 경우 — 비용은 발생했을 수 있으나 정확치를 모름.
-      // 보수적으로 estimatedMaxUsd 만큼 누적해서 다음 호출의 사전 guard 에 반영.
+      // fn 자체가 실패하거나 timeout 으로 abort — 비용은 발생했을 수 있으므로 보수적 누적.
       this.accumulatedUsd += estimatedMaxUsd;
       throw err;
     }
@@ -164,6 +190,37 @@ export class CostCap {
     }
 
     return callResult.result;
+  }
+
+  /**
+   * fn 을 옵션 timeout 으로 race. timeout 시 AbortSignal 발사 + GuardedCallTimeoutError reject.
+   * fn 이 signal 을 받아 자체 cancel 하지 않더라도 race 자체는 reject 되어 inflight 가 해제됨.
+   * Pass 3 NEW-C-1 fix.
+   */
+  private async runWithOptionalTimeout<T>(
+    fn: (signal?: AbortSignal) => Promise<T>,
+    timeoutMs: number | undefined,
+  ): Promise<T> {
+    if (timeoutMs === undefined) {
+      return fn();
+    }
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), timeoutMs);
+    try {
+      const fnPromise = fn(ac.signal);
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        ac.signal.addEventListener(
+          'abort',
+          () => {
+            reject(new GuardedCallTimeoutError(`fn timeout after ${timeoutMs}ms`, timeoutMs));
+          },
+          { once: true },
+        );
+      });
+      return await Promise.race([fnPromise, timeoutPromise]);
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   snapshot(): CostCapSnapshot {

@@ -27,14 +27,21 @@ import { CostCap } from './cost-cap';
 
 const cap = new CostCap({ maxUsd: 1.0, maxCalls: 50 });
 
-// SDK 직접 호출 금지. 반드시 guardedCall 경유.
-const response = await cap.guardedCall(/* estimatedMaxUsd */ 0.05, async () => {
-  const result = await sdk.messages.create({
-    /* ... */
-  });
-  const actualUsd = computeCost(result.usage);
-  return { result, actualUsd };
-});
+// SDK 직접 호출 금지. 반드시 guardedCall 경유 + timeoutMs 명시 의무.
+const response = await cap.guardedCall(
+  /* estimatedMaxUsd */ 0.05,
+  async (signal) => {
+    const result = await sdk.messages.create(
+      {
+        /* ... */
+      },
+      { signal }, // signal 을 SDK 에 전달 — timeout 시 백엔드 요청 cancel
+    );
+    const actualUsd = computeCost(result.usage);
+    return { result, actualUsd };
+  },
+  { timeoutMs: 30_000 }, // 항상 명시. 누락 시 fn hang 시 inflight chain 매달림
+);
 
 // 누적/한도 확인
 console.warn(JSON.stringify(cap.snapshot()));
@@ -46,6 +53,13 @@ console.warn(JSON.stringify(cap.snapshot()));
 - **사후 record**: 실 발생 비용을 누적. 단일 호출이 prediction 초과 시 사후에도 throw
 - **인스턴스 격리**: 모듈 수준 mutable singleton 없음. 새 세션 = 새 `CostCap` 인스턴스
 - **호출 횟수 cap**: 의도하지 않은 루프 차단 (기본 50회)
+- **fn timeout 의무**: smoke 스크립트는 `timeoutMs` 항상 명시. 누락 시 fn hang → inflight Promise queue 매달림 (Pass 3 NEW-C-1 본질). ESLint 룰 강제는 Phase 1 후반전 이월
+
+### timeout 동작 주의 (Pass 3 NEW-MIN-2)
+
+- timeout 발생 시 `Promise.race` 가 `GuardedCallTimeoutError` 로 reject
+- 그러나 **`fn` 자체는 백그라운드에서 계속 실행 가능** (예: Anthropic SDK 의 retry 큐). `fn` 작성자는 받은 `signal` 을 SDK / fetch 에 전달하여 백엔드 요청까지 cancel 할 책임
+- timeout 시 `accumulatedUsd` 는 `estimatedMaxUsd` 만 보수 누적. 실제 비용이 더 크면 회계 미달 — `estimatedMaxUsd` 산정 시 max output tokens 기반으로 보수적 계산
 
 ## 디렉토리 구조
 

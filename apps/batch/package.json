@@ -9,7 +9,7 @@
   "scripts": {
     "test": "vitest run",
     "lint": "eslint src --ext .ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.manual.json",
     "cli": "tsx ./bin/batch.ts"
   },
   "dependencies": {
