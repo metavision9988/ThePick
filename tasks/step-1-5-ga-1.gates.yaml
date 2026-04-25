@@ -104,8 +104,8 @@ gates_c_tech_debt:
     rationale: "nodesInserted 메트릭 신뢰성 — 실적재 모니터링 전제"
 
   - id: C-4
-    name: "TD-045 migrations/0011 SUPERSEDES 엣지"
-    rationale: "Temporal Graph 무결성 — BATCH 1 적재 시 개정 데이터 연결 필수"
+    name: "TD-045 migrations/0013 SUPERSEDES 엣지 (0011 충돌 회피)"
+    rationale: "Temporal Graph 무결성 — BATCH 1 적재 시 개정 데이터 연결 필수. 번호 0013 은 기존 0011_revision_2026_constants_seed / 0012_rate_limits 와 충돌 회피"
 
   - id: C-5
     name: "TD-037 Scheduled 외부 알림 (GC 실패 감지)"

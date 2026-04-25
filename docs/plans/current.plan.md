@@ -1,156 +1,193 @@
 ---
 phase: 1
-step: 1-5 (나) — 진도 API 엔진 통합 검증
-approved_by: 진산 "승인할 테니 진행해줘" (2026-04-23 KST)
-scope:
-  - docs/plans/current.plan.md (본 파일)
-  - apps/api/src/progress/routes.ts (신규 — /api/progress/* 3 엔드포인트)
-  - apps/api/src/progress/__tests__/routes.test.ts (신규 단위 테스트)
-  - apps/api/src/index.ts (progress 라우터 마운트 + require-auth 연결)
-  - apps/api/src/__tests__/scenarios.test.ts (S22~S27 추가)
-  - apps/api/src/db/schema.ts (변경 없음 — user_progress 기존 테이블 활용)
-  - .claude/tech-debt.md (TD-028 해소 경로 진척 / 신규 TD 등록)
+step: 1-5 (가-1) — BATCH 1 실적재
+approved_by: TBD
 risk_level: L3
+gates_yaml: tasks/step-1-5-ga-1.gates.yaml
+scope:
+  # 산출 (실측 결과)
+  - docs/measurements/claude-api-smoke-{YYYYMMDD}.md (A-1)
+  - docs/measurements/pdfplumber-smoke-{YYYYMMDD}.md (A-2)
+  - docs/measurements/vision-ocr-smoke-{YYYYMMDD}.md (A-3)
+  # Simulation Harness
+  - sim/pipeline-adversarial.ts (B-1)
+  - sim/__tests__/pipeline-adversarial.invariants.test.ts (B-2)
+  # Tech-Debt 코드 패치 (Group C)
+  - apps/batch/src/loader/draft-loader.ts (TD-042 examId 시그니처 + TD-044 lost-update race)
+  - apps/batch/src/loader/state-machine.ts (TD-042)
+  - apps/api/src/progress/rate-limit.ts (TD-042)
+  - apps/batch/src/batch-processor.ts (TD-043 withRetry non-retryable)
+  - migrations/0013_supersedes_edges.sql (TD-045 — 신규 D1 마이그레이션, 0011 충돌 회피)
+  - apps/api/src/scheduled/* (TD-037 외부 알림 경로)
+  # 리뷰 산출
+  - .claude/reviews/review-{YYYYMMDD-HHMMSS}-step1-5-ga-1-level3.md (D-2)
+  - .claude/reviews/review-{YYYYMMDD-HHMMSS}-step1-5-ga-1-4pass.md (D-3)
 ---
 
 ## 목적
 
-Step 1-4 까지 구축한 **인증 엔진(Access JWT + D1 Refresh + require-auth 미들웨어)** 을 실제 보호 라우트에 **처음 마운트** 하여 엔진이 E2E 로 동작함을 검증한다.
+가-0 (스켈레톤 + fixture) ✅ 완료 → 가-1 은 **BATCH-1 (적과전 종합위험, 교재 p.403~434, 32 pages) 실적재**.
 
-진산님 비전(= 자격증 도메인별 Graph RAG + 훈련 콘텐츠 자동 생성 엔진 MVP)의 **엔진 기초공사 최종 합격증**:
+핵심 전환:
 
-- 로그인 → 보호 API 호출 → D1 읽기/쓰기 → 응답 전체 파이프라인 실물 확인
-- `require-auth` 미들웨어가 실제 라우트에 연결되어 위조/만료/미인증을 차단하는지 검증
-- 시나리오 테스트로 수험생/공격자 관점에서 엔진이 기대대로 동작함을 증명
-- user_progress 기존 테이블을 그대로 활용 (FSRS 알고리즘은 Phase 2 이월 — 여기서는 read/write 경로만)
+- fixture/mock → **실 Claude API + 실 pdfplumber + 실 Vision OCR + 실 D1 INSERT**
+- "상상 adversarial" → **실측 기반 adversarial** (3차 리뷰 결론)
 
-**Step 1-5 (가) 교재 Graph 구축**(본격 콘텐츠 적재)은 본 (나) 통과 후 별도 plan 으로 진입.
+본 plan 은 `tasks/step-1-5-ga-1.gates.yaml` 의 5개 Gate Group(A→B→C→D→E) 진입 절차를 정의한다. CRITICAL RULE #7 에 따라 모든 gate id 가 "pass" 로 명시 기록되기 전 "완료" 선언 금지.
 
 ## 기술 선택 근거 (PITR 간단판)
 
-**선정: 최소 3개 엔드포인트 + user_progress 기존 테이블 직접 사용 + 신규 study_events 테이블 만들지 않음.**
+**선정: Group A 실호출 우선 → B Mock 설계 → C TD 해소 → D 품질 → E 승인 (역순 금지).**
 
 비교:
 
-- (A) study_events 테이블 신규 + FSRS 엔진 본격 — 스코프 초과, Phase 2 본격 진입
-- (B) **user_progress 기존 테이블 활용 + 3 엔드포인트 최소 슬라이스** ← 선정
-- (C) 엔드포인트 1개(summary) 만 — require-auth 검증은 되나 write 경로 미검증
+- (A) **A→B→C→D→E 순차** ← 선정. 실측 없는 Mock 무가치 (3차 리뷰).
+- (B) C(TD) 먼저 + A/B 병렬 — TD-042 examId 시그니처 변경이 batch-processor 호출부에 영향 → A 실호출 코드와 충돌 가능. 순차가 안전.
+- (C) Group D(품질) 먼저 — typecheck/lint 는 코드 작성 후라야 의미. 부적합.
 
-B 선정 이유:
+A 선정 이유:
 
-- **엔진 통합 검증**이 목적. 콘텐츠 기능 구현이 아님.
-- user_progress 는 이미 schema 에 존재 (FSRS 필드 포함). 별도 migration 불필요.
-- write 경로(POST /review) + read 경로(GET /summary, /due) 둘 다 포함 → E2E 완결
-- Phase 2 에서 FSRS 알고리즘 본격 도입 시 본 구조 그대로 확장 가능
+- A-1 실측이 B-1 MockClaudeClient 의 latency/에러 분포 파라미터 소스 (가-1 gates §B-1 `adversarial_params_source: "Gate Group A 실측값 기반 (추측 금지)"` 명시)
+- C 가 A/B 보다 먼저 들어가면 TD-042 시그니처 변경이 A 호출 코드에 미반영 → 재작성 비용
+- D/E 는 정의상 마지막
 
 ## 대상 변경 상세
 
-### 1. `apps/api/src/progress/routes.ts` (신규)
+### Group A — 외부 계약 실측 smoke (코드 변경 ~50 LoC, 산출물 측정 결과)
 
-3 엔드포인트:
+**A-1. Claude API 실 smoke (5~10회)**
 
-**`GET /api/progress/summary`**
+- 입력: BATCH-1 1페이지 단위 (p.403, p.412, p.420, p.430 등 4종 샘플 + 변형 6회 = 10회)
+- 코드: `apps/batch/src/__manual__/claude-smoke.ts` (수동 실행 스크립트, 반복 사용 자산)
+- 산출: `docs/measurements/claude-api-smoke-{YYYYMMDD}.md` — 응답 shape 표 / stop_reason 분포 / 토큰 실측 / p50·p99 latency / 응답 잘림 케이스 1건 이상 확보
+- 환경: 진산님 ANTHROPIC_API_KEY 주입 (`.dev.vars` 또는 wrangler secret) — **실 비용 발생**
 
-- 입력: 인증된 사용자 (userId from require-auth)
-- D1: `SELECT COUNT(*), SUM(correct_count), SUM(total_reviews) FROM user_progress WHERE user_id = ?`
-- 출력: `{ totalCards, totalReviews, correctCount, accuracy }` (0건이면 0으로)
+**A-2. pdfplumber subprocess 실 smoke**
 
-**`POST /api/progress/review`**
+- 입력: `docs/manual/2026년도 이론서_수정본(26.3.31.).pdf` p.403~405
+- 코드: `apps/batch/src/__manual__/pdfplumber-smoke.ts` (이미 `extractPdf` 구현 있을 시 호출만)
+- 산출: `docs/measurements/pdfplumber-smoke-{YYYYMMDD}.md` — 추출 text/table shape / stderr 로그 / 실행 시간
 
-- 입력: `{ nodeId: string, cardType: CardType, correct: boolean }`
-- 검증: Zod schema. cardType enum 확인. nodeId 존재 확인 (knowledge_nodes FK — Step 1-5 가 진입 전에는 빈 테이블일 수 있으므로 FK 확인은 graceful)
-- D1: user_progress 행이 있으면 `totalReviews += 1, correctCount += correct ? 1 : 0, updatedAt = now` UPDATE. 없으면 INSERT.
-- 출력: `{ ok: true, progressId }`
-- **출처 추적성 메모**: nodeId → knowledge_nodes.page_ref 를 응답에 surface 할 수 있는 경로 예약 (현재 빈 테이블이라 null). Phase 2 교재 Graph 적재 후 즉시 활성.
+**A-3. Vision OCR 실 smoke (1회)**
 
-**`GET /api/progress/due`**
+- 입력: 적과전 §의 도표 페이지 1장 (VisionTrigger 선별 결과 상위 1건)
+- 코드: 기존 `vision-client` 의 `enableRealCalls=true` 안전 경로
+- 산출: `docs/measurements/vision-ocr-smoke-{YYYYMMDD}.md` — 응답 shape / 토큰 비용 / latency / 추출 정확도(≥80% 검증)
 
-- 입력: 인증된 사용자
-- D1: `SELECT id, node_id, card_type, fsrs_next_review FROM user_progress WHERE user_id = ? AND (fsrs_next_review IS NULL OR fsrs_next_review <= datetime('now')) LIMIT 50`
-- 출력: `{ items: [...], count }` (0건이면 빈 배열)
-- **FSRS 알고리즘은 Phase 2 이월.** 본 Step 은 next_review 시각 비교만 (단순 SQL).
+### Group B — Simulation Harness (1000 시드 adversarial)
 
-### 2. `apps/api/src/index.ts` (수정)
+**B-1. `sim/pipeline-adversarial.ts` 설계**
 
-```typescript
-import { progressRoutes } from './progress/routes';
-import { requireAuth } from './auth/middleware/require-auth';
+- MockClaudeClient: A-1 실측 p50/p99 기반 latency 분포, malformed JSON(코드펜스 중복/잘림), timeout, 429, retry-exhaustion
+- MockPDF: 가변 페이지(1~500), 빈 페이지, 표 포함/비포함
+- MockVisionClient: 성공/실패 확률, 잘못된 페이지 응답
+- VirtualClock: token-cost-logger 시간 흐름 통제
 
-// /api/progress 이하 전체에 require-auth 미들웨어 마운트 (엔진 첫 보호 경로)
-app.use('/api/progress/*', requireAuth);
-app.route('/api/progress', progressRoutes);
-```
+**B-2. 1000 시드 반복 + Invariant 6종**
 
-### 3. `apps/api/src/progress/__tests__/routes.test.ts` (신규)
+- contract schema-validator 통과 OR 명확한 fail-fast
+- maxRetries 초과 0건
+- node heap < 500MB
+- token-cost-logger 누락 0건 (성공/실패 모두)
+- state-machine 불법 전이 0건
+- qg2-validator Golden 정확성 1000 시드 100% 유지 (float drift 0)
 
-테스트 시나리오 (8~10건):
+### Group C — Tech-Debt 5건 해소 (코드 변경 ~300 LoC)
 
-- GET /summary: 인증 성공 → 200 + 0건 집계 / INSERT 후 증가 확인
-- GET /summary: 미인증(쿠키 없음) → 401
-- GET /summary: 위조 JWT → 401
-- POST /review: 유효 payload → 200 + DB row 1건
-- POST /review: 동일 userId+nodeId+cardType 재요청 → UPDATE (row 증가 없음, totalReviews +1)
-- POST /review: 잘못된 cardType → 400 (Zod)
-- POST /review: 미인증 → 401
-- GET /due: due 없음 → 200 + 빈 배열
-- GET /due: due 1건 (fsrs_next_review 과거) → 200 + 1건 반환
-- GET /due: 다른 유저 데이터 격리 (user B 의 due 가 user A 응답에 섞이지 않음)
+| ID     | 핵심 변경                                                                                                     | 예상 LoC |
+| :----- | :------------------------------------------------------------------------------------------------------------ | :------- |
+| TD-042 | loadDraft/transitionStatus/checkAndIncrementRateLimit 래퍼 1번째 인자 `examId: ExamId` 추가 (Rule 16)         | ~80      |
+| TD-043 | withRetry 에서 `AnthropicNonRetryableError` (400/401/403/404/422) 즉시 throw — 토큰 비용 3배 + 14초 낭비 차단 | ~40      |
+| TD-044 | draft-loader SELECT→INSERT lost-update race → `meta.changes` 기반 실삽입 수 측정 + race 테스트 fixture        | ~60      |
+| TD-045 | migrations/0013 — CONST-900→901 SUPERSEDES 엣지 (Temporal Graph 무결성, 0011 충돌 회피)                       | ~30 SQL  |
+| TD-037 | Scheduled 외부 알림 (Cloudflare Email Routing 또는 webhook) — GC 연속 N회 실패 시 운영자 페이저               | ~80      |
 
-### 4. `apps/api/src/__tests__/scenarios.test.ts` (기존 파일 확장)
+### Group D — 품질 검증
 
-**🎯 엔진 통합 검증 (S22~S27) 신규 그룹:**
+**D-1**: `pnpm typecheck && pnpm lint && pnpm -r test` 14 워크스페이스 green / 350+ tests PASS
+**D-2**: Guide Level 3 전면 점검 (`Guide/3단계리뷰.md` 1~4단계) → CRITICAL 0 / MAJOR ≤ 3 (TD 이월 명시)
+**D-3**: 4-Pass 독립 에이전트 리뷰 (Surgeon/Architect/Advocate/Contract) — 가-1 전체 변경 대상, 증거 3개+ 반론 1개+
 
-- **S22. 수험생이 로그인하고 학습 진도를 조회한다** — 엔진 첫 실전 호출
-- **S23. 수험생이 문제를 풀고 진도가 기록된다** — write 경로 E2E
-- **S24. 수험생이 오늘 복습할 카드를 조회한다** — read 경로 E2E
-- **S25. 로그인하지 않은 방문자가 진도 API 호출 → 401 차단** — require-auth 검증
-- **S26. 수험생 A 가 수험생 B 의 학습 데이터 접근 불가** — 격리 검증 (보안 크리티컬)
-- **S27. Access 토큰 만료 후 /refresh 갱신 → 학습 이어짐** — rotation E2E (Step 1-4 엔진 합류 검증)
+### Group E — 인간 승인 (L3 Final Gate)
 
-### 5. `.claude/tech-debt.md` (갱신)
+E-1 체크리스트:
 
-- TD-028 (rotation 비원자) 상태 확인 — 본 Step 은 rotation 변경 없음
-- 신규 TD: FSRS 알고리즘 Phase 2 이월 명시 (현재 fsrsInterval/fsrsStability/fsrsDifficulty 는 기본값 유지, review 시 SM-2/FSRS 미적용)
-- 신규 TD: study_events 별도 테이블(감사 로그) Phase 2 이후 검토
+- Gate A/B/C/D 전부 pass 증거 제시
+- 실 Claude 호출 예상 비용 (BATCH-1 전체 적재 견적)
+- 롤백 전략 (적재 실패 시 status_transitions 기반 복구)
+- 본 plan 의 "## 승인 기록" 섹션 갱신 + 대화 인용
+
+## 비용 견적 (실 Claude 호출)
+
+**Group A smoke 비용 (가-1 진입 직후):**
+
+- A-1: Haiku 10회 × ~3500토큰/회 (입력 ~1500 + 출력 ~2000) = 35K 토큰
+  - 입력 15K × $0.25/1M + 출력 20K × $1.25/1M = **$0.029**
+- A-3: Vision Sonnet 1회 × 이미지 1500 + 출력 1000 토큰
+  - $3/1M × 1.5K + $15/1M × 1K = **$0.020**
+- **소계: ~$0.05** (50원 미만)
+
+**BATCH-1 전체 실적재 (가-1 통과 후 본 적재 시):**
+
+- 32 pages × 페이지당 ~3500 토큰 = 112K 토큰 (Haiku)
+- Vision 추가 도표 1~3장 (Sonnet)
+- **총 견적: ~$0.20~0.50** (300~700원)
+
+⚠️ A-1 실측 후 페이지당 토큰 정확값 기반으로 재계산하여 E-1 체크리스트에 갱신.
 
 ## 위험 분석
 
-| 위험                                                                    | 완화                                                                                                                                                                                                 |
-| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| knowledge_nodes FK 확인 누락 → 임의 nodeId 로 user_progress INSERT 가능 | Zod 검증 + POST /review 에서 `SELECT id FROM knowledge_nodes WHERE id = ? LIMIT 1` 선확인. 미존재 시 404. Step 1-5 (가) 적재 전에는 빈 테이블이므로 모든 nodeId 404 — 정상 동작.                     |
-| 다른 사용자 데이터 유출                                                 | 모든 D1 쿼리 `WHERE user_id = ?` 첫 조건. 테스트 S26 에서 명시 검증.                                                                                                                                 |
-| FSRS 미구현 상태에서 /due 결과 의미 없음                                | 문서화: "FSRS 알고리즘 Phase 2 이월. 현 Step 은 next_review 시각 비교만". 응답 스키마는 유지하여 Phase 2 에 구현체만 교체.                                                                           |
-| user_progress UPSERT 경쟁 조건 (동시 요청 2건)                          | D1 serializes. `INSERT ... ON CONFLICT(user_id, node_id, card_type) DO UPDATE` 패턴. 유니크 인덱스는 본 Step 에서 추가하지 않음 — Phase 2 FSRS 설계 시 결정 (현재는 수동 SELECT then UPDATE/INSERT). |
-| require-auth 미들웨어 첫 실전 노출 → 예외 상황 미발견                   | 시나리오 S25/S27 로 미인증/만료 경로 커버. 4-Pass Surgeon 에서 null/undefined 경로 재점검.                                                                                                           |
-| 출처 추적성 구조가 이 Step 에서 미완성                                  | 본 Step 은 "엔진 확인"이 목적. citation surface 는 Phase 2 Step 1-5 (가) 교재 Graph 적재 시 본격. 스키마 변경 없음.                                                                                  |
-| Zod 의존성 이미 존재 확인 필요                                          | apps/api/package.json 확인 → 없으면 추가 (Hono 친화적, 번들 영향 ~14KB).                                                                                                                             |
+| 위험                                                            | 완화                                                                                                                                                                                                 |
+| :-------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A-1 실호출 비용 폭주 (의도하지 않은 루프)                       | maxRetries 강제 + token-cost-logger 실시간 감시 + smoke 스크립트 호출 횟수 상수 (`SMOKE_CALLS = 10`) 하드코딩 + 진산님 사전 승인 비용 한도 합의                                                      |
+| Group C TD-042 examId 시그니처 변경이 가-0 산출물 회귀 유발     | 시그니처 변경 후 즉시 typecheck → 호출부 전수 갱신. 가-0 시나리오 테스트 350+ 재실행 의무                                                                                                            |
+| TD-045 마이그레이션 0013 — 기존 D1 데이터 손상                  | local-db.ts idempotent 처리 (가-0 에서 확장) + dry-run 먼저. UPDATE 금지 패턴 준수 (INSERT + SUPERSEDES 엣지만). 번호 0013 은 기존 0011_revision_2026_constants_seed / 0012_rate_limits 와 충돌 회피 |
+| B-1 Mock 파라미터를 A 실측 없이 추측 → /simulate 가치 0         | gates.yaml `B-1.adversarial_params_source: "Gate Group A 실측값 기반 (추측 금지)"` 강제. A 미통과 시 B 진입 차단                                                                                     |
+| Vision OCR 추출률 < 80% — A-3 실패                              | 가-1 전체 중단. 도표 처리 전략 재검토 (Phase 2 이월 또는 수동 입력 fallback) → 별도 ADR                                                                                                              |
+| Scheduled 알림(TD-037) Cloudflare Email Routing API 변경 가능성 | Context7 또는 공식 문서로 실제 API 시그니처 확인 후 코드 작성. 추측 금지                                                                                                                             |
+| 4-Pass 자가 리뷰 편향 재발                                      | 독립 에이전트 4~5개 병렬 호출 의무 (`auto-review-protocol.md` 규칙 0). 메인 컨텍스트 직접 4-Pass 실행 = 무효                                                                                         |
 
 ## 검증 계획
 
-- [ ] `pnpm --filter @thepick/api typecheck` 0 errors
-- [ ] `pnpm -r lint` 14 packages 통과 (Hard Rule 15/16/17 grep 0건)
-- [ ] `pnpm --filter @thepick/api test` 기존 161+ tests 유지 + 신규 15~20 tests (routes.test + scenarios S22~S27)
-- [ ] `pnpm --filter @thepick/api build` 성공
-- [ ] require-auth 마운트 라우트에서 미인증 호출 전부 401 확인 (Grep으로 `/api/progress/*` 방어 경로 검증)
-- [ ] 시나리오 S26 (사용자 격리) 실제 통과 → 증거 캡처
-- [ ] **4-Pass 독립 에이전트 리뷰** 필수 (Surgeon / Architect / Advocate / Contract)
-- [ ] 재리뷰 Critical 0 / Major ≤ 2 (Minor 는 TD 이월 가능)
+각 Group 종료 시점:
+
+- [ ] **Group A 종료**: 3개 measurement 산출물 작성 / 응답 잘림 1건 이상 확보 / Vision 추출 ≥ 80%
+- [ ] **Group B 종료**: 1000 시드 Invariant 0건 위반 / 결정론적 재현 확인 (실패 시드 N → 동일 실패)
+- [ ] **Group C 종료**: TD-042/043/044/045/037 모두 코드 + 테스트 + tech-debt.md 체크박스 ✅
+- [ ] **Group D 종료**: typecheck/lint/test 14 워크스페이스 green / Guide L3 CRITICAL 0 / 4-Pass CRITICAL 0 + 증거 3개+ + 반론 1개+
+- [ ] **Group E 종료**: 진산님 승인 메시지 본 plan 에 인용 기록
 
 ## 롤백 전략
 
-- routes.ts 신규 파일 → 단순 삭제
-- index.ts `app.use` + `app.route` 2줄 제거
-- scenarios.test.ts 추가 블록 revert
-- DB 스키마 변경 **없음** — 롤백 리스크 최소
+- **Group A**: smoke 스크립트는 `__manual__/` 격리. 단순 삭제 또는 보존 (자산화 가능). DB 영향 0
+- **Group B**: `sim/` 디렉토리 신규 — 단순 삭제
+- **Group C**:
+  - TD-042: examId 시그니처 revert (호출부 전수). 영향 큰 변경이므로 Group 내 단위 커밋 필수
+  - TD-043: withRetry 분기 revert (단일 함수)
+  - TD-044: meta.changes 사용 revert
+  - TD-045: D1 migrations idempotent 설계로 재실행 안전. 롤백 시 `DELETE FROM knowledge_edges WHERE relation = 'SUPERSEDES' AND created_at >= '{deploy_time}'` (시간 기반)
+  - TD-037: Scheduled 핸들러 분기 revert
+- **BATCH-1 적재 실패 시 (가-1 본 적재 단계, E-1 통과 후)**: status_transitions 테이블의 draft 상태 노드 전수 삭제 후 재실행. SUPERSEDES 엣지는 보존(과거 운영 데이터 무관)
 
-## 범위 외 (Step 1-5 가 또는 Phase 2 이월)
+## 범위 외 (가-2 또는 Phase 2 이월)
 
-- **Step 1-5 (가)** 교재 Graph 구축 (BATCH 1~7 순차 적재) — 본 (나) 통과 후 별도 plan
-- **Phase 2** FSRS v4.5 알고리즘 본격 구현 (현재는 필드만 존재, 알고리즘 미적용)
-- **Phase 2** study_events 감사 로그 테이블 검토
-- **Phase 2** 출처 추적성 `citations` 구조 본격 설계 (수험자 "근거 보기" UX 포함)
-- **Phase 2** 문제 자동 생성기 + 근거 역방향 검증 레이어
+- BATCH-2~7 적재 (가-2~가-7 별도 plan)
+- Phase 2 FSRS v4.5 알고리즘 본격 도입
+- Phase 2 출처 추적성 `citations` 구조 본격 설계 (수험자 "근거 보기" UX)
+- Phase 2 문제 자동 생성기 + 근거 역방향 검증
+- SLM/LoRA 도입 (2027-04 재검토 — 동결)
+
+## 진행 권장 단계 (Group A 진입 시점부터)
+
+1. 본 plan 에 진산님 승인 기록 (E 진입 전 사전 승인이 아닌 **plan 자체 승인** — Group A 진입 허가)
+2. **Group A 진입**: A-1 → A-2 → A-3 순차 (의존 없음, 병렬 가능하나 비용 모니터링 위해 순차 권장)
+3. A 종료 후 measurement 산출물 진산님 검토 → B 진입 허가
+4. **Group B 진입**: B-1 (Mock 설계) → B-2 (1000 시드 실행)
+5. B 종료 후 **Group C 진입**: TD-042 → TD-043 → TD-044 → TD-045 → TD-037 (의존 순서)
+6. C 종료 후 **Group D 진입**: D-1 → D-2 → D-3
+7. D 종료 후 **Group E 진입**: 본 plan E-1 체크리스트 모두 충족 → 진산님 최종 승인 (BATCH-1 본 적재 착수 허가)
 
 ## 승인 기록
 
-- 진산 "승인할 테니 진행해줘" (2026-04-23 KST, 6-페르소나 감사 재정렬 + 출처 추적성 요구 명시 직후)
+- TBD — 본 plan 에 대한 진산님 승인 메시지 인용 (Group A 진입 허가)
+- TBD — Group D 종료 후 E-1 체크리스트 충족 시 BATCH-1 본 적재 착수 허가
