@@ -115,7 +115,7 @@ END;
 --   SQLite ALTER COLUMN 불가 → 트리거로 INSERT 시 NULL/빈문자열 차단.
 --   기존 행(운영 데이터 0건 상태)은 영향 없음. Temporal UPDATE 차단은 유지.
 --
---   page_ref 형식: "403" 또는 "403-434" (단일 페이지 혹은 범위).
+--   page_ref 형식: "403" / "403-434" / "525:§4-2" (단일 / 범위 / 페이지+절). 형식 강제는 application 레이어 (Zod). 트리거는 NULL/empty 만 차단.
 --   빈 문자열도 거부 — Ontology Lock 이후 2차 방어선.
 -- ============================================================
 
@@ -123,21 +123,21 @@ CREATE TRIGGER IF NOT EXISTS enforce_knowledge_nodes_page_ref_not_null
 BEFORE INSERT ON knowledge_nodes
 WHEN NEW.page_ref IS NULL OR NEW.page_ref = ''
 BEGIN
-  SELECT RAISE(ABORT, 'knowledge_nodes.page_ref is required (source citation). Use "NNN" or "NNN-MMM" format.');
+  SELECT RAISE(ABORT, 'knowledge_nodes.page_ref is required (source citation). Use "NNN", "NNN-MMM", or "NNN:§section" format.');
 END;
 
 CREATE TRIGGER IF NOT EXISTS enforce_formulas_page_ref_not_null
 BEFORE INSERT ON formulas
 WHEN NEW.page_ref IS NULL OR NEW.page_ref = ''
 BEGIN
-  SELECT RAISE(ABORT, 'formulas.page_ref is required (source citation). Use "NNN" or "NNN-MMM" format.');
+  SELECT RAISE(ABORT, 'formulas.page_ref is required (source citation). Use "NNN", "NNN-MMM", or "NNN:§section" format.');
 END;
 
 CREATE TRIGGER IF NOT EXISTS enforce_constants_page_ref_not_null
 BEFORE INSERT ON constants
 WHEN NEW.page_ref IS NULL OR NEW.page_ref = ''
 BEGIN
-  SELECT RAISE(ABORT, 'constants.page_ref is required (source citation). Use "NNN" or "NNN-MMM" format.');
+  SELECT RAISE(ABORT, 'constants.page_ref is required (source citation). Use "NNN", "NNN-MMM", or "NNN:§section" format.');
 END;
 
 -- ============================================================
