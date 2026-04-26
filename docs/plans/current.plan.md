@@ -214,6 +214,49 @@ E-1 체크리스트:
 - 본질: ADR-007 §"Year 2 마이그레이션 0005" 가 docs 안에만 존재. 실제 SQL backfill 템플릿 0건. `prevent_X_update` 트리거가 `ALTER TABLE ADD COLUMN NOT NULL` 차단 — Year 2 진입 시 발견 위험.
 - 처리: `migrations/_year2_simulation/` 디렉토리 신설 (가-1 Group C 종결 시점) — 시뮬 fixtures (1년차 100행) + backfill SQL 스켈레톤 + golden test 1건. **Phase 2 종료 전 작성 의무**. 가-1 본 작업 외, Phase 1 후반전 별도 plan.
 
+## 검토 흡수 — BATCH 적재 워크플로우 재정의 (2026-04-25 진산님 결정)
+
+진산님 결정: **BATCH 적재 = Claude Code (Opus 4.7) 직접 처리** (본 프로젝트 Claude API 호출이 아닌 대화 세션 내 처리). 별도 메모리 등록 + 로드맵 작성:
+
+- `project_batch_load_workflow.md` (메모리) — 진산님 트리거 키워드 + Claude 자동 진행 절차
+- `docs/plans/batch-loadmap.md` (체크리스트 로드맵) — 14 BATCH × 6 Layer
+
+### 가-1 plan 영향 (BATCH-1 시범 적재 후 정밀 plan 재구성)
+
+| 가-1 항목                                     | 변경                                                                             |
+| :-------------------------------------------- | :------------------------------------------------------------------------------- |
+| Group A-1 (Claude API smoke)                  | **운영 RAG 모델 검증으로 좁힘** — 학습자 트래픽용 Haiku + Prompt caching         |
+| Group A-3 (Vision OCR smoke)                  | **제거 검토** — 도표 페이지 Claude Code 직접 처리 (1M 컨텍스트 이미지 입력)      |
+| Group B (1000 시드 simulation)                | **운영 RAG 용으로 좁힘** (BATCH adversarial mock 제거)                           |
+| `apps/batch/src/adapters/anthropic-client.ts` | **운영 RAG 용으로 이동** (apps/api 또는 별도)                                    |
+| `apps/batch/src/__manual__/cost-cap.ts`       | **운영 cost-cap 으로 승격**                                                      |
+| `packages/parser/src/batch-processor.ts`      | **대폭 단순화** — Claude SDK 호출 제거, "Claude Code 가 출력한 JSON 받는 loader" |
+
+**가-1 plan 재구성 PR 은 BATCH-1 시범 적재 후 별도 step**.
+
+## 검토 흡수 — 운영 RAG 트래픽 모니터링 도구 (진산님 명시 신규 요구, 2026-04-25)
+
+진산님 명시: "예상치 못한 트래픽 과다 발생 가능성 → 모니터링 도구 별도 개발 필요".
+
+D-4 (운영 회로) 가 **장애 알림** 위주라면, 본 항목은 **트래픽 / 비용 / 이상 패턴** 가시화. 가-1 Group D D-5 (신규) 또는 별도 step 검토 필요:
+
+### D-5 (신규) — 트래픽 / 비용 모니터링 도구
+
+| 서브 게이트 | 내용                                                                                                                                                                  | 단일 벤더 (메모리 정합)                                         |
+| :---------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------- |
+| D-5-1       | **일별 LLM 호출 횟수 + 누적 비용 대시보드** — 학습자별 / 시간별 분포                                                                                                  | Cloudflare Analytics Engine writeDataPoint + 자체 SQL 쿼리 UI   |
+| D-5-2       | **임계값 알림** — 시간당 호출 수 / 일별 비용이 임계값 초과 시 진산님 즉시 알림                                                                                        | Cloudflare Email Routing (D-4-2 와 통합)                        |
+| D-5-3       | **이상 패턴 감지** — 단일 학습자 / IP 가 분당 10+ 호출 또는 같은 query 반복 시 일시 차단                                                                              | Workers KV 카운터 + rate-limit 로직 (apps/api 기존 자산 재사용) |
+| D-5-4       | **운영 cost-cap 승격** — `apps/batch/src/__manual__/cost-cap.ts` 를 `apps/api/src/middleware/operating-cost-cap.ts` 로 이동 + 일별 cap (예: $50/일) 도달 시 일시 차단 | 본 프로젝트 자체 코드 (Cloudflare 외부 의존 0)                  |
+| D-5-5       | **사용자 노출 — Graceful Degradation** — 트래픽 차단 시 "오늘 학습 분량을 다 사용하셨습니다" 같은 친절한 안내 (ADR-008 정합)                                          | 코드 차원                                                       |
+
+### 진입 시점
+
+- 학습자 화면 자체가 Phase 3 영역이라 운영 RAG 호출도 Phase 3 진입 시 발생
+- 따라서 D-5 는 **Phase 3 진입 직전** plan 필수 항목으로 명시 이월
+- 가-1 Group D D-4 (운영 회로 알림 인프라) 적재 시 D-5 의 D-5-1/D-5-2 일부 선반영 가능 (Analytics Engine + Email Routing 공유)
+- 본 plan §위험 분석 기존 행 외에 신규 행 추가 — 트래픽 폭증 시나리오 (DDoS / 학습자 burst / 무한 루프 client)
+
 ## 진행 권장 단계 (Group A 진입 시점부터)
 
 1. 본 plan 에 진산님 승인 기록 (E 진입 전 사전 승인이 아닌 **plan 자체 승인** — Group A 진입 허가)
