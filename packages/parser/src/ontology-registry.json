@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "node_types": ["LAW", "FORMULA", "INVESTIGATION", "INSURANCE", "CROP", "CONCEPT", "TERM"],
   "edge_types": [
     "APPLIES_TO",
@@ -35,5 +35,19 @@
     "sample",
     "deductible",
     "insurance_rate"
-  ]
+  ],
+  "node_types_meta": {
+    "LAW": { "deduplication_threshold": 0.88, "confusion_priority": "critical" },
+    "FORMULA": { "deduplication_threshold": 0.95, "confusion_priority": "critical" },
+    "INVESTIGATION": { "deduplication_threshold": 0.9, "confusion_priority": "high" },
+    "INSURANCE": { "deduplication_threshold": 0.93, "confusion_priority": "high" },
+    "CROP": { "deduplication_threshold": 0.97, "confusion_priority": "medium" },
+    "CONCEPT": { "deduplication_threshold": 0.85, "confusion_priority": "medium" },
+    "TERM": { "deduplication_threshold": 0.88, "confusion_priority": "low" }
+  },
+  "constants_dedup_policy": {
+    "strategy": "exact_match",
+    "fields": ["name", "valid_from", "valid_to"],
+    "rationale": "Constants are exact-match domain — 임계값 무관 (ADR-021 / Hard Rule 28)"
+  }
 }
