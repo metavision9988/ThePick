@@ -24,14 +24,14 @@
     "@thepick/shared": "workspace:*"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260415.1",
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
-    "drizzle-kit": "^0.30.0",
+    "@cloudflare/workers-types": "^4.20260426.1",
+    "@typescript-eslint/eslint-plugin": "^8.59.0",
+    "@typescript-eslint/parser": "^8.59.0",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0",
-    "wrangler": "^4.83.0"
+    "wrangler": "^4.85.0"
   }
 }
