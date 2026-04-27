@@ -26,7 +26,7 @@ ALTER TABLE constants ADD COLUMN is_current_active INTEGER DEFAULT 1;
 CREATE INDEX idx_knowledge_nodes_active
   ON knowledge_nodes (is_current_active, exam_id, type);
 CREATE INDEX idx_knowledge_edges_supersedes
-  ON knowledge_edges (relation, from_node) WHERE relation = 'SUPERSEDES';
+  ON knowledge_edges (edge_type, from_node) WHERE edge_type = 'SUPERSEDES';
 ```
 
 ### 2단계: SUPERSEDES 트리거 (마이그레이션 0015)
@@ -34,7 +34,7 @@ CREATE INDEX idx_knowledge_edges_supersedes
 ```sql
 CREATE TRIGGER auto_deactivate_on_supersedes
 AFTER INSERT ON knowledge_edges
-WHEN NEW.relation = 'SUPERSEDES'
+WHEN NEW.edge_type = 'SUPERSEDES'
 BEGIN
   UPDATE knowledge_nodes
     SET is_current_active = 0, current_version_id = NEW.from_node
