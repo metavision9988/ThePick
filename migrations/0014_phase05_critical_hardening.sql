@@ -89,6 +89,7 @@ WHEN NEW.id IS NOT OLD.id
   OR NEW.exam_frequency IS NOT OLD.exam_frequency
   OR NEW.related_formula IS NOT OLD.related_formula
   OR NEW.exam_scope IS NOT OLD.exam_scope
+  OR NEW.superseded_by IS NOT OLD.superseded_by
 BEGIN
   SELECT RAISE(ABORT, 'UPDATE on constants body columns is forbidden (Hard Rule 2, Temporal Graph). Use INSERT new constant with superseded_by set. Only is_current_active may change.');
 END;
