@@ -95,7 +95,7 @@ END;
 --
 -- knowledge_edges 의 from_node/to_node 는 knowledge_nodes(id) 참조 (FK).
 -- formulas / constants 의 SUPERSEDES 메커니즘은 knowledge_edges 를 거치지 않으며
--- application 레이어 책임 (Loader 가 INSERT 시 기존 행 is_current_active flip).
+-- 마이그레이션 0014 가 자체 superseded_by 컬럼 기반 트리거 (mav_formulas_supersedes_deactivate / mav_constants_supersedes_deactivate) 추가 (Phase 0.5 C-3 해소).
 -- ============================================================
 
 CREATE TRIGGER IF NOT EXISTS mav_supersedes_knowledge_nodes_deactivate
