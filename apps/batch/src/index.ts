@@ -11,7 +11,14 @@ export {
 } from './qg2-validator';
 export type { QG2Result, QG2Check, GoldenTestCase } from './qg2-validator';
 
-export { runPipeline, PIPELINE_STAGES, BATCH_CONFIGS, BATCH1_CONFIG } from './pipeline';
+export {
+  runPipeline,
+  PIPELINE_STAGES,
+  BATCH_CONFIGS,
+  BATCH1_CONFIG,
+  ConcurrentRunError,
+  RecoveryFailedError,
+} from './pipeline';
 export type {
   PipelineStage,
   PipelineContext,
@@ -19,7 +26,10 @@ export type {
   StageResult,
   BatchId,
   BatchConfig,
+  MetaPersistenceFailure,
+  ReturnedRecoveryStatus,
 } from './pipeline';
+export type { RecoveryStatus } from './recover';
 
 export { loadDraft, DraftLoadError } from './loader/draft-loader';
 export type { LoadDraftContext, LoadDraftResult, D1Db, D1Stmt } from './loader/draft-loader';

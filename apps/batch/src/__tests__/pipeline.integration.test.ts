@@ -150,6 +150,9 @@ describe('runPipeline — fixture mode (소규모 real fixture)', () => {
     // Stage 9 QG-2 FAIL — fixture 규모가 40+ 임계값 미달
     expect(stageByName.qg2_gate.status).toBe('failed');
     expect(result.qg2Passed).toBe(false);
+    // Step 11.6 PipelineResult 확장 — fresh run + InMemoryBatchRunsDb 정상 = no_checkpoint + 메타 일관
+    expect(result.recoveryStatus).toBe('no_checkpoint');
+    expect(result.metaPersistenceFailures).toEqual([]);
   });
 
   it('dry-run: Stage 5 에서 contract JSON 스냅샷 생성', async () => {
@@ -169,11 +172,13 @@ describe('runPipeline — fixture mode (소규모 real fixture)', () => {
       ...step116TestFields(outDir),
     };
 
-    await runPipeline(ctx);
+    const result = await runPipeline(ctx);
     const snapshot = readFileSync(join(outDir, 'BATCH-1-contract.json'), 'utf-8');
     const parsed = JSON.parse(snapshot);
     expect(parsed.nodes).toHaveLength(4);
     expect(parsed.formulas).toHaveLength(1);
+    expect(result.recoveryStatus).toBe('no_checkpoint');
+    expect(result.metaPersistenceFailures).toEqual([]);
   });
 });
 
@@ -209,6 +214,8 @@ describe('runPipeline — 합성 대규모 contract', () => {
     const qg2Stage = result.stages.find((s) => s.stage === 'qg2_gate');
     expect(qg2Stage?.status).toBe('success');
     expect(result.qg2Passed).toBe(true);
+    expect(result.recoveryStatus).toBe('no_checkpoint');
+    expect(result.metaPersistenceFailures).toEqual([]);
   });
 });
 
@@ -262,6 +269,9 @@ describe('runPipeline — 실패 경로', () => {
     expect(byName.constants_extract.status).toBe('skipped');
     expect(byName.db_load.status).toBe('skipped');
     expect(result.qg2Passed).toBe(false);
+    // 실패 경로 — InMemoryBatchRunsDb in_progress→failed 전이 정상 = 메타 일관
+    expect(result.recoveryStatus).toBe('no_checkpoint');
+    expect(result.metaPersistenceFailures).toEqual([]);
   });
 });
 
@@ -389,5 +399,7 @@ describe('runPipeline — non-fixture 통합 (pdfPagesOverride + mock ClaudeClie
     expect(byName.formula_verify.status).toBe('success');
     expect(byName.qg2_gate.status).toBe('success');
     expect(result.qg2Passed).toBe(true);
+    expect(result.recoveryStatus).toBe('no_checkpoint');
+    expect(result.metaPersistenceFailures).toEqual([]);
   });
 });

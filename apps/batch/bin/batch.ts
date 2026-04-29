@@ -20,7 +20,15 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { KnowledgeContract } from '@thepick/parser';
 import { EXAM_IDS } from '@thepick/shared';
-import { runPipeline, BATCH_CONFIGS, type BatchId, type PipelineContext } from '../src/pipeline';
+import {
+  runPipeline,
+  BATCH_CONFIGS,
+  ConcurrentRunError,
+  RecoveryFailedError,
+  type BatchId,
+  type PipelineContext,
+  type PipelineResult,
+} from '../src/pipeline';
 import {
   transitionStatus,
   getCurrentStatus,
@@ -56,7 +64,14 @@ const ENGINE_VERSION = (
   }
 ).version;
 
-type ExitCode = 0 | 1 | 2;
+/**
+ * CLI exit codes — 운영자가 retry 가능 vs 무결성 실패 vs 동시 실행 차단을 분류.
+ *   0 = 정상 / 1 = 일반 실패 (QG-2 fail / 알 수 없는 throw) / 2 = invalid args
+ *   (3 의도적 비움 — Node.js exit 3 = "Internal JS Parse Error" 와 충돌 회피)
+ *   4 = ConcurrentRunError (다른 인스턴스 진행 중 — retry 불가, lock 해제 후 재시도)
+ *   5 = RecoveryFailedError (checkpoint 무결성 실패 — 운영자 개입 필수)
+ */
+type ExitCode = 0 | 1 | 2 | 4 | 5;
 
 async function main(): Promise<ExitCode> {
   const [command, ...rest] = process.argv.slice(2);
@@ -82,6 +97,8 @@ async function main(): Promise<ExitCode> {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[thepick-batch] ERROR: ${msg}`);
     if (err instanceof Error && err.stack) console.error(err.stack);
+    if (err instanceof ConcurrentRunError) return 4;
+    if (err instanceof RecoveryFailedError) return 5;
     return 1;
   }
 }
@@ -197,6 +214,19 @@ async function cmdRun(args: string[]): Promise<ExitCode> {
 
     const result = await runPipeline(ctx);
     printRunReport(result);
+
+    // 메타테이블 영구화 실패 누적 → 24h stale lock 위험 alarm (Step 11.6 SF-C-2/3 옵션 C 가시화)
+    if (result.metaPersistenceFailures.length > 0) {
+      console.error('');
+      console.error('⚠️  batch_runs 메타테이블 영구화 실패 — 운영 alarm 검토 필수');
+      for (const f of result.metaPersistenceFailures) {
+        console.error(`   stage=${f.stage} op=${f.operation} reason=${f.reason}`);
+      }
+      console.error('   → 다음 recover 시 stale lock 가능. force-unlock 검토.');
+    }
+
+    // already_completed (Idempotency skip) 은 정상 종료 — qg2Passed=false 로 false negative 차단 (Q-M-2 정정)
+    if (result.recoveryStatus === 'already_completed') return 0;
     return result.qg2Passed ? 0 : 1;
   } finally {
     localDb?.close();
@@ -223,14 +253,10 @@ function loadFixtureContract(batchId: BatchId): KnowledgeContract {
   return raw.contract;
 }
 
-function printRunReport(result: {
-  batchId: string;
-  stages: readonly { stage: string; status: string; message: string; durationMs: number }[];
-  qg2Passed: boolean;
-  qg2Result: unknown;
-}): void {
+function printRunReport(result: PipelineResult): void {
   console.log('');
   console.log(`── Pipeline ${result.batchId} ─────────────────`);
+  console.log(`recovery: ${result.recoveryStatus}`);
   for (const s of result.stages) {
     const icon = s.status === 'success' ? '✅' : s.status === 'skipped' ? '⏭️ ' : '❌';
     const durationStr = s.durationMs > 0 ? ` (${s.durationMs}ms)` : '';

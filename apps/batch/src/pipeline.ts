@@ -52,7 +52,7 @@ import {
   writeCheckpointSync,
   type PipelineStateSnapshot,
 } from './checkpoint.js';
-import { recoverBatch, type BatchRunsDb } from './recover.js';
+import { recoverBatch, type BatchRunsDb, type RecoveryStatus } from './recover.js';
 import { CostMeter } from './cost-meter.js';
 import { installSignalHandlers } from './signal-handlers.js';
 
@@ -76,6 +76,39 @@ export interface StageResult {
   readonly data?: unknown;
 }
 
+/**
+ * batch_runs 메타테이블 영구화 실패 — 운영 드리프트 가시화 (Step 11.6 SF-C-3 / SF-M-4 / SF-C-2 옵션 C / SF-DA-1).
+ *
+ * 발생 시점:
+ *   - stage 실패 후 `state='failed'` UPDATE 가 throw (D1 단절 / 0015 트리거 RAISE(ABORT))
+ *   - 정상 완료 후 `state='completed'` UPDATE 가 throw
+ *   - stage 성공 후 `state='in_progress'` UPDATE 가 throw
+ *   - SIGINT/SIGTERM handler 의 `state='killed'` UPDATE 가 process.exit 직전 도달 못 함
+ *   - finally `removeHandlers()` / `costMeter.finalize()` throw — process listener leak / meter resource leak
+ *
+ * caller (CLI / 모니터링) 는 `metaPersistenceFailures.length > 0` 시 alarm 의무 — 24h stale lock 위험.
+ */
+export interface MetaPersistenceFailure {
+  readonly stage: PipelineStage | 'completed_transition' | 'sigint_kill' | 'finalize';
+  readonly operation:
+    | 'state_failed'
+    | 'state_completed'
+    | 'state_in_progress'
+    | 'state_killed'
+    | 'finalize_handlers'
+    | 'finalize_costmeter';
+  readonly reason: string;
+}
+
+/**
+ * PipelineResult.recoveryStatus 가 도달 가능한 4 literal — caller exhaustive switch 검증용.
+ * `concurrent_run_detected` / `recovery_failed` 는 throw 후 도달 X (PipelineResult 미반환) → 타입에서 제외.
+ */
+export type ReturnedRecoveryStatus = Exclude<
+  RecoveryStatus,
+  'concurrent_run_detected' | 'recovery_failed'
+>;
+
 export interface PipelineResult {
   readonly batchId: string;
   readonly stages: readonly StageResult[];
@@ -83,6 +116,17 @@ export interface PipelineResult {
   readonly qg2Result: QG2Result | null;
   readonly contract: KnowledgeContract | null;
   readonly loadResult: LoadDraftResult | null;
+  /**
+   * recover() 분기 결과 — caller 가 'already_completed' Idempotency skip 을 'qg2 fail' 로
+   * 오분류하는 false negative 차단 (Step 11.6 Q-M-2 정정).
+   * 4 literal narrow (ReturnedRecoveryStatus) — throw 케이스 2종 자동 제외.
+   */
+  readonly recoveryStatus: ReturnedRecoveryStatus;
+  /**
+   * batch_runs UPDATE 영구화 실패 누적 — 빈 배열 = 메타 일관 유지.
+   * 1건 이상 = caller alarm 의무 (24h stale lock 차단). 위 MetaPersistenceFailure JSDoc 참조.
+   */
+  readonly metaPersistenceFailures: readonly MetaPersistenceFailure[];
 }
 
 export const PIPELINE_STAGES: readonly PipelineStage[] = [
@@ -332,6 +376,8 @@ function buildSkipResult(ctx: PipelineContext, message: string): PipelineResult 
     qg2Result: null,
     contract: null,
     loadResult: null,
+    recoveryStatus: 'already_completed',
+    metaPersistenceFailures: [],
   };
 }
 
@@ -411,6 +457,9 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
     });
   }
 
+  // === metaPersistenceFailures 누적 — runPipeline 종료 시 PipelineResult 에 포함 ===
+  const metaPersistenceFailures: MetaPersistenceFailure[] = [];
+
   // === 0.7 SIGINT/SIGTERM handler 등록 ===
   let lastSnapshot: PipelineStateSnapshot | null = null;
   const removeHandlers =
@@ -431,9 +480,16 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
             writeCheckpointSync(cp, ctx.checkpointBaseDir, {
               fsync: ctx.fsyncCheckpoint ?? true,
             });
-            // best-effort — process.exit 직전이라 await 불가, 실패 시 console.error 가시화
+            // best-effort — process.exit 직전이라 await 불가. 실패 시 console.error + metaPersistenceFailures 누적
+            // (옵션 C: caller 가 PipelineResult 미수신해도 stderr 로그가 운영 alarm 트리거).
             markBatchRunKilled(ctx.examId, ctx.batchRunId, ctx.batchRunsDb).catch((err) => {
+              const reason = err instanceof Error ? err.message : String(err);
               console.error('[Pipeline] markBatchRunKilled failed (best-effort):', err);
+              metaPersistenceFailures.push({
+                stage: 'sigint_kill',
+                operation: 'state_killed',
+                reason,
+              });
             });
           },
         })
@@ -497,8 +553,10 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
             last_completed_stage: stage,
           });
         } catch (err) {
-          // 0015 트리거 (state='completed' 차단 등) 가 RAISE(ABORT) 가능 — 가시화 후 흐름 계속
+          // 0015 트리거 (state='completed' 차단 등) 가 RAISE(ABORT) 가능 — 가시화 + 누적 후 흐름 계속 (SF-C-3 정정)
+          const reason = err instanceof Error ? err.message : String(err);
           console.error(`[Pipeline] batch_runs UPDATE state=failed 실패 (stage=${stage}):`, err);
+          metaPersistenceFailures.push({ stage, operation: 'state_failed', reason });
         }
         continue;
       }
@@ -518,29 +576,68 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
         await writeCheckpoint(cp, ctx.checkpointBaseDir, {
           fsync: ctx.fsyncCheckpoint ?? true,
         });
-        await ctx.batchRunsDb.updateState(ctx.examId, ctx.batchRunId, {
-          state: 'in_progress',
-          last_completed_stage: stage,
-          last_node_id: lastSnapshot.last_inserted_node_id,
-          state_hash: cp.state_hash,
-        });
+        try {
+          await ctx.batchRunsDb.updateState(ctx.examId, ctx.batchRunId, {
+            state: 'in_progress',
+            last_completed_stage: stage,
+            last_node_id: lastSnapshot.last_inserted_node_id,
+            state_hash: cp.state_hash,
+          });
+        } catch (err) {
+          // SF-M-4 일관성 — checkpoint 는 이미 쓴 후라 파이프라인 진행 가능. 메타만 가시화 + 누적.
+          const reason = err instanceof Error ? err.message : String(err);
+          console.error(
+            `[Pipeline] batch_runs UPDATE state=in_progress 실패 (stage=${stage}):`,
+            err,
+          );
+          metaPersistenceFailures.push({ stage, operation: 'state_in_progress', reason });
+        }
       }
     }
 
     // === 정상 완료 시 'completed' 전이 ===
     if (!aborted) {
-      await ctx.batchRunsDb.updateState(ctx.examId, ctx.batchRunId, {
-        state: 'completed',
-        completed_at: new Date().toISOString(),
-      });
+      try {
+        await ctx.batchRunsDb.updateState(ctx.examId, ctx.batchRunId, {
+          state: 'completed',
+          completed_at: new Date().toISOString(),
+        });
+      } catch (err) {
+        // SF-M-4 — completed UPDATE 실패 시 PipelineResult 는 정상 반환하되 metaPersistenceFailures 로 가시화.
+        const reason = err instanceof Error ? err.message : String(err);
+        console.error('[Pipeline] batch_runs UPDATE state=completed 실패:', err);
+        metaPersistenceFailures.push({
+          stage: 'completed_transition',
+          operation: 'state_completed',
+          reason,
+        });
+      }
     }
   } finally {
-    removeHandlers();
+    try {
+      removeHandlers();
+    } catch (err) {
+      // SF-DA-1 일관성 — B1 패턴 그대로 push (process listener leak 가시화)
+      const reason = err instanceof Error ? err.message : String(err);
+      console.error('[Pipeline] removeHandlers 실패 (logged only):', err);
+      metaPersistenceFailures.push({
+        stage: 'finalize',
+        operation: 'finalize_handlers',
+        reason,
+      });
+    }
     if (ctx.costMeter) {
       try {
         ctx.costMeter.finalize();
       } catch (err) {
+        // SF-DA-1 일관성 — meter resource leak 가시화
+        const reason = err instanceof Error ? err.message : String(err);
         console.error('[Pipeline] CostMeter finalize 실패 (logged only):', err);
+        metaPersistenceFailures.push({
+          stage: 'finalize',
+          operation: 'finalize_costmeter',
+          reason,
+        });
       }
     }
   }
@@ -552,6 +649,8 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
     qg2Result,
     contract: state.contract,
     loadResult: state.loadResult,
+    recoveryStatus: recovery.status,
+    metaPersistenceFailures,
   };
 }
 
