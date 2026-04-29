@@ -14,16 +14,40 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { randomUUID } from 'node:crypto';
 import { readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mkdtempSync } from 'node:fs';
 import type { KnowledgeContract, ClaudeClient, ClaudeResponse } from '@thepick/parser';
+import { EXAM_IDS } from '@thepick/shared';
 import { runPipeline, BATCH_CONFIGS } from '../pipeline';
 import type { PipelineContext } from '../pipeline';
+import { InMemoryBatchRunsDb } from '../in-memory-batch-runs-db';
 import type { GoldenTestCase } from '../qg2-validator';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
+
+/**
+ * Step 11.6 통합 후 PipelineContext 가 요구하는 신규 5개 required 필드 + 2개 optional
+ * 의 테스트 기본값. checkpointBaseDir 는 mkdtempSync 격리 디렉터리 사용.
+ *
+ * enableSignalHandlers=false: vitest 환경에서 process.exit 차단
+ * fsyncCheckpoint=false: 테스트 속도 + 플랫폼 호환
+ */
+const TEST_ENGINE_VERSION = '0.1.0';
+
+function step116TestFields(outDir: string) {
+  return {
+    examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+    batchRunId: randomUUID(),
+    checkpointBaseDir: outDir,
+    batchRunsDb: new InMemoryBatchRunsDb(),
+    engineVersion: TEST_ENGINE_VERSION,
+    enableSignalHandlers: false,
+    fsyncCheckpoint: false,
+  } as const;
+}
 
 function loadSampleContract(): KnowledgeContract {
   const raw = JSON.parse(
@@ -110,6 +134,7 @@ describe('runPipeline — fixture mode (소규모 real fixture)', () => {
       goldenTests: loadGoldenTests(),
       versionYear: 2026,
       fixtureContract: loadSampleContract(),
+      ...step116TestFields(outDir),
     };
 
     const result = await runPipeline(ctx);
@@ -141,6 +166,7 @@ describe('runPipeline — fixture mode (소규모 real fixture)', () => {
       goldenTests: [],
       versionYear: 2026,
       fixtureContract: loadSampleContract(),
+      ...step116TestFields(outDir),
     };
 
     await runPipeline(ctx);
@@ -176,6 +202,7 @@ describe('runPipeline — 합성 대규모 contract', () => {
       goldenTests: loadGoldenTests(),
       versionYear: 2026,
       fixtureContract: syntheticLargeContract(),
+      ...step116TestFields(outDir),
     };
 
     const result = await runPipeline(ctx);
@@ -226,6 +253,7 @@ describe('runPipeline — 실패 경로', () => {
       goldenTests: [],
       versionYear: 2026,
       fixtureContract: badContract,
+      ...step116TestFields(outDir),
     };
 
     const result = await runPipeline(ctx);
@@ -337,6 +365,7 @@ describe('runPipeline — non-fixture 통합 (pdfPagesOverride + mock ClaudeClie
       goldenTests: loadGoldenTests(),
       versionYear: 2026,
       pdfPagesOverride: fakePdfPages,
+      ...step116TestFields(outDir),
     };
 
     const result = await runPipeline(ctx);

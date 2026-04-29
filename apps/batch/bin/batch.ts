@@ -14,10 +14,12 @@
  */
 
 import { parseArgs } from 'node:util';
+import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { KnowledgeContract } from '@thepick/parser';
+import { EXAM_IDS } from '@thepick/shared';
 import { runPipeline, BATCH_CONFIGS, type BatchId, type PipelineContext } from '../src/pipeline';
 import {
   transitionStatus,
@@ -30,6 +32,9 @@ import { openLocalDb } from '../src/loader/local-db';
 import { createAnthropicClient } from '../src/adapters/anthropic-client';
 import { createVisionClient } from '../src/adapters/vision-client';
 import { createTokenCostLogger } from '../src/adapters/token-cost-logger';
+import { D1BatchRunsDb } from '../src/d1-batch-runs-db';
+import { InMemoryBatchRunsDb } from '../src/in-memory-batch-runs-db';
+import type { BatchRunsDb } from '../src/recover';
 import type { GoldenTestCase } from '../src/qg2-validator';
 import type { TransitionStatus, TransitionTargetType } from '@thepick/shared';
 
@@ -38,7 +43,18 @@ const __dirname = dirname(__filename);
 const FIXTURES_DIR = join(__dirname, '..', 'src', 'fixtures');
 const DEFAULT_DB_PATH = process.env.THEPICK_BATCH_DB ?? './thepick-local.db';
 const DEFAULT_OUT_DIR = process.env.THEPICK_BATCH_OUT ?? './out';
+const DEFAULT_CHECKPOINT_DIR = process.env.THEPICK_BATCH_CHECKPOINT_DIR ?? './.checkpoint';
 const DEFAULT_VERSION_YEAR = 2026;
+
+/**
+ * @thepick/batch 패키지 버전 — checkpoint engine_version 필드 + recover 시 major 비교.
+ * package.json 동적 읽기로 단일 출처 보장.
+ */
+const ENGINE_VERSION = (
+  JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')) as {
+    version: string;
+  }
+).version;
 
 type ExitCode = 0 | 1 | 2;
 
@@ -152,6 +168,11 @@ async function cmdRun(args: string[]): Promise<ExitCode> {
 
   const localDb = dryRun || useFixtures ? null : openLocalDb({ path: DEFAULT_DB_PATH });
 
+  // batch_runs 메타테이블 어댑터 — production 은 D1, dry-run/fixtures 는 in-memory.
+  const batchRunsDb: BatchRunsDb = localDb
+    ? new D1BatchRunsDb(localDb.db)
+    : new InMemoryBatchRunsDb();
+
   try {
     const ctx: PipelineContext = {
       batchId,
@@ -166,6 +187,12 @@ async function cmdRun(args: string[]): Promise<ExitCode> {
       goldenTests,
       versionYear,
       fixtureContract,
+      // === Step 11.6 신규 — recover/checkpoint/CostMeter 통합 ===
+      examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+      batchRunId: randomUUID(),
+      checkpointBaseDir: DEFAULT_CHECKPOINT_DIR,
+      batchRunsDb,
+      engineVersion: ENGINE_VERSION,
     };
 
     const result = await runPipeline(ctx);

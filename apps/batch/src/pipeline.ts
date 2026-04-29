@@ -32,7 +32,7 @@ import {
 } from '@thepick/parser';
 import { validateGraphIntegrity } from '@thepick/quality';
 import type { GraphNode, GraphEdge } from '@thepick/quality';
-import type { NodeType, EdgeType } from '@thepick/shared';
+import type { ExamId, NodeType, EdgeType } from '@thepick/shared';
 import {
   runQG2Validation,
   checkFormulaAccuracy,
@@ -46,6 +46,15 @@ import {
   type D1Db,
 } from './loader/draft-loader';
 import type { VisionClient } from './adapters/vision-client';
+import {
+  buildCheckpoint,
+  writeCheckpoint,
+  writeCheckpointSync,
+  type PipelineStateSnapshot,
+} from './checkpoint.js';
+import { recoverBatch, type BatchRunsDb } from './recover.js';
+import { CostMeter } from './cost-meter.js';
+import { installSignalHandlers } from './signal-handlers.js';
 
 export type PipelineStage =
   | 'pdf_extract'
@@ -193,6 +202,32 @@ export interface PipelineContext {
    * fixtureContract 가 있으면 본 필드는 무시된다.
    */
   readonly pdfPagesOverride?: Awaited<ReturnType<typeof extractPdf>>;
+
+  // === Step 11.6 신규 필드 — recover/checkpoint/CostMeter 통합 ===
+
+  /**
+   * 시험 식별자 — Hard Rule 16/17 정합 (Year 1 한시 예외).
+   *
+   * Year 1: required, 단일 시험 (`EXAM_IDS.SON_HAE_PYEONG_GA_SA`).
+   * Year 2 Phase 4: BatchRunsDb 내부 SQL 의 `WHERE exam_id = ?` 자동 활성 — 호출 측 코드 변경 0건.
+   *
+   * 본 필드 부재가 backend-architect C-2 결함 정정의 핵심 (Year 2 cross-tenant recover 차단).
+   */
+  readonly examId: ExamId;
+  /** 1회 BATCH 실행 식별 UUID. recover 시 동일 ID 로 재진입. */
+  readonly batchRunId: string;
+  /** Checkpoint 저장 베이스 디렉토리 (예: `.checkpoint/`). */
+  readonly checkpointBaseDir: string;
+  /** D1 batch_runs 테이블 어댑터. recover/insertNewRun/updateState 에 사용. */
+  readonly batchRunsDb: BatchRunsDb;
+  /** 패키지 버전 — checkpoint engine_version 필드 + recover 시 major 비교. */
+  readonly engineVersion: string;
+  /** CostMeter 주입 — 미주입 시 비용 계측 없이 실행 (테스트용 허용, production 의무). */
+  readonly costMeter?: CostMeter;
+  /** SIGINT/SIGTERM 시 checkpoint flush 활성화 (기본 true). 테스트에서 false 가능. */
+  readonly enableSignalHandlers?: boolean;
+  /** writeCheckpoint fsync 강제 (기본 true). 테스트에서 false 가능. */
+  readonly fsyncCheckpoint?: boolean;
 }
 
 /**
@@ -209,10 +244,206 @@ interface PipelineState {
 }
 
 /**
- * 전체 파이프라인 실행.
- * 실패한 Stage 가 있으면 이후 Stage 전부 skipped (데이터 오염 방어).
+ * PipelineState → PipelineStateSnapshot 변환 helper (Step 11.6).
+ *
+ * 직렬화 가능한 부분만 추출: last_inserted_node_id / last_completed_stage /
+ * nodes_processed / edges_processed / stage_results.
+ *
+ * pdfPages / sections / tables / graphNodes / graphEdges 등은 외부 라이브러리
+ * 객체 또는 derived state — checkpoint 에 포함하지 않고 resume 시 재계산.
+ *
+ * last_inserted_node_id 우선순위:
+ *   1. state.loadResult.lastInsertedNodeId (Step 5 deterministic 적재 채움)
+ *   2. state.contract.nodes 마지막 ID (폴백)
+ *   3. null (contract 부재 또는 빈 nodes)
+ */
+function toSnapshot(
+  state: PipelineState,
+  stages: readonly StageResult[],
+  lastCompletedStage: PipelineStage,
+): PipelineStateSnapshot {
+  const lastNode = state.contract?.nodes[state.contract.nodes.length - 1];
+  const last_inserted_node_id = state.loadResult?.lastInsertedNodeId ?? lastNode?.id ?? null;
+
+  const stage_results = Object.fromEntries(
+    PIPELINE_STAGES.map((s) => {
+      const result = stages.find((r) => r.stage === s);
+      return [
+        s,
+        {
+          status: result?.status ?? ('pending' as const),
+          durationMs: result?.durationMs ?? 0,
+        },
+      ];
+    }),
+  ) as PipelineStateSnapshot['stage_results'];
+
+  return {
+    last_inserted_node_id,
+    last_completed_stage: lastCompletedStage,
+    nodes_processed: state.contract?.nodes.length ?? 0,
+    edges_processed: state.contract?.edges.length ?? 0,
+    stage_results,
+  };
+}
+
+/**
+ * recover() 분기 결과 — 동시 실행 차단 (concurrent_run_detected) 시 throw.
+ * caller (CLI / 통합 테스트) 가 별도 catch 후 진산님 결정 트리거.
+ */
+export class ConcurrentRunError extends Error {
+  constructor(
+    public readonly batchRunId: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ConcurrentRunError';
+  }
+}
+
+/**
+ * recover() 분기 결과 — 무결성 검증 실패 / 버전 불일치 / depends_on 미구현 시 throw.
+ * caller 가 별도 catch 후 진산님 검수 트리거.
+ */
+export class RecoveryFailedError extends Error {
+  constructor(
+    public readonly batchRunId: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'RecoveryFailedError';
+  }
+}
+
+/**
+ * already_completed (Idempotency skip) 시 반환할 PipelineResult.
+ * 모든 stage 를 'skipped' 로 표기 — 재실행 호출자가 정상 결과처럼 처리 가능.
+ */
+function buildSkipResult(ctx: PipelineContext, message: string): PipelineResult {
+  return {
+    batchId: ctx.batchId,
+    stages: PIPELINE_STAGES.map((stage) => ({
+      stage,
+      status: 'skipped' as const,
+      message,
+      durationMs: 0,
+    })),
+    qg2Passed: false,
+    qg2Result: null,
+    contract: null,
+    loadResult: null,
+  };
+}
+
+/**
+ * SIGINT/SIGTERM handler 가 fire-and-forget 으로 호출 — process.exit 직전 await 불가.
+ * 실패 시 console.error 로 가시화 (silent failure 차단, CRITICAL RULE #3).
+ */
+async function markBatchRunKilled(
+  examId: ExamId,
+  batchRunId: string,
+  batchRunsDb: BatchRunsDb,
+): Promise<void> {
+  await batchRunsDb.updateState(examId, batchRunId, { state: 'killed' });
+}
+
+/**
+ * 전체 파이프라인 실행 — recover/checkpoint/CostMeter 통합 (Step 11.6).
+ *
+ * 실행 흐름:
+ *   0.  recoverBatch() 호출 → 5가지 status 분기
+ *       - already_completed → buildSkipResult 즉시 반환 (Idempotency)
+ *       - concurrent_run_detected → ConcurrentRunError throw
+ *       - recovery_failed → RecoveryFailedError throw
+ *       - no_checkpoint → batch_runs INSERT (insertNewRun)
+ *       - fully_recovered / partially_recovered → resume from last_completed_stage+1
+ *   0.7 SIGINT/SIGTERM handler 등록 (lastSnapshot closure flush)
+ *   0.9 CostMeter.start()
+ *   1~9 stage loop:
+ *       - resume index 이전 stage 는 'Resumed from later stage' 로 skip
+ *       - aborted (이전 stage failed) 면 'Previous stage failed' 로 skip
+ *       - runStage 호출 → success/failed
+ *       - failed: batch_runs state='failed' + aborted=true
+ *       - success: toSnapshot + buildCheckpoint + writeCheckpoint(fsync) + state='in_progress'
+ *   10. 정상 완료 시 batch_runs state='completed'
+ *   finally: removeHandlers + costMeter.finalize()
  */
 export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult> {
+  // === 0. recover 시도 ===
+  const recovery = await recoverBatch({
+    examId: ctx.examId,
+    batchRunId: ctx.batchRunId,
+    baseDir: ctx.checkpointBaseDir,
+    currentEngineVersion: ctx.engineVersion,
+    batchRunsDb: ctx.batchRunsDb,
+  });
+
+  if (recovery.status === 'already_completed') {
+    return buildSkipResult(ctx, recovery.message);
+  }
+  if (recovery.status === 'concurrent_run_detected') {
+    throw new ConcurrentRunError(ctx.batchRunId, recovery.message);
+  }
+  if (recovery.status === 'recovery_failed') {
+    throw new RecoveryFailedError(ctx.batchRunId, recovery.message);
+  }
+
+  // resume 시 last_completed_stage 의 *다음* stage 부터 재시작 (Plan §4.2)
+  const resumeFromStageIndex =
+    (recovery.status === 'fully_recovered' || recovery.status === 'partially_recovered') &&
+    recovery.resumed_from_stage !== null
+      ? PIPELINE_STAGES.indexOf(recovery.resumed_from_stage) + 1
+      : 0;
+
+  // === 0.5 batch_runs INSERT (no_checkpoint) — recover.ts 가 이미 'recovered' UPDATE 수행 ===
+  if (recovery.status === 'no_checkpoint') {
+    if (!ctx.batchRunsDb.insertNewRun) {
+      throw new Error(
+        '[runPipeline] BatchRunsDb.insertNewRun is required for new run path. ' +
+          'D1BatchRunsDb implements; mocks must add insertNewRun for new run scenarios.',
+      );
+    }
+    // 0015 BEFORE INSERT 트리거 가 completed 재INSERT 시 RAISE(ABORT) — caller 에 throw 전파.
+    await ctx.batchRunsDb.insertNewRun(ctx.examId, {
+      batchRunId: ctx.batchRunId,
+      fixturePath: ctx.pdfPath ?? '<fixture>',
+      engineVersion: ctx.engineVersion,
+    });
+  }
+
+  // === 0.7 SIGINT/SIGTERM handler 등록 ===
+  let lastSnapshot: PipelineStateSnapshot | null = null;
+  const removeHandlers =
+    ctx.enableSignalHandlers !== false
+      ? installSignalHandlers({
+          flushCheckpoint: () => {
+            if (lastSnapshot === null) return;
+            const cp = buildCheckpoint({
+              examId: ctx.examId,
+              batchRunId: ctx.batchRunId,
+              engineVersion: ctx.engineVersion,
+              currentStage: lastSnapshot.last_completed_stage,
+              currentStageIndex: PIPELINE_STAGES.indexOf(lastSnapshot.last_completed_stage),
+              totalStages: PIPELINE_STAGES.length,
+              snapshot: lastSnapshot,
+              costState: ctx.costMeter ? ctx.costMeter.toCheckpointCostState() : undefined,
+            });
+            writeCheckpointSync(cp, ctx.checkpointBaseDir, {
+              fsync: ctx.fsyncCheckpoint ?? true,
+            });
+            // best-effort — process.exit 직전이라 await 불가, 실패 시 console.error 가시화
+            markBatchRunKilled(ctx.examId, ctx.batchRunId, ctx.batchRunsDb).catch((err) => {
+              console.error('[Pipeline] markBatchRunKilled failed (best-effort):', err);
+            });
+          },
+        })
+      : () => {
+          /* test mode — handler 미등록 */
+        };
+
+  // === 0.9 CostMeter start ===
+  ctx.costMeter?.start();
+
   const stages: StageResult[] = [];
   const state: PipelineState = {
     pdfPages: null,
@@ -227,24 +458,90 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
   let aborted = false;
   let qg2Result: QG2Result | null = null;
 
-  for (const stage of PIPELINE_STAGES) {
-    if (aborted) {
-      stages.push({
-        stage,
-        status: 'skipped',
-        message: 'Previous stage failed — skipped',
-        durationMs: 0,
-      });
-      continue;
+  try {
+    for (let i = 0; i < PIPELINE_STAGES.length; i++) {
+      const stage = PIPELINE_STAGES[i] as PipelineStage;
+
+      // resume 시 이전 stage 들 skip
+      if (i < resumeFromStageIndex) {
+        stages.push({
+          stage,
+          status: 'skipped',
+          message: 'Resumed from later stage',
+          durationMs: 0,
+        });
+        continue;
+      }
+
+      if (aborted) {
+        stages.push({
+          stage,
+          status: 'skipped',
+          message: 'Previous stage failed — skipped',
+          durationMs: 0,
+        });
+        continue;
+      }
+
+      const result = await runStage(stage, ctx, state);
+      if (stage === 'qg2_gate' && result.data) {
+        qg2Result = result.data as QG2Result;
+      }
+      stages.push(result);
+
+      if (result.status === 'failed') {
+        aborted = true;
+        try {
+          await ctx.batchRunsDb.updateState(ctx.examId, ctx.batchRunId, {
+            state: 'failed',
+            last_completed_stage: stage,
+          });
+        } catch (err) {
+          // 0015 트리거 (state='completed' 차단 등) 가 RAISE(ABORT) 가능 — 가시화 후 흐름 계속
+          console.error(`[Pipeline] batch_runs UPDATE state=failed 실패 (stage=${stage}):`, err);
+        }
+        continue;
+      }
+
+      if (result.status === 'success') {
+        lastSnapshot = toSnapshot(state, stages, stage);
+        const cp = buildCheckpoint({
+          examId: ctx.examId,
+          batchRunId: ctx.batchRunId,
+          engineVersion: ctx.engineVersion,
+          currentStage: stage,
+          currentStageIndex: i,
+          totalStages: PIPELINE_STAGES.length,
+          snapshot: lastSnapshot,
+          costState: ctx.costMeter ? ctx.costMeter.toCheckpointCostState() : undefined,
+        });
+        await writeCheckpoint(cp, ctx.checkpointBaseDir, {
+          fsync: ctx.fsyncCheckpoint ?? true,
+        });
+        await ctx.batchRunsDb.updateState(ctx.examId, ctx.batchRunId, {
+          state: 'in_progress',
+          last_completed_stage: stage,
+          last_node_id: lastSnapshot.last_inserted_node_id,
+          state_hash: cp.state_hash,
+        });
+      }
     }
 
-    const result = await runStage(stage, ctx, state);
-    if (stage === 'qg2_gate' && result.data) {
-      qg2Result = result.data as QG2Result;
+    // === 정상 완료 시 'completed' 전이 ===
+    if (!aborted) {
+      await ctx.batchRunsDb.updateState(ctx.examId, ctx.batchRunId, {
+        state: 'completed',
+        completed_at: new Date().toISOString(),
+      });
     }
-    stages.push(result);
-    if (result.status === 'failed') {
-      aborted = true;
+  } finally {
+    removeHandlers();
+    if (ctx.costMeter) {
+      try {
+        ctx.costMeter.finalize();
+      } catch (err) {
+        console.error('[Pipeline] CostMeter finalize 실패 (logged only):', err);
+      }
     }
   }
 
@@ -436,6 +733,25 @@ async function stageBatchStructurize(
   }
   if (!result.contract) {
     throw new Error('batch-processor returned null contract without error');
+  }
+
+  // === CostMeter 통합 (Step 11.6 §4.3.2) ===
+  // processBatch 가 usage 미반환 시 (result.usage===null) skip + warn — silent failure 차단.
+  if (ctx.costMeter) {
+    if (result.usage) {
+      const status = ctx.costMeter.recordTokens(
+        result.usage.inputTokens,
+        result.usage.outputTokens,
+        result.usage.model,
+        'batch_structurize',
+      );
+      if (status === 'hard_throttle') {
+        await ctx.costMeter.applyThrottle();
+      }
+      // 'kill_switch' 는 autoEnforce=true 시 onKillSwitch 콜백이 throw — 여기 도달 X.
+    } else {
+      console.warn('[Pipeline] processBatch returned null usage — CostMeter skip for this call');
+    }
   }
 
   // 2차 검증 (processBatch 내부에서 이미 수행되었으나 방어적 재검증)

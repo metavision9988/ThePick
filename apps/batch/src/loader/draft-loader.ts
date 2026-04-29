@@ -37,6 +37,12 @@ export interface LoadDraftResult {
   readonly constantsInserted: number;
   readonly skippedIds: readonly string[];
   readonly durationMs: number;
+  /**
+   * 마지막으로 INSERT 한 노드 ID — Step 11.6 checkpoint Idempotency 키.
+   * 본 필드는 Step 5 코드 진입 시 deterministic 적재 흐름에서 채워진다.
+   * 미주입 시 caller(toSnapshot)는 contract.nodes 마지막을 폴백으로 사용.
+   */
+  readonly lastInsertedNodeId?: string;
 }
 
 export class DraftLoadError extends Error {
