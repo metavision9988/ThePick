@@ -26,6 +26,7 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
+*:Zone.Identifier
 
 # Logs
 logs/
