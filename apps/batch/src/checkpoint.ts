@@ -264,7 +264,9 @@ function assertCanonicalSafe(value: unknown, path = '$', visited?: WeakSet<objec
     );
   }
 
-  // Circular reference 차단 — typeof === 'object' (Array 포함) 진입 직전
+  // Circular reference 차단 — ancestor-only 추적으로 diamond DAG false-positive 방지 (Q-C1).
+  // 진입 시 add, 자식 walk 후 delete — 동일 object 가 sibling 으로 재참조되면 (DAG) seen 에서
+  // 이미 빠진 상태라 통과, self/mutual/deep 순환만 throw.
   const seen = visited ?? new WeakSet<object>();
   const objValue = value as object;
   if (seen.has(objValue)) {
@@ -273,15 +275,18 @@ function assertCanonicalSafe(value: unknown, path = '$', visited?: WeakSet<objec
     );
   }
   seen.add(objValue);
-
-  if (Array.isArray(value)) {
-    value.forEach((v, i) => assertCanonicalSafe(v, `${path}[${i}]`, seen));
-    return;
-  }
-  if (typeof value === 'object') {
-    for (const k of Object.keys(value as Record<string, unknown>)) {
-      assertCanonicalSafe((value as Record<string, unknown>)[k], `${path}.${k}`, seen);
+  try {
+    if (Array.isArray(value)) {
+      value.forEach((v, i) => assertCanonicalSafe(v, `${path}[${i}]`, seen));
+      return;
     }
+    if (typeof value === 'object') {
+      for (const k of Object.keys(value as Record<string, unknown>)) {
+        assertCanonicalSafe((value as Record<string, unknown>)[k], `${path}.${k}`, seen);
+      }
+    }
+  } finally {
+    seen.delete(objValue);
   }
 }
 

@@ -40,8 +40,37 @@ interface MutableRow {
   engine_version: string;
 }
 
+/**
+ * 의도적 throw 시뮬레이션 — Q-MAJOR-B1-1 e2e (metaPersistenceFailures push 4 시점 검증).
+ *
+ * pipeline.ts 의 4 시점 (state='failed'/'completed'/'in_progress' UPDATE + SIGINT 'killed' UPDATE)
+ * 에서 D1 단절 또는 0015 트리거 RAISE(ABORT) 가시화 검증을 위한 주입형 옵션.
+ */
+export interface InMemoryBatchRunsDbOptions {
+  /** 시간 주입 — 기본: Date.now. AC-T3 stale 24h+ 시뮬레이션용. */
+  readonly clock?: () => number;
+  /**
+   * updateState 호출 시 의도적 throw — 호출자 metaPersistenceFailures push 검증용.
+   *
+   * @param state 시도되는 다음 state
+   * @returns true 면 해당 호출에서 throw, false 면 정상 진행.
+   */
+  readonly throwOnUpdate?: (state: BatchRunState) => boolean;
+  /** insertNewRun 호출 시 의도적 throw — no_checkpoint 분기 무결성 검증용. */
+  readonly throwOnInsert?: () => boolean;
+}
+
 export class InMemoryBatchRunsDb implements BatchRunsDb {
   private readonly rows = new Map<string, MutableRow>();
+  private readonly clock: () => number;
+  private readonly throwOnUpdate: ((state: BatchRunState) => boolean) | undefined;
+  private readonly throwOnInsert: (() => boolean) | undefined;
+
+  constructor(options: InMemoryBatchRunsDbOptions = {}) {
+    this.clock = options.clock ?? (() => Date.now());
+    this.throwOnUpdate = options.throwOnUpdate;
+    this.throwOnInsert = options.throwOnInsert;
+  }
 
   /** 테스트 헬퍼 — 현재 모든 행 스냅샷 (read-only). */
   snapshot(): readonly BatchRunRow[] {
@@ -63,6 +92,9 @@ export class InMemoryBatchRunsDb implements BatchRunsDb {
     },
   ): Promise<void> {
     void examId;
+    if (this.throwOnInsert?.()) {
+      throw new Error('batch_runs: insertNewRun simulated failure (test injection)');
+    }
     const existing = this.rows.get(input.batchRunId);
     if (existing && existing.state === 'completed') {
       throw new Error(
@@ -71,7 +103,7 @@ export class InMemoryBatchRunsDb implements BatchRunsDb {
     }
     this.rows.set(input.batchRunId, {
       batch_run_id: input.batchRunId,
-      started_at: new Date().toISOString(),
+      started_at: new Date(this.clock()).toISOString(),
       completed_at: null,
       last_completed_stage: 'pdf_extract',
       last_node_id: null,
@@ -96,6 +128,11 @@ export class InMemoryBatchRunsDb implements BatchRunsDb {
     },
   ): Promise<void> {
     void examId;
+    if (this.throwOnUpdate?.(update.state)) {
+      throw new Error(
+        `batch_runs: updateState simulated failure for state='${update.state}' (test injection)`,
+      );
+    }
     const row = this.rows.get(batchRunId);
     if (!row) {
       throw new Error(`batch_runs: row not found for batch_run_id=${batchRunId}`);

@@ -88,6 +88,8 @@ async function main(): Promise<ExitCode> {
         return await cmdStatus(rest);
       case 'list':
         return await cmdList(rest);
+      case 'unlock':
+        return await cmdUnlock(rest);
       default:
         console.error(`Unknown command: ${command}`);
         printHelp();
@@ -407,6 +409,70 @@ async function cmdList(args: string[]): Promise<ExitCode> {
 }
 
 // ---------------------------------------------------------------------------
+// unlock — Step 11.6 §5.5 운영자 강제 unlock (옵션 C 채택)
+//
+// 24h stale lock 미만 in_progress 상태에서 다른 인스턴스가 정상 종료 X 시
+// (markBatchRunKilled best-effort 실패 / SIGINT 도중 종료 등) 운영자가 명시적으로
+// state='killed' 로 전이하여 다음 recover 진입을 가능하게 한다.
+// ---------------------------------------------------------------------------
+
+async function cmdUnlock(args: string[]): Promise<ExitCode> {
+  const { values, positionals } = parseArgs({
+    args,
+    options: {
+      reason: { type: 'string' },
+    },
+    allowPositionals: true,
+  });
+
+  const batchRunId = positionals[0];
+  if (!batchRunId) {
+    console.error('unlock: <batch_run_id> required');
+    console.error('Usage: thepick-batch unlock <batch_run_id> --reason="<text>"');
+    return 2;
+  }
+  if (!values.reason) {
+    console.error('unlock: --reason="<text>" required (audit log)');
+    return 2;
+  }
+
+  const localDb = openLocalDb({ path: DEFAULT_DB_PATH });
+  try {
+    const batchRunsDb = new D1BatchRunsDb(localDb.db);
+    const examId = EXAM_IDS.SON_HAE_PYEONG_GA_SA;
+
+    const row = await batchRunsDb.selectByRunId(examId, batchRunId);
+    if (!row) {
+      console.error(`unlock: batch_run_id=${batchRunId} not found in batch_runs`);
+      return 1;
+    }
+    if (row.state === 'completed') {
+      console.error(
+        `unlock: batch_run_id=${batchRunId} is already 'completed' — unlock 거부 ` +
+          '(0015 트리거 trg_batch_runs_no_state_downgrade)',
+      );
+      return 1;
+    }
+    if (row.state === 'killed') {
+      console.log(`[unlock] batch_run_id=${batchRunId} is already 'killed' — no-op. recover 가능.`);
+      return 0;
+    }
+
+    await batchRunsDb.updateState(examId, batchRunId, { state: 'killed' });
+
+    // audit log — stderr 로 운영자 가시화 (silent failure 차단)
+    console.error(
+      `[unlock] batch_run_id=${batchRunId} state ${row.state} → 'killed' ` +
+        `at ${new Date().toISOString()}, reason="${values.reason}"`,
+    );
+    console.log(`✅ unlock 완료. 다음 recover 진입 가능: thepick-batch run <BATCH-N> ...`);
+    return 0;
+  } finally {
+    localDb.close();
+  }
+}
+
+// ---------------------------------------------------------------------------
 // help
 // ---------------------------------------------------------------------------
 
@@ -419,6 +485,7 @@ Usage:
   thepick-batch status <id> --target-type=node|formula|constant \\
                        [--next=review|approved|flagged --reviewer=<id> [--reason=<text>]]
   thepick-batch list --target-type=node [--status=draft|review|approved] [--batch=<BATCH-N>]
+  thepick-batch unlock <batch_run_id> --reason="<text>"
 
 Environment:
   ANTHROPIC_API_KEY      — 실제 Claude API 호출 시 필수 (--fixtures 생략 시)
