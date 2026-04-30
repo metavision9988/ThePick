@@ -122,20 +122,64 @@ acceptance_criteria:
     test_path: "src/__tests__/determinism.property.test.ts"
     iterations: 100
     threshold: 1.0  # 100%
+    # Engine Hardening Roadmap v1.3 Step 14 scope 분할 (2026-04-30 Step 14a 진입 시 발견)
+    # 근거: contract.yaml `llm_integration.enabled: false` 현 상태에서 invariant 6/6 검증 불가능 —
+    #       node_ids/edge_dependency_graph/formula_AST_hashes/constants_canonical_forms 는 LLM
+    #       추출 가정 (Phase 1 후반 통합). Silent Pivot 회피 위해 본 단계 분리 영속화.
+    phase_partitions:
+      - phase: "14a"
+        completed_date: "2026-04-30"
+        iterations: 50
+        fixture_count: 1
+        fixture_paths: ["__fixtures__/batch1/exam_scope.pdf"]
+        invariant_subset: ["section_hierarchy", "ontology_registry_match"]
+        invariant_remainder: ["node_ids", "edge_dependency_graph", "formula_AST_hashes", "constants_canonical_forms"]
+        rationale: "LLM 미통합 시점 의미 있는 결정성 검증 부분 + Python subprocess 가속 (50회 ≈ 25초)"
+      - phase: "14b"
+        target_step: "Phase 1 후반 LLM 통합 직후 + DEFCON L3 격상"
+        iterations: 100
+        fixture_count: 5
+        fixture_paths_planned:
+          - "__fixtures__/batch1/jejae_1pg.pdf"
+          - "__fixtures__/batch1/jejae_section_5pg.pdf"
+          - "__fixtures__/batch1/formula_definition.pdf"
+          - "__fixtures__/batch1/table_extraction.pdf"
+          - "__fixtures__/batch1/mixed_image_text.pdf"
+        invariant_full: 6
+        gate: "LLM 통합 시 normalizer formula_AST_hashes / constants_canonical_forms 결정성 회귀 사전 차단 의무"
 
   - id: "AC-PA-2"
     description: "fixture PDF 5종에 대해 tolerable_fields 변동 ≤ 5%"
     verification: "property_test"
     threshold: 0.05
+    phase_partitions:
+      - phase: "14b"
+        target_step: "Phase 1 후반 LLM 통합 직후"
+        rationale: "LLM 미통합 시점 tolerable 측정 분산이 단일 fixture 의 pdfplumber 결정성에 가려져 의미 작음"
 
   - id: "AC-PA-3"
-    description: "ontology-registry.json 외 ID 생성 시 SCHEMA_INVALID_NODE_ID throw"
-    verification: "test_passes"
-    test_path: "src/__tests__/schema-validator.test.ts"
+    description: "ontology-registry.json 외 ID 생성 시 INVALID_NODE_ID_PATTERN/INVALID_NODE_TYPE 거부"
+    verification: "property_test"
+    test_path: "src/__tests__/determinism.property.test.ts"
+    iterations: 50
+    phase_partitions:
+      - phase: "14a"
+        completed_date: "2026-04-30"
+        coverage: "INVALID_NODE_ID_PATTERN + INVALID_NODE_TYPE (2/14 ValidationErrorCode)"
+      - phase: "14b"
+        coverage: "INVALID_EDGE_TYPE / DUPLICATE_NODE_ID / INVALID_TRUTH_WEIGHT / INVALID_FORMULA_ID / INVALID_CONSTANT_ID / INVALID_CONSTANT_CATEGORY / MISSING_REQUIRED_FIELD / MISSING_SOURCE_PAGE 추가"
 
   - id: "AC-PA-4"
-    description: "broken edge reference 감지 시 SCHEMA_BROKEN_REFERENCE throw"
-    verification: "test_passes"
+    description: "broken edge reference 감지 시 DANGLING_EDGE_REFERENCE 거부"
+    verification: "property_test"
+    test_path: "src/__tests__/determinism.property.test.ts"
+    iterations: 50
+    phase_partitions:
+      - phase: "14a"
+        completed_date: "2026-04-30"
+        coverage: "CONCEPT-{100~999} prefix 1종 dangling"
+      - phase: "14b"
+        coverage: "F-/INS-/CROP-/TERM-/LAW-/INV- 6 prefix dangling 확장"
 
   - id: "AC-PA-5"
     description: "extractPdf 인터페이스 보존 — pdfplumber → MuPDF 교체 가능 (Q2)"
@@ -183,8 +227,9 @@ contract_review:
 
 library_obligations:
   - obligation: "Property Test (Tier 4) — invariant 100% / tolerable 5%"
-    status: "pending"
-    target_step: "Engine Hardening Step 14"
+    status: "partial"
+    target_step: "Engine Hardening Step 14a (완료 2026-04-30) → Step 14b (LLM 통합 후)"
+    note: "14a: section_hierarchy + ontology_registry_match 2/6 invariant + AC-PA-3/4 부분. 14b: AC-PA-1 6/6 invariant + AC-PA-2 + AC-PA-3/4 8 ValidationErrorCode 확장"
   - obligation: "engine.contract.yaml"
     status: "in_progress"
     target_step: "Step 6 (본 파일)"
