@@ -4,9 +4,10 @@
 
 phase: 1
 step: engine-hardening-step5
-version: v1.1
-approved_by: TBD
+version: v1.2
+approved_by: 진산 (2026-04-27 Engine Hardening Roadmap v1.1 일괄 승인)
 v1_1_revision_by: 2026-04-28 (P0 후보 B 정정 흡수) — backend-architect C-1 결함 (knowledge_nodes 컬럼 부재) 정정 + source_id 정의 명확화
+v1_2_revision_by: 2026-04-30 (Step 16a 진행 + 명시 이연 CRITICAL-Q4 흡수) — buildSourceId 헬퍼 + LoadDraftContext.batchRunId + draft-loader.ts INSERT 채움 + 16b/16c 분할
 risk_level: L3
 scope:
 
@@ -51,11 +52,11 @@ BATCH 파이프라인 전체의 **Reproducibility (재현성)** + **Idempotency 
 
 `source_id` = **`{page_ref}#{node_id}`** (간단·결정성·디버깅 가독)
 
-| 구성 요소  | 출처                                                                                  | 결정성                    |
-| :--------- | :------------------------------------------------------------------------------------ | :------------------------ |
-| `page_ref` | PDF 페이지 참조 (예: `p.123` 또는 `p.123-125`) — `knowledge_nodes.page_ref` 컬럼 동일 | PDF + 파서 결정성에 의존  |
-| `#` 구분자 | 고정                                                                                  | 결정성 보장               |
-| `node_id`  | ontology-registry.json 패턴 (예: `CONCEPT-001`, `INS-01`, `F-01`, `CROP-001`)         | ontology lock 기반 결정성 |
+| 구성 요소  | 출처                                                                                                                                                                                                                                                                                                 | 결정성                    |
+| :--------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------ |
+| `page_ref` | PDF 페이지 참조 — Step 16a 정상 caller 는 정수 문자열만 (예: `"403"`, `pageRefString(node.source_page)` via `preValidate ≥ 1`). 범위 / section 형식 (`"403-434"`, `"525:§4-2"`) 는 migration 0010 CHECK 제약 허용, **Step 16b/16c 진입 시점 caller 보강 의무 (헬퍼 자체는 임의 문자열 결정성 보장)** | PDF + 파서 결정성에 의존  |
+| `#` 구분자 | 고정                                                                                                                                                                                                                                                                                                 | 결정성 보장               |
+| `node_id`  | ontology-registry.json 패턴 (예: `CONCEPT-001`, `INS-01`, `F-01`, `CROP-001`)                                                                                                                                                                                                                        | ontology lock 기반 결정성 |
 
 **결정성 보장 조건:**
 
@@ -128,6 +129,44 @@ END;
    - **권고 (B)** — 결정성 보장 + idempotency 키 활성
 
 본 명시 이연을 Step 5 plan v1.2 (Step 5 코드 commit 시점) 시점에 흡수.
+
+> **v1.2 흡수 (2026-04-30 Step 16a — 본 명시 이연 CRITICAL-Q4 1~4 모두 흡수):**
+>
+> 1. ✅ `apps/batch/src/loader/draft-loader.ts:251` `INSERT INTO knowledge_nodes` SQL 에 `batch_run_id` + `source_id` 컬럼 추가. `bind` 13개 (기존 11 + 신규 2).
+> 2. ✅ `apps/batch/src/loader/build-source-id.ts` 신규 — `buildSourceId(pageRef, nodeId)` 결정성 헬퍼 + 단위 테스트 8 케이스 (정상 / null / undefined / empty / 결정성 100회 / 빈 nodeId throw / 충돌 차단 / exports 일치).
+> 3. ✅ `source_id` 컬럼명은 `knowledge_nodes` 전용. `knowledge_edges` 의 `source_id`(엣지 소스 노드 ID) 와 이름 동일하나 테이블 분리로 충돌 0건 — 0001/0016 마이그레이션 검증.
+> 4. ✅ NULL page_ref 정책 (B) 채택 — `PAGE_REF_FALLBACK = '<no_page>'`. 단 draft-loader.ts:152 `preValidate` 가 `source_page ≥ 1` 강제 (정책 A 동시 적용) — fallback 은 fixture seed / migration replay 등 정상 흐름 외 안전망.
+> 5. ✅ `LoadDraftContext` 시그니처에 `batchRunId: string` 필수 필드 추가. preValidate 빈 문자열 차단. `pipeline.ts:915` loadCtx 에 `ctx.batchRunId` 전달.
+> 6. ✅ `loader.test.ts` BASE_CTX `batchRunId: 'batch-run-test-0001'` 추가 + 정상 INSERT 테스트에 `batch_run_id` / `source_id` 검증 보강 + 신규 2 테스트 (batchRunId 누락 차단 / source_id 결정성 모든 노드 채움). 12 tests PASS.
+>
+> **Step 16a 미흡수 (Step 16b/16c 차세션 이연):**
+>
+> - 시나리오 A reproducibility (e2e BATCH 1회 × 2) — AC-RP-1
+> - 시나리오 B/C/E idempotency (concurrent / recover / rerun) — AC-RP-2/3/4
+> - AC-RP-6 0016 마이그레이션 + 0014 트리거 e2e 검증
+
+### Step 16b 진입 게이트 (Engine Hardening 차세션 의무)
+
+다음 항목 모두 충족 후 16b 진입:
+
+1. ✅ Step 16a `buildSourceId` 헬퍼 + LoadDraftContext.batchRunId + INSERT 채움 commit
+2. ⏳ apps/batch in-memory D1 + better-sqlite3 환경에서 `runPipeline` 풀 실행 가능 (Step 11.6 e2e 패턴)
+3. ⏳ AC-RP-1 시나리오 A: 동일 fixture + 동일 seed → invariant_fields 100% 동일 (knowledge_nodes 정렬 + JSON canonical)
+4. ⏳ AC-RP-2 시나리오 B: `Promise.all` 동시 인스턴스 2개 → 1개만 'completed', INSERT 중복 0건
+5. ⏳ AC-RP-3 시나리오 C: 50% kill → recover → 최종 결과 정상 동일 + 중복 0건
+6. ⏳ AC-RP-4 시나리오 E: 동일 batch_run_id 완료 후 재실행 → skip + 결과 보존
+7. ⏳ AC-RP-7 source_id 결정성 e2e — 본 plan AC 충족, 단위 테스트는 16a 에서 커버
+8. ⏳ **`LoadDraftContext.examId: ExamId` 필수 필드 추가 (Hard Rule 16 Year 2 zero-cost 전환 의무)** — 16a Pass 2/4 MAJOR-PA4-1 흡수. Year 2 마이그레이션 0017 (`knowledge_nodes.exam_id` 컬럼 도입) 시점에 `loadDraft` 시그니처 / preValidate / pipeline.ts:917 loadCtx / loader.test.ts BASE_CTX 일괄 갱신 비용 < 5분.
+9. ⏳ **D1 batch() partial-commit 회복 e2e (Pass 2 M-2 흡수)** — Workers 50ms CPU 한도 + 노드 다수 INSERT 시 batch atomicity 검증 또는 plan §non-goals 에 "D1 batch atomicity 는 Cloudflare 보증 가정" 명시.
+10. ⏳ **page_ref 형식 모델 확정 (Pass 3 C-1 흡수)** — Step 16b 시점 fixture 가 정수 / 범위 / section 어느 형식으로 적재할지 결정. `pageRefString` 시그니처 보강 또는 caller 별 page_ref 변환 정책 명시. migration 0010 CHECK 제약과 정합.
+
+### Step 16c 진입 게이트 (16b 완료 후 또는 별도)
+
+1. ⏳ AC-RP-6 e2e — `wrangler d1 execute --local` 또는 better-sqlite3 환경
+2. ⏳ 0016 적용 후 컬럼/인덱스/트리거 존재 검증
+3. ⏳ partial UNIQUE 동작 검증 (`batch_run_id IS NULL` 제외)
+4. ⏳ 0014 트리거 갱신 본문 검증 — backfill 1회 / 다른 값 ABORT / 본문 컬럼 ABORT (회귀 0건)
+5. ⏳ **fixture seed / migration replay 시 `<no_page>` fallback silent 진입 시나리오 검증 (Pass 3 반론 2 흡수)** — 정상 BATCH 흐름은 preValidate 차단으로 fallback 미진입이나, Year 2 import path 에서 `node.source_page = null` 진입 시 fallback `<no_page>#{nodeId}` 가 partial UNIQUE 충돌 가능성 검증.
 
 ---
 

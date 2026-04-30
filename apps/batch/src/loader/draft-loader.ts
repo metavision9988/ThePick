@@ -15,10 +15,17 @@
  */
 
 import type { KnowledgeContract } from '@thepick/parser';
+import { buildSourceId } from './build-source-id.js';
 
 export interface LoadDraftContext {
   /** BATCH 식별자 — knowledge_nodes.batch_id 에 그대로 저장. */
   readonly batchId: string;
+  /**
+   * 1회 BATCH 실행 UUID — knowledge_nodes.batch_run_id 에 저장.
+   * `(batch_run_id, source_id)` partial UNIQUE 키 구성 — 동시 트리거 시 중복 INSERT 차단.
+   * Step 5 plan v1.1 §"v1.1 명시 이연" 흡수.
+   */
+  readonly batchRunId: string;
   /** 교재 판본 연도 — 모든 테이블 version_year 에 주입. */
   readonly versionYear: number;
   /** 배치 기본 페이지 범위 (source_page 누락 시 fallback 은 사용하지 않고 검증 실패로 전환). */
@@ -139,6 +146,12 @@ function preValidate(contract: KnowledgeContract, ctx: LoadDraftContext): void {
   if (!ctx.batchId || ctx.batchId.trim() === '') {
     throw new DraftLoadError('batchId is required', 'validate');
   }
+  if (!ctx.batchRunId || ctx.batchRunId.trim() === '') {
+    throw new DraftLoadError(
+      'batchRunId is required (Step 5 plan v1.1 idempotency 키 부재 차단)',
+      'validate',
+    );
+  }
   if (!Number.isInteger(ctx.versionYear) || ctx.versionYear < 2020) {
     throw new DraftLoadError(`versionYear must be >= 2020, got ${ctx.versionYear}`, 'validate');
   }
@@ -250,14 +263,15 @@ function buildNodeInserts(
   const sql = `
     INSERT OR IGNORE INTO knowledge_nodes
       (id, type, name, description, lv1_insurance, lv2_crop, lv3_investigation,
-       page_ref, batch_id, version_year, truth_weight, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')
+       page_ref, batch_id, batch_run_id, source_id, version_year, truth_weight, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')
   `;
   for (const node of contract.nodes) {
     if (existing.has(node.id)) {
       skipped.push(node.id);
       continue;
     }
+    const pageRef = pageRefString(node.source_page);
     stmts.push(
       db
         .prepare(sql)
@@ -269,8 +283,10 @@ function buildNodeInserts(
           node.lv1_insurance ?? null,
           node.lv2_crop ?? null,
           node.lv3_investigation ?? null,
-          pageRefString(node.source_page),
+          pageRef,
           ctx.batchId,
+          ctx.batchRunId,
+          buildSourceId(pageRef, node.id),
           ctx.versionYear,
           node.truth_weight,
         ),

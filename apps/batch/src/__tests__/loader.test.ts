@@ -57,6 +57,7 @@ function minimalContract(): KnowledgeContract {
 
 const BASE_CTX = {
   batchId: 'BATCH-1',
+  batchRunId: 'batch-run-test-0001',
   versionYear: 2026,
   pageRangeStart: 403,
   pageRangeEnd: 434,
@@ -84,14 +85,36 @@ describe('draft-loader', () => {
     expect(result.skippedIds).toHaveLength(0);
 
     const nodeRow = ctx.raw
-      .prepare('SELECT id, page_ref, status, batch_id FROM knowledge_nodes WHERE id = ?')
+      .prepare(
+        'SELECT id, page_ref, status, batch_id, batch_run_id, source_id FROM knowledge_nodes WHERE id = ?',
+      )
       .get('CONCEPT-001');
     expect(nodeRow).toMatchObject({
       id: 'CONCEPT-001',
       page_ref: '403',
       status: 'draft',
       batch_id: 'BATCH-1',
+      batch_run_id: 'batch-run-test-0001',
+      source_id: '403#CONCEPT-001',
     });
+  });
+
+  it('Step 5 plan v1.1 — batchRunId 누락 시 DraftLoadError (idempotency 키 부재 차단)', async () => {
+    await expect(
+      loadDraft(ctx.db, minimalContract(), { ...BASE_CTX, batchRunId: '' }),
+    ).rejects.toThrow(/batchRunId is required/);
+  });
+
+  it('Step 5 plan v1.1 — source_id 결정성 (`{page_ref}#{node_id}`) 모든 노드 채움', async () => {
+    await loadDraft(ctx.db, minimalContract(), BASE_CTX);
+    const rows = ctx.raw
+      .prepare('SELECT id, source_id, batch_run_id FROM knowledge_nodes ORDER BY id')
+      .all() as Array<{ id: string; source_id: string; batch_run_id: string }>;
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.source_id)).toEqual(['403#CONCEPT-001', '414#FORMULA-001']);
+    for (const row of rows) {
+      expect(row.batch_run_id).toBe('batch-run-test-0001');
+    }
   });
 
   it('idempotent — 동일 contract 재적재 시 skip + 카운트 0', async () => {

@@ -914,6 +914,7 @@ async function stageDbLoad(
 
   const loadCtx: LoadDraftContext = {
     batchId: ctx.batchId,
+    batchRunId: ctx.batchRunId,
     versionYear: ctx.versionYear,
     pageRangeStart: ctx.config.pageStart,
     pageRangeEnd: ctx.config.pageEnd,
