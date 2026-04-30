@@ -506,8 +506,12 @@ Review B 4개 권고를 ThePick 실제 환경(Node.js 로컬 BATCH, Cloudflare W
 - [x] **AC-ExamId 신규**: BatchRunsDb examId 시그니처 검증 + SF-M-2 cross-tenant 가드 발화 검증
 - [x] **AC-Snapshot 신규**: canonicalJson 4 시나리오 (self/mutual/diamond/deep DAG) 통과 + ancestor-only 추적 fix (handoff-019)
 - [x] **AC-Cost 신규**: CostMeter onKillSwitch flush + toCheckpointCostState 7 케이스 직렬화
+- [ ] **★ 종합 테스트 마스터 체크리스트 PASS 의무** (`docs/quality/master-test-checklist.md`) — 진산님 2026-04-30 명시 ("엔진이 완성되어도 분명 미흡한 것이나 오류가 있을 듯 해서 충분한 품질·성능 테스트 의무"). Step 19 진입 시점에 단위/모듈/통합/e2e/성능/품질/보안/출력 8 카테고리 모두 PASS 검증 의무.
+- [ ] **★ Engine Observability 8 게이지 가동** (`docs/observability/master-dashboard.md`, 차세션 작성) — 진산님 2026-04-30 명시 ("자동차 계기판처럼 상시 모니터링/로그"). BATCH 진척/Cost/D1 SLO/Graph 무결성/품질 게이트/Formula 정확도/Reviewer 큐/학습 SLO 8 게이지. D1 engine_telemetry + admin-web 대시보드 + Workers Analytics (Cloudflare 단일 벤더). 메모리 `project_engine_observability` 정합.
+- [ ] **Phase 이월 부채 0건** — 4-Pass MAJOR 발견 시 phase 이월 회피. 본 step 또는 차 step 진입 게이트로 즉시 흡수. 메모리 `project_completion_notification_obligation` 정합.
+- [ ] **★ 완료 시점 진산님 알림 의무** — 위 모든 항목 충족 시 채팅 응답 헤드에 `★★★ ENGINE HARDENING 완료 ★★★` 표기 + 종합 테스트 PASS 증거 + BATCH-1 진입 트리거 대기 안내. 메모리 `project_completion_notification_obligation` 트리거.
 
-위 모두 충족 후 → BATCH-1 적재 진입 승인.
+위 모두 충족 후 → BATCH-1 적재 진입 승인 + 진산님 명시 알림.
 
 ---
 

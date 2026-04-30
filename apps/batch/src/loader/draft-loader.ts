@@ -15,7 +15,18 @@
  */
 
 import type { KnowledgeContract } from '@thepick/parser';
+import { isValidNodeId } from '@thepick/parser';
+import type { NodeType } from '@thepick/shared';
 import { buildSourceId } from './build-source-id.js';
+
+/**
+ * batchRunId 안전 패턴 — 영숫자 + `-` + `_` 8~128자.
+ *
+ * Pass 3 M-1 (Phase 이월 부채) 흡수 — 외부 trigger 추가 시 임의 문자열 주입 차단.
+ * UUID v4 strict 패턴 (`^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i`)
+ * 은 test fixture (`batch-run-test-0001` 등) 차단하므로 safe identifier 패턴 채택.
+ */
+const BATCH_RUN_ID_PATTERN = /^[a-zA-Z0-9_-]{8,128}$/;
 
 export interface LoadDraftContext {
   /** BATCH 식별자 — knowledge_nodes.batch_id 에 그대로 저장. */
@@ -152,6 +163,12 @@ function preValidate(contract: KnowledgeContract, ctx: LoadDraftContext): void {
       'validate',
     );
   }
+  if (!BATCH_RUN_ID_PATTERN.test(ctx.batchRunId)) {
+    throw new DraftLoadError(
+      `batchRunId must match safe identifier pattern (^[a-zA-Z0-9_-]{8,128}$). got '${ctx.batchRunId}' (Pass 3 M-1 흡수).`,
+      'validate',
+    );
+  }
   if (!Number.isInteger(ctx.versionYear) || ctx.versionYear < 2020) {
     throw new DraftLoadError(`versionYear must be >= 2020, got ${ctx.versionYear}`, 'validate');
   }
@@ -166,6 +183,14 @@ function preValidate(contract: KnowledgeContract, ctx: LoadDraftContext): void {
     if (!Number.isInteger(n.source_page) || n.source_page <= 0) {
       throw new DraftLoadError(
         `node ${n.id} has invalid source_page (${n.source_page}) — 북극성 출처 추적성 위반`,
+        'validate',
+      );
+    }
+    // Pass 3 M-2 (Phase 이월 부채) 흡수 — schema-validator 우회 fixture 차단을 위한 이중 방어.
+    // ontology-registry.json 패턴 (CONCEPT-NNN / F-NN / INS-NN / CROP-NNN / LAW-NNN / INV-NNN / TERM-NNN) 강제.
+    if (!isValidNodeId(n.type as NodeType, n.id)) {
+      throw new DraftLoadError(
+        `node ${n.id} of type ${n.type} does not match ontology-registry pattern (Pass 3 M-2 흡수)`,
         'validate',
       );
     }

@@ -19,7 +19,7 @@ function minimalContract(): KnowledgeContract {
         source_page: 403,
       },
       {
-        id: 'FORMULA-001',
+        id: 'F-99',
         type: 'FORMULA',
         title: '유과타박률 산식',
         content: 'F-01 산식 래퍼',
@@ -30,7 +30,7 @@ function minimalContract(): KnowledgeContract {
     edges: [
       {
         source_id: 'CONCEPT-001',
-        target_id: 'FORMULA-001',
+        target_id: 'F-99',
         edge_type: 'USES_FORMULA',
       },
     ],
@@ -105,13 +105,36 @@ describe('draft-loader', () => {
     ).rejects.toThrow(/batchRunId is required/);
   });
 
+  it('Pass 3 M-1 흡수 — batchRunId safe identifier 패턴 위반 차단 (^[a-zA-Z0-9_-]{8,128}$)', async () => {
+    // 길이 부족 (7자)
+    await expect(
+      loadDraft(ctx.db, minimalContract(), { ...BASE_CTX, batchRunId: 'short01' }),
+    ).rejects.toThrow(/safe identifier pattern/);
+    // 특수문자 ('!')
+    await expect(
+      loadDraft(ctx.db, minimalContract(), { ...BASE_CTX, batchRunId: 'batch!run!001' }),
+    ).rejects.toThrow(/safe identifier pattern/);
+    // 한글 (multi-byte)
+    await expect(
+      loadDraft(ctx.db, minimalContract(), { ...BASE_CTX, batchRunId: '배치실행001' }),
+    ).rejects.toThrow(/safe identifier pattern/);
+  });
+
+  it('Pass 3 M-2 흡수 — nodeId ontology-registry 패턴 위반 차단 (schema-validator 우회 fixture 차단)', async () => {
+    const c = minimalContract();
+    c.nodes[0] = { ...c.nodes[0], id: 'INVALID-001' };
+    await expect(loadDraft(ctx.db, c, BASE_CTX)).rejects.toThrow(
+      /does not match ontology-registry pattern/,
+    );
+  });
+
   it('Step 5 plan v1.1 — source_id 결정성 (`{page_ref}#{node_id}`) 모든 노드 채움', async () => {
     await loadDraft(ctx.db, minimalContract(), BASE_CTX);
     const rows = ctx.raw
       .prepare('SELECT id, source_id, batch_run_id FROM knowledge_nodes ORDER BY id')
       .all() as Array<{ id: string; source_id: string; batch_run_id: string }>;
     expect(rows).toHaveLength(2);
-    expect(rows.map((r) => r.source_id)).toEqual(['403#CONCEPT-001', '414#FORMULA-001']);
+    expect(rows.map((r) => r.source_id)).toEqual(['403#CONCEPT-001', '414#F-99']);
     for (const row of rows) {
       expect(row.batch_run_id).toBe('batch-run-test-0001');
     }

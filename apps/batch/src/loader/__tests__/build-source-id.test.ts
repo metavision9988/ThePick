@@ -71,4 +71,35 @@ describe('buildSourceId — Step 5 plan v1.1 §"v1.1 명시 이연" 권고 (B) �
     expect(PAGE_REF_FALLBACK).toBe('<no_page>');
     expect(SOURCE_ID_SEPARATOR).toBe('#');
   });
+
+  test('Pass 3 M-3 흡수 — 매우 긴 ASCII nodeId (1024자) 결정성 보장', () => {
+    // 헬퍼 자체는 길이 제한 없음 (preValidate 가 ontology 패턴 차단). 결정성 입증.
+    const longId = 'A'.repeat(1024);
+    const result = buildSourceId('123', longId);
+    expect(result).toBe(`123#${longId}`);
+    expect(result.length).toBe('123#'.length + 1024);
+    // 결정성 100회 반복
+    for (let i = 0; i < 100; i++) {
+      expect(buildSourceId('123', longId)).toBe(result);
+    }
+  });
+
+  test('Pass 3 M-3 흡수 — multi-byte (한글/일본어/이모지) nodeId 결정성 보장 (헬퍼 자체)', () => {
+    // 정상 흐름 caller 는 isValidNodeId(type, id) 가 차단 (draft-loader.ts preValidate).
+    // 본 헬퍼 자체는 임의 string 결정성 — UTF-8 multi-byte 안전성 입증.
+    expect(buildSourceId('123', '개념-001')).toBe('123#개념-001');
+    expect(buildSourceId('123', '概念-001')).toBe('123#概念-001');
+    expect(buildSourceId('123', 'CONCEPT-001-🔥')).toBe('123#CONCEPT-001-🔥');
+    // 결정성 — 동일 multi-byte 입력 → 동일 출력
+    for (let i = 0; i < 100; i++) {
+      expect(buildSourceId('123', '개념-001')).toBe('123#개념-001');
+    }
+  });
+
+  test('Pass 3 M-3 흡수 — 제어 문자 nodeId (\\t/\\n/\\0) 결정성 보장 (헬퍼 자체)', () => {
+    // 정상 흐름 caller 는 ontology 패턴이 차단. 헬퍼 자체는 throw 0건 + 결정성 보장.
+    expect(buildSourceId('123', 'A\tB')).toBe('123#A\tB');
+    expect(buildSourceId('123', 'A\nB')).toBe('123#A\nB');
+    expect(buildSourceId('123', 'A\0B')).toBe('123#A\0B');
+  });
 });
