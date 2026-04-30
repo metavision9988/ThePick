@@ -492,7 +492,7 @@ Review B 4개 권고를 ThePick 실제 환경(Node.js 로컬 BATCH, Cloudflare W
 - [x] Step 12 (cost-meter) + Step 17 (checkpoint/recover) 코드 + R-C1/Q-C1/B-C3/SF-M-2 정정 + 137/137 PASS
 - [x] **Step 11.6 코드 구현 (v1.2 신규 — pipeline 통합)**: 6 callsite 갱신 + AC e2e 9건 흡수 + 195/195 PASS (2026-04-29)
 - [x] **ADR-027 신설 (v1.3 — Year 1 atomic BATCH + mid-resume Year 2 이연)** + 방법론 v1.2 effective (2026-04-30)
-- [ ] Step 13~16 코드 구현 (formula/parser/quality property + reproducibility)
+- [ ] Step 13~16 코드 구현 — Step 13 ✅ formula determinism + sandbox bypass property (2026-04-30, 251/251 PASS) / Step 14~16 잔여 (parser/quality property + reproducibility)
 - [ ] Step 18 자동 검증 스크립트 PASS (의무화)
 - [ ] Step 19 4-Pass + 5-페르소나 리뷰 CRITICAL 0건 (cap 3회)
 - [ ] Build SLO 모든 축 측정 가능 + Step 12 (Cost meter Layer 1) 가동
