@@ -31,16 +31,17 @@ engine:
     build_correctness: 0.999  # L3 의무
     build_reproducibility:
       invariant_fields:
-        - "violations_list"            # 위반 노드/엣지 ID 목록
-        - "violation_count_per_type"   # ViolationType별 카운트
-        - "report_summary_hash"        # SHA-256 of normalized report
+        - "violations_list"            # 위반 노드/엣지 ID 목록 (NormalizedViolation[])
+        - "violation_count_per_type"   # ViolationType별 카운트 (5종 default 0)
+        - "stats_canonical"            # totalNodes/totalEdges/activeNodes/activeEdges/orphanNodes/brokenEdges/supersedeCycles 보존
+        - "report_summary_hash"        # SHA-256 of canonicalJson({valid, typeCounts, violationsSorted, stats})
       invariant_threshold: 1.0  # 100% — 그래프 알고리즘 결정성
       tolerable_fields: []  # 결정성 보장
       tolerance_threshold: 0.0
       test_method: "property_test"
       test_iterations: 100
-      seed_fixed: true
-      input_normalization: "sort_nodes_by_id_ascending"  # 입력 순서 의존성 제거
+      seed_fixed: true  # Step 15a Mulberry32 PRNG (SEED_BASE = 0x15a)
+      output_normalization: "normalizer.ts (violations sort by type/entityId/message + SUPERSEDES_CYCLE canonical 회전 + dedupe)"
 
     latency_1000_nodes_ms: 5000
     cost_per_validation_usd: 0  # 외부 호출 0건
@@ -96,34 +97,72 @@ acceptance_criteria:
     test_path: "src/__tests__/determinism.property.test.ts"
     iterations: 100
     threshold: 1.0
+    # Engine Hardening Roadmap v1.3 Step 15 scope 분할 (2026-04-30 본 세션 capacity 사유)
+    phase_partitions:
+      - phase: "15a"
+        completed_date: "2026-04-30"
+        coverage: "manual fixture 5종 (clean / orphan / broken / cycle / mixed) × 100 iter shuffle = 500 시나리오"
+        seed_strategy: "Mulberry32 PRNG seed = 0x15a + iter (deterministic)"
+        rationale: "Step 14a 패턴 재사용 + 본 세션 ≤ 3h 권고 capacity 안에 normalizer + 결정성 핵심 검증 우선"
+      - phase: "15b"
+        target_step: "Engine Hardening 다음 세션"
+        coverage: "arbitraryGraph generator (50 random graphs × 100 iter = 5000 시나리오)"
+        gate: "Step 18 자동 검증 진입 전 의무"
 
   - id: "AC-QU-2"
     description: "고아 노드 탐지 — 엣지에 등장하지 않는 노드 모두 식별"
     verification: "test_passes"
     test_path: "src/__tests__/graph-integrity.test.ts"
+    phase_partitions:
+      - phase: "15a"
+        completed_date: "2026-04-30"
+        coverage: "graph-integrity.test.ts 기존 + determinism.property.test.ts orphan fixture (1 isolated CONCEPT)"
+      - phase: "15b"
+        target_step: "Engine Hardening 다음 세션"
+        coverage: "arbitraryGraph 100노드 중 5개 고아 50 시나리오 — orphanRate 매개변수"
 
   - id: "AC-QU-3"
     description: "끊긴 엣지 탐지 — from/to가 nodes에 없는 엣지 모두 식별"
     verification: "test_passes"
+    phase_partitions:
+      - phase: "15a"
+        completed_date: "2026-04-30"
+        coverage: "broken fixture (2 broken edges)"
+      - phase: "15b"
+        coverage: "arbitraryGraph 200엣지 중 10 broken 50 시나리오 — brokenRate 매개변수"
 
   - id: "AC-QU-4"
     description: "SUPERSEDES 순환 탐지 — A→B→C→A 등 단순/복합 cycle 모두 식별"
     verification: "property_test"
     iterations: 50
     scenarios: ["self_loop", "2-cycle", "3-cycle", "complex_scc"]
+    phase_partitions:
+      - phase: "15a"
+        completed_date: "2026-04-30"
+        coverage: "3-cycle (1 fixture) + canonical cycle path 회전 + dedupe normalizer 단위 검증"
+      - phase: "15b"
+        target_step: "Engine Hardening 다음 세션"
+        coverage: "5종 패턴 × 50 = 250 시나리오 + Tarjan SCC 비교 알고리즘 검증 (필수 — naive DFS 의 silent 누락 차단)"
+        gate: "Tarjan SCC 비교 미수행 시 cycle detector 결함이 normalizer 결정성에 은폐됨 — Step 18 자동 검증 진입 차단"
 
   - id: "AC-QU-5"
-    description: "외부 의존 0 — package.json devDependencies만"
+    description: "외부 런타임 의존 0 — devDependencies 만 허용"
     verification: "package_audit"
     target: "packages/quality/package.json"
     allowed_dependencies: []  # 런타임 의존성 0
-    allowed_dev_dependencies: ["typescript", "vitest"]
+    allowed_dev_dependencies: ["typescript", "vitest", "eslint", "fast-check", "@typescript-eslint/eslint-plugin", "@typescript-eslint/parser", "eslint-config-prettier"]
+    # 2026-04-30 fast-check 추가 (Step 15b arbitraryGraph generator 사용 예정 — 15a 시점 미사용)
 
   - id: "AC-QU-6"
     description: "1000 노드 + 5000 엣지 그래프 검증 < 5초"
     verification: "metric_check"
     metric: "engine.latency.validate_graph"
     threshold: 5000
+    phase_partitions:
+      - phase: "15b"
+        target_step: "Engine Hardening 다음 세션"
+        coverage: "arbitraryGraph 1000 노드 + 5000 엣지 단발성 측정 (CI 환경 7초 임계)"
+        rationale: "15a manual fixture 는 5~7 노드 — 성능 측정 의미 없음"
 
   - id: "AC-QU-7"
     description: "validateGraphIntegrity 인터페이스 보존 — 알고리즘 교체 가능 (Q2)"

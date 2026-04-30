@@ -187,22 +187,22 @@ BATCH 적재 = "통합". 엔진 검증 통과 후 적재 진입.
 
 ### 3.2 시간 추정 (v1.3 갱신 — Step 11.6 코드 ✅ + AC e2e 9건 ✅ + ADR-027 흡수 반영)
 
-| 단계                                                                    |   낙관    | 현실 (×1.5)  | 비관 (×2.0) |                                 진행 상태                                  |
-| :---------------------------------------------------------------------- | :-------: | :----------: | :---------: | :------------------------------------------------------------------------: |
-| Step 0~5 (마스터 + ADR 4건 + LLM 도식)                                  |   1.5d    |     2.5d     |     3d      |                                  ✅ 완료                                   |
-| Step 6 (엔진 3종 research + contract)                                   |    1d     |     1.5d     |     2d      |                                  ✅ 완료                                   |
-| Step 7~11.5 (plan 6건)                                                  |    1d     |     1.5d     |     2d      |                                  ✅ 완료                                   |
-| Step 11.6 plan v1.1 + B-C1+B-C2 정정 (v1.2)                             |   0.3d    |     0.5d     |    0.7d     |                            ✅ 완료 (2026-04-28)                            |
-| Step 12 (cost-meter 코드)                                               |   0.5d    |     0.7d     |     1d      |                                  ✅ 완료                                   |
-| Step 17 (checkpoint/recover 코드 + R-C1/Q-C1/B-C3 정정)                 |   0.7d    |      1d      |    1.5d     |                                  ✅ 완료                                   |
-| **Step 11.6 코드 (v1.2 NEW — pipeline 통합 + 6 callsite + AC e2e 9건)** |   2.6d    |   3.1~3.5d   |    4.5d     |                          **✅ 완료 (2026-04-29)**                          |
-| **ADR-027 + 방법론 v1.2 (v1.3 NEW — atomic BATCH 정책 영속화)**         |   0.1d    |     0.2d     |    0.3d     |                          **✅ 완료 (2026-04-30)**                          |
-| Step 13~16 (formula/parser/quality property + reproducibility 코드)     |   1.8d    |     2.5d     |    3.5d     | 🟡 진행 (Step 13 ✅ + Step 14a ✅ 2026-04-30, Step 14b 이연 = LLM 통합 후) |
-| Step 18 (자동 검증 스크립트 + CI)                                       |   0.5d    |      1d      |    1.5d     |                                  ⏳ 잔여                                   |
-| Step 19 (4-Pass + 5-페르소나 cap=3)                                     |   0.5d    |      1d      |    1.5d     |                                  ⏳ 잔여                                   |
-| Step 20 (BATCH-1 적재 진입)                                             |    1d     |     1.5d     |     2d      |                         ⏳ 잔여 (Step 19 통과 후)                          |
-| **v1.3 합계**                                                           | **11.5d** | **16.5~17d** |   **23d**   |                              **약 50% 진행**                               |
-| v1.2 합계 (참고)                                                        |   10.4d   |  15.3~15.8d  |    21.2d    |                                     —                                      |
+| 단계                                                                    |   낙관    | 현실 (×1.5)  | 비관 (×2.0) |                                                               진행 상태                                                               |
+| :---------------------------------------------------------------------- | :-------: | :----------: | :---------: | :-----------------------------------------------------------------------------------------------------------------------------------: |
+| Step 0~5 (마스터 + ADR 4건 + LLM 도식)                                  |   1.5d    |     2.5d     |     3d      |                                                                ✅ 완료                                                                |
+| Step 6 (엔진 3종 research + contract)                                   |    1d     |     1.5d     |     2d      |                                                                ✅ 완료                                                                |
+| Step 7~11.5 (plan 6건)                                                  |    1d     |     1.5d     |     2d      |                                                                ✅ 완료                                                                |
+| Step 11.6 plan v1.1 + B-C1+B-C2 정정 (v1.2)                             |   0.3d    |     0.5d     |    0.7d     |                                                         ✅ 완료 (2026-04-28)                                                          |
+| Step 12 (cost-meter 코드)                                               |   0.5d    |     0.7d     |     1d      |                                                                ✅ 완료                                                                |
+| Step 17 (checkpoint/recover 코드 + R-C1/Q-C1/B-C3 정정)                 |   0.7d    |      1d      |    1.5d     |                                                                ✅ 완료                                                                |
+| **Step 11.6 코드 (v1.2 NEW — pipeline 통합 + 6 callsite + AC e2e 9건)** |   2.6d    |   3.1~3.5d   |    4.5d     |                                                       **✅ 완료 (2026-04-29)**                                                        |
+| **ADR-027 + 방법론 v1.2 (v1.3 NEW — atomic BATCH 정책 영속화)**         |   0.1d    |     0.2d     |    0.3d     |                                                       **✅ 완료 (2026-04-30)**                                                        |
+| Step 13~16 (formula/parser/quality property + reproducibility 코드)     |   1.8d    |     2.5d     |    3.5d     | 🟡 진행 (Step 13 ✅ + Step 14a ✅ + Step 15a ✅ 2026-04-30, Step 14b 이연 = LLM 통합 후 / Step 15b 이연 = Engine Hardening 다음 세션) |
+| Step 18 (자동 검증 스크립트 + CI)                                       |   0.5d    |      1d      |    1.5d     |                                                                ⏳ 잔여                                                                |
+| Step 19 (4-Pass + 5-페르소나 cap=3)                                     |   0.5d    |      1d      |    1.5d     |                                                                ⏳ 잔여                                                                |
+| Step 20 (BATCH-1 적재 진입)                                             |    1d     |     1.5d     |     2d      |                                                       ⏳ 잔여 (Step 19 통과 후)                                                       |
+| **v1.3 합계**                                                           | **11.5d** | **16.5~17d** |   **23d**   |                                                            **약 50% 진행**                                                            |
+| v1.2 합계 (참고)                                                        |   10.4d   |  15.3~15.8d  |    21.2d    |                                                                   —                                                                   |
 
 **v1.3 증가 사유 (+1.1~1.8d):**
 
@@ -492,7 +492,7 @@ Review B 4개 권고를 ThePick 실제 환경(Node.js 로컬 BATCH, Cloudflare W
 - [x] Step 12 (cost-meter) + Step 17 (checkpoint/recover) 코드 + R-C1/Q-C1/B-C3/SF-M-2 정정 + 137/137 PASS
 - [x] **Step 11.6 코드 구현 (v1.2 신규 — pipeline 통합)**: 6 callsite 갱신 + AC e2e 9건 흡수 + 195/195 PASS (2026-04-29)
 - [x] **ADR-027 신설 (v1.3 — Year 1 atomic BATCH + mid-resume Year 2 이연)** + 방법론 v1.2 effective (2026-04-30)
-- [ ] Step 13~16 코드 구현 — Step 13 ✅ formula determinism + sandbox bypass property (2026-04-30, 251/251 PASS) / Step 14a ✅ parser determinism normalizer + invariant 부분 + AC-PA-3/4 부분 (2026-04-30, 133/133 PASS) / Step 14b 이연 (LLM 통합 후 — contract.yaml AC-PA-1/2/3/4 phase_partitions + step3 plan v1.1 §"14b 진입 게이트") / Step 15~16 잔여 (quality property + reproducibility)
+- [ ] Step 13~16 코드 구현 — Step 13 ✅ formula determinism + sandbox bypass property (2026-04-30, 251/251 PASS) / Step 14a ✅ parser determinism normalizer + invariant 부분 + AC-PA-3/4 부분 (2026-04-30, 136/136 PASS) / Step 14b 이연 (LLM 통합 후 — contract.yaml AC-PA-1/2/3/4 phase_partitions + step3 plan v1.1 §"14b 진입 게이트") / Step 15a ✅ quality determinism normalizer + AC-QU-1 manual fixture 부분 (2026-04-30, 41/41 PASS, 500 시나리오) / Step 15b 이연 (다음 세션 — contract.yaml AC-QU-1/2/3/4/6 phase_partitions + step4 plan v1.1 §"15b 진입 게이트" 12항목 — Tarjan SCC 비교 + arbitraryGraph generator 의무) / Step 16 잔여 (reproducibility-idempotency)
 - [ ] Step 18 자동 검증 스크립트 PASS (의무화)
 - [ ] Step 19 4-Pass + 5-페르소나 리뷰 CRITICAL 0건 (cap 3회)
 - [ ] Build SLO 모든 축 측정 가능 + Step 12 (Cost meter Layer 1) 가동
