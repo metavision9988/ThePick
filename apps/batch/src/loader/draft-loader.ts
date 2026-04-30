@@ -16,7 +16,7 @@
 
 import type { KnowledgeContract } from '@thepick/parser';
 import { isValidNodeId } from '@thepick/parser';
-import type { NodeType } from '@thepick/shared';
+import type { ExamId, NodeType } from '@thepick/shared';
 import { buildSourceId } from './build-source-id.js';
 
 /**
@@ -29,6 +29,21 @@ import { buildSourceId } from './build-source-id.js';
 const BATCH_RUN_ID_PATTERN = /^[a-zA-Z0-9_-]{8,128}$/;
 
 export interface LoadDraftContext {
+  /**
+   * 시험 식별자 — Hard Rule 16 시험 경계 강제.
+   *
+   * Year 1 (현재): D1 `knowledge_nodes` 에 `exam_id` 컬럼 부재. INSERT 시 미바인딩 (Year 1 한시
+   * 예외, 메모리 `project_v3_final_multi_exam_deferred`). 단 시그니처에 required 로 보유 →
+   * Year 2 마이그레이션 0017 (`exam_id` 컬럼 도입) 시점에 INSERT SQL `bind(examId)` 추가만으로
+   * zero-cost 전환. caller 코드 수정 0건.
+   *
+   * Year 2 Phase 4: 본 필드 → INSERT SQL `exam_id` 컬럼 + Vectorize 메타데이터 + recover() 시
+   * cross-tenant 가드 (recover.ts:230-244 SF-M-2 패턴 동일).
+   *
+   * 근거: docs/plans/engine-hardening/step5-reproducibility-idempotency.plan.md v1.2
+   * §"Step 16b 진입 게이트" 8항목 + Hard Rule 16 (production-quality.md).
+   */
+  readonly examId: ExamId;
   /** BATCH 식별자 — knowledge_nodes.batch_id 에 그대로 저장. */
   readonly batchId: string;
   /**
@@ -154,6 +169,12 @@ export async function loadDraft(
 // ---------------------------------------------------------------------------
 
 function preValidate(contract: KnowledgeContract, ctx: LoadDraftContext): void {
+  if (!ctx.examId || (ctx.examId as string).trim() === '') {
+    throw new DraftLoadError(
+      'examId is required (Hard Rule 16 시험 경계 강제 — Year 2 zero-cost 전환 의무)',
+      'validate',
+    );
+  }
   if (!ctx.batchId || ctx.batchId.trim() === '') {
     throw new DraftLoadError('batchId is required', 'validate');
   }
@@ -165,7 +186,9 @@ function preValidate(contract: KnowledgeContract, ctx: LoadDraftContext): void {
   }
   if (!BATCH_RUN_ID_PATTERN.test(ctx.batchRunId)) {
     throw new DraftLoadError(
-      `batchRunId must match safe identifier pattern (^[a-zA-Z0-9_-]{8,128}$). got '${ctx.batchRunId}' (Pass 3 M-1 흡수).`,
+      `batchRunId must match safe identifier pattern (^[a-zA-Z0-9_-]{8,128}$). got '${ctx.batchRunId}'. ` +
+        `Recommended generators: crypto.randomUUID() (RFC 4122 v4, 36자) or nanoid (default 21자, 최소 안전 길이 8자 이상). ` +
+        `Test fixtures should use prefixed safe identifiers (e.g., 'batch-run-test-0001'). (Pass 3 M-1 + R-1 흡수)`,
       'validate',
     );
   }

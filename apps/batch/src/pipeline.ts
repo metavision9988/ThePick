@@ -913,6 +913,7 @@ async function stageDbLoad(
   if (!ctx.db) throw new Error('DB load requires db handle (dryRun=false)');
 
   const loadCtx: LoadDraftContext = {
+    examId: ctx.examId,
     batchId: ctx.batchId,
     batchRunId: ctx.batchRunId,
     versionYear: ctx.versionYear,

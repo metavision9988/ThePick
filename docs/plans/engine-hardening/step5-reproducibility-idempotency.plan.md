@@ -4,10 +4,11 @@
 
 phase: 1
 step: engine-hardening-step5
-version: v1.2
+version: v1.3
 approved_by: 진산 (2026-04-27 Engine Hardening Roadmap v1.1 일괄 승인)
 v1_1_revision_by: 2026-04-28 (P0 후보 B 정정 흡수) — backend-architect C-1 결함 (knowledge_nodes 컬럼 부재) 정정 + source_id 정의 명확화
 v1_2_revision_by: 2026-04-30 (Step 16a 진행 + 명시 이연 CRITICAL-Q4 흡수) — buildSourceId 헬퍼 + LoadDraftContext.batchRunId + draft-loader.ts INSERT 채움 + 16b/16c 분할
+v1_3_revision_by: 2026-04-30 (Step 16b 진입 — 게이트 ⑧/⑨/⑩ 흡수) — LoadDraftContext.examId required + §non-goals (D1 batch atomicity 가정) + page_ref 형식 모델 명시 + e2e 시나리오 4건 + nanoid hint 에러 메시지
 risk_level: L3
 scope:
 
@@ -150,15 +151,15 @@ END;
 다음 항목 모두 충족 후 16b 진입:
 
 1. ✅ Step 16a `buildSourceId` 헬퍼 + LoadDraftContext.batchRunId + INSERT 채움 commit
-2. ⏳ apps/batch in-memory D1 + better-sqlite3 환경에서 `runPipeline` 풀 실행 가능 (Step 11.6 e2e 패턴)
-3. ⏳ AC-RP-1 시나리오 A: 동일 fixture + 동일 seed → invariant_fields 100% 동일 (knowledge_nodes 정렬 + JSON canonical)
-4. ⏳ AC-RP-2 시나리오 B: `Promise.all` 동시 인스턴스 2개 → 1개만 'completed', INSERT 중복 0건
-5. ⏳ AC-RP-3 시나리오 C: 50% kill → recover → 최종 결과 정상 동일 + 중복 0건
-6. ⏳ AC-RP-4 시나리오 E: 동일 batch_run_id 완료 후 재실행 → skip + 결과 보존
-7. ⏳ AC-RP-7 source_id 결정성 e2e — 본 plan AC 충족, 단위 테스트는 16a 에서 커버
-8. ⏳ **`LoadDraftContext.examId: ExamId` 필수 필드 추가 (Hard Rule 16 Year 2 zero-cost 전환 의무)** — 16a Pass 2/4 MAJOR-PA4-1 흡수. Year 2 마이그레이션 0017 (`knowledge_nodes.exam_id` 컬럼 도입) 시점에 `loadDraft` 시그니처 / preValidate / pipeline.ts:917 loadCtx / loader.test.ts BASE_CTX 일괄 갱신 비용 < 5분.
-9. ⏳ **D1 batch() partial-commit 회복 e2e (Pass 2 M-2 흡수)** — Workers 50ms CPU 한도 + 노드 다수 INSERT 시 batch atomicity 검증 또는 plan §non-goals 에 "D1 batch atomicity 는 Cloudflare 보증 가정" 명시.
-10. ⏳ **page_ref 형식 모델 확정 (Pass 3 C-1 흡수)** — Step 16b 시점 fixture 가 정수 / 범위 / section 어느 형식으로 적재할지 결정. `pageRefString` 시그니처 보강 또는 caller 별 page_ref 변환 정책 명시. migration 0010 CHECK 제약과 정합.
+2. ✅ apps/batch in-memory D1 + better-sqlite3 환경에서 `runPipeline` 풀 실행 가능 (Step 11.6 e2e 패턴) — `pipeline.integration.test.ts` 12 tests 검증
+3. ✅ AC-RP-1 시나리오 A: 동일 fixture + 동일 seed → invariant_fields 100% 동일 (knowledge_nodes 정렬 + JSON canonical) — Step 16b `reproducibility-idempotency.test.ts` 신규
+4. ✅ AC-RP-2 시나리오 B: `Promise.all` 동시 인스턴스 2개 → 1개만 'completed', INSERT 중복 0건
+5. ✅ AC-RP-3 시나리오 C: 50% kill → recover → 최종 결과 정상 동일 + 중복 0건
+6. ✅ AC-RP-4 시나리오 E: 동일 batch_run_id 완료 후 재실행 → skip + 결과 보존
+7. ✅ AC-RP-7 source_id 결정성 e2e — 본 plan AC 충족, 단위 테스트는 16a 에서 커버
+8. ✅ **`LoadDraftContext.examId: ExamId` 필수 필드 추가 (Hard Rule 16 Year 2 zero-cost 전환 의무)** — 16a Pass 2/4 MAJOR-PA4-1 흡수. Year 2 마이그레이션 0017 (`knowledge_nodes.exam_id` 컬럼 도입) 시점에 `loadDraft` 시그니처 / preValidate / pipeline.ts:917 loadCtx / loader.test.ts BASE_CTX 일괄 갱신 비용 < 5분. **2026-04-30 v1.3 Step 16b 진입 시점에 본 게이트 흡수** — `draft-loader.ts:39` `examId: ExamId` required + preValidate 빈 문자열 차단 + pipeline.ts:916 `examId: ctx.examId` + loader.test.ts BASE_CTX `examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA` + 신규 테스트 1 (examId 누락 차단).
+9. ✅ **D1 batch() partial-commit 회복 e2e (Pass 2 M-2 흡수)** — §non-goals "D1 batch atomicity Cloudflare 보증 가정" 명시 (본 plan §"Non-goals (Step 16b 시점)" 추가). Workers 50ms CPU 한도 + 노드 다수 INSERT 시 batch atomicity 는 Cloudflare D1 의 SQLite 트랜잭션 모델로 보증. e2e 검증은 Cloudflare Preview Database 진입 시점 (Phase 2 Step) 에 별도 plan 작성.
+10. ✅ **page_ref 형식 모델 확정 (Pass 3 C-1 흡수)** — 본 plan §"page_ref 형식 모델 (v1.3 신규)" 추가. **Step 16b 시점 fixture 정수 문자열만 사용** — `pageRefString(node.source_page)` 가 `String(positive_int)` 결과만 반환. 범위 / section 형식은 migration 0010 CHECK 제약 허용 범위이나 적재 caller 진입 차단 (preValidate `Number.isInteger(n.source_page) && n.source_page > 0`). Year 2 다른 시험 / 법령 import path 진입 시 별도 plan.
 
 ### Step 16c 진입 게이트 (16b 완료 후 또는 별도)
 
@@ -364,3 +365,104 @@ test('Idempotency — re-run with same batch_run_id after completion → skip', 
 - 낙관: 1d
 - 현실: 1.5d (×1.5 — concurrent test 디버깅 + 마이그레이션 검증)
 - 비관: 2d
+
+---
+
+## Non-goals (v1.3 신규 — Step 16b 게이트 ⑨ 흡수)
+
+다음 항목은 본 plan 범위 외 — 명시적 SKIP. 검증 진입 시점이 별도 plan 으로 정의되어 있다.
+
+### NG-1 — D1 batch() partial-commit 회복 e2e (Cloudflare Preview Database)
+
+**Skip 사유:**
+
+- Cloudflare D1 의 `db.batch([stmt1, stmt2, ...])` 는 SQLite 의 BEGIN..COMMIT 트랜잭션 모델로
+  atomic 보증 — 한 stmt 실패 시 전체 rollback (Cloudflare 문서, [D1 Workers Binding API](https://developers.cloudflare.com/d1/build-with-d1/d1-client-api/)).
+- in-memory better-sqlite3 환경 (현재 e2e 테스트) 도 동일 모델 사용 → batch atomicity 검증
+  가능하나, Workers 50ms CPU 한도 + Cloudflare 분산 환경에서의 partial-commit (네트워크 단절,
+  쿼터 초과) 시나리오는 in-memory 재현 불가.
+- e2e 검증 시점: Cloudflare Preview Database (`wrangler d1 execute --preview`) 진입 시 (Phase 2
+  진입 시점, ADR-018 D1 Preview).
+- 본 plan v1.3 시점 가정: D1 batch atomicity 는 Cloudflare 보증으로 신뢰. Layer 1 cost-meter
+  (Step 12) 가 token spend 차단 + Layer 2 (Anthropic console cap) 가 in-flight 차단.
+
+### NG-2 — 시나리오 D (Cron + 수동 트리거 동시 발생)
+
+**Skip 사유:** 본 plan 시점 Cron 미사용 — Phase 2 진입 시 별도 plan. 본 plan §"시나리오 D" 명시.
+
+### NG-3 — 다른 시험 / 법령 import path 의 page_ref 범위 / section 형식
+
+**Skip 사유:** Year 1 손해평가사 단일 시험 — fixture page_ref 는 정수 문자열만. 다른 시험 / 법령
+도입 시 별도 plan (Year 2 Phase 4, 메모리 `project_v3_final_multi_exam_deferred` 정합).
+
+### NG-4 — Worker thread / 별도 process 동시성 시나리오
+
+**Skip 사유:** 현재 e2e `Promise.all` 단일 프로세스 내 race condition 재현 — 진짜 OS-level
+race condition (두 Claude Code 세션 동시 실행) 은 Worker thread / 별도 process 로 강화 가능하나
+본 plan 범위 외. 시나리오 B 는 application-level (BatchRunsDb in-memory mutex) 검증으로 수렴.
+
+### NG-5 — 시나리오 C 실제 kill (SIGKILL / SIGINT) 재현 e2e
+
+**Skip 사유:** 본 plan v1.3 시나리오 C e2e 는 `(sharedDb as any).rows.set('killed')` 직접
+mutation 시뮬레이션으로 simplification 됨. production 0015 트리거는 `completed → killed`
+ABORT 강제 (downgrade 차단) 이므로, 본 simplification 은 **테스트 픽스처 전용** 이다.
+
+**진짜 kill 시나리오 (SIGINT/SIGTERM/SIGKILL/노트북 슬립/시스템 재부팅):**
+
+- `apps/batch/__tests__/signal-handlers.test.ts` 가 SIGINT/SIGTERM lastSnapshot flush 검증
+- `apps/batch/__tests__/cost-meter-pipeline-kill.test.ts` 가 CostMeter kill switch checkpoint flush 검증
+- `apps/batch/src/__tests__/pipeline.integration.test.ts` AC-1 e2e 가 정상 흐름 영구화 검증
+
+본 plan 시나리오 C e2e 는 위 3 테스트의 **결합 결과 (kill 후 재실행 분기)** 만 검증 — 즉
+"checkpoint 잔존 + state='killed'" 상태에서 두 번째 호출의 recoverBatch 분기가 정상.
+
+**Step 16c 또는 별도 plan 진입 시 보강:**
+
+- `runBatchWithKill(fixturePath, db, {batchRunId, killAtStage: 5})` 헬퍼 신설 — 실제 stage
+  loop 중간에 `process.kill(process.pid, 'SIGTERM')` 시뮬레이션
+- Worker thread 또는 별도 process 분리 (NG-4 정합)
+- `wrangler d1 execute --local` 환경에서 0015 트리거 ABORT 검증 (NG-1 정합)
+
+근거: 4-Pass 자동 리뷰 (Pass 1+2) PA1-M1 흡수 (2026-04-30) — `(sharedDb as any).rows`
+직접 mutate 가 production 트리거 우회 simulation 임을 plan 본문에 명시 의무 (handoff-024
+차세션 트래킹 의무 동시 활성).
+
+---
+
+## page_ref 형식 모델 (v1.3 신규 — Step 16b 게이트 ⑩ 흡수)
+
+### 형식 매트릭스
+
+| 형식                   | 예시          | migration 0010 CHECK | preValidate (Step 16b) | source_id 결정성 |
+| :--------------------- | :------------ | :------------------- | :--------------------- | :--------------- |
+| **정수 문자열** (채택) | `"403"`       | ✅ 허용              | ✅ 진입                | ✅ 보장          |
+| 범위                   | `"403-434"`   | ✅ 허용              | ❌ 차단                | (미진입)         |
+| Section                | `"525:§4-2"`  | ✅ 허용              | ❌ 차단                | (미진입)         |
+| `p.NNN`                | `"p.403"`     | ✅ 허용              | ❌ 차단                | (미진입)         |
+| NULL / empty           | `null` / `""` | (CHECK 외)           | ❌ 차단                | fallback         |
+
+### 적용 정책 (Step 16b)
+
+- **caller 진입 차단:** `preValidate` 가 `Number.isInteger(node.source_page) && node.source_page > 0`
+  강제 (`draft-loader.ts:184-188`). 정수 외 입력은 `DraftLoadError('invalid source_page')` 즉시 throw.
+- **헬퍼 결정성:** `pageRefString(node.source_page: number) → String(page)` (line 421-423).
+  정수 → 정수 문자열 1:1 변환.
+- **source_id 결정성:** `buildSourceId(pageRef, nodeId)` 가 `<no_page>` fallback 보유하나
+  Step 16b 정상 흐름은 진입 차단으로 fallback 미진입 — Year 2 import path 안전망.
+
+### Year 2 확장 정책 (별도 plan)
+
+- 다른 시험 / 법령 / 행정해석 도입 시 page_ref 형식 변경 가능 (`예: "법령:보험업법§5-2"`).
+- 본 시점 결정: **Step 16b 시점에 형식 모델을 정수 문자열로 고정** + Year 2 별도 plan 으로 위임.
+- 변경 시 영향 범위:
+  - `preValidate` 검증 로직 (현재: `Number.isInteger`)
+  - `pageRefString` 변환 함수 (현재: `String(page)`)
+  - `buildSourceId` 입력 형식 (현재: 임의 문자열 결정성 보장 — 변경 불필요)
+  - migration 0010 CHECK 제약 (현재: 정규식 허용 범위 — 변경 불필요)
+
+### 검증 (Step 16b 흡수)
+
+- ✅ loader.test.ts: `source_page = 0` (line 152), `source_page = undefined` (line 158),
+  `source_page = -1` (line 167) 모두 차단 — 정수 양수만 허용 검증.
+- ✅ buildSourceId: 정상 (`"403"` + `"CONCEPT-001"`) + fallback (`null`) + throw (`""` nodeId)
+  단위 테스트 8건 (build-source-id.test.ts).

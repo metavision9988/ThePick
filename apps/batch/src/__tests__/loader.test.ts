@@ -4,6 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { KnowledgeContract } from '@thepick/parser';
+import { EXAM_IDS } from '@thepick/shared';
 import { loadDraft, DraftLoadError } from '../loader/draft-loader';
 import { openLocalDb, type LocalD1 } from '../loader/local-db';
 
@@ -56,6 +57,7 @@ function minimalContract(): KnowledgeContract {
 }
 
 const BASE_CTX = {
+  examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
   batchId: 'BATCH-1',
   batchRunId: 'batch-run-test-0001',
   versionYear: 2026,
@@ -172,6 +174,22 @@ describe('draft-loader', () => {
     await expect(
       loadDraft(ctx.db, minimalContract(), { ...BASE_CTX, batchId: '' }),
     ).rejects.toThrow(/batchId is required/);
+  });
+
+  it('Step 16b 게이트 ⑧ — examId 누락 시 DraftLoadError (Hard Rule 16 시험 경계 강제)', async () => {
+    await expect(
+      loadDraft(ctx.db, minimalContract(), {
+        ...BASE_CTX,
+        // @ts-expect-error — 런타임 방어선 테스트 (시그니처 우회 시도)
+        examId: '',
+      }),
+    ).rejects.toThrow(/examId is required.*Hard Rule 16/);
+  });
+
+  it('Pass 3 M-1 + R-1 흡수 — batchRunId 에러 메시지에 nanoid hint 포함 (caller UX)', async () => {
+    await expect(
+      loadDraft(ctx.db, minimalContract(), { ...BASE_CTX, batchRunId: 'short01' }),
+    ).rejects.toThrow(/Recommended generators.*crypto\.randomUUID.*nanoid/);
   });
 
   it('versionYear < 2020 거부', async () => {
