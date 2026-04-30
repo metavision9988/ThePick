@@ -1,0 +1,177 @@
+# engine.contract.yaml — quality
+# 양식: VOID ENGINE DESIGN CONSTITUTION v3.0 부록 A
+# v1.0 → v1.1: L2 → L3 격상 (Review A-1)
+
+engine:
+  name: "@thepick/quality"
+  version: "0.1.0"
+  status: "contracted"
+
+  classification:
+    scope: "micro"
+    determinism: "deterministic"
+    statefulness: "stateless"
+    isolation: "process"
+
+  domain_profile:
+    primary: "library"
+    secondary: ["batch-build"]
+
+  defcon: "L3"  # v1.1 격상
+  defcon_reason: |
+    자동 L3 트리거 2건 해당 (v3.0 Vol I.3):
+    1. 데이터 파이프라인 (3단계+) — CBIV 6단계 (Phase 1 후반 통합)
+    2. Stateful Meta가 의존하는 결정자 — apps/batch Stage 6의 합격 기준
+
+  composition_pattern: "N/A"
+  parent_meta_engine: "apps/batch (Pattern A Pipeline 의존성 핵심 노드)"
+
+  slo:
+    tier: "Library"
+    build_correctness: 0.999  # L3 의무
+    build_reproducibility:
+      invariant_fields:
+        - "violations_list"            # 위반 노드/엣지 ID 목록
+        - "violation_count_per_type"   # ViolationType별 카운트
+        - "report_summary_hash"        # SHA-256 of normalized report
+      invariant_threshold: 1.0  # 100% — 그래프 알고리즘 결정성
+      tolerable_fields: []  # 결정성 보장
+      tolerance_threshold: 0.0
+      test_method: "property_test"
+      test_iterations: 100
+      seed_fixed: true
+      input_normalization: "sort_nodes_by_id_ascending"  # 입력 순서 의존성 제거
+
+    latency_1000_nodes_ms: 5000
+    cost_per_validation_usd: 0  # 외부 호출 0건
+
+  single_vendor:
+    enabled: true
+    vendor: "cloudflare"
+    note: "Library 자체는 벤더 무관. 외부 의존 0 (npm)"
+
+interface:
+  inputs:
+    - name: "nodes"
+      type: "GraphNode[]"
+      svf_role: "scalar"
+      validation:
+        - "all node.id unique"
+        - "all node.type in NodeType enum"
+
+    - name: "edges"
+      type: "GraphEdge[]"
+      svf_role: "scalar"
+      validation:
+        - "all edge.from/to reference existing node IDs (보고 대상이지만 입력 검증은 X — 본 엔진의 책임)"
+
+  outputs:
+    - name: "report"
+      type: "IntegrityReport"
+      svf_role: "scalar"
+      validation:
+        - "report.violations[*].type in ViolationType enum"
+        - "report.violations[*].targetIds reference real graph elements"
+        - "report.summary.totalViolations === report.violations.length"
+
+  errors:
+    - "INVALID_NODE_INPUT"        # 노드 입력 자체가 깨진 경우
+    - "INVALID_EDGE_INPUT"
+    - "ALGORITHM_OVERFLOW"        # 매우 큰 그래프 (10K+ 노드)에서 발생 가능
+
+lifecycle:
+  applies: false
+  reason: "Library — Q4 관측, Q5 lifecycle = N/A"
+
+aiec:
+  applies: false  # 호출 사이트가 동일 프로세스 (apps/batch Stage 6)
+
+llm_integration:
+  enabled: false  # quality는 결정적 알고리즘. LLM 미사용
+
+acceptance_criteria:
+  - id: "AC-QU-1"
+    description: "동일 그래프 입력 (노드 순서 무작위화 후) → 100회 반복 시 IntegrityReport 100% 동일"
+    verification: "property_test"
+    test_path: "src/__tests__/determinism.property.test.ts"
+    iterations: 100
+    threshold: 1.0
+
+  - id: "AC-QU-2"
+    description: "고아 노드 탐지 — 엣지에 등장하지 않는 노드 모두 식별"
+    verification: "test_passes"
+    test_path: "src/__tests__/graph-integrity.test.ts"
+
+  - id: "AC-QU-3"
+    description: "끊긴 엣지 탐지 — from/to가 nodes에 없는 엣지 모두 식별"
+    verification: "test_passes"
+
+  - id: "AC-QU-4"
+    description: "SUPERSEDES 순환 탐지 — A→B→C→A 등 단순/복합 cycle 모두 식별"
+    verification: "property_test"
+    iterations: 50
+    scenarios: ["self_loop", "2-cycle", "3-cycle", "complex_scc"]
+
+  - id: "AC-QU-5"
+    description: "외부 의존 0 — package.json devDependencies만"
+    verification: "package_audit"
+    target: "packages/quality/package.json"
+    allowed_dependencies: []  # 런타임 의존성 0
+    allowed_dev_dependencies: ["typescript", "vitest"]
+
+  - id: "AC-QU-6"
+    description: "1000 노드 + 5000 엣지 그래프 검증 < 5초"
+    verification: "metric_check"
+    metric: "engine.latency.validate_graph"
+    threshold: 5000
+
+  - id: "AC-QU-7"
+    description: "validateGraphIntegrity 인터페이스 보존 — 알고리즘 교체 가능 (Q2)"
+    verification: "function_exists"
+    targets:
+      - "graph-integrity.ts:validateGraphIntegrity"
+      - "graph-integrity.ts:findOrphanNodes"
+      - "graph-integrity.ts:findBrokenEdges"
+      - "graph-integrity.ts:findSupersedeCycles"
+
+constraints:
+  - "결정성 100% — 동일 입력 → 동일 출력 (입력 순서 정규화 후)"
+  - "외부 의존 0 (npm 런타임 의존성 없음)"
+  - "출력 IntegrityReport 정규화 가능 (재현성 검증용)"
+  - "위반 발견 시 throw X — IntegrityReport에 모두 수집 (Silent Failure 방지)"
+  - "ViolationType enum은 v3.0 Vol IX #5 Silent Failure 안티패턴 회피의 핵심"
+
+adr_triggers:
+  - "ViolationType enum 확장 (새 검증 항목 추가)"
+  - "GraphNode/GraphEdge 인터페이스 변경"
+  - "CBIV 통합 (Phase 1 후반 — `apps/batch`에서 본 패키지로 이전)"
+  - "알고리즘 교체 (예: naive DFS → Tarjan SCC)"
+
+first_heartbeat:
+  status: "achieved"
+  achieved_date: "2026-04-22"  # graph-integrity.test.ts 통과 시점
+  achieved_scenario: "BATCH-1 fixture graph integrity report 통과"
+
+contract_review:
+  breaker_verified: false
+  omission_warnings:
+    - "Phase 1 후반 CBIV 통합 시 본 contract 갱신 의무 (DEFCON L3 유지, 검증 항목 6단계로 확장)"
+    - "Property test는 입력 순서 정규화 후 — 정규화 로직 자체도 결정성 검증 필요"
+  loosened_constraints: []
+  scope_gaps:
+    - "CBIV 6단계 검증은 현재 `apps/batch` 내부 분산 — 통합 검토 필요"
+
+library_obligations:
+  - obligation: "Property Test (Tier 4) — graph determinism"
+    status: "pending"
+    target_step: "Engine Hardening Step 15"
+  - obligation: "engine.contract.yaml"
+    status: "in_progress"
+    target_step: "Step 6 (본 파일)"
+  - obligation: "Semantic Versioning"
+    status: "compliant"
+  - obligation: "TypeScript strict"
+    status: "compliant"
+  - obligation: "100% 단위 커버리지"
+    status: "partial"
+    note: "현재 graph-integrity.test.ts 1건. Property test + edge case 추가 후 격상"

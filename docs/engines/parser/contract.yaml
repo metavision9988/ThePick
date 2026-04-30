@@ -1,0 +1,197 @@
+# engine.contract.yaml — parser
+# 양식: VOID ENGINE DESIGN CONSTITUTION v3.0 부록 A
+
+engine:
+  name: "@thepick/parser"
+  version: "0.1.0"
+  status: "contracted"
+
+  classification:
+    scope: "micro"
+    determinism: "deterministic"  # 현재 — Phase 1 후반 LLM 통합 시 hybrid로 변경
+    statefulness: "stateless"
+    isolation: "process"
+
+  domain_profile:
+    primary: "library"
+    secondary: ["batch-build"]
+
+  defcon: "L2"
+  defcon_reason: "현재 결정적 PDF 파서. Phase 1 후반 LLM 통합 시 자동 L3 격상 (AI/ML 추론 트리거)"
+
+  composition_pattern: "N/A"
+  parent_meta_engine: "apps/batch (Pattern A Pipeline 내부 호출)"
+
+  slo:
+    tier: "Library"
+    build_correctness: 0.99  # Phase 1 후반 LLM 통합 시 0.999로 격상
+    build_reproducibility:
+      invariant_fields:
+        - "node_ids"                  # CONCEPT-001, F-01, INS-01 등
+        - "edge_dependency_graph"     # 노드 간 의존 관계 (DAG)
+        - "formula_AST_hash"          # math.js AST 정규화 해시
+        - "ontology_registry_match"   # 모든 노드/엣지가 registry에 존재
+        - "constants_canonical_form"  # 단위·정밀도 정규화
+        - "section_hierarchy"         # 제 N 장 / 제 M 절 트리 구조
+      invariant_threshold: 1.0  # 100% 의무
+      tolerable_fields:
+        - "raw_line_breaks"           # PDF library 버전별 line break 차이
+        - "ocr_normalized_whitespace" # 공백 정규화 결과
+        - "vision_corrected_text"     # OCR 보정 (Phase 3)
+      tolerance_threshold: 0.05  # 5% 이내 변동 허용
+      test_method: "property_test"
+      test_iterations: 100
+      seed_fixed: true
+      fixture_pdfs:
+        - "fixtures/batch1/jejae_1pg.pdf"
+        - "fixtures/batch1/jejae_section_5pg.pdf"
+        - "fixtures/batch1/formula_definition.pdf"
+        - "fixtures/batch1/table_extraction.pdf"
+        - "fixtures/batch1/mixed_image_text.pdf"
+
+    latency_per_page_ms: 500    # PDF 추출
+    latency_section_split_ms: 2000  # 섹션 분리 포함
+    cost_per_page_usd: 0  # Phase 1 후반 LLM 통합 시 측정
+
+  single_vendor:
+    enabled: true
+    vendor: "cloudflare"
+    note: "Library 자체는 벤더 무관. 외부 의존: pdfplumber(Python subprocess) — 로컬 도구"
+
+interface:
+  inputs:
+    - name: "pdfBytes"
+      type: "Uint8Array"
+      svf_role: "scalar"
+      validation:
+        - "size > 0"
+        - "size < 100MB"
+        - "valid PDF magic bytes (%PDF-)"
+
+    - name: "options"
+      type: "ExtractOptions"
+      svf_role: "scalar"
+      validation:
+        - "options.locale = 'ko' (현재 한국어 전용)"
+
+  outputs:
+    - name: "knowledgeContract"
+      type: "KnowledgeContract"
+      svf_role: "scalar"
+      validation:
+        - "all node IDs match ontology-registry.json patterns"
+        - "all edges reference existing node IDs (no broken refs)"
+        - "all formulas pass safeParse() (math.js compatible)"
+        - "all constants have canonical_value + unit"
+
+  errors:
+    - "PDF_PARSE_FAILED"
+    - "INVALID_PDF_FORMAT"
+    - "PYTHON_SUBPROCESS_FAILED"
+    - "ONTOLOGY_VIOLATION"          # 14개 ValidationErrorCode 중
+    - "SCHEMA_INVALID_NODE_ID"
+    - "SCHEMA_INVALID_EDGE_TYPE"
+    - "SCHEMA_BROKEN_REFERENCE"
+    - "SCHEMA_DUPLICATE_NODE"
+    - "FORMULA_AST_PARSE_FAILED"
+    - "CONSTANT_INVALID_UNIT"
+    - "VISION_TRIGGER_THRESHOLD_EXCEEDED"
+
+lifecycle:
+  applies: false
+  reason: "Library — Q4 관측, Q5 lifecycle = N/A (Vol XV.2)"
+
+aiec:
+  applies: false  # 현재. Phase 1 후반 batch-processor.ts 활성화 시 재평가
+
+llm_integration:
+  enabled: false  # 현재 인터페이스만, 실구현 미진행
+  planned_phase: "Phase 1 후반"
+  planned_model: "claude-haiku-4-5-20251001"
+  planned_layers:
+    layer_1_schema: "Zod KnowledgeContract"  # 이미 존재
+    layer_2_constraint: ["ontology_id_match", "page_in_textbook", "law_reference_match"]
+    layer_3_cross_validation: ["cbiv_regression"]
+    layer_4_fallback: "human_review_queue"  # state='draft' 유지
+  note: "Phase 1 후반 LLM 통합 시 LLM_CONTAINMENT.md 4계층 전수 적용 + DEFCON L3 격상"
+
+acceptance_criteria:
+  - id: "AC-PA-1"
+    description: "fixture PDF 5종에 대해 동일 입력 → invariant_fields 100% 동일"
+    verification: "property_test"
+    test_path: "src/__tests__/determinism.property.test.ts"
+    iterations: 100
+    threshold: 1.0  # 100%
+
+  - id: "AC-PA-2"
+    description: "fixture PDF 5종에 대해 tolerable_fields 변동 ≤ 5%"
+    verification: "property_test"
+    threshold: 0.05
+
+  - id: "AC-PA-3"
+    description: "ontology-registry.json 외 ID 생성 시 SCHEMA_INVALID_NODE_ID throw"
+    verification: "test_passes"
+    test_path: "src/__tests__/schema-validator.test.ts"
+
+  - id: "AC-PA-4"
+    description: "broken edge reference 감지 시 SCHEMA_BROKEN_REFERENCE throw"
+    verification: "test_passes"
+
+  - id: "AC-PA-5"
+    description: "extractPdf 인터페이스 보존 — pdfplumber → MuPDF 교체 가능 (Q2)"
+    verification: "function_exists"
+    targets: ["pdf-extractor.ts:extractPdf", "pdf-extractor.ts:extractPdfText"]
+
+  - id: "AC-PA-6"
+    description: "외부 의존 = pdfplumber (Python) 단일"
+    verification: "package_audit"
+    note: "Phase 1 후반 @anthropic-ai/sdk 추가 — 그때 ADR 트리거"
+
+  - id: "AC-PA-7"
+    description: "Vision 트리거가 표·도식만 식별 (텍스트 페이지는 false 반환)"
+    verification: "test_passes"
+    test_path: "src/__tests__/vision-trigger.test.ts (TBD)"
+
+constraints:
+  - "ontology-registry.json 외 ID 생성 절대 금지 (CLAUDE.md Hard Limit)"
+  - "PDF 입력 ≤ 100MB"
+  - "페이지당 추출 ≤ 500ms"
+  - "Phase 1 후반 LLM 통합 시 LLM_CONTAINMENT.md 4계층 전수 적용 의무"
+  - "출력은 KnowledgeContract Schema 검증 통과 필수"
+
+adr_triggers:
+  - "pdfplumber 메이저 버전 변경"
+  - "ontology-registry.json 변경 (현재 Lock 상태)"
+  - "Phase 1 후반 LLM 통합 (DEFCON L3 격상 + AIEC 검토 + Cost SLI 활성)"
+  - "Vision OCR 트리거 임계 변경"
+  - "KnowledgeContract Schema 변경"
+
+first_heartbeat:
+  status: "achieved"
+  achieved_date: "2026-04-25"
+  achieved_scenario: "Phase 1-5 가-0 fixture smoke test 통과 (Step 1-5 readiness report)"
+
+contract_review:
+  breaker_verified: false
+  omission_warnings:
+    - "Phase 1 후반 LLM 통합 시 DEFCON L3 격상 시점에 본 contract 갱신 의무"
+    - "현재 PDF fixture 5종 — 더 다양한 fixture (외래 한자 포함, 표 복잡도 높음) 추가 권고 (Phase 1 후반)"
+  loosened_constraints:
+    - "build_correctness 0.99 (formula-engine은 0.999) — Phase 1 후반 격상"
+  scope_gaps:
+    - "Vision OCR 실구현 미진행 — Phase 3"
+
+library_obligations:
+  - obligation: "Property Test (Tier 4) — invariant 100% / tolerable 5%"
+    status: "pending"
+    target_step: "Engine Hardening Step 14"
+  - obligation: "engine.contract.yaml"
+    status: "in_progress"
+    target_step: "Step 6 (본 파일)"
+  - obligation: "Semantic Versioning"
+    status: "compliant"
+  - obligation: "TypeScript strict"
+    status: "compliant"
+  - obligation: "100% 단위 커버리지"
+    status: "partial"
+    note: "현재 3개 테스트 — Property test 추가 후 격상"
