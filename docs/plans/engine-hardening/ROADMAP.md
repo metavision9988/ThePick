@@ -1,8 +1,8 @@
 # 엔진 보강 마스터 로드맵 (Engine Hardening Roadmap)
 
-**버전:** v1.2 (5-페르소나 + P0 4-Pass + B-C1+B-C2 4-Pass 통합 정정 흡수)
-**작성일:** 2026-04-27 (v1.0) / 2026-04-27 (v1.1) / 2026-04-28 (v1.2 패치)
-**상태:** v1.2 — 진산님 후보 B 채택 후 자율 갱신
+**버전:** v1.3 (Step 11.6 코드 ✅ + AC e2e 9건 ✅ + ADR-027 atomic BATCH 흡수)
+**작성일:** 2026-04-27 (v1.0/v1.1) / 2026-04-28 (v1.2 패치) / 2026-04-30 (v1.3 진척 갱신)
+**상태:** v1.3 — Step 11.6 차단 게이트 통과, Step 13~16 + Step 18 + Step 19 잔여
 **작성자:** Claude (Opus 4.7)
 **Trigger:** 진산님 직관 — "엔진부터 제대로 되야 학습자료 배치도 잘 되는 거 아닌가? 나중에 배치를 다시 하지 않아도 되잖아."
 **근거 헌법:** VOID ENGINE DESIGN CONSTITUTION v3.0 (Vol IV, V, VI, XIV, XV, XVI, XVII)
@@ -10,6 +10,7 @@
 **근거 Doctrine:** `/user:engine` (코어 로직 단독 패키지 격리 + 검증 후에야 통합 허용)
 **v1.0 → v1.1 변경:** 두 독립 검토서(Review A — DEV COVEN / Review B — 외부 메타 옵저버) 9개 보완점 통합. ThePick 환경(Node.js 로컬 BATCH) 매핑 4건 추가.
 **v1.1 → v1.2 변경 (2026-04-28):** Engine Hardening 중간 점검 5-페르소나 + P0 4-Pass + B-C1+B-C2 4-Pass 통합 정정 흡수. Step 11.6 신설 + Step 5 plan v1.1 + 0016 마이그레이션 + recover/checkpoint examId. 명시 이연 9 AC.
+**v1.2 → v1.3 변경 (2026-04-30):** Step 11.6 코드 구현 완료 (137→195 tests, 9 AC e2e 흡수). 진산님 §7 결정 4건 응답 ("권고 진행" 2026-04-30) → ADR-027 신설 (Year 1 BATCH = atomic, mid-resume Year 2 이연) + 방법론 v1.2 effective. §3.2 시간 표 + §4 Step 11.6 + §8 완료 기준 갱신. 잔여: Step 13~16 + Step 18 + Step 19.
 
 ---
 
@@ -49,7 +50,18 @@
 |    **B-C1**     |               5-페르소나 backend C-1                | 마이그레이션 | `knowledge_nodes` 에 `batch_run_id`/`source_id` 컬럼 부재 — Step 5 UNIQUE 인덱스 작동 불가            | **0016 마이그레이션 신규** + Step 5 plan v1.1 (`source_id = {page_ref}#{node_id}` 정의) + 0014 화이트리스트 갱신                           |
 |    **B-C2**     |               5-페르소나 backend C-2                | 인터페이스   | `BatchRunsDb` examId 부재 — Hard Rule 16 위반                                                         | `recover.ts` BatchRunsDb 시그니처 + RecoverOptions.examId + BatchCheckpoint.exam_id? + Step 11.6 plan §3.1 PipelineContext.examId required |
 
-🟡 = 후보 B (절충안) — 명시 이연 9 AC (Step 11.6 코드 구현 시 e2e 흡수)
+🟡 = 후보 B (절충안) — 명시 이연 9 AC (Step 11.6 코드 구현 시 e2e 흡수) — **v1.3: 9 AC 모두 흡수 완료 ✅**
+
+### 0.5.2 v1.3 통합 정정 매트릭스 (2026-04-30, handoff-019 §3 + ADR-027)
+
+|        #        |                        출처                        | 분류      | 결함                                                                                                                                                                                                 | 정정                                                                                                                                                          |
+| :-------------: | :------------------------------------------------: | :-------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **AC-R1-CRIT**  | Step 11.6 9 AC e2e 4-Pass quality (handoff-019 §3) | plan-구현 | `pipeline.ts:518-540` resume 시 `state.contract` 재주입 0건 → mid-pipeline resume 진입 시 Stage 6 즉시 throw → AC-R1 plan 의도 ("Stage 6~10 재실행") 와 e2e 검증 (degenerate skip) 사이 silent pivot | **ADR-027 신설** (Year 1 BATCH = atomic, mid-resume Year 2 Step 11.7 후보 이연) + Step 11.6 plan §7 AC-R1 본문 정정 (already_completed Idempotency skip 검증) |
+| **방법론 §7-1** |         방법론적용-ThePick v1.1 §7 결정 1          | 방법론    | §3 매트릭스 + §2.5 정량 증거 (적용 60%/35%/5%) 승인 대기                                                                                                                                             | **승인** (진산 2026-04-30 "권고 진행") → 방법론 v1.2 effective                                                                                                |
+| **방법론 §7-2** |         방법론적용-ThePick v1.1 §7 결정 2          | 방법론    | 본 문서 영속 위치 결정 대기                                                                                                                                                                          | **현 위치 유지** (디폴트, `feedback_no_granular_decisions` 정합)                                                                                              |
+| **방법론 §7-3** |         방법론적용-ThePick v1.1 §7 결정 3          | 방법론    | P1 시점 정의 결정 대기                                                                                                                                                                               | **BATCH-1 dry-run 통과 직후 = P1** (§6.4 정합, B1~B4 부분 채택 ~1.5d 흡수)                                                                                    |
+
+🔴 = 즉시 반영 (모두 채택 / 옵션 A)
 
 ---
 
@@ -173,28 +185,35 @@ BATCH 적재 = "통합". 엔진 검증 통과 후 적재 진입.
 - 6 callsite 일괄 갱신 + `PipelineContext.examId/batchRunId/checkpointBaseDir/batchRunsDb/engineVersion` required
 - Q1/Q2/Q4 단위 테스트 + AC-Cost/AC-Snapshot'/AC-T3/AC-ExamId/AC-RP-6/AC-RP-7 e2e 9건 흡수 (후보 B 명시 이연)
 
-### 3.2 시간 추정 (v1.2 갱신 — Step 11.6 + B-C1/B-C2 + 후보 B 흡수 반영)
+### 3.2 시간 추정 (v1.3 갱신 — Step 11.6 코드 ✅ + AC e2e 9건 ✅ + ADR-027 흡수 반영)
 
-| 단계                                                                    |   낙관    |  현실 (×1.5)   | 비관 (×2.0) |      진행 상태       |
-| :---------------------------------------------------------------------- | :-------: | :------------: | :---------: | :------------------: |
-| Step 0~5 (마스터 + ADR 4건 + LLM 도식)                                  |   1.5d    |      2.5d      |     3d      |       ✅ 완료        |
-| Step 6 (엔진 3종 research + contract)                                   |    1d     |      1.5d      |     2d      |       ✅ 완료        |
-| Step 7~11.5 (plan 6건)                                                  |    1d     |      1.5d      |     2d      |       ✅ 완료        |
-| **Step 11.6 plan v1.1 + B-C1+B-C2 정정 (v1.2 신규)**                    |   0.3d    |      0.5d      |    0.7d     | ✅ 완료 (2026-04-28) |
-| Step 12 (cost-meter 코드)                                               |   0.5d    |      0.7d      |     1d      |       ✅ 완료        |
-| Step 17 (checkpoint/recover 코드 + R-C1/Q-C1/B-C3 정정)                 |   0.7d    |       1d       |    1.5d     |       ✅ 완료        |
-| **Step 11.6 코드 (NEW v1.2 — pipeline 통합 + 6 callsite + AC e2e 9건)** |   2.6d    |    3.1~3.5d    |    4.5d     |     🟡 다음 단계     |
-| Step 13~16 (formula/parser/quality property + reproducibility 코드)     |   1.8d    |      2.5d      |    3.5d     |       ⏳ 잔여        |
-| Step 18 (자동 검증 스크립트 + CI)                                       |   0.5d    |       1d       |    1.5d     |       ⏳ 잔여        |
-| Step 19 (4-Pass + 5-페르소나 cap=3)                                     |   0.5d    |       1d       |    1.5d     |       ⏳ 잔여        |
-| **v1.2 합계**                                                           | **10.4d** | **15.3~15.8d** |  **21.2d**  |          —           |
-| v1.1 합계 (참고)                                                        |   6.5d    |      11d       |     15d     |          —           |
+| 단계                                                                    |   낙관    | 현실 (×1.5)  | 비관 (×2.0) |         진행 상태         |
+| :---------------------------------------------------------------------- | :-------: | :----------: | :---------: | :-----------------------: |
+| Step 0~5 (마스터 + ADR 4건 + LLM 도식)                                  |   1.5d    |     2.5d     |     3d      |          ✅ 완료          |
+| Step 6 (엔진 3종 research + contract)                                   |    1d     |     1.5d     |     2d      |          ✅ 완료          |
+| Step 7~11.5 (plan 6건)                                                  |    1d     |     1.5d     |     2d      |          ✅ 완료          |
+| Step 11.6 plan v1.1 + B-C1+B-C2 정정 (v1.2)                             |   0.3d    |     0.5d     |    0.7d     |   ✅ 완료 (2026-04-28)    |
+| Step 12 (cost-meter 코드)                                               |   0.5d    |     0.7d     |     1d      |          ✅ 완료          |
+| Step 17 (checkpoint/recover 코드 + R-C1/Q-C1/B-C3 정정)                 |   0.7d    |      1d      |    1.5d     |          ✅ 완료          |
+| **Step 11.6 코드 (v1.2 NEW — pipeline 통합 + 6 callsite + AC e2e 9건)** |   2.6d    |   3.1~3.5d   |    4.5d     | **✅ 완료 (2026-04-29)**  |
+| **ADR-027 + 방법론 v1.2 (v1.3 NEW — atomic BATCH 정책 영속화)**         |   0.1d    |     0.2d     |    0.3d     | **✅ 완료 (2026-04-30)**  |
+| Step 13~16 (formula/parser/quality property + reproducibility 코드)     |   1.8d    |     2.5d     |    3.5d     |          ⏳ 잔여          |
+| Step 18 (자동 검증 스크립트 + CI)                                       |   0.5d    |      1d      |    1.5d     |          ⏳ 잔여          |
+| Step 19 (4-Pass + 5-페르소나 cap=3)                                     |   0.5d    |      1d      |    1.5d     |          ⏳ 잔여          |
+| Step 20 (BATCH-1 적재 진입)                                             |    1d     |     1.5d     |     2d      | ⏳ 잔여 (Step 19 통과 후) |
+| **v1.3 합계**                                                           | **11.5d** | **16.5~17d** |   **23d**   |      **약 50% 진행**      |
+| v1.2 합계 (참고)                                                        |   10.4d   |  15.3~15.8d  |    21.2d    |             —             |
 
-**v1.2 증가 사유 (+4.3~4.8d):**
+**v1.3 증가 사유 (+1.1~1.8d):**
 
-- Step 11.6 신설 (2.6~3d) — Step 11.5 산출물의 pipeline 통합 미수행 발견
-- B-C1+B-C2 정정 (0.5d) — knowledge_nodes 컬럼 부재 + BatchRunsDb examId
-- 후보 B 흡수 (+0.5d) — Q1/Q2/Q4 e2e 9 AC Step 11.6 통합
+- ADR-027 + 방법론 v1.2 (0.1~0.3d) — handoff-019 §3 결정 4 + 진산님 §7 결정 3건 영속화
+- Step 20 (BATCH-1 적재 진입) 시간 추정 신규 추가 (1d / 1.5d / 2d) — batch-loadmap.md §"진산님 워크플로우 트리거" 의 7-step 자동 진행 + Level 1~3 검수 + handoff-batch-1.md
+
+**v1.3 진척 갱신:**
+
+- Step 11.6 ✅ — 195/195 tests / 9 AC e2e 모두 흡수 / 4-Pass quality CRITICAL 1건 (AC-R1) 은 ADR-027 으로 해소
+- ADR-027 ✅ — Year 1 atomic BATCH 정책 명문화 / mid-resume 인프라 보존 (Year 2 Step 11.7 후보)
+- 방법론 v1.2 ✅ — §7 결정 4건 영속화 (효력 발생 2026-04-30)
 
 **의사결정 트리거 (v1.2 갱신):**
 
@@ -471,19 +490,22 @@ Review B 4개 권고를 ThePick 실제 환경(Node.js 로컬 BATCH, Cloudflare W
 - [x] Step 6 엔진 3종 research.md + contract.yaml 작성 + BREAKER 검증
 - [x] Step 7~11.5 plan 6건 + Step 11.6 plan v1.1 + Step 5 plan v1.1 + 0016 마이그레이션
 - [x] Step 12 (cost-meter) + Step 17 (checkpoint/recover) 코드 + R-C1/Q-C1/B-C3/SF-M-2 정정 + 137/137 PASS
-- [ ] **Step 11.6 코드 구현 (v1.2 신규 — pipeline 통합)**: 6 callsite 갱신 + AC e2e 9건 흡수
+- [x] **Step 11.6 코드 구현 (v1.2 신규 — pipeline 통합)**: 6 callsite 갱신 + AC e2e 9건 흡수 + 195/195 PASS (2026-04-29)
+- [x] **ADR-027 신설 (v1.3 — Year 1 atomic BATCH + mid-resume Year 2 이연)** + 방법론 v1.2 effective (2026-04-30)
 - [ ] Step 13~16 코드 구현 (formula/parser/quality property + reproducibility)
 - [ ] Step 18 자동 검증 스크립트 PASS (의무화)
 - [ ] Step 19 4-Pass + 5-페르소나 리뷰 CRITICAL 0건 (cap 3회)
 - [ ] Build SLO 모든 축 측정 가능 + Step 12 (Cost meter Layer 1) 가동
 - [ ] **Layer 2 Cost Control 활성** (Anthropic 콘솔 cap 진산님 설정 — Phase 2 진입 시 의무, 메모리 `project_anthropic_cap_pre_install`)
 - [ ] BATCH-1 fixture 재실행 → seed 고정 시 동일 D1 INSERT 결과 (invariant_fields 100%)
-- [ ] **AC-R1 e2e 통과** (mock 아님): BATCH 50% 진행 → SIGTERM → recover() → 정확 재개
-- [ ] **AC-R3 e2e 통과**: 동시 트리거 → 중복 INSERT 0건
-- [ ] **AC-T3 신규**: batch_runs state transition matrix 5×7 e2e 통과 (B-C3 트리거 갱신 검증)
-- [ ] **AC-RP-6 신규**: 0016 마이그레이션 + 0014 화이트리스트 갱신 e2e 통과 (B-C1)
-- [ ] **AC-RP-7 신규**: source_id 결정성 (`{page_ref}#{node_id}` 100회 반복 동일)
-- [ ] **AC-ExamId 신규**: BatchRunsDb examId 시그니처 검증 + SF-M-2 cross-tenant 가드 발화 검증
+- [x] **AC-R1 e2e 통과** (atomic 정책, ADR-027): 마지막 stage 후 kill → already_completed Idempotency skip 검증 (mid-resume Year 2 Step 11.7 후보 이연)
+- [x] **AC-R3 e2e 통과**: 동시 트리거 → 중복 INSERT 0건
+- [x] **AC-T3 신규**: batch_runs state transition matrix 5×7 e2e 통과 (B-C3 트리거 갱신 검증)
+- [x] **AC-RP-6 신규**: 0016 마이그레이션 + 0014 화이트리스트 갱신 e2e 통과 (B-C1)
+- [x] **AC-RP-7 신규**: source_id 결정성 (`{page_ref}#{node_id}` 100회 반복 동일)
+- [x] **AC-ExamId 신규**: BatchRunsDb examId 시그니처 검증 + SF-M-2 cross-tenant 가드 발화 검증
+- [x] **AC-Snapshot 신규**: canonicalJson 4 시나리오 (self/mutual/diamond/deep DAG) 통과 + ancestor-only 추적 fix (handoff-019)
+- [x] **AC-Cost 신규**: CostMeter onKillSwitch flush + toCheckpointCostState 7 케이스 직렬화
 
 위 모두 충족 후 → BATCH-1 적재 진입 승인.
 
