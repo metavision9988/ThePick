@@ -309,7 +309,7 @@ describe('Telemetry routes — Step 19 Engine Observability v1', () => {
         backend.raw
           .prepare('UPDATE engine_telemetry SET metric_value = 999 WHERE id = ?')
           .run(event.id);
-      }).toThrow(/forbidden|append-only/i);
+      }).toThrow(/UPDATE on engine_telemetry is forbidden \(append-only fact table\)\. Use INSERT/);
     });
 
     it('DELETE 시도 → RAISE(ABORT)', async () => {
@@ -322,7 +322,9 @@ describe('Telemetry routes — Step 19 Engine Observability v1', () => {
 
       expect(() => {
         backend.raw.prepare('DELETE FROM engine_telemetry WHERE id = ?').run(event.id);
-      }).toThrow(/forbidden|append-only/i);
+      }).toThrow(
+        /DELETE on engine_telemetry is forbidden \(append-only fact table\)\. Phase 2 GC plan/,
+      );
     });
   });
 });

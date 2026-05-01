@@ -19,7 +19,10 @@ import {
 
 const TOKEN_STORAGE_KEY = 'admin_api_token';
 const POLL_INTERVAL_MS = 30_000;
-const DEFAULT_API_BASE = 'http://localhost:8787';
+// CRITICAL-DO-1 흡수 (Step 19 5-페르소나 devops): localhost fallback 은 dev 만.
+// production 빌드 시 PUBLIC_API_BASE_URL 미설정 = misconfig → 빌드 시점에 throw 가
+// 가장 안전하나 Astro static 빌드 환경에서는 client-side detection 으로 mode 분기.
+const LOCALHOST_API_BASE = 'http://localhost:8787';
 
 interface FetchState {
   readonly status: 'idle' | 'loading' | 'success' | 'unauthorized' | 'error';
@@ -44,15 +47,25 @@ function clearToken(): void {
 /**
  * API base URL resolution.
  * - Astro 환경변수 PUBLIC_API_BASE_URL 우선
- * - localhost dev fallback :8787 (wrangler dev 기본 포트)
+ * - dev 환경 (import.meta.env.DEV === true) 만 localhost fallback
+ * - production 환경 + PUBLIC_API_BASE_URL 미설정 = misconfig → throw (silent localhost 차단)
+ *
+ * 근거: Step 19 5-페르소나 devops CRITICAL-DO-1 흡수.
+ * 이전 동작은 production build 에서 localhost:8787 로 fallback → mixed-content 차단 +
+ * 진산님 30분 진단 휘발 위험. 현재는 명시적 misconfig throw 로 즉시 가시화.
  */
 function resolveApiBase(): string {
-  const fromEnv =
-    typeof import.meta.env !== 'undefined'
-      ? (import.meta.env.PUBLIC_API_BASE_URL as string | undefined)
-      : undefined;
+  const env = typeof import.meta.env !== 'undefined' ? import.meta.env : undefined;
+  const fromEnv = env !== undefined ? (env.PUBLIC_API_BASE_URL as string | undefined) : undefined;
   if (typeof fromEnv === 'string' && fromEnv.length > 0) return fromEnv;
-  return DEFAULT_API_BASE;
+
+  const isDev = env?.DEV === true || env?.MODE === 'development';
+  if (isDev) return LOCALHOST_API_BASE;
+
+  throw new Error(
+    'PUBLIC_API_BASE_URL not configured. Set in apps/admin-web/.env or Cloudflare Pages env. ' +
+      'Phase 1 임시 — Cloudflare Access 도입 후 인증 + base URL 모두 콘솔 정책으로 이전.',
+  );
 }
 
 function GaugeCard({ snapshot }: { snapshot: GaugeSnapshot }) {
