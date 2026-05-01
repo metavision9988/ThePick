@@ -1,0 +1,40 @@
+---
+/**
+ * Engine Observability — 8 게이지 대시보드
+ *
+ * 인증: localStorage admin_api_token → X-Admin-Token (Phase 1 임시).
+ * Phase 2 Cloudflare Access 도입 후 본 페이지의 token 게이트 제거.
+ *
+ * 근거: docs/plans/engine-hardening/step19-observability.plan.md §5
+ */
+
+import TelemetryDashboard from '../../components/TelemetryDashboard.tsx';
+---
+
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>ThePick Admin — Telemetry</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: system-ui, -apple-system, sans-serif; background: #f1f5f9; color: #0f172a; }
+      .nav { background: #0f172a; color: #f8fafc; padding: 12px 24px; display: flex; gap: 16px; align-items: center; }
+      .nav h1 { font-size: 16px; font-weight: 600; }
+      .nav a { color: #cbd5e1; text-decoration: none; font-size: 13px; }
+      .nav a:hover { color: #fff; }
+      .nav .spacer { flex: 1; }
+      .nav .badge { font-size: 11px; background: #475569; padding: 2px 8px; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <div class="nav">
+      <h1>ThePick Admin</h1>
+      <a href="/">Graph</a>
+      <a href="/telemetry">Telemetry</a>
+      <span class="spacer"></span>
+      <span class="badge">Engine Observability v1</span>
+    </div>
+    <TelemetryDashboard client:only="react" />
+  </body>
+</html>
