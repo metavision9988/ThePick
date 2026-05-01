@@ -287,16 +287,19 @@ function checkHardRule17(): BooleanMetric {
 // === Step 18 logger 도입 회귀 방어 ===
 
 function checkConsoleUsage(): BooleanMetric {
+  // Step 19 흡수 범위 확장: cost-meter.ts (MINOR-3A) 포함 4 파일.
+  // packages/shared/src/logger.ts 자체 fallback console.* 는 logger 내부 최후 방어선이라 의도된 예외 (MINOR-4A 명시).
   return grepBoolean({
-    name: 'Step 18 logger 도입 — pipeline/recover/signal-handlers 내 console.* 0건',
+    name: 'Step 18+19 logger 도입 — pipeline/recover/signal-handlers/cost-meter 내 console.* 0건',
     pattern: String.raw`console\.(log|warn|error|info|debug)`,
     paths: [
       'apps/batch/src/pipeline.ts',
       'apps/batch/src/recover.ts',
       'apps/batch/src/signal-handlers.ts',
+      'apps/batch/src/cost-meter.ts',
     ],
     fileExtensions: ['.ts'],
-    passEvidence: '3 파일 내 console.* 0건 (주석 제외)',
+    passEvidence: '4 파일 내 console.* 0건 (주석 제외)',
     failPrefix: '위반',
   });
 }

@@ -25,9 +25,18 @@
  *   - .claude/reviews/review-20260427-194529-step1-cost-meter-4pass.md
  */
 
-import { calculateTokenCost } from '@thepick/shared';
+import { calculateTokenCost, createLogger } from '@thepick/shared';
 import type { TokenLogger } from './adapters/token-cost-logger.js';
 import type { CheckpointCostState } from './checkpoint.js';
+
+/**
+ * MINOR-3A 흡수 (Step 19): 임계 도달 알림 console.* → JSON logger.
+ * Workers Observability 자동 인덱싱 호환 + 호스트별 로그 수집 통합.
+ * 모듈 스코프 logger — CostMeter 내 호출이 짧고 batchRunId 등 컨텍스트는 메시지 본문에 포함.
+ */
+const costMeterLog = createLogger({ service: 'thepick-batch-cost-meter' }).child({
+  module: 'cost-meter',
+});
 
 export type CostStatus = 'ok' | 'soft_warn' | 'hard_throttle' | 'kill_switch';
 
@@ -412,33 +421,39 @@ export class CostMeter {
     if (ratio >= this.thresholds.soft && !this.firedThresholds.has('soft_warn')) {
       this.firedThresholds.add('soft_warn');
       this.recordBreach('soft_warn', stage);
-      console.warn(
-        `[CostMeter] SOFT_WARN — spend=$${this.getCurrentSpend().toFixed(4)} / ` +
-          `$${this.dailyBudgetUsd.toFixed(2)} (${(ratio * 100).toFixed(1)}%). ` +
-          `BATCH continues.`,
-      );
+      costMeterLog.warn('SOFT_WARN — BATCH continues', {
+        batchRunId: this.batchRunId,
+        spendUsd: this.getCurrentSpend(),
+        budgetUsd: this.dailyBudgetUsd,
+        ratio,
+        stage,
+      });
     }
 
     // HARD 임계 도달
     if (ratio >= this.thresholds.hard && !this.firedThresholds.has('hard_throttle')) {
       this.firedThresholds.add('hard_throttle');
       this.recordBreach('hard_throttle', stage);
-      console.warn(
-        `[CostMeter] HARD_THROTTLE — spend=$${this.getCurrentSpend().toFixed(4)} / ` +
-          `$${this.dailyBudgetUsd.toFixed(2)} (${(ratio * 100).toFixed(1)}%). ` +
-          `Caller must await applyThrottle() before next call.`,
-      );
+      costMeterLog.warn('HARD_THROTTLE — caller must await applyThrottle() before next call', {
+        batchRunId: this.batchRunId,
+        spendUsd: this.getCurrentSpend(),
+        budgetUsd: this.dailyBudgetUsd,
+        ratio,
+        stage,
+      });
     }
 
     // KILL 임계 도달 — autoEnforce 시 onKillSwitch 호출
     if (ratio >= this.thresholds.kill && !this.firedThresholds.has('kill_switch')) {
       this.firedThresholds.add('kill_switch');
       this.recordBreach('kill_switch', stage);
-      console.error(
-        `[CostMeter] KILL_SWITCH — spend=$${this.getCurrentSpend().toFixed(4)} / ` +
-          `$${this.dailyBudgetUsd.toFixed(2)} (${(ratio * 100).toFixed(1)}%). ` +
-          `Triggering shutdown.`,
-      );
+      costMeterLog.error('KILL_SWITCH — triggering shutdown', undefined, {
+        batchRunId: this.batchRunId,
+        spendUsd: this.getCurrentSpend(),
+        budgetUsd: this.dailyBudgetUsd,
+        ratio,
+        stage,
+      });
       if (this.autoEnforce) {
         this.triggerKillSwitch();
       }

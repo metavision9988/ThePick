@@ -446,6 +446,10 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
   // 근거: .claude/reviews/step16b-pass12-20260430-110057.md Pass 2 반론 흡수 (Step 16c).
   assertValidExamId(ctx.examId);
 
+  // Step 19 MINOR-A1 흡수: pipelineLog.child() 1회 생성 + 매 호출 inline context 제거.
+  // batchRunId/examId 컨텍스트는 child 에 누적, 호출 측은 stage/operation 등 이벤트별 컨텍스트만 명시.
+  const log = pipelineLog.child({ batchRunId: ctx.batchRunId, examId: ctx.examId });
+
   // === 0.1 recover 시도 ===
   const recovery = await recoverBatch({
     examId: ctx.examId,
@@ -515,9 +519,7 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
             // (옵션 C: caller 가 PipelineResult 미수신해도 JSON 로그가 운영 alarm 트리거).
             markBatchRunKilled(ctx.examId, ctx.batchRunId, ctx.batchRunsDb).catch((err) => {
               const reason = err instanceof Error ? err.message : String(err);
-              pipelineLog.error('markBatchRunKilled failed (best-effort)', err, {
-                batchRunId: ctx.batchRunId,
-                examId: ctx.examId,
+              log.error('markBatchRunKilled failed (best-effort)', err, {
                 stage: 'sigint_kill',
                 bestEffort: true,
               });
@@ -591,9 +593,7 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
         } catch (err) {
           // 0015 트리거 (state='completed' 차단 등) 가 RAISE(ABORT) 가능 — 가시화 + 누적 후 흐름 계속 (SF-C-3 정정)
           const reason = err instanceof Error ? err.message : String(err);
-          pipelineLog.error('batch_runs UPDATE state=failed 실패', err, {
-            batchRunId: ctx.batchRunId,
-            examId: ctx.examId,
+          log.error('batch_runs UPDATE state=failed 실패', err, {
             stage,
             operation: 'state_failed',
           });
@@ -627,9 +627,7 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
         } catch (err) {
           // SF-M-4 일관성 — checkpoint 는 이미 쓴 후라 파이프라인 진행 가능. 메타만 가시화 + 누적.
           const reason = err instanceof Error ? err.message : String(err);
-          pipelineLog.error('batch_runs UPDATE state=in_progress 실패', err, {
-            batchRunId: ctx.batchRunId,
-            examId: ctx.examId,
+          log.error('batch_runs UPDATE state=in_progress 실패', err, {
             stage,
             operation: 'state_in_progress',
           });
@@ -648,9 +646,7 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
       } catch (err) {
         // SF-M-4 — completed UPDATE 실패 시 PipelineResult 는 정상 반환하되 metaPersistenceFailures 로 가시화.
         const reason = err instanceof Error ? err.message : String(err);
-        pipelineLog.error('batch_runs UPDATE state=completed 실패', err, {
-          batchRunId: ctx.batchRunId,
-          examId: ctx.examId,
+        log.error('batch_runs UPDATE state=completed 실패', err, {
           operation: 'state_completed',
         });
         metaPersistenceFailures.push({
@@ -666,9 +662,7 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
     } catch (err) {
       // SF-DA-1 일관성 — B1 패턴 그대로 push (process listener leak 가시화)
       const reason = err instanceof Error ? err.message : String(err);
-      pipelineLog.error('removeHandlers 실패 (logged only)', err, {
-        batchRunId: ctx.batchRunId,
-        examId: ctx.examId,
+      log.error('removeHandlers 실패 (logged only)', err, {
         operation: 'finalize_handlers',
       });
       metaPersistenceFailures.push({
@@ -683,9 +677,7 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
       } catch (err) {
         // SF-DA-1 일관성 — meter resource leak 가시화
         const reason = err instanceof Error ? err.message : String(err);
-        pipelineLog.error('CostMeter finalize 실패 (logged only)', err, {
-          batchRunId: ctx.batchRunId,
-          examId: ctx.examId,
+        log.error('CostMeter finalize 실패 (logged only)', err, {
           operation: 'finalize_costmeter',
         });
         metaPersistenceFailures.push({

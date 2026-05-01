@@ -159,14 +159,16 @@ export interface RecoverOptions {
 export async function recoverBatch(opts: RecoverOptions): Promise<RecoveryResult> {
   const staleThreshold = opts.staleLockThresholdMs ?? STALE_LOCK_THRESHOLD_MS;
 
+  // Step 19 MINOR-A1 흡수: recoverLog.child() 1회 생성 + 매 호출 inline context 제거.
+  // 진입점 컨텍스트 (batchRunId/examId) 는 child 에 누적, 호출 측은 decision/cause 등만 명시.
+  const log = recoverLog.child({ batchRunId: opts.batchRunId, examId: opts.examId });
+
   // === Pre-check: D1 batch_runs 상태 ===
   const row = await opts.batchRunsDb.selectByRunId(opts.examId, opts.batchRunId);
 
   // Idempotency — 이미 completed 면 skip (AC-R3)
   if (row && row.state === 'completed') {
-    recoverLog.info('recover skip — already_completed (Idempotency)', {
-      batchRunId: opts.batchRunId,
-      examId: opts.examId,
+    log.info('recover skip — already_completed (Idempotency)', {
       decision: 'already_completed',
     });
     return {
@@ -183,9 +185,7 @@ export async function recoverBatch(opts: RecoverOptions): Promise<RecoveryResult
     // clock skew 방어 — 음수 elapsed 는 0 으로 보정
     const elapsedMs = Math.max(0, Date.now() - new Date(row.started_at).getTime());
     if (elapsedMs < staleThreshold) {
-      recoverLog.warn('recover blocked — concurrent_run_detected (state=in_progress)', {
-        batchRunId: opts.batchRunId,
-        examId: opts.examId,
+      log.warn('recover blocked — concurrent_run_detected (state=in_progress)', {
         decision: 'concurrent_run_detected',
         startedAt: row.started_at,
         elapsedMs,
@@ -212,9 +212,7 @@ export async function recoverBatch(opts: RecoverOptions): Promise<RecoveryResult
     });
   } catch (err) {
     if (err instanceof CheckpointNotFoundError) {
-      recoverLog.info('recover branch — no_checkpoint (new run path)', {
-        batchRunId: opts.batchRunId,
-        examId: opts.examId,
+      log.info('recover branch — no_checkpoint (new run path)', {
         decision: 'no_checkpoint',
         autoRestart: opts.autoRestartOnNoCheckpoint ?? false,
       });
@@ -238,9 +236,7 @@ export async function recoverBatch(opts: RecoverOptions): Promise<RecoveryResult
 
     // === Q2: 무결성 검증 실패 (JSON.parse / shape / SHA-256 mismatch 모두 포함) ===
     if (err instanceof CheckpointCorruptedError) {
-      recoverLog.error('recover failed — checkpoint corrupted (SHA-256 mismatch)', err, {
-        batchRunId: opts.batchRunId,
-        examId: opts.examId,
+      log.error('recover failed — checkpoint corrupted (SHA-256 mismatch)', err, {
         decision: 'recovery_failed',
         cause: 'corrupted',
         reason: err.reason,
@@ -263,9 +259,7 @@ export async function recoverBatch(opts: RecoverOptions): Promise<RecoveryResult
 
     // === Q3: 버전 불일치 ===
     if (err instanceof CheckpointVersionMismatchError) {
-      recoverLog.warn('recover failed — engine version mismatch', {
-        batchRunId: opts.batchRunId,
-        examId: opts.examId,
+      log.warn('recover failed — engine version mismatch', {
         decision: 'recovery_failed',
         cause: 'version_mismatch',
         checkpointVersion: err.checkpointVersion,
@@ -285,9 +279,7 @@ export async function recoverBatch(opts: RecoverOptions): Promise<RecoveryResult
     }
 
     // 기타 에러 — silent failure 금지, 그대로 전파
-    recoverLog.error('recover throw — unexpected error from readCheckpoint', err, {
-      batchRunId: opts.batchRunId,
-      examId: opts.examId,
+    log.error('recover throw — unexpected error from readCheckpoint', err, {
       decision: 'throw',
     });
     throw err;
@@ -298,9 +290,7 @@ export async function recoverBatch(opts: RecoverOptions): Promise<RecoveryResult
   // recover 차단. Year 1 단일 시험에서는 양쪽 모두 동일 ExamId 또는 checkpoint 가
   // exam_id 미주입 (legacy). 후자는 통과, 전자에서 mismatch 만 거부.
   if (checkpoint.exam_id !== undefined && checkpoint.exam_id !== opts.examId) {
-    recoverLog.error('recover failed — cross-tenant exam_id mismatch (SF-M-2)', undefined, {
-      batchRunId: opts.batchRunId,
-      examId: opts.examId,
+    log.error('recover failed — cross-tenant exam_id mismatch (SF-M-2)', undefined, {
       decision: 'recovery_failed',
       cause: 'exam_id_mismatch',
       checkpointExamId: checkpoint.exam_id,
@@ -321,9 +311,7 @@ export async function recoverBatch(opts: RecoverOptions): Promise<RecoveryResult
   // === Q4: 의존 체크포인트 검증 ===
   // v1.1 정정 (P1-M4): stub 제거. multi-engine 의존성은 Phase 1 후반 도입 — 그 전엔 명시 거부.
   if (checkpoint.depends_on && checkpoint.depends_on.length > 0) {
-    recoverLog.warn('recover failed — depends_on present (multi-engine deferred to Phase 1 후반)', {
-      batchRunId: opts.batchRunId,
-      examId: opts.examId,
+    log.warn('recover failed — depends_on present (multi-engine deferred to Phase 1 후반)', {
       decision: 'recovery_failed',
       cause: 'depends_on_present',
       dependsOnCount: checkpoint.depends_on.length,
@@ -347,9 +335,7 @@ export async function recoverBatch(opts: RecoverOptions): Promise<RecoveryResult
     resume_count_increment: 1,
   });
 
-  recoverLog.info('recover success — fully_recovered', {
-    batchRunId: opts.batchRunId,
-    examId: opts.examId,
+  log.info('recover success — fully_recovered', {
     decision: 'fully_recovered',
     resumedFromStage: checkpoint.pipeline_state_snapshot.last_completed_stage,
     nodesCompleted: checkpoint.progress.nodes_completed,

@@ -83,7 +83,9 @@ describe('CostMeter — AC-CM-1: token accounting accuracy', () => {
 
 describe('CostMeter — AC-CM-2: soft warn at 70%', () => {
   it('fires SOFT_WARN at >= 70% of budget', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // Step 19 MINOR-3A: cost-meter console.warn → logger.warn (JsonLogger maps warn → console.error sink).
+    // 따라서 console.error 를 spy 한다.
+    const warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const meter = newMeter({ dailyBudgetUsd: 10 });
     meter.start();
 
@@ -100,7 +102,9 @@ describe('CostMeter — AC-CM-2: soft warn at 70%', () => {
   });
 
   it('fires SOFT_WARN only once even after multiple calls in soft range', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // Step 19 MINOR-3A: cost-meter console.warn → logger.warn (JsonLogger maps warn → console.error sink).
+    // 따라서 console.error 를 spy 한다.
+    const warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const meter = newMeter({ dailyBudgetUsd: 10 });
     meter.start();
 
@@ -120,7 +124,9 @@ describe('CostMeter — AC-CM-2: soft warn at 70%', () => {
 
 describe('CostMeter — AC-CM-3: hard throttle at 90%', () => {
   it('fires HARD_THROTTLE at >= 90% of budget', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // Step 19 MINOR-3A: cost-meter console.warn → logger.warn (JsonLogger maps warn → console.error sink).
+    // 따라서 console.error 를 spy 한다.
+    const warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const meter = newMeter({ dailyBudgetUsd: 10 });
     meter.start();
 
@@ -141,7 +147,9 @@ describe('CostMeter — AC-CM-3: hard throttle at 90%', () => {
   });
 
   it('caller pattern: status check + applyThrottle await', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // Step 19 MINOR-3A: cost-meter console.warn → logger.warn (JsonLogger maps warn → console.error sink).
+    // 따라서 console.error 를 spy 한다.
+    const warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const meter = newMeter({ dailyBudgetUsd: 10, throttleSleepMs: 30 });
     meter.start();
 
@@ -249,7 +257,9 @@ describe('CostMeter — AC-CM-5: finalize report', () => {
 
 describe('CostMeter — Pass 4 반론: 단발 거대 호출 (SOFT/HARD/KILL 누적 발화)', () => {
   it('single huge call at 150% records all 3 breaches in order', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // Step 19 MINOR-3A: cost-meter console.warn → logger.warn (JsonLogger maps warn → console.error sink).
+    // 따라서 console.error 를 spy 한다.
+    const warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const meter = newMeter({ dailyBudgetUsd: 10 });
     meter.start();
@@ -324,7 +334,9 @@ describe('CostMeter — P2-M2: initialSpendUsd (recover/resume support)', () => 
   });
 
   it('triggers SOFT immediately if initial spend already at threshold', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // Step 19 MINOR-3A: cost-meter console.warn → logger.warn (JsonLogger maps warn → console.error sink).
+    // 따라서 console.error 를 spy 한다.
+    const warnSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const meter = newMeter({ dailyBudgetUsd: 10, initialSpendUsd: 7.5 }); // 75%
     meter.start();
     // 첫 호출만으로 SOFT 도달
