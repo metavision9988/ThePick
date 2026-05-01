@@ -114,7 +114,15 @@ function syntheticLargeContract(): KnowledgeContract {
  *   - contract canonical (nodes/edges/formulas/constants 길이 + id 정렬)
  *   - loadResult.nodesInserted / edgesInserted / formulasInserted / constantsInserted
  *
- * tolerable_fields (제외): batchId 별 fixture_path, started_at, durationMs, batchRunId
+ * tolerable_fields (제외) — 결정성 검증 noise 이므로 의도적 비교 제외:
+ *   - durationMs: CPU scheduler / V8 hot-path / GC 타이밍 의존 → invariant 아님.
+ *     실제 노이즈 측정: 동일 fixture 100회 실행 시 stdev ~30% 관찰. invariant 에
+ *     포함하면 결정성 검증이 noise 검증으로 변질됨.
+ *   - started_at: ISO timestamp — 매 호출 다름. 결정성 무관.
+ *   - batchId/fixture_path: caller 가 별도 주입 (시나리오 A/B 분기에 따라 다름).
+ *   - batchRunId: 시나리오 A 의 동시 실행 분기에서 randomUUID() 두 번 → 자연스럽게 다름.
+ *
+ * 근거: .claude/reviews/step16b-pass12-20260430-110057.md MINOR-PA1-m1 흡수 (Step 16c).
  */
 function assertReproducibilityInvariant(a: PipelineResult, b: PipelineResult): void {
   expect(a.stages.length).toBe(b.stages.length);
@@ -251,6 +259,17 @@ describe('AC-RP-2 — 시나리오 B: Idempotency concurrent (Promise.all 동시
     //       concurrent_run_detected → ConcurrentRunError throw → 1 fulfilled + 1 rejected
     //   (C) 한 호출 먼저 완료 → 다른 호출의 recoverBatch 가 already_completed → buildSkipResult
     //       → 2 fulfilled, 한쪽은 recoveryStatus='already_completed'
+    //
+    // ★ in-memory ↔ production D1 PK 동작 차이 (MINOR-PA1-m2 명시):
+    //   분기 (A) 의 in-memory 동작은 `Map.set(batchRunId, ...)` 덮어쓰기 — 두 INSERT 모두
+    //   silent 성공 후 행 1개 (덮어쓴 결과).
+    //   production D1 동작은 `batch_runs.batch_run_id PRIMARY KEY` 가 두 번째 INSERT 에
+    //   `UNIQUE constraint failed: batch_runs.batch_run_id` RAISE 발화 — 1 fulfilled +
+    //   1 rejected. 즉 분기 (A) 자체가 production 에서 자연스럽게 분기 (B/C) 와
+    //   동등한 caller 분기를 갖는다.
+    //   본 e2e 는 in-memory 환경의 invariant (행 1개) 만 검증 — production D1 PK 동작은
+    //   `apps/batch/__tests__/d1-trigger-verify.test.ts` AC-R6 T1 (completed 재INSERT
+    //   ABORT) + Cloudflare D1 SQLite 트랜잭션 모델 (NG-1 명시 SKIP) 로 위임 검증.
     //
     // 본 e2e 의 invariant (모든 분기 공통):
     //   - batch_runs 행 정확히 1개 (UNIQUE PK 등가 — Map keyed by batchRunId)
@@ -606,5 +625,87 @@ describe('Step 16b 게이트 ⑨ (NG-1): D1 batch atomicity Cloudflare 보증 �
     // step5-reproducibility-idempotency.plan.md v1.3 §"Non-goals NG-1" 명시 SKIP.
     // Cloudflare Preview Database 진입 시점 (Phase 2, ADR-018) 별도 plan.
     expect(true).toBe(true);
+  });
+});
+
+describe('Step 16c MINOR-PA2-m1: EXAM_IDS allowlist 검증 (Hard Rule 17 외부 입력 방어선)', () => {
+  let outDir: string;
+
+  beforeEach(() => {
+    outDir = mkdtempSync(join(tmpdir(), 'thepick-rp-allowlist-'));
+  });
+
+  afterEach(() => {
+    rmSync(outDir, { recursive: true, force: true });
+  });
+
+  it('runPipeline 진입 시 brand 우회 임의 string examId → assertValidExamId throw', async () => {
+    // brand type 우회: JSON deserialize 시 임의 string 이 ExamId 자리에 진입.
+    // pipeline.ts runPipeline 진입 1회 검증으로 차단.
+    const fixture = syntheticLargeContract();
+    const ctx: PipelineContext = {
+      batchId: 'BATCH-1',
+      config: BATCH_CONFIGS['BATCH-1'],
+      pdfPath: null,
+      claudeClient: null,
+      visionClient: null,
+      db: null,
+      dryRun: true,
+      outDir,
+      enableVisionOcr: false,
+      goldenTests: [],
+      versionYear: 2026,
+      fixtureContract: fixture,
+      ...step16bTestFields({ outDir }),
+      examId: 'invalid-exam-id' as unknown as typeof EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+    };
+
+    await expect(runPipeline(ctx)).rejects.toThrow(
+      /Invalid examId.*'invalid-exam-id'.*Allowed values.*son-hae-pyeong-ga-sa/,
+    );
+  });
+
+  it('runPipeline 진입 시 빈 문자열 examId → assertValidExamId throw', async () => {
+    const fixture = syntheticLargeContract();
+    const ctx: PipelineContext = {
+      batchId: 'BATCH-1',
+      config: BATCH_CONFIGS['BATCH-1'],
+      pdfPath: null,
+      claudeClient: null,
+      visionClient: null,
+      db: null,
+      dryRun: true,
+      outDir,
+      enableVisionOcr: false,
+      goldenTests: [],
+      versionYear: 2026,
+      fixtureContract: fixture,
+      ...step16bTestFields({ outDir }),
+      examId: '' as unknown as typeof EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+    };
+
+    await expect(runPipeline(ctx)).rejects.toThrow(/Invalid examId/);
+  });
+
+  it('정상 EXAM_IDS.SON_HAE_PYEONG_GA_SA → assertValidExamId 통과 (회귀)', async () => {
+    const fixture = syntheticLargeContract();
+    const ctx: PipelineContext = {
+      batchId: 'BATCH-1',
+      config: BATCH_CONFIGS['BATCH-1'],
+      pdfPath: null,
+      claudeClient: null,
+      visionClient: null,
+      db: null,
+      dryRun: true,
+      outDir,
+      enableVisionOcr: false,
+      goldenTests: [],
+      versionYear: 2026,
+      fixtureContract: fixture,
+      ...step16bTestFields({ outDir }),
+    };
+
+    const result = await runPipeline(ctx);
+    expect(result.qg2Passed).toBe(true);
   });
 });

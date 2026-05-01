@@ -32,7 +32,7 @@ import {
 } from '@thepick/parser';
 import { validateGraphIntegrity } from '@thepick/quality';
 import type { GraphNode, GraphEdge } from '@thepick/quality';
-import type { ExamId, NodeType, EdgeType } from '@thepick/shared';
+import { assertValidExamId, type ExamId, type NodeType, type EdgeType } from '@thepick/shared';
 import {
   runQG2Validation,
   checkFormulaAccuracy,
@@ -415,7 +415,14 @@ async function markBatchRunKilled(
  *   finally: removeHandlers + costMeter.finalize()
  */
 export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult> {
-  // === 0. recover 시도 ===
+  // === 0. caller 진입점 EXAM_IDS allowlist 검증 (Hard Rule 17 외부 입력 방어선) ===
+  // brand type ExamId 는 컴파일 타임 보호만 제공. JSON deserialization / `as ExamId`
+  // 캐스팅 / `@ts-expect-error` 우회 시 임의 string 진입 가능. runPipeline 진입 1회
+  // strict 차단 후 internal 코드 경로는 brand type 보호만으로 안전 보장.
+  // 근거: .claude/reviews/step16b-pass12-20260430-110057.md Pass 2 반론 흡수 (Step 16c).
+  assertValidExamId(ctx.examId);
+
+  // === 0.1 recover 시도 ===
   const recovery = await recoverBatch({
     examId: ctx.examId,
     batchRunId: ctx.batchRunId,

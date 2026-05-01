@@ -347,3 +347,218 @@ describe('AC-RP-6: 0016 knowledge_nodes backfill 트리거 — 핵심 invariant'
     ).toThrow(/forbidden/);
   });
 });
+
+/**
+ * Step 16c 진입 게이트 ②/③/⑤ 흡수 — 0016 마이그레이션 직접 로드 적용 후
+ * 컬럼/인덱스 존재 검증 + partial UNIQUE 동작 + `<no_page>` fallback silent 진입.
+ *
+ * 기존 'AC-RP-6: 0016 knowledge_nodes backfill 트리거' describe 는 inline schema +
+ * inline trigger 로 4건 backfill 시나리오만 검증. 본 describe 는 실제 0016 마이그레이션
+ * 파일 (PART 1 ALTER TABLE + PART 2 CREATE INDEX + PART 3 DROP/CREATE TRIGGER) 를
+ * 그대로 적용하여 production 환경 정합성 검증.
+ */
+describe('AC-RP-6 추가: 0016 마이그레이션 직접 적용 검증 (Step 16c 게이트 ②/③/⑤)', () => {
+  let db: DatabaseType;
+
+  beforeEach(() => {
+    db = new Database(':memory:');
+
+    // 0001 발췌 — 0014/0016 트리거가 참조하는 컬럼 모두 포함 (batch_run_id/source_id 제외).
+    runSql(
+      db,
+      `CREATE TABLE knowledge_nodes (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        name TEXT NOT NULL,
+        description TEXT,
+        lv1_insurance TEXT,
+        lv2_crop TEXT,
+        lv3_investigation TEXT,
+        page_ref TEXT,
+        batch_id TEXT,
+        version_year INTEGER NOT NULL,
+        superseded_by TEXT,
+        truth_weight INTEGER NOT NULL DEFAULT 5,
+        status TEXT DEFAULT 'draft',
+        exam_scope TEXT,
+        is_current_active INTEGER DEFAULT 1
+      );`,
+    );
+
+    // 0014 prevent_knowledge_nodes_update 트리거 (batch_run_id/source_id 미포함 v0).
+    runSql(
+      db,
+      `CREATE TRIGGER prevent_knowledge_nodes_update
+       BEFORE UPDATE ON knowledge_nodes
+       WHEN NEW.id IS NOT OLD.id
+         OR NEW.type IS NOT OLD.type
+         OR NEW.name IS NOT OLD.name
+         OR NEW.description IS NOT OLD.description
+         OR NEW.lv1_insurance IS NOT OLD.lv1_insurance
+         OR NEW.lv2_crop IS NOT OLD.lv2_crop
+         OR NEW.lv3_investigation IS NOT OLD.lv3_investigation
+         OR NEW.page_ref IS NOT OLD.page_ref
+         OR NEW.batch_id IS NOT OLD.batch_id
+         OR NEW.version_year IS NOT OLD.version_year
+         OR NEW.superseded_by IS NOT OLD.superseded_by
+         OR NEW.truth_weight IS NOT OLD.truth_weight
+         OR NEW.status IS NOT OLD.status
+         OR NEW.exam_scope IS NOT OLD.exam_scope
+       BEGIN
+         SELECT RAISE(ABORT, 'UPDATE on knowledge_nodes body columns is forbidden (Hard Rule 1, Temporal Graph). Use INSERT + SUPERSEDES edge pattern. Only is_current_active may change (Materialized Active View).');
+       END;`,
+    );
+
+    // 0016 마이그레이션 직접 로드 (production 정합성 검증).
+    runSql(db, loadMigration('0016_knowledge_nodes_batch_idempotency.sql'));
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it('게이트 ②: knowledge_nodes 컬럼 batch_run_id + source_id 존재 (PRAGMA)', () => {
+    const cols = db.prepare(`PRAGMA table_info(knowledge_nodes)`).all() as Array<{
+      name: string;
+      type: string;
+    }>;
+    const colNames = cols.map((c) => c.name);
+    expect(colNames).toContain('batch_run_id');
+    expect(colNames).toContain('source_id');
+    expect(cols.find((c) => c.name === 'batch_run_id')?.type).toBe('TEXT');
+    expect(cols.find((c) => c.name === 'source_id')?.type).toBe('TEXT');
+  });
+
+  it('게이트 ②: idx_knowledge_nodes_batch_source partial UNIQUE 인덱스 존재', () => {
+    const indexes = db.prepare(`PRAGMA index_list(knowledge_nodes)`).all() as Array<{
+      name: string;
+      unique: number;
+      partial: number;
+    }>;
+    const target = indexes.find((idx) => idx.name === 'idx_knowledge_nodes_batch_source');
+    expect(target).toBeDefined();
+    expect(target?.unique).toBe(1);
+    // partial=1 — 0016 의 `WHERE batch_run_id IS NOT NULL` 절 보존 검증.
+    expect(target?.partial).toBe(1);
+  });
+
+  it('게이트 ②: idx_knowledge_nodes_batch_run_id 단독 인덱스 존재 (recover row scan 방어)', () => {
+    const indexes = db.prepare(`PRAGMA index_list(knowledge_nodes)`).all() as Array<{
+      name: string;
+    }>;
+    expect(indexes.some((idx) => idx.name === 'idx_knowledge_nodes_batch_run_id')).toBe(true);
+  });
+
+  it('게이트 ③: partial UNIQUE — batch_run_id IS NULL 다중 허용', () => {
+    // 동일 source_id 라도 batch_run_id NULL 이면 partial 제외 → UNIQUE 미발화.
+    const insert = db.prepare(
+      `INSERT INTO knowledge_nodes (id, type, name, version_year, batch_run_id, source_id)
+       VALUES (?, 'CONCEPT', '노드', 2026, NULL, ?)`,
+    );
+    expect(() => insert.run('NODE-A', 'p403#NODE-A')).not.toThrow();
+    expect(() => insert.run('NODE-B', 'p403#NODE-A')).not.toThrow();
+    expect(() => insert.run('NODE-C', 'p403#NODE-A')).not.toThrow();
+
+    const count = db.prepare(`SELECT COUNT(*) AS c FROM knowledge_nodes`).get() as { c: number };
+    expect(count.c).toBe(3);
+  });
+
+  it('게이트 ③: partial UNIQUE — 동일 (batch_run_id, source_id) 충돌 차단', () => {
+    db.prepare(
+      `INSERT INTO knowledge_nodes (id, type, name, version_year, batch_run_id, source_id)
+       VALUES (?, 'CONCEPT', '노드', 2026, ?, ?)`,
+    ).run('CONCEPT-001', 'run-001', 'p403#CONCEPT-001');
+
+    expect(() =>
+      db
+        .prepare(
+          `INSERT INTO knowledge_nodes (id, type, name, version_year, batch_run_id, source_id)
+           VALUES (?, 'CONCEPT', '중복', 2026, ?, ?)`,
+        )
+        .run('CONCEPT-002', 'run-001', 'p403#CONCEPT-001'),
+    ).toThrow(/UNIQUE constraint failed.*batch_run_id.*source_id/);
+  });
+
+  it('게이트 ③: partial UNIQUE — 다른 batch_run_id, 동일 source_id 비충돌 (Temporal Graph 정합)', () => {
+    // 다른 BATCH 실행에서 같은 source 의 새 버전 노드 INSERT 가능 (SUPERSEDES 패턴).
+    const insert = db.prepare(
+      `INSERT INTO knowledge_nodes (id, type, name, version_year, batch_run_id, source_id)
+       VALUES (?, 'CONCEPT', '노드', 2026, ?, ?)`,
+    );
+    expect(() => insert.run('CONCEPT-001', 'run-001', 'p403#CONCEPT-001')).not.toThrow();
+    expect(() => insert.run('CONCEPT-001-v2', 'run-002', 'p403#CONCEPT-001')).not.toThrow();
+  });
+
+  it('게이트 ⑤: `<no_page>` fallback silent 진입 시나리오 — 다른 nodeId 비충돌', () => {
+    // fixture seed / migration replay 경로에서 source_page=null 진입 시 fallback
+    // `<no_page>#nodeId` 사용. 다른 nodeId 두 개는 다른 source_id 라 충돌 0건.
+    const insert = db.prepare(
+      `INSERT INTO knowledge_nodes (id, type, name, version_year, batch_run_id, source_id)
+       VALUES (?, 'CONCEPT', '노드', 2026, ?, ?)`,
+    );
+    expect(() => insert.run('CONCEPT-A', 'run-001', '<no_page>#CONCEPT-A')).not.toThrow();
+    expect(() => insert.run('CONCEPT-B', 'run-001', '<no_page>#CONCEPT-B')).not.toThrow();
+
+    const rows = db
+      .prepare(`SELECT id, source_id FROM knowledge_nodes ORDER BY id`)
+      .all() as Array<{ id: string; source_id: string }>;
+    expect(rows).toHaveLength(2);
+    expect(rows[0].source_id).toBe('<no_page>#CONCEPT-A');
+    expect(rows[1].source_id).toBe('<no_page>#CONCEPT-B');
+  });
+
+  it('게이트 ⑤: `<no_page>` fallback — 동일 nodeId 두 번 충돌 차단 (Year 2 import path 안전망)', () => {
+    // 동일 BATCH + 동일 nodeId 두 번 fallback 진입 시 source_id 충돌. partial UNIQUE 가
+    // Year 2 import path 의 silent 중복 적재 차단.
+    db.prepare(
+      `INSERT INTO knowledge_nodes (id, type, name, version_year, batch_run_id, source_id)
+       VALUES (?, 'CONCEPT', '노드', 2026, ?, ?)`,
+    ).run('CONCEPT-A', 'run-001', '<no_page>#CONCEPT-A');
+
+    expect(() =>
+      db
+        .prepare(
+          `INSERT INTO knowledge_nodes (id, type, name, version_year, batch_run_id, source_id)
+           VALUES (?, 'CONCEPT', '중복', 2026, ?, ?)`,
+        )
+        .run('CONCEPT-A-DUP', 'run-001', '<no_page>#CONCEPT-A'),
+    ).toThrow(/UNIQUE constraint failed/);
+  });
+
+  it('idempotency: 0016 PART 2 (인덱스) + PART 3 (트리거) 부분 재실행 안전', () => {
+    // 0016 전체는 ALTER TABLE 포함이라 두 번 실행 불가 (SQLite ALTER 는 IF NOT EXISTS 미지원,
+    // 실제 환경에서는 drizzle-kit 등 마이그레이션 도구가 ID 기반으로 idempotent 보장).
+    // 본 테스트는 PART 2/3 (DROP TRIGGER IF EXISTS + CREATE TRIGGER + CREATE INDEX IF NOT EXISTS)
+    // 만 추출해 두 번째 실행 안전성 검증.
+    //
+    // ★ 본 idempotentParts 는 0016 PART 3 의 simplified representation (4-Pass P1-M1):
+    //   실제 0016 PART 3 트리거는 14개 WHEN 조건 (id/type/name/description/lv1_insurance/
+    //   lv2_crop/lv3_investigation/page_ref/batch_id/version_year/superseded_by/truth_weight/
+    //   status/exam_scope + batch_run_id + source_id) 을 포함하나, 본 인라인 버전은 5개
+    //   조건 (id/type/name/batch_run_id/source_id) 만 사용. full trigger 14개 조건의
+    //   재실행 안전성은 migrations/0016 자체가 `DROP TRIGGER IF EXISTS` + `CREATE INDEX
+    //   IF NOT EXISTS` 패턴으로 보장 — 본 테스트는 idempotent SQL 패턴이 SQLite 에서
+    //   동작함을 검증할 뿐, 0016 트리거 본문 14개 조건 모두를 재검증하지는 않는다.
+    //   기존 게이트 ④ 4 tests (`AC-RP-6: 0016 knowledge_nodes backfill 트리거 — 핵심 invariant`)
+    //   가 본문 14개 조건의 핵심 분기를 별도로 검증.
+    const idempotentParts = `
+      DROP TRIGGER IF EXISTS prevent_knowledge_nodes_update;
+      CREATE TRIGGER prevent_knowledge_nodes_update
+      BEFORE UPDATE ON knowledge_nodes
+      WHEN NEW.id IS NOT OLD.id
+        OR NEW.type IS NOT OLD.type
+        OR NEW.name IS NOT OLD.name
+        OR (OLD.batch_run_id IS NOT NULL AND NEW.batch_run_id IS NOT OLD.batch_run_id)
+        OR (OLD.source_id IS NOT NULL AND NEW.source_id IS NOT OLD.source_id)
+      BEGIN
+        SELECT RAISE(ABORT, 'forbidden');
+      END;
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_knowledge_nodes_batch_source
+        ON knowledge_nodes(batch_run_id, source_id)
+        WHERE batch_run_id IS NOT NULL;
+      CREATE INDEX IF NOT EXISTS idx_knowledge_nodes_batch_run_id
+        ON knowledge_nodes(batch_run_id);
+    `;
+    expect(() => runSql(db, idempotentParts)).not.toThrow();
+  });
+});

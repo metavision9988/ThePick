@@ -4,11 +4,12 @@
 
 phase: 1
 step: engine-hardening-step5
-version: v1.3
+version: v1.4
 approved_by: 진산 (2026-04-27 Engine Hardening Roadmap v1.1 일괄 승인)
 v1_1_revision_by: 2026-04-28 (P0 후보 B 정정 흡수) — backend-architect C-1 결함 (knowledge_nodes 컬럼 부재) 정정 + source_id 정의 명확화
 v1_2_revision_by: 2026-04-30 (Step 16a 진행 + 명시 이연 CRITICAL-Q4 흡수) — buildSourceId 헬퍼 + LoadDraftContext.batchRunId + draft-loader.ts INSERT 채움 + 16b/16c 분할
 v1_3_revision_by: 2026-04-30 (Step 16b 진입 — 게이트 ⑧/⑨/⑩ 흡수) — LoadDraftContext.examId required + §non-goals (D1 batch atomicity 가정) + page_ref 형식 모델 명시 + e2e 시나리오 4건 + nanoid hint 에러 메시지
+v1_4_revision_by: 2026-05-01 (Step 16c 진입 — 게이트 ②/③/⑤ 흡수) — d1-trigger-verify.test.ts 0016 마이그레이션 직접 적용 검증 + partial UNIQUE 동작 + `<no_page>` fallback silent + EXAM_IDS allowlist (assertValidExamId) + MINOR-PA1-m1/m2 주석 보강. MAJOR-A1 (실제 kill e2e) 은 NG-5 별도 plan 위임 유지. MINOR-A3 (logger.info) 은 Step 18 logger 모듈 도입 동시 처리로 위임.
 risk_level: L3
 scope:
 
@@ -161,13 +162,22 @@ END;
 9. ✅ **D1 batch() partial-commit 회복 e2e (Pass 2 M-2 흡수)** — §non-goals "D1 batch atomicity Cloudflare 보증 가정" 명시 (본 plan §"Non-goals (Step 16b 시점)" 추가). Workers 50ms CPU 한도 + 노드 다수 INSERT 시 batch atomicity 는 Cloudflare D1 의 SQLite 트랜잭션 모델로 보증. e2e 검증은 Cloudflare Preview Database 진입 시점 (Phase 2 Step) 에 별도 plan 작성.
 10. ✅ **page_ref 형식 모델 확정 (Pass 3 C-1 흡수)** — 본 plan §"page_ref 형식 모델 (v1.3 신규)" 추가. **Step 16b 시점 fixture 정수 문자열만 사용** — `pageRefString(node.source_page)` 가 `String(positive_int)` 결과만 반환. 범위 / section 형식은 migration 0010 CHECK 제약 허용 범위이나 적재 caller 진입 차단 (preValidate `Number.isInteger(n.source_page) && n.source_page > 0`). Year 2 다른 시험 / 법령 import path 진입 시 별도 plan.
 
-### Step 16c 진입 게이트 (16b 완료 후 또는 별도)
+### Step 16c 진입 게이트 (16b 완료 후 또는 별도) — v1.4 5항목 ✅ 흡수
 
-1. ⏳ AC-RP-6 e2e — `wrangler d1 execute --local` 또는 better-sqlite3 환경
-2. ⏳ 0016 적용 후 컬럼/인덱스/트리거 존재 검증
-3. ⏳ partial UNIQUE 동작 검증 (`batch_run_id IS NULL` 제외)
-4. ⏳ 0014 트리거 갱신 본문 검증 — backfill 1회 / 다른 값 ABORT / 본문 컬럼 ABORT (회귀 0건)
-5. ⏳ **fixture seed / migration replay 시 `<no_page>` fallback silent 진입 시나리오 검증 (Pass 3 반론 2 흡수)** — 정상 BATCH 흐름은 preValidate 차단으로 fallback 미진입이나, Year 2 import path 에서 `node.source_page = null` 진입 시 fallback `<no_page>#{nodeId}` 가 partial UNIQUE 충돌 가능성 검증.
+1. ✅ AC-RP-6 e2e — better-sqlite3 환경 (`apps/batch/__tests__/d1-trigger-verify.test.ts` AC-RP-6 describe 17 tests). `wrangler d1 execute --local` 검증은 NG-1 명시 SKIP (Cloudflare Preview Database 진입 시점, Phase 2 ADR-018).
+2. ✅ 0016 적용 후 컬럼/인덱스/트리거 존재 검증 (`d1-trigger-verify.test.ts:351-404` 신규 describe `AC-RP-6 추가: 0016 마이그레이션 직접 적용 검증 (Step 16c 게이트 ②/③/⑤)` 의 `게이트 ②` 3 tests — PRAGMA table_info / PRAGMA index_list).
+3. ✅ partial UNIQUE 동작 검증 (`batch_run_id IS NULL` 제외) — `게이트 ③` 3 tests (NULL 다중 허용 + 동일 (batch_run_id, source_id) 충돌 차단 + 다른 batch_run_id 동일 source_id 비충돌 Temporal Graph 정합).
+4. ✅ 0014 트리거 갱신 본문 검증 — backfill 1회 / 다른 값 ABORT / 본문 컬럼 ABORT (회귀 0건). 기존 `AC-RP-6: 0016 knowledge_nodes backfill 트리거 — 핵심 invariant` describe 4 tests 검증됨.
+5. ✅ **fixture seed / migration replay 시 `<no_page>` fallback silent 진입 시나리오 검증 (Pass 3 반론 2 흡수)** — `게이트 ⑤` 2 tests (다른 nodeId 비충돌 + 동일 nodeId 두 번 충돌 차단 Year 2 import path 안전망).
+
+### v1.4 Step 16c 흡수 추가 항목 (4-Pass 차세션 의무)
+
+6. ✅ MINOR-PA2-m1 — EXAM_IDS allowlist 검증 caller 진입점. `packages/shared/src/constants/exam-ids.ts` 의 `isValidExamId` + `assertValidExamId` 신설. `apps/batch/src/pipeline.ts:417-423` runPipeline 진입 1회 strict 차단. 회귀 e2e 3 tests (`reproducibility-idempotency.test.ts:603+` `Step 16c MINOR-PA2-m1` describe).
+7. ✅ MINOR-PA1-m1 — `assertReproducibilityInvariant` durationMs 제외 사유 주석 보강. tolerable_fields 4종 (durationMs/started_at/batchId/batchRunId) 의 결정성 노이즈 사유 명시 (`reproducibility-idempotency.test.ts:107-126`).
+8. ✅ MINOR-PA1-m2 — InMemoryBatchRunsDb Map.set 덮어쓰기 vs production D1 PK 차이 인라인 주석. 시나리오 B 분기 (A) 의 in-memory ↔ production 동작 차이 + d1-trigger-verify.test.ts 위임 검증 명시 (`reproducibility-idempotency.test.ts:259-282`).
+9. ⏳ MAJOR-A1 — `runBatchWithKill` 실제 kill (SIGINT/SIGTERM) e2e — NG-5 명시 SKIP 유지 (별도 plan, signal-handlers.test.ts + cost-meter-pipeline-kill.test.ts 의 분리 검증으로 결합 동작 위임).
+10. ⏳ MINOR-A3 — recover.ts/pipeline.ts logger.info 강화 — Step 18 (자동 검증 스크립트 + master-test-checklist v1) 시점에 logger 모듈 (`@thepick/shared/logger.ts` 활용) 도입 동시 처리로 위임.
+11. ✅ P1-M1 (Step 16c 4-Pass 자체 흡수) — `d1-trigger-verify.test.ts` idempotency 테스트의 `idempotentParts` 가 0016 PART 3 simplified representation 임을 인라인 주석에 명시. full trigger 14개 조건 재실행 안전성은 migrations/0016 의 DROP IF EXISTS / IF NOT EXISTS 패턴 + 게이트 ④ 4 tests 의 본문 검증으로 위임. 코드 회귀 위험 0건.
 
 ---
 
