@@ -89,6 +89,15 @@ export function summarize(
     throw new Error(`summarize(${label}): durations array is empty`);
   }
 
+  // 4-Pass 흡수 (Pass 1 M2) — NaN / Infinity / 음수 값을 거부.
+  // measure() 내부 호출은 항상 finite >= 0 이지만, 외부 직접 호출 시 silent 통과 차단.
+  for (let i = 0; i < durationsMs.length; i += 1) {
+    const v = durationsMs[i];
+    if (!Number.isFinite(v) || v < 0) {
+      throw new Error(`summarize(${label}): invalid duration at index ${i}: ${v}`);
+    }
+  }
+
   const sorted = [...durationsMs].sort((a, b) => a - b);
   const sum = sorted.reduce((acc, v) => acc + v, 0);
   const mean = sum / sorted.length;
@@ -172,7 +181,19 @@ function percentile(sorted: readonly number[], p: number): number {
   return sorted[lower] * (1 - fraction) + sorted[upper] * fraction;
 }
 
+/**
+ * 4-Pass 흡수 (Pass 1 M1) — Infinity / NaN / Number.MAX_SAFE_INTEGER overflow 가드.
+ * performance.now() 자체는 양의 finite 값 반환이 보장되나, 외부에서 summarize() 직접 호출 시
+ * 비정상 값 silent 통과를 차단한다.
+ */
 function round(value: number, decimals: number): number {
+  if (!Number.isFinite(value)) {
+    throw new Error(`round: value must be finite, got ${value}`);
+  }
   const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
+  const product = value * factor;
+  if (!Number.isFinite(product)) {
+    throw new Error(`round: overflow at value=${value} decimals=${decimals}`);
+  }
+  return Math.round(product) / factor;
 }

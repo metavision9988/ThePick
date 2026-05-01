@@ -864,22 +864,25 @@
 
 ## 12. 자동화/수동 분류 + 도구 명세
 
-| 도구                  | 용도                   | 시나리오 수 |         본 시점 가용성          |
-| :-------------------- | :--------------------- | :---------: | :-----------------------------: |
-| **Vitest**            | 단위 + 통합            |     32      |               ✅                |
-| **Playwright**        | E2E                    |      8      | 🟡 (admin-web vitest 인프라 후) |
-| **k6**                | 부하 + 침투            |      7      |         ❌ (도입 필요)          |
-| **MSW**               | 외부 API mock          |      5      |         ✅ (이미 사용)          |
-| **wrangler**          | D1 / migrations / cron |      6      |               ✅                |
-| **Burp Suite**        | 침투 (수동)            |      1      |         ❌ (도입 필요)          |
-| **Anthropic 콘솔**    | Layer 2 cap 수동       |      1      |               ✅                |
-| **Python subprocess** | FSRS reference         |      1      |               ✅                |
-| **수동 모니터**       | Soak / 콘솔 작업       |      5      |               ✅                |
+| 도구                  | 용도                   | 시나리오 수 |               본 시점 가용성                |
+| :-------------------- | :--------------------- | :---------: | :-----------------------------------------: |
+| **Vitest**            | 단위 + 통합            |     32      |                     ✅                      |
+| **Playwright**        | E2E                    |      8      |       🟡 (admin-web vitest 인프라 후)       |
+| **k6**                | 부하 + 침투            |      7      |               ❌ (도입 필요)                |
+| **MSW**               | 외부 API mock          |      5      | ❌ (도입 필요 — Phase 2 진입) [^v1.0.1-msw] |
+| **wrangler**          | D1 / migrations / cron |      6      |                     ✅                      |
+| **Burp Suite**        | 침투 (수동)            |      1      |               ❌ (도입 필요)                |
+| **Anthropic 콘솔**    | Layer 2 cap 수동       |      1      |                     ✅                      |
+| **Python subprocess** | FSRS reference         |      1      |                     ✅                      |
+| **수동 모니터**       | Soak / 콘솔 작업       |      5      |                     ✅                      |
 
 **도입 필요 도구:**
 
 - **k6** (Phase 1 후반 P1 진입 전): 부하 테스트 의무
 - **Burp Suite** (Phase 2 진입 전): 수동 침투 테스트
+- **MSW** (Phase 2 진입 직전 — CHA-03 P1 본격 구현 시점): Anthropic / Vectorize HTTP mock
+
+[^v1.0.1-msw]: v1.0 원본 "✅ 이미 사용" 표기는 사실 부정확 (pnpm-lock 미존재). v1.0.1 패치 (Sprint 1 §5.2 4-Pass Pass 4 MAJOR-3 흡수) 로 정정. CHA-03 / CHA-05 P1 재분류 (decision-2026-05-02) 정합 — MSW 도입은 Phase 2 진입 직전 의무. 본 시점 FUZ-02 fixtures 는 fs.readFile 직접 패턴 사용 (apps/api MSW 미경유). 상세: `docs/quality/test-patterns.md` §2 + ADR-028.
 
 ---
 
@@ -947,22 +950,22 @@ Day 3: P0 17건 baseline 측정 (현 상태 그대로 실행)
        → "현 시점에 몇 건 PASS / 몇 건 FAIL"의 정직한 사진
 ```
 
-### 14.2 Sprint 1 (~5일) — P0 17건 GREEN 만들기
+### 14.2 Sprint 1 (~5일) — P0 15건 GREEN 만들기 (v1.0.1)
 
 ```
-Day 1-2: CHA 6건 + REG 2건 → CI 통합
+Day 1-2: CHA 4건 (CHA-03/05 P1 재분류 — decision-2026-05-02) + REG 2건 → CI 통합
 Day 3: FUZ 3건 + PRF 2건
 Day 4: PRC 2건 + REC 2건
-Day 5: 17건 모두 GREEN 확인 + JSON 리포트 생성
+Day 5: 15건 모두 GREEN 확인 + JSON 리포트 생성
 ```
 
-### 14.3 Sprint 2 (~7일) — P1 진입 (BATCH-1 적재 후)
+### 14.3 Sprint 2 (~7일) — P1 진입 (BATCH-1 적재 후) (v1.0.1)
 
 ```
 Day 1-2: 부하 테스트 LOD 5건 (k6)
-Day 3-4: FUZ 3건 + PRF 4건 + REG 3건
+Day 3-4: CHA 2건 (CHA-03/05 본격 구현 + MSW 도입 동시) + FUZ 3건 + PRF 4건 + REG 3건
 Day 5: PRC 2건 + REC 1건
-Day 6-7: P1 18건 GREEN + 회귀 (P0 17건 재실행)
+Day 6-7: P1 20건 GREEN + 회귀 (P0 15건 재실행)
 ```
 
 ### 14.4 Sprint 3 (~10일) — P2 (사용자 노출 전)

@@ -84,6 +84,24 @@ describe('test-helpers/perf — summarize()', () => {
     summarize('immutable', input, 5, 0);
     expect(input).toEqual(snapshot);
   });
+
+  // 4-Pass Pass 1 M2 흡수 회귀 — NaN / Infinity / 음수 거부
+  it('rejects NaN values instead of silently passing', () => {
+    expect(() => summarize('nan', [1, 2, NaN, 4], 4, 0)).toThrow(/invalid duration at index 2/);
+  });
+
+  it('rejects Infinity values instead of silently passing', () => {
+    expect(() => summarize('inf', [1, 2, Infinity], 3, 0)).toThrow(/invalid duration at index 2/);
+  });
+
+  it('rejects negative durations (impossible for performance.now())', () => {
+    expect(() => summarize('neg', [-1, 2, 3], 3, 0)).toThrow(/invalid duration at index 0/);
+  });
+
+  // 4-Pass Pass 1 M1 흡수 회귀 — round() overflow 가드
+  it('throws when summarize encounters overflow at high precision', () => {
+    expect(() => summarize('overflow', [1e308], 1, 0, 5)).toThrow(/overflow|finite/);
+  });
 });
 
 describe('test-helpers/perf — CacheHitTracker', () => {

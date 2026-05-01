@@ -5,6 +5,33 @@
 
 ---
 
+## ⚠️ 경고 — 본 fixtures 는 의도적 악성 PDF (4-Pass Pass 3 A1 흡수)
+
+**개발자 / CI 시스템 / IDE 모두 본 디렉토리의 `.pdf` 파일을 직접 열거나 미리 보지 마세요.**
+
+| 파일                      | 직접 open 시 위험                                                 |
+| :------------------------ | :---------------------------------------------------------------- |
+| `01-empty.pdf`            | 무해 (0 byte) — 그러나 PDF reader 가 alert 발동 가능              |
+| `02-header-only.pdf`      | 무해 (9 byte) — 일부 reader 에서 crash 가능                       |
+| `03-compression-bomb.pdf` | **OOM 위험** — `/Length 100MB` lie, reader 가 신뢰 시 메모리 폭발 |
+| `04-malformed-xref.pdf`   | 무해 (대부분 reader 는 graceful fail)                             |
+| `05-js-embedded.pdf`      | **JS 자동 실행 가능** — `app.alert('XSS-via-PDF')` payload        |
+
+**안전 검사 방법**:
+
+- `ls -la <file>` (파일 크기만)
+- `file <file>` (파일 타입만)
+- `xxd <file> | head` (첫 N 바이트만)
+- `python3 -c "import pdfplumber; ..."` 만 sandboxed 환경에서
+
+**개발 환경 보호**:
+
+- VS Code 의 PDF preview extension 비활성 / `__fixtures__/pdf-malicious/` 제외 설정 권장.
+- macOS Quick Look / Windows 미리 보기에서 우클릭 → "직접 열기 차단" 권장.
+- CI 보안 스캐너 (Snyk / Dependabot) 가 본 디렉토리를 fixture 로 인식하도록 `.snyk` / `dependabot.yml` 설정 추가 (handoff-030 §6 ledger Pass 3 A2 의무).
+
+---
+
 ## 1. 목적
 
 `packages/parser/src/pdf-extractor.ts` 가 다음 5 vectors 에 대해 **graceful 분류 실패** (= `PdfParseError(<분류>)` throw) 하는지 검증한다. **subprocess zombie 0건** 도 동시 검증 의무 (Mephisto 예언 #3 적중 사항).

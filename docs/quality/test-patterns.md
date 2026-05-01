@@ -129,12 +129,20 @@ it('PRF-01 — formula evaluate p99 < 50ms', async () => {
 
 ## 4. 픽스처 디렉토리 (Sprint 1 §5.2 신규)
 
-| 디렉토리                           | 용도                 | 시나리오 |
-| :--------------------------------- | :------------------- | :------: |
-| `tests/fixtures/pdf-malicious/`    | 악의적 PDF 5종       |  FUZ-01  |
-| `tests/fixtures/claude-malformed/` | Claude 변조 응답 8종 |  FUZ-02  |
+| 디렉토리                                         | 용도                 | 시나리오 |
+| :----------------------------------------------- | :------------------- | :------: |
+| `packages/parser/__fixtures__/pdf-malicious/`    | 악의적 PDF 5종       |  FUZ-01  |
+| `packages/parser/__fixtures__/claude-malformed/` | Claude 변조 응답 8종 |  FUZ-02  |
 
 각 디렉토리의 `README.md` 가 fixture 별 의도 + 분류 + 검증 방법 명세.
+
+> **위치 명세 (4-Pass Pass 2 CRITICAL-F1 / Pass 4 MAJOR-4 흡수)**:
+>
+> handoff-029 §2.A 의 `tests/fixtures/...` (repo-rooted) 명세는 본 §5.2 진입 시 **packages/parser/**fixtures**/...** 로 변경. 사유:
+>
+> 1. `tests/` 디렉토리는 pnpm-workspace.yaml 미등록 — workspace 외부 fixtures 호출 시 별도 path resolution 필요.
+> 2. 기존 컨벤션 정합 — `packages/parser/__fixtures__/batch1/exam_scope.pdf` (determinism.property.test.ts) 가 동일 패턴 선례.
+> 3. parser 가 본 fixtures 의 단독 사용처 (FUZ-01 / FUZ-02 모두 packages/parser/src/ 검증).
 
 ---
 
