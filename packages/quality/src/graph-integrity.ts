@@ -53,15 +53,23 @@ export const MAX_SUPERSEDE_CHAIN_DEPTH = 50_000;
 /**
  * SUPERSEDES chain depth 한계 초과 시 throw. recover.ts CheckpointCorruptedError 와
  * 동일 패턴 — 정상 흐름이 아니므로 silent return 대신 명시 throw.
+ *
+ * **error.depth 의미 (Sprint 1 §5.1 4-Pass MAJOR-2-M1 흡수, 2026-05-01)**:
+ * `depth` 는 sentinel 발화 시점의 stack 길이 (= MAX_SUPERSEDE_CHAIN_DEPTH + 1)이며,
+ * 입력 chain 의 **실제 총 깊이가 아니다**. 입력 chain 이 1M depth 여도 동일하게
+ * `depth = 50_001` 로 보고됨. "최소 이 깊이는 확실하다"는 lower bound 만 보장.
+ * 실제 chain 깊이 측정은 별도 sanity check 함수로 처리해야 함 (현 시점 미구현).
  */
 export class SupersedeChainTooDeepError extends Error {
   readonly code = 'SUPERSEDE_CHAIN_TOO_DEEP' as const;
+  /** sentinel 발화 시점 stack 길이. 실제 chain 의 lower bound (정확값 아님). */
   readonly depth: number;
   readonly maxDepth: number;
   constructor(depth: number, maxDepth: number, sampleNodeId: string) {
     super(
-      `SUPERSEDES chain depth ${depth} exceeded MAX_SUPERSEDE_CHAIN_DEPTH=${maxDepth} ` +
-        `near node '${sampleNodeId}'. This indicates fixture corruption or malicious input. ` +
+      `SUPERSEDES chain has at least ${depth} nodes (cut off at MAX_SUPERSEDE_CHAIN_DEPTH=${maxDepth} sentinel; ` +
+        `actual depth may be larger) near node '${sampleNodeId}'. ` +
+        `This indicates fixture corruption or malicious input. ` +
         `Investigate revision_changes table or BATCH source for unbounded chain.`,
     );
     this.name = 'SupersedeChainTooDeepError';
@@ -312,6 +320,11 @@ function validateInputIds(nodes: readonly GraphNode[], edges: readonly GraphEdge
 
 /**
  * 전체 무결성 검증을 실행하고 보고서를 반환한다.
+ *
+ * @throws {SupersedeChainTooDeepError} `findSupersedeCycles` 가 chain 깊이 한계
+ *   `MAX_SUPERSEDE_CHAIN_DEPTH` 초과 시 throw. caller 는 try/catch 로 감싸서
+ *   `recovery_failed` / `passed: false, actual: 'CHAIN_TOO_DEEP'` 등 graceful
+ *   degradation 처리 의무 (Sprint 1 §5.1 4-Pass CRITICAL-1 흡수, 2026-05-01).
  */
 export function validateGraphIntegrity(
   nodes: readonly GraphNode[],

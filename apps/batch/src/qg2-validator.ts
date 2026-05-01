@@ -11,7 +11,7 @@
  * 실패 시 Phase 1 진입 보류.
  */
 
-import { validateGraphIntegrity } from '@thepick/quality';
+import { validateGraphIntegrity, SupersedeChainTooDeepError } from '@thepick/quality';
 import type { GraphNode, GraphEdge, IntegrityReport } from '@thepick/quality';
 import { calculate, getAllFormulas } from '@thepick/formula-engine';
 import type { CalculateResult } from '@thepick/formula-engine';
@@ -138,15 +138,48 @@ export function checkFormulaAccuracy(goldenTests: readonly GoldenTestCase[]): QG
 
 /**
  * Graph 무결성 검증: 고아 0, 끊긴 엣지 0, 순환 0
+ *
+ * Sprint 1 §5.1 4-Pass CRITICAL-1 흡수 (Pass 2/3, 2026-05-01):
+ * `validateGraphIntegrity` 가 `SupersedeChainTooDeepError` throw 가능 →
+ * graceful degradation 으로 변환 (`passed: false, actual: 'CHAIN_TOO_DEEP'`).
+ * throw 가 caller 까지 전파되어 BATCH 가 hard crash 되는 것을 차단 +
+ * error code 메타데이터를 QG2Check 에 보존하여 admin-web/observability 추적 가능.
  */
 export function checkGraphIntegrity(
   nodes: readonly GraphNode[],
   edges: readonly GraphEdge[],
 ): QG2Check[] {
-  const report: IntegrityReport = validateGraphIntegrity(
-    nodes as GraphNode[],
-    edges as GraphEdge[],
-  );
+  let report: IntegrityReport;
+  try {
+    report = validateGraphIntegrity(nodes as GraphNode[], edges as GraphEdge[]);
+  } catch (err) {
+    if (err instanceof SupersedeChainTooDeepError) {
+      // sentinel 발화 — 모든 graph 무결성 check 를 동일 실패 코드로 노출.
+      // depth/maxDepth 메타는 actual 필드에 직렬화 (fixture corruption 식별용).
+      const actual = `CHAIN_TOO_DEEP (depth>=${err.depth}, max=${err.maxDepth})`;
+      return [
+        {
+          name: 'Orphan nodes = 0',
+          passed: false,
+          expected: `<= ${QG2_THRESHOLDS.maxOrphanNodes}`,
+          actual,
+        },
+        {
+          name: 'Broken edges = 0',
+          passed: false,
+          expected: `<= ${QG2_THRESHOLDS.maxBrokenEdges}`,
+          actual,
+        },
+        {
+          name: 'SUPERSEDES cycles = 0',
+          passed: false,
+          expected: `<= ${QG2_THRESHOLDS.maxSupersedeCycles}`,
+          actual,
+        },
+      ];
+    }
+    throw err; // 다른 error 는 기존 동작 유지 (silent breaking change 차단)
+  }
 
   return [
     {

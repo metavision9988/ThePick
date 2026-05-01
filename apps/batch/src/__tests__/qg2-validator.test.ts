@@ -147,4 +147,51 @@ describe('QG-2 Validator', () => {
       expect(result.summary).toContain('FAILED');
     });
   });
+
+  // Sprint 1 §5.1 4-Pass CRITICAL-1 흡수 (Pass 2/3, 2026-05-01) — SupersedeChainTooDeepError graceful degradation 회귀
+  describe('checkGraphIntegrity — SupersedeChainTooDeepError graceful degradation', () => {
+    it('chain depth > MAX_SUPERSEDE_CHAIN_DEPTH 입력 → 3 checks 모두 passed=false + actual=CHAIN_TOO_DEEP', async () => {
+      const { MAX_SUPERSEDE_CHAIN_DEPTH } = await import('@thepick/quality');
+      const overLimit = MAX_SUPERSEDE_CHAIN_DEPTH + 10;
+
+      const nodes: GraphNode[] = [];
+      const edges: GraphEdge[] = [];
+      for (let i = 0; i < overLimit; i++) {
+        nodes.push({ id: `n-${i}`, type: 'CONCEPT', name: `node-${i}`, isActive: true });
+      }
+      for (let i = 0; i < overLimit - 1; i++) {
+        edges.push({
+          id: `e-${i}`,
+          fromNode: `n-${i}`,
+          toNode: `n-${i + 1}`,
+          edgeType: 'SUPERSEDES',
+          isActive: true,
+        });
+      }
+
+      // checkGraphIntegrity 가 throw 하지 않고 graceful degradation 결과 반환 의무
+      const checks = checkGraphIntegrity(nodes, edges);
+      expect(checks).toHaveLength(3);
+      expect(checks.every((c) => c.passed === false)).toBe(true);
+      expect(checks.every((c) => c.actual.startsWith('CHAIN_TOO_DEEP'))).toBe(true);
+      expect(checks[0].actual).toContain(`max=${MAX_SUPERSEDE_CHAIN_DEPTH}`);
+      expect(checks[0].actual).toMatch(/depth>=\d+/);
+    });
+
+    it('정상 SUPERSEDES chain (depth < MAX) → graceful 경로 미진입', () => {
+      const nodes = makeNodes(5);
+      const edges: GraphEdge[] = [];
+      for (let i = 0; i < 4; i++) {
+        edges.push({
+          id: `e-${i}`,
+          fromNode: nodes[i].id,
+          toNode: nodes[i + 1].id,
+          edgeType: 'SUPERSEDES',
+          isActive: true,
+        });
+      }
+      const checks = checkGraphIntegrity(nodes, edges);
+      expect(checks.every((c) => !c.actual.startsWith('CHAIN_TOO_DEEP'))).toBe(true);
+    });
+  });
 });

@@ -30,7 +30,7 @@ import {
   type KnowledgeContract,
   type BatchInput,
 } from '@thepick/parser';
-import { validateGraphIntegrity } from '@thepick/quality';
+import { validateGraphIntegrity, SupersedeChainTooDeepError } from '@thepick/quality';
 import type { GraphNode, GraphEdge } from '@thepick/quality';
 import {
   assertValidExamId,
@@ -1013,7 +1013,22 @@ async function stageIntegrityCheck(
   state.graphNodes = nodes;
   state.graphEdges = edges;
 
-  const report = validateGraphIntegrity(nodes, edges);
+  // Sprint 1 §5.1 4-Pass CRITICAL-1 흡수 (Pass 2/3, 2026-05-01): SupersedeChainTooDeepError
+  // 명시 분기 — error code/depth/maxDepth 메타데이터 손실 차단. caller 가 일반 Error
+  // 로 강등되어 admin-web/SIEM 추적 불가능했던 silent breaking change 해소.
+  let report;
+  try {
+    report = validateGraphIntegrity(nodes, edges);
+  } catch (err) {
+    if (err instanceof SupersedeChainTooDeepError) {
+      throw new Error(
+        `Graph integrity violation [SUPERSEDE_CHAIN_TOO_DEEP]: ` +
+          `chain depth>=${err.depth} (max=${err.maxDepth}). ` +
+          `Fixture corruption or malicious input — manual review required.`,
+      );
+    }
+    throw err;
+  }
   if (
     report.stats.orphanNodes > 0 ||
     report.stats.brokenEdges > 0 ||

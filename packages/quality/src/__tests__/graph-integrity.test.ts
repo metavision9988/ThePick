@@ -272,8 +272,11 @@ describe('findSupersedeCycles — Sprint 1 §5.1 CRITICAL-N1 (iterative DFS)', (
       expect(e.code).toBe('SUPERSEDE_CHAIN_TOO_DEEP');
       expect(e.depth).toBeGreaterThan(MAX_SUPERSEDE_CHAIN_DEPTH);
       expect(e.maxDepth).toBe(MAX_SUPERSEDE_CHAIN_DEPTH);
-      expect(e.message).toContain('exceeded MAX_SUPERSEDE_CHAIN_DEPTH');
+      // Sprint 1 §5.1 4-Pass MAJOR-2-M1 흡수 (Pass 1, 2026-05-01) — error message 가
+      // "exceeded" → "cut off at sentinel" 로 변경 (depth 가 lower bound 임을 명시).
+      expect(e.message).toContain('cut off at MAX_SUPERSEDE_CHAIN_DEPTH');
       expect(e.message).toContain('fixture corruption or malicious input');
+      expect(e.message).toContain('actual depth may be larger');
     }
   });
 
