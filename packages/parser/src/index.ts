@@ -1,5 +1,13 @@
-export { extractPdf, extractPdfText } from './pdf-extractor';
+export { extractPdf, extractPdfText, getActivePdfSubprocessCount } from './pdf-extractor';
 export type { ExtractedPage, ExtractionResult, ExtractOptions } from './pdf-extractor';
+
+export { PdfParseError, KnowledgeContractValidationError } from './errors';
+export type {
+  PdfErrorClassification,
+  PdfParseErrorMetadata,
+  KnowledgeContractErrorClassification,
+  KnowledgeContractErrorMetadata,
+} from './errors';
 
 export { splitSections } from './section-splitter';
 export type { Section, SectionLevel, SplitResult } from './section-splitter';
