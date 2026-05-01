@@ -1,0 +1,14 @@
+{
+  "nodes": [
+    {
+      "id": "CONCEPT-002",
+      "type": "CONCEPT",
+      "title": "필수 필드 누락 케이스",
+      "content": "truth_weight 가 없음",
+      "source_page": 200
+    }
+  ],
+  "edges": [],
+  "formulas": [],
+  "constants": []
+}

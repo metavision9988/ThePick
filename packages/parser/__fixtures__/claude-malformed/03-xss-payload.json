@@ -1,0 +1,15 @@
+{
+  "nodes": [
+    {
+      "id": "CONCEPT-001",
+      "type": "CONCEPT",
+      "title": "<script>alert('XSS-title')</script>",
+      "content": "javascript:alert('XSS-content')<img src=x onerror=alert(1)>",
+      "truth_weight": 5,
+      "source_page": 100
+    }
+  ],
+  "edges": [],
+  "formulas": [],
+  "constants": []
+}

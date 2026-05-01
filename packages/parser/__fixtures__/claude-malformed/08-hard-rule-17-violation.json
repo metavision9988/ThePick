@@ -1,0 +1,15 @@
+{
+  "nodes": [
+    {
+      "id": "CONCEPT-003",
+      "type": "CONCEPT",
+      "title": "Hard Rule 17 위반",
+      "content": "이 응답은 exam_id='son-hae-pyeong-ga-sa' 를 직접 인용한다",
+      "truth_weight": 5,
+      "source_page": 400
+    }
+  ],
+  "edges": [],
+  "formulas": [],
+  "constants": []
+}

@@ -1,0 +1,17 @@
+# Build output
+dist/
+build/
+.turbo/
+.wrangler/
+.next/
+
+# Test fixtures — 의도적 malformed / oversized 파일은 prettier 적용 금지
+# Sprint 1 §5.2 도입 (handoff-029 §2.A)
+packages/parser/__fixtures__/claude-malformed/02-parse-error.json
+packages/parser/__fixtures__/claude-malformed/06-deeply-nested-100.json
+packages/parser/__fixtures__/claude-malformed/07-large-payload.json
+
+# Generated files
+*.generated.*
+*.lock
+pnpm-lock.yaml

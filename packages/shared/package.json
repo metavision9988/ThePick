@@ -8,7 +8,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./errors": "./src/errors.ts",
-    "./types": "./src/types.ts"
+    "./types": "./src/types.ts",
+    "./test-helpers/perf": "./src/test-helpers/perf.ts"
   },
   "scripts": {
     "test": "vitest run",

@@ -1,0 +1,23 @@
+{
+  "nodes": [
+    {
+      "id": "FAKE-999",
+      "type": "CONCEPT",
+      "title": "ontology 미등록 ID",
+      "content": "FAKE-999 는 registry 에 없음",
+      "truth_weight": 5,
+      "source_page": 300
+    },
+    {
+      "id": "X-Y-Z",
+      "type": "FORMULA",
+      "title": "패턴 위반 ID",
+      "content": "F-NN 패턴이 아님",
+      "truth_weight": 8,
+      "source_page": 301
+    }
+  ],
+  "edges": [],
+  "formulas": [],
+  "constants": []
+}
