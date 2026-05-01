@@ -327,4 +327,214 @@ describe('Telemetry routes — Step 19 Engine Observability v1', () => {
       );
     });
   });
+
+  // ===== Phase B (handoff-028) — login / logout / cookie 경로 =====
+  describe('Phase B — admin_session HttpOnly cookie (v1.1 §10.7 #9 흡수)', () => {
+    function parseSetCookie(res: Response): Map<string, string> {
+      const result = new Map<string, string>();
+      const header = res.headers.get('Set-Cookie');
+      if (!header) return result;
+      for (const segment of header.split(';')) {
+        const trimmed = segment.trim();
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx <= 0) {
+          result.set(trimmed, '');
+        } else {
+          result.set(trimmed.slice(0, eqIdx), trimmed.slice(eqIdx + 1));
+        }
+      }
+      return result;
+    }
+
+    describe('POST /login', () => {
+      it('정확한 토큰 → 200 + Set-Cookie admin_session (HttpOnly + SameSite=Strict)', async () => {
+        const res = await req('/api/telemetry/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: ADMIN_TOKEN }),
+        });
+        expect(res.status).toBe(200);
+        const body = (await res.json()) as { ok: boolean; expiresInSeconds: number };
+        expect(body.ok).toBe(true);
+        expect(body.expiresInSeconds).toBe(86400);
+
+        const cookieAttrs = parseSetCookie(res);
+        expect(cookieAttrs.get('admin_session')).toBe(ADMIN_TOKEN);
+        expect(cookieAttrs.has('HttpOnly')).toBe(true);
+        expect(cookieAttrs.get('SameSite')).toBe('Strict');
+        expect(cookieAttrs.get('Path')).toBe('/');
+        expect(cookieAttrs.get('Max-Age')).toBe('86400');
+        // ENVIRONMENT='test' → Secure 미부착
+        expect(cookieAttrs.has('Secure')).toBe(false);
+      });
+
+      it('production ENVIRONMENT → Set-Cookie 에 Secure 추가', async () => {
+        const res = await req(
+          '/api/telemetry/login',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: ADMIN_TOKEN }),
+          },
+          { DB: backend.db, ADMIN_API_TOKEN: ADMIN_TOKEN, ENVIRONMENT: 'production' },
+        );
+        expect(res.status).toBe(200);
+        const cookieAttrs = parseSetCookie(res);
+        expect(cookieAttrs.has('Secure')).toBe(true);
+      });
+
+      it('staging ENVIRONMENT → Set-Cookie 에 Secure 추가', async () => {
+        const res = await req(
+          '/api/telemetry/login',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: ADMIN_TOKEN }),
+          },
+          { DB: backend.db, ADMIN_API_TOKEN: ADMIN_TOKEN, ENVIRONMENT: 'staging' },
+        );
+        expect(res.status).toBe(200);
+        expect(parseSetCookie(res).has('Secure')).toBe(true);
+      });
+
+      it('잘못된 토큰 → 401 + Set-Cookie 미발급', async () => {
+        const res = await req('/api/telemetry/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: 'wrong-token-32bytes-plus-secret-aa' }),
+        });
+        expect(res.status).toBe(401);
+        expect(res.headers.get('Set-Cookie')).toBeNull();
+      });
+
+      it('길이 mismatch 토큰 → 401 (timing-safe 정합 — information leak 마스크)', async () => {
+        const res = await req('/api/telemetry/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: 'short' }),
+        });
+        expect(res.status).toBe(401);
+      });
+
+      it('body 부재 → 401', async () => {
+        const res = await req('/api/telemetry/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: 'not-json',
+        });
+        expect(res.status).toBe(401);
+      });
+
+      it('token 필드 부재 → 401', async () => {
+        const res = await req('/api/telemetry/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        expect(res.status).toBe(401);
+      });
+
+      it('ADMIN_API_TOKEN 환경변수 부재 → 401 (production misconfig 방어)', async () => {
+        const res = await req(
+          '/api/telemetry/login',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: ADMIN_TOKEN }),
+          },
+          { DB: backend.db, ENVIRONMENT: 'test' },
+        );
+        expect(res.status).toBe(401);
+      });
+    });
+
+    describe('POST /logout', () => {
+      it('Set-Cookie admin_session= Max-Age=0 (idempotent — 인증 미요구)', async () => {
+        const res = await req('/api/telemetry/logout', { method: 'POST' });
+        expect(res.status).toBe(200);
+        const cookieAttrs = parseSetCookie(res);
+        expect(cookieAttrs.get('admin_session')).toBe('');
+        expect(cookieAttrs.get('Max-Age')).toBe('0');
+        expect(cookieAttrs.has('HttpOnly')).toBe(true);
+        expect(cookieAttrs.get('SameSite')).toBe('Strict');
+      });
+
+      it('production ENVIRONMENT → logout 도 Secure 부착', async () => {
+        const res = await req(
+          '/api/telemetry/logout',
+          { method: 'POST' },
+          { DB: backend.db, ADMIN_API_TOKEN: ADMIN_TOKEN, ENVIRONMENT: 'production' },
+        );
+        expect(parseSetCookie(res).has('Secure')).toBe(true);
+      });
+    });
+
+    describe('미들웨어 cookie 인증 경로', () => {
+      it('Cookie admin_session 정확 → 200 (X-Admin-Token 헤더 없이 접근 성공)', async () => {
+        const res = await req('/api/telemetry/dashboard', {
+          headers: { Cookie: `admin_session=${ADMIN_TOKEN}` },
+        });
+        expect(res.status).toBe(200);
+      });
+
+      it('Cookie admin_session 오 → 401', async () => {
+        const res = await req('/api/telemetry/dashboard', {
+          headers: { Cookie: `admin_session=wrong-token-32bytes-plus-secret-aa` },
+        });
+        expect(res.status).toBe(401);
+      });
+
+      it('Cookie 우선 — Cookie OK + Header 오 → 200 (cookie 채택)', async () => {
+        const res = await req('/api/telemetry/dashboard', {
+          headers: {
+            Cookie: `admin_session=${ADMIN_TOKEN}`,
+            'X-Admin-Token': 'wrong-token-32bytes-plus-secret-aa',
+          },
+        });
+        expect(res.status).toBe(200);
+      });
+
+      it('Header fallback — Cookie 부재 + Header OK → 200', async () => {
+        const res = await req('/api/telemetry/dashboard', {
+          headers: { 'X-Admin-Token': ADMIN_TOKEN },
+        });
+        expect(res.status).toBe(200);
+      });
+
+      it('Cookie 부재 + Header 부재 → 401', async () => {
+        const res = await req('/api/telemetry/dashboard');
+        expect(res.status).toBe(401);
+      });
+
+      it('login 후 발급된 cookie 로 dashboard 접근 성공 (e2e)', async () => {
+        const loginRes = await req('/api/telemetry/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: ADMIN_TOKEN }),
+        });
+        expect(loginRes.status).toBe(200);
+        const setCookieHeader = loginRes.headers.get('Set-Cookie') ?? '';
+        const cookieValue = setCookieHeader.split(';')[0]; // "admin_session=<token>"
+
+        const dashRes = await req('/api/telemetry/dashboard', {
+          headers: { Cookie: cookieValue },
+        });
+        expect(dashRes.status).toBe(200);
+      });
+
+      it('빈 Cookie 값 → header fallback 시도', async () => {
+        const res = await req('/api/telemetry/dashboard', {
+          headers: { Cookie: 'admin_session=', 'X-Admin-Token': ADMIN_TOKEN },
+        });
+        expect(res.status).toBe(200);
+      });
+
+      it('multi-cookie 헤더에서 admin_session 추출 성공', async () => {
+        const res = await req('/api/telemetry/dashboard', {
+          headers: { Cookie: `other=foo; admin_session=${ADMIN_TOKEN}; another=bar` },
+        });
+        expect(res.status).toBe(200);
+      });
+    });
+  });
 });

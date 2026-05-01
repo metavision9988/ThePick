@@ -20,7 +20,14 @@
 
 import { Hono } from 'hono';
 import { createLogger, isValidExamId, type Logger, type LoggerEnvironment } from '@thepick/shared';
-import { requireAdminToken, type AdminTokenBindings } from './admin-token.js';
+import {
+  ADMIN_SESSION_MAX_AGE_SECONDS,
+  buildAdminSessionCookie,
+  MIN_TOKEN_LENGTH,
+  requireAdminToken,
+  timingSafeEqual,
+  type AdminTokenBindings,
+} from './admin-token.js';
 import {
   ENGINE_TELEMETRY_GAUGES,
   PHASE_1_GAUGES,
@@ -116,6 +123,60 @@ function determinePhase(gauge: EngineTelemetryGauge): 1 | 2 {
 export function createTelemetryRoutes(): Hono<{ Bindings: TelemetryBindings }> {
   const router = new Hono<{ Bindings: TelemetryBindings }>();
 
+  // ===== Phase B (handoff-028) — admin-web localStorage → httpOnly cookie 전환 =====
+  // login / logout 은 미들웨어 *이전* 등록 — login 은 self-validating, logout 은 idempotent.
+  // 미들웨어를 거치면 login 자체가 401 으로 차단되어 cookie 발급 경로가 닫힌다.
+
+  /**
+   * POST /api/telemetry/login — admin-web ↔ apps/api 인증 (cookie 발급).
+   *
+   * Phase B 흡수 (v1.1 §10.7 #9 — Sentinel CRITICAL):
+   *   - body { token } 으로 ADMIN_API_TOKEN 검증
+   *   - 일치 시 Set-Cookie admin_session (HttpOnly + SameSite=Strict + Max-Age=86400 + production: Secure)
+   *   - 불일치 시 401 (timing-safe 정합 — login에서도 동일 마스크)
+   *
+   * cookie 발급 후 admin-web 은 `credentials: 'include'` 로 GET /dashboard / /gauges/* 호출.
+   * X-Admin-Token 헤더 fallback 은 server-to-server 호환 유지.
+   */
+  router.post('/login', async (c) => {
+    const logger = buildLogger(c.env).child({ route: 'login' });
+    const expected = c.env.ADMIN_API_TOKEN;
+    if (typeof expected !== 'string' || expected.length < MIN_TOKEN_LENGTH) {
+      logger.warn('login attempted with misconfigured ADMIN_API_TOKEN', {
+        configured: typeof expected === 'string',
+        length: typeof expected === 'string' ? expected.length : 0,
+      });
+      return c.json({ error: 'UNAUTHORIZED' }, 401);
+    }
+
+    const raw = (await c.req.json().catch(() => null)) as { token?: unknown } | null;
+    const provided =
+      raw !== null && typeof raw.token === 'string' && raw.token.length > 0 ? raw.token : null;
+
+    if (provided === null || !timingSafeEqual(provided, expected)) {
+      // information leak 방지 — 길이 mismatch 도 동일 401 마스크 (timing-safe 내부 처리).
+      return c.json({ error: 'UNAUTHORIZED' }, 401);
+    }
+
+    c.header(
+      'Set-Cookie',
+      buildAdminSessionCookie(expected, ADMIN_SESSION_MAX_AGE_SECONDS, c.env.ENVIRONMENT),
+    );
+    return c.json({ ok: true, expiresInSeconds: ADMIN_SESSION_MAX_AGE_SECONDS });
+  });
+
+  /**
+   * POST /api/telemetry/logout — cookie 즉시 만료.
+   *
+   * 인증 미요구 (idempotent — 이미 로그아웃된 상태에서도 200 OK).
+   * Set-Cookie Max-Age=0 으로 브라우저가 즉시 폐기.
+   */
+  router.post('/logout', async (c) => {
+    c.header('Set-Cookie', buildAdminSessionCookie('', 0, c.env.ENVIRONMENT));
+    return c.json({ ok: true });
+  });
+
+  // ===== 보호 라우트 — admin token 미들웨어 적용 =====
   router.use('*', requireAdminToken<{ Bindings: TelemetryBindings }>());
 
   // ===== POST /api/telemetry — write =====

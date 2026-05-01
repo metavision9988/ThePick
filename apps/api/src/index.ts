@@ -81,6 +81,9 @@ app.use('/api/auth/*', cors(buildCorsOptions()));
 app.use('/api/progress/*', cors(buildCorsOptions()));
 // Step 19 MAJOR-AD-1 흡수 — admin-web /telemetry 페이지 ↔ apps/api 크로스-오리진 보장.
 // X-Admin-Token 커스텀 헤더 사용으로 OPTIONS preflight 의무 → CORS 미설정 시 100% 차단.
+// Phase B (handoff-028) 흡수 — admin_session HttpOnly 쿠키 인증 추가.
+//   credentials: true (buildCorsOptions 상속) → admin-web `credentials: 'include'` fetch 호환.
+//   allowHeaders 에서 X-Admin-Token 유지 — server-to-server / curl / BATCH wire-up fallback.
 app.use(
   '/api/telemetry/*',
   cors({ ...buildCorsOptions(), allowHeaders: ['Content-Type', 'X-Admin-Token'] }),

@@ -2,10 +2,15 @@
  * TelemetryDashboard — Engine Observability v1 7+1 게이지 read-only.
  *
  * Phase 1: 7 게이지 활성 + learning_slo placeholder
- * 인증: localStorage `admin_api_token` → X-Admin-Token (Phase 1 임시)
+ * 인증 (Phase B 전환, handoff-028 + v1.1 §10.7 #9):
+ *   - 사용자 토큰 입력 → POST /api/telemetry/login → server Set-Cookie admin_session (HttpOnly)
+ *   - 이후 요청은 `credentials: 'include'` 로 쿠키 자동 전송 (XSS 1건에 토큰 노출 차단)
+ *   - localStorage 사용 금지 (이전 anti-pattern)
+ *   - logout 버튼 → POST /api/telemetry/logout → cookie 즉시 만료
  * 자동 폴링: 30초 (manual refresh 버튼 제공)
  *
  * 근거: docs/plans/engine-hardening/step19-observability.plan.md §5
+ *      + ENGINE_HARDENING_COMPLETION_REPORT.md v1.1 §10.7 #9 (Sentinel)
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -17,31 +22,20 @@ import {
   type GaugeSnapshot,
 } from '../types/telemetry';
 
-const TOKEN_STORAGE_KEY = 'admin_api_token';
 const POLL_INTERVAL_MS = 30_000;
+const MIN_TOKEN_LENGTH = 16;
 // CRITICAL-DO-1 흡수 (Step 19 5-페르소나 devops): localhost fallback 은 dev 만.
 // production 빌드 시 PUBLIC_API_BASE_URL 미설정 = misconfig → 빌드 시점에 throw 가
 // 가장 안전하나 Astro static 빌드 환경에서는 client-side detection 으로 mode 분기.
 const LOCALHOST_API_BASE = 'http://localhost:8787';
+
+type AuthStatus = 'checking' | 'unauthenticated' | 'authenticated';
 
 interface FetchState {
   readonly status: 'idle' | 'loading' | 'success' | 'unauthorized' | 'error';
   readonly data: DashboardResponse | null;
   readonly error: string | null;
   readonly fetchedAt: string | null;
-}
-
-function readToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return window.localStorage.getItem(TOKEN_STORAGE_KEY);
-}
-
-function writeToken(token: string): void {
-  window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
-}
-
-function clearToken(): void {
-  window.localStorage.removeItem(TOKEN_STORAGE_KEY);
 }
 
 /**
@@ -169,8 +163,39 @@ function GaugeCard({ snapshot }: { snapshot: GaugeSnapshot }) {
   );
 }
 
-function TokenForm({ onSubmit }: { onSubmit: (token: string) => void }) {
+function TokenForm({ apiBase, onAuthenticated }: { apiBase: string; onAuthenticated: () => void }) {
   const [value, setValue] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    if (value.length < MIN_TOKEN_LENGTH || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`${apiBase}/api/telemetry/login`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: value }),
+      });
+      if (res.ok) {
+        setValue('');
+        onAuthenticated();
+        return;
+      }
+      if (res.status === 401) {
+        setError('토큰이 일치하지 않습니다.');
+      } else {
+        setError(`서버 오류 (HTTP ${res.status})`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div
       style={{
@@ -186,14 +211,19 @@ function TokenForm({ onSubmit }: { onSubmit: (token: string) => void }) {
         Admin Token 입력
       </h2>
       <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
-        ADMIN_API_TOKEN 환경변수와 일치해야 합니다 (Phase 1 임시 인증). Phase 2 Cloudflare Access
-        도입 후 제거됩니다.
+        ADMIN_API_TOKEN 환경변수와 일치해야 합니다 (Phase 1 임시 인증). 토큰은 HttpOnly 쿠키로
+        저장되어 24시간 유효하며, JS 메모리·localStorage 에 보관되지 않습니다. Phase 2 Cloudflare
+        Access 도입 후 본 폼은 제거됩니다.
       </p>
       <input
         type="password"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="X-Admin-Token"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleSubmit();
+        }}
+        disabled={submitting}
         style={{
           width: '100%',
           padding: 10,
@@ -204,32 +234,45 @@ function TokenForm({ onSubmit }: { onSubmit: (token: string) => void }) {
           marginBottom: 12,
         }}
       />
+      {error && (
+        <div
+          role="alert"
+          style={{
+            background: '#fef2f2',
+            color: '#7f1d1d',
+            padding: 8,
+            borderRadius: 4,
+            fontSize: 13,
+            marginBottom: 12,
+          }}
+        >
+          {error}
+        </div>
+      )}
       <button
         type="button"
-        onClick={() => {
-          if (value.length >= 16) onSubmit(value);
-        }}
-        disabled={value.length < 16}
+        onClick={handleSubmit}
+        disabled={value.length < MIN_TOKEN_LENGTH || submitting}
         style={{
           width: '100%',
           padding: 10,
           fontSize: 14,
           fontWeight: 600,
-          background: value.length >= 16 ? '#1e293b' : '#cbd5e1',
+          background: value.length >= MIN_TOKEN_LENGTH && !submitting ? '#1e293b' : '#cbd5e1',
           color: '#fff',
           border: 'none',
           borderRadius: 4,
-          cursor: value.length >= 16 ? 'pointer' : 'not-allowed',
+          cursor: value.length >= MIN_TOKEN_LENGTH && !submitting ? 'pointer' : 'not-allowed',
         }}
       >
-        저장 (≥16자)
+        {submitting ? '인증 중...' : '저장 (≥16자)'}
       </button>
     </div>
   );
 }
 
 export default function TelemetryDashboard() {
-  const [token, setToken] = useState<string | null>(() => readToken());
+  const [authStatus, setAuthStatus] = useState<AuthStatus>('checking');
   const [state, setState] = useState<FetchState>({
     status: 'idle',
     data: null,
@@ -240,19 +283,17 @@ export default function TelemetryDashboard() {
   const apiBase = useMemo(() => resolveApiBase(), []);
 
   const fetchDashboard = useCallback(async () => {
-    if (!token) return;
     setState((prev) => ({ ...prev, status: 'loading' }));
     try {
       const res = await fetch(`${apiBase}/api/telemetry/dashboard`, {
-        headers: { 'X-Admin-Token': token },
+        credentials: 'include',
       });
       if (res.status === 401) {
-        clearToken();
-        setToken(null);
+        setAuthStatus('unauthenticated');
         setState({
           status: 'unauthorized',
           data: null,
-          error: 'Token rejected',
+          error: 'Cookie expired or invalid',
           fetchedAt: null,
         });
         return;
@@ -273,6 +314,7 @@ export default function TelemetryDashboard() {
         error: null,
         fetchedAt: new Date().toISOString(),
       });
+      setAuthStatus('authenticated');
     } catch (err) {
       setState({
         status: 'error',
@@ -281,21 +323,51 @@ export default function TelemetryDashboard() {
         fetchedAt: null,
       });
     }
-  }, [token, apiBase]);
+  }, [apiBase]);
 
+  // 첫 로드 시 cookie 유효성 probe — 401 → TokenForm, 200 → dashboard
   useEffect(() => {
-    if (!token) return;
-    fetchDashboard();
-    const id = window.setInterval(fetchDashboard, POLL_INTERVAL_MS);
-    return () => window.clearInterval(id);
-  }, [token, fetchDashboard]);
+    void fetchDashboard();
+  }, [fetchDashboard]);
 
-  if (!token) {
+  // 인증 상태에서 30초 자동 폴링
+  useEffect(() => {
+    if (authStatus !== 'authenticated') return;
+    const id = window.setInterval(() => {
+      void fetchDashboard();
+    }, POLL_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [authStatus, fetchDashboard]);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await fetch(`${apiBase}/api/telemetry/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // logout 실패 시에도 로컬 상태는 unauthenticated 으로 강제 — 쿠키 만료 까지 24h.
+      // 서버 도달 실패 시 다음 fetchDashboard 호출이 401 → unauthenticated 자연 전이.
+    }
+    setAuthStatus('unauthenticated');
+    setState({ status: 'idle', data: null, error: null, fetchedAt: null });
+  }, [apiBase]);
+
+  if (authStatus === 'checking') {
+    return (
+      <div style={{ padding: 40, textAlign: 'center', color: '#64748b', fontSize: 14 }}>
+        세션 확인 중...
+      </div>
+    );
+  }
+
+  if (authStatus === 'unauthenticated') {
     return (
       <TokenForm
-        onSubmit={(t) => {
-          writeToken(t);
-          setToken(t);
+        apiBase={apiBase}
+        onAuthenticated={() => {
+          setAuthStatus('authenticated');
+          void fetchDashboard();
         }}
       />
     );
@@ -340,7 +412,7 @@ export default function TelemetryDashboard() {
           </span>
           <button
             type="button"
-            onClick={fetchDashboard}
+            onClick={() => void fetchDashboard()}
             disabled={state.status === 'loading'}
             style={{
               padding: '6px 12px',
@@ -356,10 +428,7 @@ export default function TelemetryDashboard() {
           </button>
           <button
             type="button"
-            onClick={() => {
-              clearToken();
-              setToken(null);
-            }}
+            onClick={() => void handleLogout()}
             style={{
               padding: '6px 12px',
               fontSize: 12,
