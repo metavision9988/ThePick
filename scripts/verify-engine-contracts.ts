@@ -339,13 +339,13 @@ function countMigrations(): NumericMetric {
   } catch {
     count = 0;
   }
-  // ⚠️ MAJOR-A1 (Step 18 Pass 2 흡수): Step 19 진입 시점에 본 required 갱신 의무.
+  // ⚠️ MAJOR-A1 (Step 18 Pass 2 흡수, Step 19 갱신 의무): 신규 마이그레이션 추가 시 본 required 동시 갱신.
   //   - Step 16c 기준 = 16 (0001~0016)
-  //   - Step 19 engine_telemetry 도입 시 = 17 (0017_engine_telemetry.sql)
-  //   - master-test-checklist.md §6.2 "D1 마이그레이션 파일 카운트 required 16" 동일 갱신 의무 (2 파일 동시).
+  //   - Step 19 engine_telemetry 도입 = 17 (0017_engine_telemetry.sql) ← 본 카운트
+  //   - master-test-checklist.md §6.2 "D1 마이그레이션 파일 카운트 required" 동일 갱신 의무 (2 파일 동시).
   //   - 본 카운트는 단방향 게이트 (감소 차단, 증가 허용) — 갱신 망각 시 신규 마이그레이션
-  //     적용 검증 0건 상태로 PASS 가능. Step 19 plan 진입 게이트에 명시 의무.
-  const required = 16;
+  //     적용 검증 0건 상태로 PASS 가능. 신규 마이그레이션 추가 step plan 진입 게이트에 명시 의무.
+  const required = 17;
   return {
     name: 'D1 마이그레이션 파일 카운트',
     observed: count,

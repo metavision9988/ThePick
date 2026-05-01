@@ -576,3 +576,54 @@ export const rateLimits = sqliteTable(
 
 export type RateLimit = typeof rateLimits.$inferSelect;
 export type NewRateLimit = typeof rateLimits.$inferInsert;
+
+// ============================================================
+// engine_telemetry — Engine Observability v1 시계열 fact table (migrations/0017)
+// ============================================================
+// 8 게이지 (Phase 1: 1~7 활성 / Phase 2: learning_slo 활성). append-only.
+// Drizzle 정책 (NC-1): 본 선언은 타입 파생 전용. CHECK 제약 + 트리거는
+// migrations/0017_engine_telemetry.sql 본문에서 강제. drizzle-kit 사용 금지.
+// 근거: docs/plans/engine-hardening/step19-observability.plan.md §3
+const ENGINE_TELEMETRY_GAUGES = [
+  'batch_progress',
+  'cost',
+  'd1_slo',
+  'graph_integrity',
+  'quality_gate',
+  'formula_accuracy',
+  'reviewer_queue',
+  'learning_slo',
+] as const;
+
+export type EngineTelemetryGauge = (typeof ENGINE_TELEMETRY_GAUGES)[number];
+
+export const engineTelemetry = sqliteTable(
+  'engine_telemetry',
+  {
+    id: text('id').primaryKey(),
+    examId: text('exam_id').notNull(),
+    gaugeName: text('gauge_name', { enum: ENGINE_TELEMETRY_GAUGES }).notNull(),
+    metricValue: real('metric_value'),
+    metricJson: text('metric_json'),
+    sourceId: text('source_id'),
+    batchRunId: text('batch_run_id'),
+    recordedAt: text('recorded_at')
+      .notNull()
+      .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
+  },
+  (table) => ({
+    gaugeRecordedIdx: index('idx_engine_telemetry_gauge_recorded').on(
+      table.gaugeName,
+      table.recordedAt,
+    ),
+    examGaugeIdx: index('idx_engine_telemetry_exam_gauge').on(
+      table.examId,
+      table.gaugeName,
+      table.recordedAt,
+    ),
+    batchRunIdx: index('idx_engine_telemetry_batch_run').on(table.batchRunId),
+  }),
+);
+
+export type EngineTelemetry = typeof engineTelemetry.$inferSelect;
+export type NewEngineTelemetry = typeof engineTelemetry.$inferInsert;
