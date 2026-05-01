@@ -5,6 +5,8 @@ import {
   findBrokenEdges,
   findSupersedeCycles,
   validateGraphIntegrity,
+  MAX_SUPERSEDE_CHAIN_DEPTH,
+  SupersedeChainTooDeepError,
 } from '../graph-integrity';
 
 // --- 테스트 헬퍼 ---
@@ -208,5 +210,111 @@ describe('validateGraphIntegrity', () => {
     expect(report.valid).toBe(false);
     const dupViolation = report.violations.find((v) => v.type === 'DUPLICATE_ID');
     expect(dupViolation).toBeDefined();
+  });
+});
+
+// --- Sprint 1 §5.1 CRITICAL-N1 회귀 — iterative DFS deep chain stack overflow 차단 ---
+
+describe('findSupersedeCycles — Sprint 1 §5.1 CRITICAL-N1 (iterative DFS)', () => {
+  /**
+   * 깊이 N 의 단일 SUPERSEDES chain (V1 → V2 → V3 → ... → Vn) 생성.
+   * 재귀 DFS 였다면 N=10K 에서 V8 stack overflow.
+   */
+  function generateDeepChain(depth: number): GraphEdge[] {
+    const edges: GraphEdge[] = [];
+    for (let i = 0; i < depth - 1; i++) {
+      edges.push(edge(`e-${i}`, `n-${i}`, `n-${i + 1}`, 'SUPERSEDES'));
+    }
+    return edges;
+  }
+
+  it('N=10,000 deep chain — iterative DFS 통과 (재귀 였다면 stack overflow)', () => {
+    const edges = generateDeepChain(10_000);
+    const t0 = performance.now();
+    const violations = findSupersedeCycles(edges);
+    const elapsed = performance.now() - t0;
+    expect(violations).toEqual([]); // chain 은 cycle 없음
+    expect(elapsed).toBeLessThan(500); // 충분히 빠름 (iterative O(V+E))
+  });
+
+  it('N=20,000 deep chain — V8 stack 한계 초과 영역에서도 안전', () => {
+    const edges = generateDeepChain(20_000);
+    const violations = findSupersedeCycles(edges);
+    expect(violations).toEqual([]);
+  });
+
+  it('N=10,000 deep chain + 끝에서 시작으로 cycle → 정확 감지', () => {
+    const edges = generateDeepChain(10_000);
+    edges.push(edge('e-cycle', 'n-9999', 'n-0', 'SUPERSEDES'));
+    const violations = findSupersedeCycles(edges);
+    expect(violations).toHaveLength(1);
+    expect(violations[0].type).toBe('SUPERSEDES_CYCLE');
+    const cycle = violations[0].details?.cycle;
+    expect(Array.isArray(cycle)).toBe(true);
+    expect((cycle as string[]).length).toBeGreaterThan(9_000); // 거의 전체 chain
+  });
+
+  it('MAX_SUPERSEDE_CHAIN_DEPTH 초과 시 SupersedeChainTooDeepError throw', () => {
+    const overLimit = MAX_SUPERSEDE_CHAIN_DEPTH + 10;
+    const edges = generateDeepChain(overLimit);
+    expect(() => findSupersedeCycles(edges)).toThrow(SupersedeChainTooDeepError);
+  });
+
+  it('SupersedeChainTooDeepError — code / depth / maxDepth 필드 정합', () => {
+    const overLimit = MAX_SUPERSEDE_CHAIN_DEPTH + 10;
+    const edges = generateDeepChain(overLimit);
+    try {
+      findSupersedeCycles(edges);
+      expect.fail('expected throw');
+    } catch (err) {
+      expect(err).toBeInstanceOf(SupersedeChainTooDeepError);
+      const e = err as SupersedeChainTooDeepError;
+      expect(e.code).toBe('SUPERSEDE_CHAIN_TOO_DEEP');
+      expect(e.depth).toBeGreaterThan(MAX_SUPERSEDE_CHAIN_DEPTH);
+      expect(e.maxDepth).toBe(MAX_SUPERSEDE_CHAIN_DEPTH);
+      expect(e.message).toContain('exceeded MAX_SUPERSEDE_CHAIN_DEPTH');
+      expect(e.message).toContain('fixture corruption or malicious input');
+    }
+  });
+
+  it('shallow random DAG N=5000 — Sprint 0 baseline 회귀 (시간 < 50ms)', () => {
+    // Sprint 0 baseline microbench 결과: shallow DAG N=5K @ 3ms median.
+    // 본 테스트는 iterative 전환 후에도 동일 성능 회귀 방어.
+    const edges: GraphEdge[] = [];
+    let seed = 42;
+    const N = 5000;
+    const fanout = 4;
+    for (let i = 0; i < N; i++) {
+      for (let k = 0; k < fanout; k++) {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff; // LCG
+        const offset = 1 + (seed % Math.min(50, N - i - 1 || 1));
+        const target = i + offset;
+        if (target < N) {
+          edges.push(edge(`e-${i}-${k}`, `n-${i}`, `n-${target}`, 'SUPERSEDES'));
+        }
+      }
+    }
+    const t0 = performance.now();
+    const violations = findSupersedeCycles(edges);
+    const elapsed = performance.now() - t0;
+    expect(violations).toEqual([]); // shallow forward-only DAG → cycle 없음
+    expect(elapsed).toBeLessThan(50); // Worker 50ms CPU 한도 정합
+  });
+
+  it('병렬 chain 2개 (서로 독립) 정상 처리', () => {
+    const edges: GraphEdge[] = [];
+    // chain A: a0 → a1 → ... → a999
+    for (let i = 0; i < 999; i++) {
+      edges.push(edge(`ea-${i}`, `a-${i}`, `a-${i + 1}`, 'SUPERSEDES'));
+    }
+    // chain B: b0 → b1 → ... → b999 + cycle b999 → b500
+    for (let i = 0; i < 999; i++) {
+      edges.push(edge(`eb-${i}`, `b-${i}`, `b-${i + 1}`, 'SUPERSEDES'));
+    }
+    edges.push(edge('eb-cycle', 'b-999', 'b-500', 'SUPERSEDES'));
+
+    const violations = findSupersedeCycles(edges);
+    expect(violations).toHaveLength(1); // chain B 의 cycle 만 감지
+    expect(violations[0].entityId).toBe('b-500');
   });
 });
