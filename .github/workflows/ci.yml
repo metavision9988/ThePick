@@ -61,6 +61,24 @@ jobs:
                --filter @thepick/api \
                test
 
+      # Step 18 — Engine Hardening 자동 검증 (master-test-checklist v1 / Cat 1+4+6+7).
+      # vitest 합계 + Hard Rule 17 + 동적 코드 실행 차단 + XSS + console.* 회귀 방어.
+      # 미달 시 exit 1 → CI 차단. JSON 결과는 artifact 로 업로드 (PR 리뷰 시 진척도 추적).
+      #
+      # 주의 (Pass 1+2 MAJOR-S1 흡수): `pnpm --filter @thepick/batch exec` 의 cwd 는
+      # apps/batch/ 이므로 stdout 리다이렉트도 거기에 저장된다. upload-artifact 의 path 는
+      # repo root 기준이라 명시적으로 apps/batch/ prefix 필요.
+      - name: Verify engine contracts (Step 18 / M-2)
+        run: pnpm --filter @thepick/batch exec tsx ../../scripts/verify-engine-contracts.ts --json > engine-contracts-report.json
+
+      - name: Upload engine contracts report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: engine-contracts-report
+          path: apps/batch/engine-contracts-report.json
+          retention-days: 30
+
       - name: Security audit (HIGH+ blocking, dev 포함)
         run: pnpm audit --audit-level=high
 
