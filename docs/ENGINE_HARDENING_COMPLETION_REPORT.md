@@ -3,7 +3,21 @@
 **작성일**: 2026-05-01 (Phase 1 closeout)
 **작성자**: Claude (Opus 4.7 1M context)
 **검토자**: 진산님 (다음 세션에서 검토 후 BATCH-1 진입 트리거)
-**버전**: v1.0 (정식판)
+**버전**: v1.1 (외부 검토 흡수판)
+
+> **v1.0 → v1.1 변경 요약** (2026-05-01)
+>
+> Mephisto + DEV COVEN 7 페르소나 검토 (`docs/Engine Hardening 완료 보고서 v1.0 — 최종 검토.md`) 결과 발견된 7가지 인지 부조화를 흡수. 자기방어적 분류 트릭 제거, 검증되지 않은 영역 정직 명시.
+>
+> 1. §0.2 한 줄 요약 — 1단계(Engine 코어 949 PASS) / 2단계(운영 활성화 ~1주) 분리
+> 2. §0.3 핵심 수치 — "8/8 자동 게이트" + "운영 활성화 별도" 명시
+> 3. §1.1 북극성 연결고리 — 합격률 60% ↔ 본 Phase 7가지 품질 목표 경로 한 단락 추가
+> 4. §1.2 BATCH-1 정의 — "교재 835p + 기출 7회분 일부, 양 정의는 batch-loadmap.md 참조" 명시
+> 5. §10.1 헤더 — "모노레포 합계 949" → "Engine + API + Shared 7 컴포넌트 합계 949 (apps/web 0 / apps/admin-web 0 / payment 0 / study-material-generator 0 / parser-1st-exam 0)"
+> 6. §10.6 [x] 마킹 — Engine Observability 옆 "(인프라 가동, 데이터 wire-up은 BATCH-1 진입 직전 후속 PR 의무)" 명시
+> 7. §10.7 **신설** — "검증되지 않은 영역" 섹션 (production 환경 / 카오스·퍼즈 / LLM 출력 / naive DFS 임계 / engine_version runbook / Layer 1↔2 연동 / localStorage XSS)
+>
+> 본 흡수의 Phase B는 별도 보안 PR (`apps/admin-web` localStorage → httpOnly cookie). 본 보고서 §5.8 / §6.3 의 "Phase 1 임시 토큰" 표현은 Phase B 머지 후 v1.2 에서 갱신 예정.
 
 ---
 
@@ -27,19 +41,25 @@
 | 완료 시점 실제 측정값은?                    | §10 검증 결과    |
 | 다음에 무엇을 해야 하나?                    | §11 차세션 작업  |
 
-### 0.2 한 줄 요약
+### 0.2 한 줄 요약 (2 단계 분리, v1.1 정직판)
 
-> **"손해평가사 자격증 학습 콘텐츠를 LLM·산식·그래프로 자동 생성·검증·서빙하는 신뢰성 우선 엔진"의 코어 — 17 마이그레이션 / 8 패키지 / 4 앱 / 949 PASS — 가 BATCH-1 적재 진입 직전 단계까지 완료되었다.**
+> **1단계 — Engine 코어 완료 (본 시점):**
+> "손해평가사 자격증 학습 콘텐츠를 LLM·산식·그래프로 자동 생성·검증·서빙하는 신뢰성 우선 엔진"의 코어 — Engine + API + Shared 7 컴포넌트 합계 949 PASS / 17 마이그레이션 (local·dev) / 4-Pass + 5-페르소나 Engine 범위 CRITICAL 0건 — 가 완성되었다.
+>
+> **2단계 — 운영 활성화 (BATCH-1 진입 직전 ~1주, 차세션):**
+> 데이터 wire-up + admin-web vitest 인프라 + production 마이그레이션 첫 적용 + ADMIN_API_TOKEN 회전 정책. 본 시점에는 인프라 가동, 데이터 흐름 미시작.
 
-### 0.3 완료 시점 핵심 수치
+### 0.3 완료 시점 핵심 수치 (v1.1)
 
-- **Engine Hardening Roadmap §8**: **8 / 8 항목 [x]** (100%)
-- **모노레포 테스트**: **949 / 949 PASS** (formula-engine 251 + parser 136 + quality 41 + shared 33 + ai-adapter 13 + api 239 + batch 236)
-- **D1 마이그레이션**: 17개 적용
-- **검증 체계**: 4-Pass (CRITICAL 0건) + 5-페르소나 기술부채 심층 (Engine 범위 CRITICAL 0건)
+- **Engine Hardening Roadmap §8 자동 게이트**: **8 / 8 항목 [x]** (자동 검증 영역 한정. 진산님 통제 게이트 — Layer 2 Anthropic cap, BATCH-1 fixture — 별도)
+- **Engine + API + Shared 7 컴포넌트 합계**: **949 / 949 PASS** (formula-engine 251 + parser 136 + quality 41 + shared 33 + ai-adapter 13 + api 239 + batch 236)
+  - 미포함: apps/web 0 / apps/admin-web 0 (CRIT-Q1 트래킹) / packages/payment 0 / packages/study-material-generator 0 / packages/parser-1st-exam 0 — Phase 1 closeout 외부.
+- **D1 마이그레이션**: 17개 적용 — **local · dev 환경에서만 PASS. production 첫 적용은 BATCH-1 진입 절차 (§11.2 단계 3) 시점이며 본 보고서 시점에 production 검증 0회.**
+- **검증 체계**: 4-Pass (CRITICAL 0건) + 5-페르소나 기술부채 심층 (Engine 범위 CRITICAL 0건). Engine 범위 정의는 §1.2 — admin-web vitest 인프라(CRIT-Q1)는 외부 viewer 로 명시 트래킹.
 - **외부 SaaS 의존성**: 0건 (Cloudflare 단일 벤더)
-- **Hard Rule 위반**: 0건 (자동 검증 PASS)
-- **다음 단계**: BATCH-1 적재 진입 (진산님 트리거 대기)
+- **Hard Rule 위반**: 0건 (자동 검증 PASS — Hard Rule 12 innerHTML / Hard Rule 17 EXAM_IDS / Hard Rule 14 TODO/HACK 등). **단, 카오스·퍼즈·LLM 출력 품질·naive DFS 임계 노드 수는 미검증** (§10.7 참조).
+- **이월 부채**: CRITICAL 0건 / **MAJOR 23건은 Phase 2 명시 트래킹** (§11.3) + **후속 PR 2건은 BATCH-1 진입 직전 1주 필수** (§11.1) — 분류 정의는 §10.7 정직 표기.
+- **다음 단계**: BATCH-1 진입 직전 후속 PR 1주 (Phase B 보안 패치 + telemetry wire-up + admin-web vitest + production 마이그레이션 staging dry-run) → BATCH-1 적재 진입 (진산님 트리거 대기)
 
 ---
 
@@ -52,6 +72,36 @@
 - **북극성 메트릭**: 합격률 60% (메모리 `project_vision_mvp_generalization`)
 - **확장 비전**: Year 2 멀티시험 (공인중개사 등)으로 확장 가능한 "자격증 자동 훈련 엔진" MVP
 - **데이터 자산**: 교재 835p + 기출 7회분(제5~11회, ~581문항) + 법령 3건
+
+#### 1.1.1 북극성 ↔ 본 Phase 의 연결고리 (v1.1 신규 — Oracle 권고 흡수)
+
+> **본 Phase의 7가지 품질 목표는 합격률 60% 의 *전제 조건*이지 *직접 기여*가 아니다.**
+
+본 Phase 1 (Engine Hardening) 의 7가지 품질 목표 (§2.1) — 결정성 / 회복성 / 격리성 / 단일 출처 / 무결성 / 신뢰성 / 관측성 — 은 모두 **비기능 요구사항** 이다. 합격생을 직접 만들지 않는다. 그러나 다음 인과 사슬로 합격률 60% 에 도달한다:
+
+```
+[Phase 1 = 본 보고서]
+  Engine 7가지 품질 (이 보고서) = "엔진이 거짓말하지 않는다"
+       ↓ 보장 후에야
+[Phase 2 = BATCH-1 적재 후]
+  콘텐츠 생성 품질 (Cat 8 출력 검증, Reviewer 큐, 출처 추적성) = "엔진이 좋은 말을 한다"
+       ↓ 보장 후에야
+[Phase 3 = 사용자 노출 후]
+  학습 효과 (FSRS-5 간격반복, 혼동 유형 자동 감지, 모의시험) = "학습자가 이해한다"
+       ↓ 누적 후에야
+[북극성]
+  합격률 60% = "학습자가 합격한다"
+```
+
+**본 Phase 가 합격률에 기여하는 경로**:
+
+1. **신뢰성 (산식 정확도)** — 손해평가 산식 51개의 부동소수점 정밀도 100% 보장 → 학습자가 "이 답이 맞나?" 의심 없이 학습. 합격률 직접 영향.
+2. **격리성 + 단일 출처 (Hard Rule 16/17)** — Year 2 공인중개사 확장 시 손해평가사 데이터 누출 0건. 멀티시험 확장 = MVP 도달 후 합격률 모집단 N배 증가.
+3. **무결성 (Temporal Graph)** — 매년 교재 개정 시 SUPERSEDES 엣지로 신/구 버전 추적. 합격률 = 시점별 정확도 유지.
+4. **회복성 + 결정성** — BATCH 적재 도중 장애 발생 → 동일 결과 재개. 콘텐츠 누락·중복 0건 = 학습자 신뢰 = 재방문률 = 합격률.
+5. **관측성** — 8 게이지로 "엔진 어디서 끊겼는지" 24/7 가시화. 장애 인지 → 복구 시간 단축 = 학습 중단 최소화.
+
+**그러나 본 Phase 만으로는 합격률 60% 에 도달하지 못한다**. Phase 2 의 Cat 8 (LLM 출력 품질 + 출처 추적성) 와 Phase 3 의 학습 효과 측정이 누적되어야 한다. 본 보고서 §2.3 의 deferred 항목 (Cat 5/8, 학습 SLO) 은 합격률 직접 기여 영역이며, 본 보고서가 다루지 않는 영역이다.
 
 ### 1.2 Engine Hardening 의 정의
 
@@ -68,6 +118,32 @@
 - 격리성 (cross-tenant exam_id 누출 0건)
 - 추적성 (모든 생성 콘텐츠에 출처 FK)
 - 관측성 (Workers Observability + 8 게이지 대시보드)
+
+#### 1.2.1 BATCH-1 의 정의 (v1.1 신규 — Oracle 권고 흡수)
+
+> **본 Phase 가 끝난 직후 진산님이 트리거할 "다음 단계"**
+
+**BATCH-1** = 콘텐츠 빌드 엔진의 첫 실 적재 단계. 다음 자료를 D1 Graph + Vectorize 로 적재한다:
+
+| 자료     | 분량                              | 처리 단계                                              |
+| :------- | :-------------------------------- | :----------------------------------------------------- |
+| **교재** | 손해평가사 1차/2차 통합 교재 835p | Stage 1~10 전 단계 (pdf_extract → qg2_gate)            |
+| **기출** | 제5~11회 7회분 일부 (~120 문항)   | Stage 4 (batch_structurize) + Stage 9 (formula_verify) |
+| **법령** | 3건 (농어업재해보험법 등)         | Stage 5 (constants_extract) — 법조문 수치만 우선       |
+
+**BATCH-1 의 양 정의 / 단계별 SLO / fixture 위치는 `docs/plans/batch-loadmap.md` 참조** (메모리 `project_batch_load_workflow` 정합).
+
+**Phase 상 위치**:
+
+```
+Phase 1 (본 보고서) → BATCH-1 진입 직전 후속 PR (~1주)
+                        ↓
+                     BATCH-1 적재 = Step 20 = Phase 1 → Phase 2 다리
+                        ↓
+Phase 2 = BATCH-1 결과 검증 → BATCH-2/3/... → 사용자 노출
+```
+
+**주의**: BATCH-1 ≠ 전체 적재. 초기 fixture 적재로 8 게이지 데이터 흐름 검증 + Cat 5/8 baseline 측정 + Reviewer 큐 가동 시작 단계. 전체 교재·기출·법령 적재는 BATCH-2/3/... 에 누적.
 
 ### 1.3 Engine Hardening 진행 단계 (Step 0~19)
 
@@ -833,18 +909,26 @@ cross-tenant cause 라우팅 (MINOR-A2 흡수): `recover.ts` SF-M-2 발화 시 �
 
 ## 10. 완료 시점 검증 결과 (2026-05-01)
 
-### 10.1 Test Counts (모노레포 합계 949)
+### 10.1 Test Counts (Engine + API + Shared 7 컴포넌트 합계 949 — v1.1 정정)
 
-| 패키지                    | 테스트  | 비고                                                                 |
-| :------------------------ | :-----: | :------------------------------------------------------------------- |
-| `@thepick/formula-engine` | **251** | 산식 51개 × 결정성 + sandbox property                                |
-| `@thepick/parser`         | **136** | normalizer + ontology + schema-validator                             |
-| `@thepick/quality`        | **41**  | graph integrity + 500 시나리오 property                              |
-| `@thepick/shared`         | **33**  | logger + errors + exam-adapter                                       |
-| `@thepick/api`            | **239** | auth + progress + webhooks + telemetry (28) + write-helper unit (12) |
-| `@thepick/batch`          | **236** | pipeline + cost-meter + checkpoint + recover + loader                |
-| `@thepick/ai-adapter`     | **13**  | (LLM 통합 후 +17 = 30+ 목표)                                         |
-| **합계**                  | **949** | Step 18 909 → Step 19 +40                                            |
+> **v1.0 헤더 "모노레포 합계 949" 는 부정확. v1.1 정정 — 모노레포 일부 7 컴포넌트 합계.**
+
+| 패키지                              | 테스트  | 비고                                                                                                             |
+| :---------------------------------- | :-----: | :--------------------------------------------------------------------------------------------------------------- |
+| `@thepick/formula-engine`           | **251** | 산식 51개 × 결정성 + sandbox property                                                                            |
+| `@thepick/parser`                   | **136** | normalizer + ontology + schema-validator                                                                         |
+| `@thepick/quality`                  | **41**  | graph integrity + 500 시나리오 property                                                                          |
+| `@thepick/shared`                   | **33**  | logger + errors + exam-adapter                                                                                   |
+| `@thepick/api`                      | **239** | auth + progress + webhooks + telemetry (28) + write-helper unit (12)                                             |
+| `@thepick/batch`                    | **236** | pipeline + cost-meter + checkpoint + recover + loader                                                            |
+| `@thepick/ai-adapter`               | **13**  | (LLM 통합 후 +17 = 30+ 목표)                                                                                     |
+| **Engine + API + Shared 합계**      | **949** | Step 18 909 → Step 19 +40                                                                                        |
+| `apps/web` (학습자 PWA)             |  **0**  | Phase 2 본격 활성 — Phase 1 외부                                                                                 |
+| `apps/admin-web` (관리자 CMS)       |  **0**  | **CRIT-Q1 트래킹 — BATCH-1 진입 직전 1주 후속 PR**                                                               |
+| `packages/payment`                  |  **0**  | Phase 2 활성 (ADR-002, AIEC trigger)                                                                             |
+| `packages/study-material-generator` |  **0**  | LLM 통합 후 (Phase 1 후반 ~ Phase 2)                                                                             |
+| `packages/parser-1st-exam`          |  **0**  | 1차 시험 특화 — Hard Rule 15 예외 (Year 1 한시)                                                                  |
+| **모노레포 전체 합계**              | **949** | (apps/web · apps/admin-web · payment · study-material-generator · parser-1st-exam = 0건. Phase 1 closeout 외부.) |
 
 ### 10.2 Type Check (15 패키지 PASS)
 
@@ -900,13 +984,48 @@ XSS 위험 DOM: 0건 PASS
 [ ] Layer 2 Cost Control (Anthropic 콘솔 cap — 진산님 통제 영역)
 [ ] BATCH-1 fixture 재실행 (Step 20)
 [x] AC-R1 / AC-R3 / AC-T3 / AC-RP-6/7 / AC-ExamId / AC-Snapshot / AC-Cost
-[x] 종합 테스트 마스터 체크리스트 v2 PASS
-[x] Engine Observability 8 게이지 가동 (master-dashboard.md v1)
-[x] Phase 이월 부채 0건
+[x] 종합 테스트 마스터 체크리스트 v2 PASS (Cat 1/2/3/4/6/7 — Cat 5/8 명시 SKIP)
+[x] Engine Observability 8 게이지 가동 (master-dashboard.md v1) — **인프라 가동 (테이블·API·페이지 셸). 데이터 wire-up 은 BATCH-1 진입 직전 후속 PR 의무 (MAJOR-S2 트래킹). 진산님 첫 접속 시 8 게이지 모두 'no_data' 표시 인지 의무.**
+[x] Phase 이월 부채 — **CRITICAL 0건. MAJOR 23건은 §11.3 Phase 2 명시 트래킹, 후속 PR 2건은 §11.1 BATCH-1 진입 직전 1주 필수.** ("이월 부채 0건" 단순 선언은 분류 트릭이며 v1.1 에서 정직화.)
 [x] 완료 시점 진산님 알림 의무 (★★★ ENGINE HARDENING 완료 ★★★)
 ```
 
-**8 자동 게이트 / 8 진산님 통제 게이트 분리. 자동 8/8 PASS, 통제 1/2 (Layer 2 Anthropic cap = Phase 2 진입 시 의무).**
+**8 자동 게이트 / 진산님 통제 게이트 별도 분리. 자동 8/8 PASS, 통제 1/2 (Layer 2 Anthropic cap = Phase 2 진입 시 의무 / BATCH-1 fixture = Step 20 진산님 트리거 시).**
+
+### 10.7 검증되지 않은 영역 (v1.1 신규 — Mephisto 권고 흡수)
+
+> **0건의 행렬 옆에, 검증되지 않은 0건도 적어야 정직한 closeout 이다.**
+
+본 시점에서 **검증되지 않은 / 미실시된 영역**을 명시한다. 이 영역들은 "0건 PASS" 가 아니라 "측정 자체가 안 되었다" 다. 본 보고서를 6개월 뒤 다시 펼칠 진산님이 의심의 시작점을 잃지 않게 하는 것이 본 섹션의 유일한 목적이다.
+
+|  #  | 검증되지 않은 영역                            | 현 상태                                                                                                   | 다음 검증 시점                                                         | 권고 페르소나  |
+| :-: | :-------------------------------------------- | :-------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------- | :------------- |
+|  1  | **production 환경 마이그레이션 미적용**       | 17 마이그레이션은 local · dev 환경 PASS. production 첫 적용은 §11.2 단계 3 (BATCH-1 진입 절차).           | BATCH-1 진입 절차 + **staging dry-run 단계 추가 필요**                 | Ghost          |
+|  2  | **카오스 테스트 미실시**                      | 랜덤 D1 disconnect / 랜덤 Worker timeout / 랜덤 클럭 skew 시나리오 0건. AC-RP-3 1개 결정적 fault 만 PASS. | Sprint 0 baseline (테스트 마스터 플랜 P0 17건 — CHA 6건)               | Breaker        |
+|  3  | **퍼즈 테스트 미실시**                        | 악의적 입력 PDF / 악의적 Claude 응답 / 산식 sandbox 우회 0건.                                             | Sprint 0 baseline (P0 17건 — FUZ 3건)                                  | Breaker        |
+|  4  | **Cat 5 성능 테스트**                         | Workers 50ms CPU 벤치 / Vectorize latency / k6 부하 0건.                                                  | Phase 2 + Sprint 0 baseline (P0 17건 — PRF 2건)                        | Hacker         |
+|  5  | **Cat 8 LLM 출력 품질 검증**                  | Reviewer 큐 + 출처 추적성 + 정답 안전성 0건. ai-adapter 13 tests 만.                                      | Phase 2 (LLM 통합 후 / BATCH-1 적재 후)                                | Hacker, Oracle |
+|  6  | **naive DFS 임계 노드 수 미측정**             | SUPERSEDES 사이클 검출 = naive DFS O(V·(V+E)). N=5000 노드 추정 시 폭발 가능성 미검증. Tarjan SCC 미도입. | Sprint 0 baseline (P0 17건 — PRF-02) → Tarjan SCC 도입 결정            | Breaker        |
+|  7  | **engine_version major bump 시 runbook 부재** | recover.ts 가 VersionMismatch → recovery_failed 분기. 그 이후 manual 처리 절차 0건.                       | Phase 2 (5-페르소나 trace 5건 D1 backup runbook 항목 정합)             | Breaker, Ghost |
+|  8  | **Two-Layer Cost Control layer 간 연동**      | Layer 1 (apps/batch) ↔ Layer 2 (Anthropic 콘솔 cap) 발동 시 fallback / 알람 시나리오 0건.                 | ADR-025 보강 + Phase 2 Anthropic cap 활성 동시                         | Ghost          |
+|  9  | **localStorage admin_api_token XSS 공격면**   | Phase 1 임시 토큰이 XSS 1건에 admin-web 전체 권한 탈취 가능. Cloudflare Access 전환 = Phase 2 매우 늦음.  | **Phase B 즉시 패치 (httpOnly cookie 전환, 본 v1.1 흡수 후 1.5 시간)** | Sentinel       |
+| 10  | **Year 2 zero-cost 4 레벨 검증**              | 데이터 모델 PK / 인덱스 선두 / 온톨로지 ID 패턴 / Vectorize 메타데이터 4 레벨 중 시그니처 1 레벨만 PASS.  | Year 2 Phase 4 (멀티시험 진입) — 1 년 이내 ADR re-open 위험            | Architect      |
+| 11  | **engine_telemetry FK 부재 운영 시나리오**    | 1 년 보존 정책 발동 시 archived batch_run 에 대한 telemetry 조회 NULL/missing 처리 미정의.                | Phase 2 (1년 보존 정책 활성 시점)                                      | Architect      |
+| 12  | **PBKDF2-SHA256 iteration count 검증값**      | ADR-005 의존. 본 보고서에 명시 0회. OWASP 2023 권장 ≥ 600,000 미확인.                                     | Phase B 보안 패치 시 ADR-005 인라인 인용 + iteration 검증              | Sentinel       |
+| 13  | **ADR-009 PII Masking 적용 범위**             | logger 레벨 마스킹은 PASS. D1 저장 데이터 / Vectorize 메타데이터 적용 범위 명시 0건.                      | Phase 2 (Vectorize 활성 + 사용자 노출 시점)                            | Sentinel       |
+| 14  | **ADMIN_API_TOKEN 회전 정책**                 | 만료 / 회전 주기 명시 0건. Phase 1 임시 토큰이 사실상 영구 토큰화 위험.                                   | Phase B 보안 패치 시 30일 회전 정책 명문화                             | Ghost          |
+| 15  | **Cron 03:00 UTC 알람 경로**                  | scheduled telemetry collection 알람 경로 미정의. Cron 실패 시 진산님 인지 불가.                           | Phase 1 후반 (Email Routing alarm 활성 시)                             | Ghost          |
+
+**총 15 항목 미검증.** 본 시점 "100% 완료" 는 **자동 검증 영역 한정** 이며, 위 15 항목은 별도 추적·검증 대상이다.
+
+**다음 행동**:
+
+- **Phase B (즉시 — 1.5 시간)**: 항목 #9 + 부분적 #12 / #14
+- **Sprint 0 baseline (Sprint 0 ~3일)**: 항목 #2 + #3 + 부분적 #4 + #6
+- **Phase 2 (BATCH-1 적재 후)**: 항목 #5 + #7 + #8 + #11 + #13
+- **Year 2 Phase 4**: 항목 #10
+
+본 섹션은 v1.1 외부 검토 흡수의 핵심이다. 미래의 진산님이 본 보고서를 다시 펼칠 때, **§14 결론의 "100% 완료" 옆에 본 §10.7 가 함께 보여야** 한다.
 
 ---
 
@@ -1012,16 +1131,20 @@ handoff-027 §2.3 정합 — 5-페르소나 MAJOR 23건:
 
 ## 13. 진산님 검토 요청 사항
 
-### 13.1 본 보고서 검토 후 진산님 결정 트리거
+### 13.1 본 보고서 검토 후 진산님 결정 트리거 (v1.1 갱신)
+
+> **본 v1.1 흡수 시점 = handoff-028 Phase A 완료 직후. Phase B / Sprint 0 / Sprint 1 진입 트리거는 handoff-028 §4 정합.**
 
 다음 메시지 중 1개로 차세션 진입:
 
-| 트리거                       | 진행                                                |
-| :--------------------------- | :-------------------------------------------------- |
-| **"BATCH-1 적재 진입"**      | wire-up + admin-web vitest + BATCH-1 적재 (Step 20) |
-| **"telemetry wire-up 먼저"** | apps/batch 4 게이지 wire-up 단독                    |
-| **"admin-web 테스트 먼저"**  | CRIT-Q1 admin-web vitest 인프라 1주 PR              |
-| **"본 보고서 수정 / 추가"**  | 진산님 지적 항목 본 보고서 갱신                     |
+| 트리거                                 | 진행                                                                                                       |
+| :------------------------------------- | :--------------------------------------------------------------------------------------------------------- |
+| **"v1.1 흡수 + Sprint 0 진입"** (권고) | Phase B (보안 패치) → Phase C (Sprint 0 baseline P0 17건 정직 측정) 순차 (~5일)                            |
+| **"Sprint 1 P0 GREEN 까지 권고대로"**  | Phase B → Sprint 0 → Sprint 1 (P0 17건 GREEN) 풀 진행 (~9-10일)                                            |
+| **"localStorage 보안 패치 먼저"**      | Phase B 단독 (~1.5시간)                                                                                    |
+| **"Sprint 0 baseline 즉시"**           | Phase C 단독 (Phase B 차세션 위임)                                                                         |
+| **"BATCH-1 적재 진입"**                | Phase B + Sprint 0 + telemetry wire-up + admin-web vitest + production staging dry-run + BATCH-1 (Step 20) |
+| **"본 보고서 수정 / 추가"**            | 진산님 지적 항목 본 보고서 v1.2 갱신                                                                       |
 
 ### 13.2 본 보고서가 다루지 않는 영역 (진산님 통제)
 
@@ -1033,25 +1156,37 @@ handoff-027 §2.3 정합 — 5-페르소나 MAJOR 23건:
 
 ---
 
-## 14. 결론
+## 14. 결론 (v1.1 정직판)
 
-**Engine Hardening Phase 1 = 100% 완료.**
+**Engine Hardening Phase 1 = 1단계 (Engine 코어) 완료 / 2단계 (운영 활성화) 진입 직전.**
 
-본 시점에서 ThePick 의 코어 엔진 (콘텐츠 빌드 + 품질 검증 + 운영 인프라) 은:
+본 시점에서 ThePick 의 코어 엔진 (콘텐츠 빌드 + 품질 검증 + 운영 인프라) 은 **자동 검증 영역 한정으로** 다음을 보장한다:
 
-1. **결정성** 100% 보장 (formula 251 + parser 136 + quality 41 invariant_fields)
-2. **회복성** 100% 보장 (kill → recover e2e 5 시나리오 PASS)
-3. **격리성** 100% 보장 (Hard Rule 16/17 + SF-M-2 cross-tenant 가드)
-4. **무결성** 100% 보장 (Temporal Graph 트리거 + 0017 append-only)
-5. **신뢰성** 100% 보장 (Formula Engine 산식 정확도 + math.js AST)
-6. **관측성** 100% 활성 (engine_telemetry + 8 게이지 사양 + admin-web 셸)
-7. **확장성** Year 2 zero-cost (Hard Rule 15/16/17 시그니처 사전 적용)
+1. **결정성** — formula 251 + parser 136 + quality 41 invariant_fields PASS (결정적 fault 1 시나리오)
+2. **회복성** — kill → recover e2e 5 시나리오 PASS. **카오스/퍼즈 미실시** (§10.7 #2/#3).
+3. **격리성** — Hard Rule 16/17 + SF-M-2 cross-tenant 가드 (시그니처 레벨 PASS)
+4. **무결성** — Temporal Graph 트리거 + 0017 append-only (D1 레벨 강제). **production 환경 미적용** (§10.7 #1).
+5. **신뢰성** — Formula Engine 산식 정확도 + math.js AST (251 tests). **LLM 출력 품질 미검증 — Cat 8 deferred** (§10.7 #5).
+6. **관측성** — engine_telemetry 인프라 가동 + 8 게이지 사양 + admin-web 셸. **데이터 wire-up 후속 PR 의무** (§10.7 §10.6 [x] 명시).
+7. **확장성** — Hard Rule 15/16/17 시그니처 사전 적용. **4 레벨 중 1 레벨만 검증** (§10.7 #10 — Year 2 zero-cost 12개월 내 ADR re-open 위험).
 
-**다음 단계는 진산님 트리거 후 BATCH-1 적재 진입.**
+**즉, 본 시점은 "엔진이 거짓말하지 않는다" 의 자동 검증 PASS 이며, "엔진이 좋은 콘텐츠를 만든다" 의 검증은 Phase 2 의 Cat 5/8 + 사용자 노출 후 학습 SLO 측정 후에 가능하다.**
+
+**다음 단계 (3 layer)**:
+
+1. **Phase B (즉시, 1.5 시간)** — localStorage → httpOnly cookie 보안 패치 (§10.7 #9 흡수)
+2. **Sprint 0 baseline (~3일)** — 테스트 마스터 플랜 P0 17건 PASS/FAIL 정직 측정 (§10.7 #2/#3/#4/#6 흡수)
+3. **BATCH-1 진입 직전 후속 PR (~1주)** — telemetry wire-up + admin-web vitest + production staging dry-run (§11.1 정합)
+4. **BATCH-1 적재 진입 (Step 20)** — 진산님 트리거 후
+
+**본 보고서가 너의 미래의 너 자신을 속이지 않게 하는 것이 v1.1 의 유일한 목적이다.** (Mephisto 검토 권고 흡수)
 
 ---
 
 **보고서 작성:** Claude (Opus 4.7 1M context)
-**보고서 버전:** v1.0 (정식판)
-**효력 시점:** 2026-05-01 Phase 1 closeout
-**다음 갱신:** BATCH-1 적재 후 Cat 5/6/8 인간 검수 PASS 증거 흡수 시점 (v1.1) / Phase 2 진입 시 Phase 1 종합 회고 (v2.0)
+**보고서 버전:** v1.1 (외부 검토 흡수판 — 2026-05-01)
+
+- v1.0 (정식판, 2026-05-01) → 7가지 인지 부조화 흡수 + §10.7 검증되지 않은 영역 신설 + §14 결론 정직화
+  **효력 시점:** 2026-05-01 Phase 1 closeout (1단계 = Engine 코어 완료, 2단계 = 운영 활성화 진입 직전)
+  **검토 출처:** `docs/Engine Hardening 완료 보고서 v1.0 — 최종 검토.md` (Mephisto + DEV COVEN 7 페르소나)
+  **다음 갱신:** BATCH-1 적재 후 Cat 5/6/8 인간 검수 PASS 증거 흡수 시점 (v1.1) / Phase 2 진입 시 Phase 1 종합 회고 (v2.0)
