@@ -1,5 +1,14 @@
 # Sprint 0 Baseline — P0 17건 정직 측정 보고서
 
+> **2026-05-02 후속 결정 (Session 029)**
+>
+> 본 baseline §2.2 / §3.1 / §5.3 권고에 따라 **CHA-03 / CHA-05 P0 → P1 재분류 결정**.
+> 근거: `docs/plans/engine-hardening/decision-2026-05-02-cha-03-05-p1-reclassification.md`
+>
+> **Sprint 1 종료 게이트 변경**: 17/17 PASS → **15/15 PASS** (P0 17건 → 15건).
+> CHA-03 / CHA-05 는 Phase 2 진입 직전 본격 구현 + 측정 의무로 이월.
+> 본 보고서 §3.1 (CHA-03 / CHA-05 항목) 의 "다음 행동" 은 P1 일정 정합으로 재해석.
+
 **측정일**: 2026-05-01 ~23:02 KST
 **측정자**: Claude (Opus 4.7 1M context) — handoff-028 Phase C
 **근거 문서**:

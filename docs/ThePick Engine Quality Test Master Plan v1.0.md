@@ -7,6 +7,13 @@
 > 대상: ThePick Engine Hardening v1.0 (949 PASS 이후)
 > 분량: 10 차원 / 50 시나리오 / SLO 207건
 
+> **v1.0.1 패치 (2026-05-02 — Session 029)**
+>
+> - **CHA-03 / CHA-05 P0 → P1 재분류** (근거: `docs/plans/engine-hardening/decision-2026-05-02-cha-03-05-p1-reclassification.md`)
+> - Sprint 1 종료 게이트: 17/17 → **15/15 PASS**.
+> - P1 게이트: 18 → **20** (CHA-03 / CHA-05 합류).
+> - 본 패치는 §11.1 / §11.2 / §13.1 에만 적용. 시나리오 본문 (§5 카오스 등) 정의는 변경 없음.
+
 ---
 
 ## 0. 도입 — 왜 셀프체크는 부족한가
@@ -800,13 +807,14 @@
 
 ## 11. 실행 우선순위 매트릭스
 
-### 11.1 P0 (BATCH-1 진입 전 필수) — 17건
+### 11.1 P0 (BATCH-1 진입 전 필수) — 15건 (v1.0.1)
 
 ```
 검증 영역: BATCH-1 진입 시 즉시 발생 가능한 위험 차단
 
-[CHA] 6건: D1 disconnect / Worker timeout / Anthropic 5xx / Wall clock /
-            Vectorize timeout / Cron 미실행
+[CHA] 4건: D1 disconnect / Worker timeout / Wall clock / Cron 미실행
+            ※ CHA-03 (Anthropic 5xx) / CHA-05 (Vectorize timeout) 은
+              v1.0.1 P1 재분류 — Phase 2 진입 직전 의무
 [FUZ] 3건: PDF 손상 / Claude 변조 / 산식 sandbox 우회
 [PRF] 2건: Formula Engine 속도 / naive DFS 폭발 임계점
 [REG] 2건: BATCH-0 fixture 회귀 / engine_version major bump
@@ -817,11 +825,16 @@
 자동화율: 100%
 ```
 
-### 11.2 P1 (BATCH-1 적재 후 1주 내) — 18건
+### 11.2 P1 (BATCH-1 적재 후 1주 내) — 20건 (v1.0.1)
 
 ```
 검증 영역: 운영 시작 후 사용자 노출 전 필수
 
+[CHA] 2건 (v1.0.1 신규 합류):
+  CHA-03 Anthropic 5xx → exponential backoff
+    — Phase 2 진입 직전 (anthropic-adapter 본격 구현 후) 의무
+  CHA-05 Vectorize timeout 2초 fallback
+    — Phase 2 진입 직전 (hybrid-search 활성 후) 의무
 [FUZ] 3건: Webhook 폭탄 / examId 변조 / Unicode
 [LOD] 5건: 동시 BATCH / 1K user / Telemetry 폭주 / Vectorize RPS / checkpoint 크기
 [PRF] 4건: D1 EXPLAIN / SHA-256 / cold start / normalizer
@@ -875,13 +888,14 @@
 ### 13.1 페이즈 게이트 (Phase Gate)
 
 ```
-Phase 1 → BATCH-1 적재 진입 게이트 (P0 17건)
-  → 17/17 PASS 시 통과
+Phase 1 → BATCH-1 적재 진입 게이트 (P0 15건 — v1.0.1)
+  → 15/15 PASS 시 통과
   → 1건이라도 Critical FAIL = 즉시 중단
 
-BATCH-1 적재 → 사용자 노출 게이트 (P1 18건 + P0 회귀)
+BATCH-1 적재 → 사용자 노출 게이트 (P1 20건 + P0 회귀 — v1.0.1)
   → 35/35 PASS + Critical 0건
   → Major 3건 이하 (트래킹)
+  ※ P1 신규 합류: CHA-03 / CHA-05 (Phase 2 진입 직전 의무)
 
 사용자 노출 → 1K 사용자 진입 게이트 (P2 15건 + P1 회귀)
   → 50/50 PASS + Critical 0건
