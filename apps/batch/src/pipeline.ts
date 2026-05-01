@@ -32,7 +32,15 @@ import {
 } from '@thepick/parser';
 import { validateGraphIntegrity } from '@thepick/quality';
 import type { GraphNode, GraphEdge } from '@thepick/quality';
-import { assertValidExamId, type ExamId, type NodeType, type EdgeType } from '@thepick/shared';
+import {
+  assertValidExamId,
+  createLogger,
+  type ExamId,
+  type Logger,
+  type LoggerEnvironment,
+  type NodeType,
+  type EdgeType,
+} from '@thepick/shared';
 import {
   runQG2Validation,
   checkFormulaAccuracy,
@@ -55,6 +63,22 @@ import {
 import { recoverBatch, type BatchRunsDb, type RecoveryStatus } from './recover.js';
 import { CostMeter } from './cost-meter.js';
 import { installSignalHandlers } from './signal-handlers.js';
+
+// Step 18 MINOR-A3 — 모듈 스코프 logger. 9건 console.error/warn 교체 + Workers Observability JSON.
+const VALID_LOGGER_ENVS: ReadonlySet<string> = new Set([
+  'development',
+  'staging',
+  'production',
+  'test',
+]);
+const _envName = process.env.NODE_ENV;
+const pipelineLog: Logger = createLogger({
+  service: 'thepick-batch-pipeline',
+  environment:
+    _envName !== undefined && VALID_LOGGER_ENVS.has(_envName)
+      ? (_envName as LoggerEnvironment)
+      : 'development',
+});
 
 export type PipelineStage =
   | 'pdf_extract'
@@ -383,7 +407,7 @@ function buildSkipResult(ctx: PipelineContext, message: string): PipelineResult 
 
 /**
  * SIGINT/SIGTERM handler 가 fire-and-forget 으로 호출 — process.exit 직전 await 불가.
- * 실패 시 console.error 로 가시화 (silent failure 차단, CRITICAL RULE #3).
+ * 실패 시 pipelineLog.error 로 가시화 (silent failure 차단, CRITICAL RULE #3).
  */
 async function markBatchRunKilled(
   examId: ExamId,
@@ -487,11 +511,16 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
             writeCheckpointSync(cp, ctx.checkpointBaseDir, {
               fsync: ctx.fsyncCheckpoint ?? true,
             });
-            // best-effort — process.exit 직전이라 await 불가. 실패 시 console.error + metaPersistenceFailures 누적
-            // (옵션 C: caller 가 PipelineResult 미수신해도 stderr 로그가 운영 alarm 트리거).
+            // best-effort — process.exit 직전이라 await 불가. 실패 시 logger.error + metaPersistenceFailures 누적
+            // (옵션 C: caller 가 PipelineResult 미수신해도 JSON 로그가 운영 alarm 트리거).
             markBatchRunKilled(ctx.examId, ctx.batchRunId, ctx.batchRunsDb).catch((err) => {
               const reason = err instanceof Error ? err.message : String(err);
-              console.error('[Pipeline] markBatchRunKilled failed (best-effort):', err);
+              pipelineLog.error('markBatchRunKilled failed (best-effort)', err, {
+                batchRunId: ctx.batchRunId,
+                examId: ctx.examId,
+                stage: 'sigint_kill',
+                bestEffort: true,
+              });
               metaPersistenceFailures.push({
                 stage: 'sigint_kill',
                 operation: 'state_killed',
@@ -562,7 +591,12 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
         } catch (err) {
           // 0015 트리거 (state='completed' 차단 등) 가 RAISE(ABORT) 가능 — 가시화 + 누적 후 흐름 계속 (SF-C-3 정정)
           const reason = err instanceof Error ? err.message : String(err);
-          console.error(`[Pipeline] batch_runs UPDATE state=failed 실패 (stage=${stage}):`, err);
+          pipelineLog.error('batch_runs UPDATE state=failed 실패', err, {
+            batchRunId: ctx.batchRunId,
+            examId: ctx.examId,
+            stage,
+            operation: 'state_failed',
+          });
           metaPersistenceFailures.push({ stage, operation: 'state_failed', reason });
         }
         continue;
@@ -593,10 +627,12 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
         } catch (err) {
           // SF-M-4 일관성 — checkpoint 는 이미 쓴 후라 파이프라인 진행 가능. 메타만 가시화 + 누적.
           const reason = err instanceof Error ? err.message : String(err);
-          console.error(
-            `[Pipeline] batch_runs UPDATE state=in_progress 실패 (stage=${stage}):`,
-            err,
-          );
+          pipelineLog.error('batch_runs UPDATE state=in_progress 실패', err, {
+            batchRunId: ctx.batchRunId,
+            examId: ctx.examId,
+            stage,
+            operation: 'state_in_progress',
+          });
           metaPersistenceFailures.push({ stage, operation: 'state_in_progress', reason });
         }
       }
@@ -612,7 +648,11 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
       } catch (err) {
         // SF-M-4 — completed UPDATE 실패 시 PipelineResult 는 정상 반환하되 metaPersistenceFailures 로 가시화.
         const reason = err instanceof Error ? err.message : String(err);
-        console.error('[Pipeline] batch_runs UPDATE state=completed 실패:', err);
+        pipelineLog.error('batch_runs UPDATE state=completed 실패', err, {
+          batchRunId: ctx.batchRunId,
+          examId: ctx.examId,
+          operation: 'state_completed',
+        });
         metaPersistenceFailures.push({
           stage: 'completed_transition',
           operation: 'state_completed',
@@ -626,7 +666,11 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
     } catch (err) {
       // SF-DA-1 일관성 — B1 패턴 그대로 push (process listener leak 가시화)
       const reason = err instanceof Error ? err.message : String(err);
-      console.error('[Pipeline] removeHandlers 실패 (logged only):', err);
+      pipelineLog.error('removeHandlers 실패 (logged only)', err, {
+        batchRunId: ctx.batchRunId,
+        examId: ctx.examId,
+        operation: 'finalize_handlers',
+      });
       metaPersistenceFailures.push({
         stage: 'finalize',
         operation: 'finalize_handlers',
@@ -639,7 +683,11 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
       } catch (err) {
         // SF-DA-1 일관성 — meter resource leak 가시화
         const reason = err instanceof Error ? err.message : String(err);
-        console.error('[Pipeline] CostMeter finalize 실패 (logged only):', err);
+        pipelineLog.error('CostMeter finalize 실패 (logged only)', err, {
+          batchRunId: ctx.batchRunId,
+          examId: ctx.examId,
+          operation: 'finalize_costmeter',
+        });
         metaPersistenceFailures.push({
           stage: 'finalize',
           operation: 'finalize_costmeter',
@@ -856,7 +904,11 @@ async function stageBatchStructurize(
       }
       // 'kill_switch' 는 autoEnforce=true 시 onKillSwitch 콜백이 throw — 여기 도달 X.
     } else {
-      console.warn('[Pipeline] processBatch returned null usage — CostMeter skip for this call');
+      pipelineLog.warn('processBatch returned null usage — CostMeter skip for this call', {
+        batchRunId: ctx.batchRunId,
+        examId: ctx.examId,
+        stage: 'batch_structurize',
+      });
     }
   }
 
