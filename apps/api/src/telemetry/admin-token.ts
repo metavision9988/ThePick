@@ -15,13 +15,19 @@
  */
 
 import type { Context, MiddlewareHandler } from 'hono';
+import { ADMIN_MIN_TOKEN_LENGTH } from '@thepick/shared';
 
 export interface AdminTokenBindings {
   readonly ADMIN_API_TOKEN?: string;
   readonly ENVIRONMENT?: string;
 }
 
-export const MIN_TOKEN_LENGTH = 16;
+/**
+ * @deprecated Phase B 4-Pass MAJOR-3-3 흡수 — `ADMIN_MIN_TOKEN_LENGTH`(packages/shared)
+ * 단일 출처로 통합. 본 export 는 backward-compat alias 로 유지하며 내부 코드는
+ * `ADMIN_MIN_TOKEN_LENGTH` 직접 사용. 외부 import 는 점진적 migration.
+ */
+export const MIN_TOKEN_LENGTH = ADMIN_MIN_TOKEN_LENGTH;
 
 /** Phase B — admin-web ↔ apps/api 인증 cookie 이름. */
 export const ADMIN_SESSION_COOKIE = 'admin_session';
@@ -116,7 +122,7 @@ export function requireAdminToken<
 >(): MiddlewareHandler<E> {
   return async (c, next) => {
     const expected = c.env.ADMIN_API_TOKEN;
-    if (typeof expected !== 'string' || expected.length < MIN_TOKEN_LENGTH) {
+    if (typeof expected !== 'string' || expected.length < ADMIN_MIN_TOKEN_LENGTH) {
       // 환경변수 부재/짧음 = production misconfig. 401 로 마스크 (운영자 의도와 무관하게 거부).
       return c.json({ error: 'UNAUTHORIZED' }, 401);
     }

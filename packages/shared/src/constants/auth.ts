@@ -60,3 +60,13 @@ export const REFRESH_REUSE_REVOKE_ALL = true;
  * 실제 공격자 탈취 재사용은 대부분 60초를 넘는다 (토큰 분석 시간 소요).
  */
 export const REFRESH_ROTATION_GRACE_SECONDS = 60;
+
+/**
+ * Admin Token 최소 길이 (Phase 1 임시 — Cloudflare Access 도입 시 제거).
+ *
+ * Phase B 4-Pass MAJOR-3-3 흡수 (Sentinel, 2026-05-01): 클라이언트(admin-web)와
+ * 서버(api/telemetry/admin-token.ts) 의 중복 선언으로 인한 drift 위험 차단.
+ * 단일 출처 원칙. 서버 측 미설정 / 짧음 → 401 마스크. 클라이언트 측 submit 가드.
+ * 추후 강화 시 본 상수만 변경하면 양측 동시 적용.
+ */
+export const ADMIN_MIN_TOKEN_LENGTH = 16;

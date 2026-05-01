@@ -537,4 +537,32 @@ describe('Telemetry routes — Step 19 Engine Observability v1', () => {
       });
     });
   });
+
+  // ===== Phase B 4-Pass MAJOR-3-2 흡수 (Sentinel) — examId 빈 값 명시 거부 =====
+  describe('Phase B 4-Pass MAJOR-3-2 — examId 빈 문자열 명시 422 (Year 2 zero-cost)', () => {
+    it('GET /dashboard?examId= → 422 (빈 문자열 silently bypass 차단)', async () => {
+      const res = await authedGet('/api/telemetry/dashboard?examId=');
+      expect(res.status).toBe(422);
+      const body = (await res.json()) as { error: string; message?: string };
+      expect(body.error).toBe('VALIDATION_ERROR');
+      expect(body.message).toContain('empty');
+    });
+
+    it('GET /gauges/cost?examId= → 422', async () => {
+      const res = await authedGet('/api/telemetry/gauges/cost?examId=');
+      expect(res.status).toBe(422);
+    });
+
+    it('GET /dashboard (examId 미지정) → 200 (Year 1 단일 시험 호환)', async () => {
+      const res = await authedGet('/api/telemetry/dashboard');
+      expect(res.status).toBe(200);
+    });
+
+    it('GET /dashboard?examId=son-hae-pyeong-ga-sa → 200 (정상 examId)', async () => {
+      const res = await authedGet(
+        `/api/telemetry/dashboard?examId=${EXAM_IDS.SON_HAE_PYEONG_GA_SA}`,
+      );
+      expect(res.status).toBe(200);
+    });
+  });
 });

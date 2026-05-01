@@ -69,6 +69,11 @@ const PII_KEY_NAMES: readonly string[] = [
   'encryptionkey',
   'clientsecret',
   'cookie',
+  // Phase B 4-Pass MAJOR-3-1 흡수 (Sentinel, 2026-05-01): Set-Cookie 응답 헤더가
+  // raw 로그 노출되면 admin_session=ADMIN_API_TOKEN 평문 leak. normalizeKey 가
+  // 하이픈 제거 안 하므로 'set-cookie' / 'setcookie' 둘 다 명시.
+  'set-cookie',
+  'setcookie',
   // 결제 (PCI-DSS)
   'cardnumber',
   'pan',

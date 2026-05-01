@@ -25,6 +25,10 @@ const PRIVATE_PATH_PREFIXES: readonly string[] = [
   // Level 3 감사 M-A1 (2026-04-22): webhook 응답은 {id: rowId, replayed} 포함 →
   // 공용 캐시 오염 방지 위해 private 경계 명시.
   '/api/webhooks/',
+  // Phase B 4-Pass CRITICAL-3-1 흡수 (Sentinel, 2026-05-01): admin_session cookie
+  // 인증 응답이 reverse-proxy / Workers Cache 활성 시 cross-admin leak. Vary: Cookie 의무.
+  // 향후 Year 2 multi-exam 시 cross-tenant batch_run_id / source_id leak 차단 의무.
+  '/api/telemetry/',
 ];
 
 /** 공용 경로 TTL 매핑 (초). */

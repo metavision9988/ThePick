@@ -14,6 +14,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ADMIN_MIN_TOKEN_LENGTH } from '@thepick/shared';
 import {
   ENGINE_TELEMETRY_GAUGES,
   GAUGE_LABELS,
@@ -23,7 +24,6 @@ import {
 } from '../types/telemetry';
 
 const POLL_INTERVAL_MS = 30_000;
-const MIN_TOKEN_LENGTH = 16;
 // CRITICAL-DO-1 흡수 (Step 19 5-페르소나 devops): localhost fallback 은 dev 만.
 // production 빌드 시 PUBLIC_API_BASE_URL 미설정 = misconfig → 빌드 시점에 throw 가
 // 가장 안전하나 Astro static 빌드 환경에서는 client-side detection 으로 mode 분기.
@@ -169,7 +169,7 @@ function TokenForm({ apiBase, onAuthenticated }: { apiBase: string; onAuthentica
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
-    if (value.length < MIN_TOKEN_LENGTH || submitting) return;
+    if (value.length < ADMIN_MIN_TOKEN_LENGTH || submitting) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -252,17 +252,17 @@ function TokenForm({ apiBase, onAuthenticated }: { apiBase: string; onAuthentica
       <button
         type="button"
         onClick={handleSubmit}
-        disabled={value.length < MIN_TOKEN_LENGTH || submitting}
+        disabled={value.length < ADMIN_MIN_TOKEN_LENGTH || submitting}
         style={{
           width: '100%',
           padding: 10,
           fontSize: 14,
           fontWeight: 600,
-          background: value.length >= MIN_TOKEN_LENGTH && !submitting ? '#1e293b' : '#cbd5e1',
+          background: value.length >= ADMIN_MIN_TOKEN_LENGTH && !submitting ? '#1e293b' : '#cbd5e1',
           color: '#fff',
           border: 'none',
           borderRadius: 4,
-          cursor: value.length >= MIN_TOKEN_LENGTH && !submitting ? 'pointer' : 'not-allowed',
+          cursor: value.length >= ADMIN_MIN_TOKEN_LENGTH && !submitting ? 'pointer' : 'not-allowed',
         }}
       >
         {submitting ? '인증 중...' : '저장 (≥16자)'}
@@ -345,9 +345,16 @@ export default function TelemetryDashboard() {
         method: 'POST',
         credentials: 'include',
       });
-    } catch {
-      // logout 실패 시에도 로컬 상태는 unauthenticated 으로 강제 — 쿠키 만료 까지 24h.
-      // 서버 도달 실패 시 다음 fetchDashboard 호출이 401 → unauthenticated 자연 전이.
+    } catch (err) {
+      // Phase B 4-Pass MAJOR-1-1 흡수 (Surgeon, 2026-05-01): CRITICAL RULE #3 정합 —
+      // logout 실패 시 폴백(setAuthStatus='unauthenticated')은 있으나 로깅 부재 시
+      // CORS misconfig / DNS / 5xx / SameSite-Strict cross-origin / offline 디버깅 불가.
+      // server-side cookie 24h 잔존 + 다른 탭 cookie probe 자동 인증 복귀 가능 →
+      // 운영자 인지 의무. 본 console.warn 은 production stdout 로깅으로 운영 진단 가시화.
+      console.warn(
+        '[telemetry] logout request failed; cookie may persist on server up to 24h or other tabs may auto re-authenticate',
+        err,
+      );
     }
     setAuthStatus('unauthenticated');
     setState({ status: 'idle', data: null, error: null, fetchedAt: null });

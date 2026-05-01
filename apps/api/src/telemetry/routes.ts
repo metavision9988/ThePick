@@ -20,10 +20,10 @@
 
 import { Hono } from 'hono';
 import { createLogger, isValidExamId, type Logger, type LoggerEnvironment } from '@thepick/shared';
+import { ADMIN_MIN_TOKEN_LENGTH } from '@thepick/shared';
 import {
   ADMIN_SESSION_MAX_AGE_SECONDS,
   buildAdminSessionCookie,
-  MIN_TOKEN_LENGTH,
   requireAdminToken,
   timingSafeEqual,
   type AdminTokenBindings,
@@ -141,7 +141,7 @@ export function createTelemetryRoutes(): Hono<{ Bindings: TelemetryBindings }> {
   router.post('/login', async (c) => {
     const logger = buildLogger(c.env).child({ route: 'login' });
     const expected = c.env.ADMIN_API_TOKEN;
-    if (typeof expected !== 'string' || expected.length < MIN_TOKEN_LENGTH) {
+    if (typeof expected !== 'string' || expected.length < ADMIN_MIN_TOKEN_LENGTH) {
       logger.warn('login attempted with misconfigured ADMIN_API_TOKEN', {
         configured: typeof expected === 'string',
         length: typeof expected === 'string' ? expected.length : 0,
@@ -215,7 +215,12 @@ export function createTelemetryRoutes(): Hono<{ Bindings: TelemetryBindings }> {
     examId: string | null;
     error: string | null;
   } {
-    if (value === undefined || value === '') return { examId: null, error: null };
+    // Phase B 4-Pass MAJOR-3-2 흡수 (Sentinel, 2026-05-01): 빈 문자열 silently bypass
+    // 차단 — Year 2 multi-tenant 전환 후 ?examId= 호출 시 WHERE exam_id 절 누락 →
+    // cross-tenant data leak. Hard Rule 16 zero-cost 약속 보장. undefined 부재는
+    // 의도적 미지정으로 허용 (Year 1 단일 시험 호환), 빈 문자열은 명시 거부.
+    if (value === undefined) return { examId: null, error: null };
+    if (value === '') return { examId: null, error: 'examId must not be empty' };
     if (!isValidExamId(value)) return { examId: null, error: `Invalid examId: ${value}` };
     return { examId: value, error: null };
   }
