@@ -896,6 +896,8 @@ async function stageBatchStructurize(
       }
       // 'kill_switch' 는 autoEnforce=true 시 onKillSwitch 콜백이 throw — 여기 도달 X.
     } else {
+      // Step 19 MINOR-A1 잔존 (의도) — stageBatchStructurize 는 runPipeline 외부 함수라
+      // log child 비공유. inline context 유지가 의도된 패턴 (stage 헬퍼는 ctx 만 받음).
       pipelineLog.warn('processBatch returned null usage — CostMeter skip for this call', {
         batchRunId: ctx.batchRunId,
         examId: ctx.examId,

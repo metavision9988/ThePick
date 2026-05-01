@@ -44,6 +44,16 @@ PRAGMA foreign_keys = ON;
 -- ============================================================
 -- PART 1: engine_telemetry 테이블 신설
 -- ============================================================
+--
+-- FK 부재 의도 (MAJOR-A2 흡수, Step 19 Pass 1+2):
+--   batch_run_id / source_id 는 batch_runs / knowledge_nodes 와 lifecycle 차이.
+--   - engine_telemetry: 1년 보존 (Phase 2 Cron GC 정책, master-dashboard.md §3)
+--   - batch_runs: 무제한 (Year 2 분석/감사 용도)
+--   - knowledge_nodes: 무제한 (Temporal Graph SUPERSEDES 패턴)
+--   FK 설정 시 GC 시점에 batch_runs 잔존 의무 → 보존 정책 충돌. FK 부재로 텔레메트리 GC
+--   독립성 보장. 무결성은 application 측 (write-helper.ts) 검증으로 대체.
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS engine_telemetry (
   id TEXT PRIMARY KEY NOT NULL,
   exam_id TEXT NOT NULL,

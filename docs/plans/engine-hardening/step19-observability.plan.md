@@ -306,15 +306,15 @@ handoff-026 §2.3 13건 중 본 step 흡수 7건 + Phase 2 트래킹 6건:
 
 ### 본 step 흡수 (7건)
 
-| ID       | 처리                                                                              |
-| :------- | :-------------------------------------------------------------------------------- |
-| R-2      | master-dashboard.md + admin-web /telemetry + 0017 마이그레이션                    |
-| MIGR-17  | 0017 마이그레이션 + verify-engine-contracts.ts:341 카운트 갱신                    |
-| MAJOR-A1 | verify-engine-contracts.ts 카운트 17 + master-test-checklist §6.2 동기            |
-| MINOR-A1 | logger.child() 패턴 — pipeline.ts + recover.ts                                    |
-| MINOR-A2 | cross-tenant cause 라우팅 alarm rule — master-dashboard.md §"Alarm Rules"         |
-| MINOR-3A | cost-meter.ts 3건 console.\* → logger                                             |
-| MINOR-4A | logger.ts fallback console.\* — verify-engine-contracts.ts excludeExactPaths 추가 |
+| ID       | 처리                                                                           |
+| :------- | :----------------------------------------------------------------------------- |
+| R-2      | master-dashboard.md + admin-web /telemetry + 0017 마이그레이션                 |
+| MIGR-17  | 0017 마이그레이션 + verify-engine-contracts.ts:341 카운트 갱신                 |
+| MAJOR-A1 | verify-engine-contracts.ts 카운트 17 + master-test-checklist §6.2 동기         |
+| MINOR-A1 | logger.child() 패턴 — pipeline.ts + recover.ts                                 |
+| MINOR-A2 | cross-tenant cause 라우팅 alarm rule — master-dashboard.md §"Alarm Rules"      |
+| MINOR-3A | cost-meter.ts 3건 console.\* → logger                                          |
+| MINOR-4A | logger.ts fallback console.\* — verify scope 4 파일 한정 (logger.ts 자연 제외) |
 
 ### Phase 2 명시 트래킹 (6건)
 

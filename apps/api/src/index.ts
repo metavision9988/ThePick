@@ -21,8 +21,13 @@ import { createWebhookRoutes } from './webhooks/payment.js';
 const CORS_ALLOWED_ORIGINS: readonly string[] = [
   'http://localhost:4321',
   'http://127.0.0.1:4321',
+  // Step 19 — admin-web (Astro) 개발 포트 4322 (apps/admin-web/astro.config.mjs)
+  'http://localhost:4322',
+  'http://127.0.0.1:4322',
   'https://thepick-staging.pages.dev',
   'https://thepick.app',
+  // Step 19 — admin-web Cloudflare Pages 도메인 (production 배포 후 갱신)
+  'https://thepick-admin.pages.dev',
 ];
 
 type Bindings = {
@@ -74,6 +79,12 @@ function buildCorsOptions() {
 }
 app.use('/api/auth/*', cors(buildCorsOptions()));
 app.use('/api/progress/*', cors(buildCorsOptions()));
+// Step 19 MAJOR-AD-1 흡수 — admin-web /telemetry 페이지 ↔ apps/api 크로스-오리진 보장.
+// X-Admin-Token 커스텀 헤더 사용으로 OPTIONS preflight 의무 → CORS 미설정 시 100% 차단.
+app.use(
+  '/api/telemetry/*',
+  cors({ ...buildCorsOptions(), allowHeaders: ['Content-Type', 'X-Admin-Token'] }),
+);
 
 // L1 Edge Cache 헤더 자동 주입 (ADR-008 §8) — 4-Pass C-3 반영
 // **첫 번째** 미들웨어로 등록: 어떤 경로에서 어떤 이유로 early-return 되어도

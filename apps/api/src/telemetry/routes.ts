@@ -19,7 +19,7 @@
  */
 
 import { Hono } from 'hono';
-import { createLogger, type Logger, type LoggerEnvironment } from '@thepick/shared';
+import { createLogger, isValidExamId, type Logger, type LoggerEnvironment } from '@thepick/shared';
 import { requireAdminToken, type AdminTokenBindings } from './admin-token.js';
 import {
   ENGINE_TELEMETRY_GAUGES,
@@ -141,12 +141,34 @@ export function createTelemetryRoutes(): Hono<{ Bindings: TelemetryBindings }> {
     }
   });
 
+  /**
+   * Step 19 MAJOR-A1 흡수 (Pass 1+2): GET 엔드포인트 examId optional query 도입.
+   *
+   * Year 1 (현): examId 부재 시 시험 격리 없이 전체 row 조회 (단일 시험이라 동일 결과).
+   * Year 2 (multi-tenant): 본 함수는 그대로 두고, 호출 측이 examId 필수 의무화 — Hard Rule
+   * 16 zero-cost 전환 정합. 호출 측이 examId 항상 전달하면 격리 자동 작동.
+   *
+   * examId 명시 시 검증 (Hard Rule 17 — EXAM_IDS allowlist 외 입력 차단).
+   */
+  function parseExamIdQuery(value: string | undefined): {
+    examId: string | null;
+    error: string | null;
+  } {
+    if (value === undefined || value === '') return { examId: null, error: null };
+    if (!isValidExamId(value)) return { examId: null, error: `Invalid examId: ${value}` };
+    return { examId: value, error: null };
+  }
+
   // ===== GET /api/telemetry/gauges/:gaugeName — single gauge timeline =====
   router.get('/gauges/:gaugeName', async (c) => {
     const logger = buildLogger(c.env).child({ route: 'gauge-timeline' });
     const gauge = c.req.param('gaugeName');
     if (!ENGINE_TELEMETRY_GAUGES.includes(gauge as EngineTelemetryGauge)) {
       return c.json({ error: 'UNKNOWN_GAUGE' }, 404);
+    }
+    const examIdParam = parseExamIdQuery(c.req.query('examId'));
+    if (examIdParam.error) {
+      return c.json({ error: 'VALIDATION_ERROR', message: examIdParam.error }, 422);
     }
     const limitRaw = c.req.query('limit');
     const limit = (() => {
@@ -156,16 +178,28 @@ export function createTelemetryRoutes(): Hono<{ Bindings: TelemetryBindings }> {
     })();
 
     try {
-      const result = await c.env.DB.prepare(
-        `SELECT id, exam_id, gauge_name, metric_value, metric_json,
-                source_id, batch_run_id, recorded_at
-         FROM engine_telemetry
-         WHERE gauge_name = ?
-         ORDER BY recorded_at DESC
-         LIMIT ?`,
-      )
-        .bind(gauge, limit)
-        .all<TelemetryRow>();
+      // examId 명시 시 격리 (Year 2 정합), 부재 시 전체 (Year 1 단일 시험 통과)
+      const result = examIdParam.examId
+        ? await c.env.DB.prepare(
+            `SELECT id, exam_id, gauge_name, metric_value, metric_json,
+                    source_id, batch_run_id, recorded_at
+             FROM engine_telemetry
+             WHERE gauge_name = ? AND exam_id = ?
+             ORDER BY recorded_at DESC
+             LIMIT ?`,
+          )
+            .bind(gauge, examIdParam.examId, limit)
+            .all<TelemetryRow>()
+        : await c.env.DB.prepare(
+            `SELECT id, exam_id, gauge_name, metric_value, metric_json,
+                    source_id, batch_run_id, recorded_at
+             FROM engine_telemetry
+             WHERE gauge_name = ?
+             ORDER BY recorded_at DESC
+             LIMIT ?`,
+          )
+            .bind(gauge, limit)
+            .all<TelemetryRow>();
 
       const events = (result.results ?? []).map(rowToEvent);
       return c.json({ gauge, events, limit });
@@ -179,30 +213,56 @@ export function createTelemetryRoutes(): Hono<{ Bindings: TelemetryBindings }> {
   // ===== GET /api/telemetry/dashboard — 8 gauge snapshot =====
   router.get('/dashboard', async (c) => {
     const logger = buildLogger(c.env).child({ route: 'dashboard' });
+    const examIdParam = parseExamIdQuery(c.req.query('examId'));
+    if (examIdParam.error) {
+      return c.json({ error: 'VALIDATION_ERROR', message: examIdParam.error }, 422);
+    }
     try {
-      // 게이지별 latest + 24h count 한 번에 — UNION ALL 단일 쿼리로 round-trip 1회
-      // (Workers CPU 50ms 보호. 게이지가 8개라 최악 16 sub-query는 D1 prepared statement 한도 내)
+      // 게이지별 latest + 24h count — Year 1 단일 시험이라 examId 부재 시 무차별. Year 2
+      // multi-tenant 시점에 호출 측이 examId 항상 전달하면 격리 자동 작동 (Hard Rule 16 zero-cost).
+      // round-trip = 게이지(8) × 2 = 16 sequential D1 prepared statement (Workers CPU < 50ms 가정).
+      // 향후 UNION ALL 단일 쿼리 최적화 가능 (Phase 2 — MINOR 트래킹).
       const snapshots: GaugeSnapshot[] = [];
       for (const gauge of ENGINE_TELEMETRY_GAUGES) {
-        const latestRow = await c.env.DB.prepare(
-          `SELECT id, exam_id, gauge_name, metric_value, metric_json,
-                  source_id, batch_run_id, recorded_at
-           FROM engine_telemetry
-           WHERE gauge_name = ?
-           ORDER BY recorded_at DESC
-           LIMIT 1`,
-        )
-          .bind(gauge)
-          .first<TelemetryRow>();
+        const latestRow = examIdParam.examId
+          ? await c.env.DB.prepare(
+              `SELECT id, exam_id, gauge_name, metric_value, metric_json,
+                      source_id, batch_run_id, recorded_at
+               FROM engine_telemetry
+               WHERE gauge_name = ? AND exam_id = ?
+               ORDER BY recorded_at DESC
+               LIMIT 1`,
+            )
+              .bind(gauge, examIdParam.examId)
+              .first<TelemetryRow>()
+          : await c.env.DB.prepare(
+              `SELECT id, exam_id, gauge_name, metric_value, metric_json,
+                      source_id, batch_run_id, recorded_at
+               FROM engine_telemetry
+               WHERE gauge_name = ?
+               ORDER BY recorded_at DESC
+               LIMIT 1`,
+            )
+              .bind(gauge)
+              .first<TelemetryRow>();
 
-        const countRow = await c.env.DB.prepare(
-          `SELECT COUNT(*) AS count_24h
-           FROM engine_telemetry
-           WHERE gauge_name = ?
-             AND recorded_at >= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 day')`,
-        )
-          .bind(gauge)
-          .first<{ count_24h: number | null }>();
+        const countRow = examIdParam.examId
+          ? await c.env.DB.prepare(
+              `SELECT COUNT(*) AS count_24h
+               FROM engine_telemetry
+               WHERE gauge_name = ? AND exam_id = ?
+                 AND recorded_at >= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 day')`,
+            )
+              .bind(gauge, examIdParam.examId)
+              .first<{ count_24h: number | null }>()
+          : await c.env.DB.prepare(
+              `SELECT COUNT(*) AS count_24h
+               FROM engine_telemetry
+               WHERE gauge_name = ?
+                 AND recorded_at >= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 day')`,
+            )
+              .bind(gauge)
+              .first<{ count_24h: number | null }>();
 
         const latest = latestRow ? rowToEvent(latestRow) : null;
         snapshots.push({
