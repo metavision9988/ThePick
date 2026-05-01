@@ -6,6 +6,7 @@ import { createAuthRoutes } from './auth/routes.js';
 import { cachePolicyMiddleware } from './middleware/cache-policy.js';
 import { createProgressRoutes } from './progress/routes.js';
 import { purgeOldRateLimits } from './scheduled/rate-limit-gc.js';
+import { createTelemetryRoutes } from './telemetry/routes.js';
 import { createWebhookRoutes } from './webhooks/payment.js';
 
 /**
@@ -36,6 +37,8 @@ type Bindings = {
   WEBHOOK_HMAC_SECRET_TOSSPAYMENTS?: string;
   JWT_SECRET?: string;
   IP_PEPPER?: string;
+  // Step 19 — Engine Observability v1 admin token (Phase 1 임시, Cloudflare Access 도입 후 제거)
+  ADMIN_API_TOKEN?: string;
 };
 
 const KNOWN_ENVIRONMENTS: ReadonlySet<LoggerEnvironment> = new Set<LoggerEnvironment>([
@@ -101,6 +104,7 @@ app.use('*', async (c, next): Promise<void | Response> => {
 
 app.route('/api/auth', createAuthRoutes());
 app.route('/api/progress', createProgressRoutes());
+app.route('/api/telemetry', createTelemetryRoutes());
 app.route('/api/webhooks', createWebhookRoutes());
 
 app.get('/', (c) => {
