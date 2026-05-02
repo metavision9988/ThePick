@@ -11,6 +11,7 @@
  */
 
 import type { NodeType } from '@thepick/shared';
+import { EXAM_IDS } from '@thepick/shared';
 import {
   registry,
   isValidNodeType,
@@ -21,6 +22,7 @@ import {
   isValidConstantCategory,
   inferNodeTypeFromId,
 } from './ontology-registry';
+import { KnowledgeContractValidationError } from './errors';
 
 // --- Knowledge Contract types ---
 
@@ -447,4 +449,218 @@ export function validateKnowledgeContract(contract: KnowledgeContract): Validati
       constantsValidated: contract.constants.length,
     },
   };
+}
+
+// --- Raw Claude response validation (FUZ-02) ---
+
+/**
+ * 응답 임계값 — D1 single transaction 1 MB 한도 보호.
+ * 본 시점 100 KB 로 보수적 설정 (대부분 BATCH 출력은 30~50 KB 이내).
+ */
+const DEFAULT_MAX_RESPONSE_SIZE_BYTES = 100 * 1024;
+
+/**
+ * JSON 깊이 임계값 — V8 의 default JSON.parse 한계 (~10K) 도달 전 거부.
+ * 50 단계는 정상 KnowledgeContract (nodes/edges/formulas/constants 평면 구조)
+ * 보다 충분히 깊다.
+ */
+const DEFAULT_MAX_JSON_DEPTH = 50;
+
+/**
+ * XSS payload 정규식 — content / title 필드의 raw HTML / JavaScript URI 차단.
+ * raw 응답 단계 검사 (parse 전) — DB 적재 / UI 렌더링 전 1차 방어선.
+ */
+const XSS_PAYLOAD_PATTERNS = [
+  /<script\b/i,
+  /javascript:/i,
+  /\bon\w+\s*=/i, // onerror, onclick, onload, ...
+  /<iframe\b/i,
+  /<object\b/i,
+  /<embed\b/i,
+];
+
+/**
+ * Hard Rule 17 위반 — examId literal 직접 인용 차단.
+ * production-quality.md §"Hard Rule 17" 정합 — 응답 raw 단계에서 거부.
+ *
+ * EXAM_IDS catalogue 의 runtime values 를 그대로 차단 패턴으로 사용 — Year 2
+ * 시험 추가 시 EXAM_IDS 만 갱신하면 자동 확장 (단일 진실 소스).
+ */
+const HARD_RULE_17_LITERALS: ReadonlyArray<string> = Object.values(EXAM_IDS);
+
+export interface RawResponseValidationOptions {
+  /** Maximum response size in bytes (default 100 KB) */
+  maxSizeBytes?: number;
+  /** Maximum JSON nesting depth (default 50) */
+  maxDepth?: number;
+}
+
+/**
+ * raw 응답 단계 character-level depth 측정 — JSON.parse 진입 전 stack overflow 보호.
+ * 문자열 안의 brace / bracket 은 무시 (escape 처리 포함).
+ */
+function computeMaxJsonDepth(raw: string): number {
+  let depth = 0;
+  let max = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i];
+    if (inString) {
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (c === '\\') {
+        escape = true;
+        continue;
+      }
+      if (c === '"') inString = false;
+      continue;
+    }
+    if (c === '"') {
+      inString = true;
+      continue;
+    }
+    if (c === '{' || c === '[') {
+      depth++;
+      if (depth > max) max = depth;
+    } else if (c === '}' || c === ']') {
+      depth--;
+    }
+  }
+  return max;
+}
+
+/**
+ * structural validation 결과 → KnowledgeContractValidationError 매핑.
+ * 우선순위: ONTOLOGY_UNREGISTERED_ID > MISSING_REQUIRED_FIELD > 기타 (PARSE_ERROR).
+ */
+function mapValidationErrorsToClassification(
+  errors: ValidationError[],
+  raw: string,
+): KnowledgeContractValidationError {
+  const ontologyErr = errors.find(
+    (e) => e.code === 'INVALID_NODE_ID_PATTERN' || e.code === 'INVALID_NODE_TYPE',
+  );
+  if (ontologyErr) {
+    return new KnowledgeContractValidationError(
+      'ONTOLOGY_UNREGISTERED_ID',
+      `Ontology unregistered ID at ${ontologyErr.path}: ${ontologyErr.message}`,
+      {
+        id: typeof ontologyErr.value === 'string' ? ontologyErr.value : String(ontologyErr.value),
+        field: ontologyErr.path,
+        allErrors: errors,
+      },
+    );
+  }
+
+  const missingErr = errors.find((e) => e.code === 'MISSING_REQUIRED_FIELD');
+  if (missingErr) {
+    return new KnowledgeContractValidationError(
+      'MISSING_REQUIRED_FIELD',
+      `Missing required field at ${missingErr.path}: ${missingErr.message}`,
+      { field: missingErr.path, allErrors: errors },
+    );
+  }
+
+  return new KnowledgeContractValidationError(
+    'PARSE_ERROR',
+    `Validation failed: ${errors[0].message}`,
+    { field: errors[0].path, allErrors: errors, rawSnippet: raw.slice(0, 200) },
+  );
+}
+
+/**
+ * raw Claude / LLM 응답 검증 — 8종 변조 응답 (FUZ-02) graceful 분류 throw.
+ *
+ * 검사 순서 (실패 시 즉시 throw):
+ * 1. EMPTY_RESPONSE — 빈 응답
+ * 2. RESPONSE_SIZE_EXCEEDED — 임계 초과 (D1 transaction 보호)
+ * 3. XSS_PAYLOAD_DETECTED — script / javascript: / event handler
+ * 4. HARD_RULE_17_VIOLATION — examId literal 인용
+ * 5. JSON_DEPTH_EXCEEDED — 50 단계 초과
+ * 6. PARSE_ERROR — JSON.parse 실패
+ * 7. structural validation (validateKnowledgeContract 위임) — 실패 시 ONTOLOGY_UNREGISTERED_ID /
+ *    MISSING_REQUIRED_FIELD 등으로 매핑
+ *
+ * @throws {KnowledgeContractValidationError} 분류된 에러
+ */
+export function validateRawClaudeResponse(
+  raw: string,
+  options: RawResponseValidationOptions = {},
+): KnowledgeContract {
+  const maxSize = options.maxSizeBytes ?? DEFAULT_MAX_RESPONSE_SIZE_BYTES;
+  const maxDepth = options.maxDepth ?? DEFAULT_MAX_JSON_DEPTH;
+
+  // 1. EMPTY_RESPONSE
+  if (raw == null || raw.trim().length === 0) {
+    throw new KnowledgeContractValidationError(
+      'EMPTY_RESPONSE',
+      'Empty Claude response (0 bytes or whitespace only)',
+      { rawSnippet: typeof raw === 'string' ? raw.slice(0, 200) : '' },
+    );
+  }
+
+  // 2. RESPONSE_SIZE_EXCEEDED
+  const size = Buffer.byteLength(raw, 'utf-8');
+  if (size > maxSize) {
+    throw new KnowledgeContractValidationError(
+      'RESPONSE_SIZE_EXCEEDED',
+      `Claude response size ${size} bytes exceeds maximum ${maxSize} bytes (D1 1MB transaction protection)`,
+      { size, maxAllowed: maxSize },
+    );
+  }
+
+  // 3. XSS_PAYLOAD_DETECTED
+  for (const pattern of XSS_PAYLOAD_PATTERNS) {
+    const match = raw.match(pattern);
+    if (match) {
+      throw new KnowledgeContractValidationError(
+        'XSS_PAYLOAD_DETECTED',
+        `XSS payload detected in raw response: "${match[0]}"`,
+        { rawSnippet: raw.slice(0, 200), field: 'raw', pattern: pattern.source },
+      );
+    }
+  }
+
+  // 4. HARD_RULE_17_VIOLATION
+  for (const literal of HARD_RULE_17_LITERALS) {
+    if (raw.includes(literal)) {
+      throw new KnowledgeContractValidationError(
+        'HARD_RULE_17_VIOLATION',
+        `Hard Rule 17 violation: examId literal '${literal}' in raw response (must use EXAM_IDS catalogue)`,
+        { rawSnippet: raw.slice(0, 200), field: 'raw', literal },
+      );
+    }
+  }
+
+  // 5. JSON_DEPTH_EXCEEDED
+  const depth = computeMaxJsonDepth(raw);
+  if (depth > maxDepth) {
+    throw new KnowledgeContractValidationError(
+      'JSON_DEPTH_EXCEEDED',
+      `JSON depth ${depth} exceeds maximum ${maxDepth} (V8 stack overflow protection)`,
+      { depth, maxAllowed: maxDepth },
+    );
+  }
+
+  // 6. PARSE_ERROR
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    const e = err as Error;
+    throw new KnowledgeContractValidationError('PARSE_ERROR', `JSON parse failed: ${e.message}`, {
+      rawSnippet: raw.slice(0, 200),
+    });
+  }
+
+  // 7. structural validation 위임
+  const result = validateKnowledgeContract(parsed as KnowledgeContract);
+  if (!result.valid) {
+    throw mapValidationErrorsToClassification(result.errors, raw);
+  }
+
+  return parsed as KnowledgeContract;
 }
