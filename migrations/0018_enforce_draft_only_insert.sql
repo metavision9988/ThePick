@@ -25,6 +25,10 @@ BEGIN
 END;
 
 -- (2) page_ref NOT NULL 강제 트리거 — 출처 추적성 의무
+-- 분담 정합 (4-Pass MAJOR-S1 흡수): 0010 enforce_knowledge_nodes_page_ref_not_null 가 NULL+빈 문자열
+-- 모두 차단 (strict superset). 본 0018 트리거는 0010 와 의도적 redundancy — 다른 RAISE 메시지로
+-- "Hard Rule 13" 의미 직접 노출 (디버깅 가시성 향상). 향후 0010 회수 시 본 트리거를 NULL+빈 문자열
+-- 양쪽 차단으로 강화 의무 (0010 의 빈 문자열 방어선 보존).
 CREATE TRIGGER IF NOT EXISTS enforce_page_ref_on_insert
 BEFORE INSERT ON knowledge_nodes
 WHEN NEW.page_ref IS NULL

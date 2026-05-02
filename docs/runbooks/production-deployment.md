@@ -39,12 +39,12 @@
 # 기존 staging D1 데이터 완전 삭제 (필요 시 진산님 콘솔 직접 작업)
 # wrangler d1 execute thepick-staging --env staging --remote --command "DROP TABLE IF EXISTS ..."
 
-# 마이그레이션 0001~0017 순차 적용
+# 마이그레이션 0001~0018 순차 적용
 cd apps/api
 pnpm wrangler d1 migrations apply thepick-staging --env staging --remote
 ```
 
-**검증**: 모든 마이그레이션 PASS 확인. 트리거 12종 + CHECK 제약 + partial UNIQUE 인덱스 first-run 동작 확인.
+**검증**: 모든 마이그레이션 PASS 확인. 트리거 14종 (0010 page_ref 3종 + 0014 update guard 등 + 0017 telemetry 2종 + 0018 prevent_non_draft + enforce_page_ref) + CHECK 제약 + partial UNIQUE 인덱스 first-run 동작 확인.
 
 ### 1.2 트리거 12종 INSERT/UPDATE 차단 시나리오 smoke test
 
@@ -75,7 +75,7 @@ pnpm wrangler d1 execute thepick-staging --env staging --remote --command "
 "
 ```
 
-**rollback**: smoke test 실패 시 마이그레이션 0001~0017 중 어느 step 부터 깨졌는지 wrangler logs 확인. 0017 의 ALTER 실패 시 `apps/api/migrations/down/0017_engine_telemetry.sql` 의 주석 SQL 수동 적용 (현 시점 down script 미작성 — Phase 2 추가 의무).
+**rollback**: smoke test 실패 시 마이그레이션 0001~0018 중 어느 step 부터 깨졌는지 wrangler logs 확인. 0017 의 ALTER 실패 시 `apps/api/migrations/down/0017_engine_telemetry.sql` 의 주석 SQL 수동 적용 (현 시점 down script 미작성 — Phase 2 추가 의무).
 
 ### 1.3 Staging API 배포
 
@@ -92,6 +92,8 @@ curl https://api-staging.thepick.app/health
 # 기대: {"status": "ok", ...}
 
 # /api/telemetry/dashboard (X-Admin-Token 필수)
+# 사전 의무: export STAGING_ADMIN_TOKEN="..." (wrangler secret get 결과 또는 진산님 직접 입력)
+# 본 env var 미설정 시 빈 헤더 → 401 반환. 의도치 않은 인증 실패 차단 의무.
 curl -H "X-Admin-Token: $STAGING_ADMIN_TOKEN" https://api-staging.thepick.app/api/telemetry/dashboard
 # 기대: 8 게이지 모두 'no_data' 응답 (BATCH 미실행 상태)
 ```
@@ -174,7 +176,7 @@ pnpm build
 ## 5. Phase 2 자동화 의무 (트래킹 ledger)
 
 - [ ] **TD-DO-056**: `.github/workflows/deploy.yml` 신규 — staging dry-run 자동 게이트화
-- [ ] **TD-DO-052**: 마이그레이션 down script 작성 (0001~0017 모두)
+- [ ] **TD-DO-052**: 마이그레이션 down script 작성 (0001~0018 모두)
 - [ ] **TD-DO-055**: CI 실패 Cloudflare webhook receiver
 
 ---
@@ -184,4 +186,4 @@ pnpm build
 - `.claude/reviews/phase1-tech-debt-20260502-backend.md` B-C2
 - `.claude/reviews/phase1-tech-debt-20260502-devops.md` MAJOR-DO-S1-4
 - `apps/api/wrangler.toml`
-- `migrations/0001~0017`
+- `migrations/0001~0018`
