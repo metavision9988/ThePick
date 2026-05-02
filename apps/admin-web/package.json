@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "astro dev --port 4322",
     "build": "astro build",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "eslint src --ext .ts,.tsx --ignore-pattern '*.astro'",
     "typecheck": "tsc --noEmit"
   },
@@ -18,9 +20,15 @@
     "@thepick/shared": "workspace:*"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.0",
     "@types/d3": "^7.4.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.7.0"
+    "@vitejs/plugin-react": "^4.3.0",
+    "jsdom": "^26.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
   }
 }

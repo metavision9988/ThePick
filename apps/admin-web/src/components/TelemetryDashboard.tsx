@@ -13,7 +13,7 @@
  *      + ENGINE_HARDENING_COMPLETION_REPORT.md v1.1 §10.7 #9 (Sentinel)
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ADMIN_MIN_TOKEN_LENGTH } from '@thepick/shared';
 import {
   ENGINE_TELEMETRY_GAUGES,
@@ -48,12 +48,17 @@ interface FetchState {
  * 이전 동작은 production build 에서 localhost:8787 로 fallback → mixed-content 차단 +
  * 진산님 30분 진단 휘발 위험. 현재는 명시적 misconfig throw 로 즉시 가시화.
  */
-function resolveApiBase(): string {
-  const env = typeof import.meta.env !== 'undefined' ? import.meta.env : undefined;
-  const fromEnv = env !== undefined ? (env.PUBLIC_API_BASE_URL as string | undefined) : undefined;
+/**
+ * env 인자는 테스트 주입용 (DI). production 호출 측은 미주입 → import.meta.env 사용.
+ * 인자 받는 이유: vitest 환경에서 import.meta.env 일부 properties (DEV/MODE) 가
+ * frozen/proxy 라 Object.assign 으로 mutate 불가능 — DI 가 가장 안정적인 접근.
+ */
+export function resolveApiBase(env?: ImportMetaEnv): string {
+  const _env = env ?? (typeof import.meta.env !== 'undefined' ? import.meta.env : undefined);
+  const fromEnv = _env !== undefined ? (_env.PUBLIC_API_BASE_URL as string | undefined) : undefined;
   if (typeof fromEnv === 'string' && fromEnv.length > 0) return fromEnv;
 
-  const isDev = env?.DEV === true || env?.MODE === 'development';
+  const isDev = _env?.DEV === true || _env?.MODE === 'development';
   if (isDev) return LOCALHOST_API_BASE;
 
   throw new Error(
@@ -163,7 +168,13 @@ function GaugeCard({ snapshot }: { snapshot: GaugeSnapshot }) {
   );
 }
 
-function TokenForm({ apiBase, onAuthenticated }: { apiBase: string; onAuthenticated: () => void }) {
+export function TokenForm({
+  apiBase,
+  onAuthenticated,
+}: {
+  apiBase: string;
+  onAuthenticated: () => void;
+}) {
   const [value, setValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -281,12 +292,20 @@ export default function TelemetryDashboard() {
   });
 
   const apiBase = useMemo(() => resolveApiBase(), []);
+  // Step 037 CRIT-QPHASE1-1 — AbortController in-flight cancel.
+  // unmount 또는 새 fetch 시 이전 in-flight 요청 취소 — race condition + state-after-unmount 차단.
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchDashboard = useCallback(async () => {
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setState((prev) => ({ ...prev, status: 'loading' }));
     try {
       const res = await fetch(`${apiBase}/api/telemetry/dashboard`, {
         credentials: 'include',
+        signal: controller.signal,
       });
       if (res.status === 401) {
         setAuthStatus('unauthenticated');
@@ -316,6 +335,10 @@ export default function TelemetryDashboard() {
       });
       setAuthStatus('authenticated');
     } catch (err) {
+      // AbortError — unmount 또는 새 fetch 로 의도된 취소. state 갱신 skip.
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
       setState({
         status: 'error',
         data: null,
@@ -330,13 +353,24 @@ export default function TelemetryDashboard() {
     void fetchDashboard();
   }, [fetchDashboard]);
 
-  // 인증 상태에서 30초 자동 폴링
+  // unmount 시 in-flight fetch abort (2번째 useEffect cleanup 이 unauthenticated 분기에서
+  // 미실행 경우 fallback). authStatus 와 무관하게 unmount 시 무조건 abort.
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
+  // 인증 상태에서 30초 자동 폴링 + unmount 시 in-flight fetch abort.
   useEffect(() => {
     if (authStatus !== 'authenticated') return;
     const id = window.setInterval(() => {
       void fetchDashboard();
     }, POLL_INTERVAL_MS);
-    return () => window.clearInterval(id);
+    return () => {
+      window.clearInterval(id);
+      abortControllerRef.current?.abort();
+    };
   }, [authStatus, fetchDashboard]);
 
   const handleLogout = useCallback(async () => {

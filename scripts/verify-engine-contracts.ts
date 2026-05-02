@@ -148,6 +148,8 @@ const VITEST_PACKAGES: readonly VitestPackage[] = [
   { name: '@thepick/batch', dir: 'apps/batch', required: 327 },
   { name: '@thepick/api', dir: 'apps/api', required: 285 },
   { name: '@thepick/ai-adapter', dir: 'packages/ai-adapter', required: 13 },
+  // Step 037 CRIT-QPHASE1-1 흡수 — admin-web vitest setup + 8 tests + 2 추가 방어선 (10).
+  { name: '@thepick/admin-web', dir: 'apps/admin-web', required: 10 },
 ];
 
 interface VitestSummary {
