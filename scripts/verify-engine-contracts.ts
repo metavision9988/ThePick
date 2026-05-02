@@ -145,7 +145,7 @@ const VITEST_PACKAGES: readonly VitestPackage[] = [
   { name: '@thepick/formula-engine', dir: 'packages/formula-engine', required: 303 },
   { name: '@thepick/parser', dir: 'packages/parser', required: 155 },
   { name: '@thepick/quality', dir: 'packages/quality', required: 57 },
-  { name: '@thepick/batch', dir: 'apps/batch', required: 309 },
+  { name: '@thepick/batch', dir: 'apps/batch', required: 311 },
   { name: '@thepick/api', dir: 'apps/api', required: 285 },
   { name: '@thepick/ai-adapter', dir: 'packages/ai-adapter', required: 13 },
 ];

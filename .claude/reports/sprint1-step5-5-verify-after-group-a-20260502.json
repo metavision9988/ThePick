@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-05-02T09:17:31.814Z",
+  "timestamp": "2026-05-02T12:42:52.015Z",
   "repoRoot": "/home/soo/ClaudePro/ThePick",
   "summary": {
     "total": 6,
@@ -40,8 +40,8 @@
         },
         {
           "name": "@thepick/batch 테스트 카운트",
-          "observed": 309,
-          "required": 309,
+          "observed": 311,
+          "required": 311,
           "status": "PASS"
         },
         {
@@ -58,8 +58,8 @@
         },
         {
           "name": "모노레포 전체 합계",
-          "observed": 1172,
-          "required": 1172,
+          "observed": 1174,
+          "required": 1174,
           "status": "PASS"
         }
       ],

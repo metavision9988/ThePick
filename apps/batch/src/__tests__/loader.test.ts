@@ -215,6 +215,36 @@ describe('draft-loader', () => {
     ).toThrow(/page_ref is required|Hard Rule 13 violation/);
   });
 
+  // MAJOR-1 흡수 (review-20260502-batch-loader-regex-regression.md): alternation 정규식이 0010 silent
+  // DROP 회귀를 가리지 못하도록 양쪽 트리거가 sqlite_master 에 등록되어 있다는 invariant 자체를 검증.
+  it('0010 + 0018 양쪽 트리거가 sqlite_master 에 등록 (의도된 redundancy 영속)', () => {
+    const triggers = ctx.raw
+      .prepare(
+        `SELECT name FROM sqlite_master WHERE type='trigger'
+         AND name IN ('enforce_knowledge_nodes_page_ref_not_null','enforce_page_ref_on_insert')
+         ORDER BY name`,
+      )
+      .all() as Array<{ name: string }>;
+    expect(triggers.map((t) => t.name)).toEqual([
+      'enforce_knowledge_nodes_page_ref_not_null',
+      'enforce_page_ref_on_insert',
+    ]);
+  });
+
+  // MAJOR-2 흡수 (review-20260502-batch-loader-regex-regression.md): 0010 strict superset 영역인
+  // 빈 문자열 차단이 silently 깨졌을 때 회귀를 잡을 명시적 테스트. 0018 은 NULL only 라 빈 문자열
+  // 케이스에서 fire 하지 않으므로, 본 테스트는 0010 단독 invariant 를 검증한다.
+  it('0010 strict superset — page_ref 빈 문자열도 차단 (NULL 아닌 케이스, 0018 미커버)', () => {
+    expect(() =>
+      ctx.raw
+        .prepare(
+          `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status)
+           VALUES ('Y-001', 'CONCEPT', '테스트', '', 2026, 5, 'draft')`,
+        )
+        .run(),
+    ).toThrow(/page_ref is required/);
+  });
+
   it('빈 contract 도 처리 (nothing to load)', async () => {
     const empty: KnowledgeContract = { nodes: [], edges: [], formulas: [], constants: [] };
     const result = await loadDraft(ctx.db, empty, BASE_CTX);
