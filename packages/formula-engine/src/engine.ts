@@ -17,6 +17,7 @@ import { getFormula } from './formulas';
 import { parseFormula } from './ast-parser';
 import { mapVariables } from './variable-mapper';
 import { safeEvaluate } from './sandbox';
+import { CalculationTimeoutError } from './errors';
 
 function roundTo(value: number, decimals: number): number {
   if (decimals <= 0) {
@@ -57,8 +58,23 @@ export function calculate(formulaId: string, inputs: Record<string, unknown>): C
     return fail(formulaId, first.code, first.message, details);
   }
 
-  // 3. AST 파싱
-  const parsed = parseFormula(definition.equationTemplate);
+  // 3. AST 파싱 (CHA-02 — safeParse 가 AST 복잡도/깊이 한도 초과 시
+  //    CalculationTimeoutError throw → 본 try/catch 가 COMPUTE_TIMEOUT 매핑)
+  let parsed: ReturnType<typeof parseFormula>;
+  try {
+    parsed = parseFormula(definition.equationTemplate);
+  } catch (e) {
+    if (e instanceof CalculationTimeoutError) {
+      const ctx = definition.pageRef ? ` (${definition.pageRef})` : '';
+      return fail(
+        formulaId,
+        'COMPUTE_TIMEOUT',
+        `${definition.name} 계산 차단: ${e.message}${ctx}`,
+        [`kind=${e.kind}`, ...Object.entries(e.details).map(([k, v]) => `${k}=${v}`)],
+      );
+    }
+    throw e;
+  }
   if (!parsed.ok) {
     return fail(formulaId, 'PARSE_FAILED', parsed.message);
   }
@@ -68,8 +84,16 @@ export function calculate(formulaId: string, inputs: Record<string, unknown>): C
   try {
     rawValue = safeEvaluate(parsed.compiled, mapped.scope);
   } catch (e) {
-    const raw = e instanceof Error ? e.message : String(e);
     const ctx = definition.pageRef ? ` (${definition.pageRef})` : '';
+    if (e instanceof CalculationTimeoutError) {
+      return fail(
+        formulaId,
+        'COMPUTE_TIMEOUT',
+        `${definition.name} 계산 차단: ${e.message}${ctx}`,
+        [`kind=${e.kind}`, ...Object.entries(e.details).map(([k, v]) => `${k}=${v}`)],
+      );
+    }
+    const raw = e instanceof Error ? e.message : String(e);
     if (raw.includes('Division by zero')) {
       return fail(
         formulaId,

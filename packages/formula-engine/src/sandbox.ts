@@ -38,6 +38,7 @@ import {
   unaryPlusDependencies,
   type MathNode,
 } from 'mathjs';
+import { CalculationTimeoutError } from './errors';
 
 // --- 허용 함수 화이트리스트 ---
 
@@ -237,8 +238,49 @@ export interface ParseError {
 /**
  * 수식 문자열을 안전하게 파싱한다.
  * AST 노드를 순회하여 허용되지 않은 함수/프로퍼티를 차단한다.
+ *
+ * Sprint 1 §5.3 CHA-02 — AST 복잡도/깊이 사전 차단:
+ *   - MAX_AST_NODE_COUNT: 노드 총수 한도. 정상 산식 (F-01~F-68) 모두 ≤ 50,
+ *     500 은 10× 여유. "1+1+1+..." 250+ 반복 같은 폭탄 차단.
+ *   - MAX_AST_DEPTH: 트리 깊이 한도. 정상 산식 모두 ≤ 10, 30 은 3× 여유.
+ *     `((((...))))` 같은 중첩 폭탄 차단.
+ *   - 한도 초과 시 CalculationTimeoutError throw → engine.calculate() 가
+ *     COMPUTE_TIMEOUT FormulaError 로 매핑.
  */
 const MAX_EXPRESSION_LENGTH = 1024;
+export const MAX_AST_NODE_COUNT = 500;
+export const MAX_AST_DEPTH = 30;
+
+function computeAstDepth(node: MathNode): number {
+  let maxChildDepth = 0;
+  node.forEach((child: MathNode) => {
+    const childDepth = computeAstDepth(child);
+    if (childDepth > maxChildDepth) maxChildDepth = childDepth;
+  });
+  return maxChildDepth + 1;
+}
+
+function assertWithinComplexityBudget(node: MathNode): void {
+  let nodeCount = 0;
+  node.traverse(() => {
+    nodeCount++;
+  });
+  if (nodeCount > MAX_AST_NODE_COUNT) {
+    throw new CalculationTimeoutError(
+      'ast_too_complex',
+      `Expression too complex: ${nodeCount} AST nodes (limit ${MAX_AST_NODE_COUNT})`,
+      { nodeCount, limit: MAX_AST_NODE_COUNT },
+    );
+  }
+  const depth = computeAstDepth(node);
+  if (depth > MAX_AST_DEPTH) {
+    throw new CalculationTimeoutError(
+      'ast_too_deep',
+      `Expression too deep: ${depth} AST levels (limit ${MAX_AST_DEPTH})`,
+      { depth, limit: MAX_AST_DEPTH },
+    );
+  }
+}
 
 export function safeParse(expression: string): ParseResult | ParseError {
   if (expression.length > MAX_EXPRESSION_LENGTH) {
@@ -257,6 +299,10 @@ export function safeParse(expression: string): ParseResult | ParseError {
       message: `Parse failed: ${e instanceof Error ? e.message : String(e)}`,
     };
   }
+
+  // CHA-02 — 복잡도/깊이 한도 (CalculationTimeoutError 는 catch 하지 않고 propagate).
+  // engine.calculate() 가 catch 하여 COMPUTE_TIMEOUT 매핑 의무.
+  assertWithinComplexityBudget(node);
 
   try {
     validateNode(node);
@@ -286,7 +332,15 @@ export function safeParse(expression: string): ParseResult | ParseError {
 
 /**
  * 사전 컴파일된 수식을 주어진 scope로 평가한다.
+ *
+ * Sprint 1 §5.3 CHA-02 — wall-clock 사후 차단:
+ *   compiled.evaluate 는 sync — sync 코드 preempt 불가. 따라서 사전 (AST 복잡도) +
+ *   사후 (실 elapsed) 이중 방어. MAX_EVAL_MS 초과 시 CalculationTimeoutError throw.
+ *   sandbox.ts AST 검증이 정상 동작 시 evaluate 는 항상 < 1ms — eval_timeout 발생 자체가
+ *   defense-in-depth signal (mathjs 라이브러리 회귀 / 미예측 vector 조기 경보).
  */
+export const MAX_EVAL_MS = 50;
+
 export function safeEvaluate(
   compiled: { evaluate: (scope: Record<string, number>) => unknown },
   scope: Record<string, number>,
@@ -301,7 +355,18 @@ export function safeEvaluate(
     safeScope[key] = value;
   }
 
+  // CHA-02 — wall-clock 측정 (Date.now 호환 — Workers 의 performance.now 도 동일 인터페이스).
+  const startMs = Date.now();
   const result = compiled.evaluate(safeScope);
+  const elapsedMs = Date.now() - startMs;
+
+  if (elapsedMs > MAX_EVAL_MS) {
+    throw new CalculationTimeoutError(
+      'eval_timeout',
+      `Evaluation timeout: ${elapsedMs}ms (limit ${MAX_EVAL_MS}ms)`,
+      { elapsedMs, limitMs: MAX_EVAL_MS },
+    );
+  }
 
   if (typeof result !== 'number') {
     throw new Error(`Evaluation result is not a number: ${typeof result}`);

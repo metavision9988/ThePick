@@ -70,7 +70,10 @@ export type FormulaErrorCode =
   | 'CONSTRAINT_VIOLATION'
   | 'EVALUATION_FAILED'
   | 'UNSAFE_EXPRESSION'
-  | 'DIVISION_BY_ZERO';
+  | 'DIVISION_BY_ZERO'
+  // Sprint 1 §5.3 CHA-02 — Worker CPU 50ms 한도 초과 시뮬레이션.
+  // AST 복잡도/깊이 사전 차단 + safeEvaluate wall-clock 사후 차단.
+  | 'COMPUTE_TIMEOUT';
 
 /** 산식 계산 에러 */
 export interface FormulaError {

@@ -22,6 +22,9 @@ export type {
 // 엔진
 export { calculate } from './engine';
 
+// Sprint 1 §5.3 CHA-02 — 자원 한도 위반 에러 (COMPUTE_TIMEOUT 진단용)
+export { CalculationTimeoutError, type CalculationTimeoutKind } from './errors';
+
 // 산식 레지스트리
 export { getFormula, getAllFormulas, BATCH1_FORMULAS } from './formulas';
 
