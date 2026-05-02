@@ -25,6 +25,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ACCESS_TOKEN_COOKIE,
+  EXAM_IDS,
   REFRESH_ROTATION_GRACE_SECONDS,
   REFRESH_TOKEN_COOKIE,
   REFRESH_TOKEN_TTL_SECONDS,
@@ -817,12 +818,21 @@ function progressEnv(overrides: EnvOverrides = {}) {
 }
 
 function seedKnowledgeNode(nodeId: string): void {
+  // Hard Rule 13 (마이그레이션 0018) 정합 — INSERT status=draft + page_ref 강제.
+  // 시나리오 테스트는 dangling FK 차단 검증 목적이므로 status 전이 시뮬레이션 불필요.
   ctx.raw
     .prepare(
       `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status)
-       VALUES (?, 'CONCEPT', '시나리오 테스트 노드', '999', 2026, 5, 'approved')`,
+       VALUES (?, 'CONCEPT', '시나리오 테스트 노드', '999', 2026, 5, 'draft')`,
     )
     .run(nodeId);
+}
+
+// Phase 1 5-페르소나 B-C1 흡수 — examId query 시그니처 강제 (Hard Rule 16).
+function withScenarioExamId(path: string): string {
+  if (path.includes('examId=')) return path;
+  const separator = path.includes('?') ? '&' : '?';
+  return `${path}${separator}examId=${EXAM_IDS.SON_HAE_PYEONG_GA_SA}`;
 }
 
 async function progressRequest(
@@ -835,7 +845,7 @@ async function progressRequest(
   if (token !== null) {
     headers.set('cookie', `${ACCESS_TOKEN_COOKIE}=${token}`);
   }
-  return app.request(path, { ...init, headers }, progressEnv());
+  return app.request(withScenarioExamId(path), { ...init, headers }, progressEnv());
 }
 
 describe('🎯 엔진 통합 검증 — 인증 + 진도 API E2E', () => {

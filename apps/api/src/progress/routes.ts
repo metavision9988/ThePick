@@ -27,7 +27,13 @@
 
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { createLogger, type Logger, type LoggerEnvironment } from '@thepick/shared';
+import {
+  createLogger,
+  isValidExamId,
+  type ExamId,
+  type Logger,
+  type LoggerEnvironment,
+} from '@thepick/shared';
 import { requireAuth, type RequireAuthVariables } from '../auth/middleware/require-auth.js';
 import { D1_UNIQUE_CONSTRAINT_PATTERN, withRetry } from '../middleware/retry.js';
 import { checkAndIncrementRateLimit, RateLimitExceeded, sleepJitter } from './rate-limit.js';
@@ -95,6 +101,35 @@ type ProgressEnv = {
   readonly Variables: RequireAuthVariables;
 };
 
+/**
+ * Phase 1 5-페르소나 B-C1 흡수 (Hard Rule 16 zero-cost 약속) — examId query 시그니처 강제.
+ *
+ * Year 1 (현): user_progress 테이블 exam_id 컬럼 부재 — 검증만 수행, WHERE 절 미추가
+ *   (단일 시험이므로 시험 격리 자동 효과).
+ * Year 2 (마이그레이션 0019 user_progress.exam_id 도입 후): 본 함수 시그니처 그대로,
+ *   각 SELECT/UPDATE/INSERT 의 WHERE 절에 exam_id = ? 추가만 하면 zero-cost 전환.
+ *
+ * 호출 측 (PWA / admin-web / E2E test) 은 EXAM_IDS.SON_HAE_PYEONG_GA_SA 고정 전달.
+ *
+ * 근거: .claude/reviews/phase1-tech-debt-20260502-backend.md B-C1
+ *       production-quality.md Hard Rule 16 v1.2 — Year 1 시점에 시그니처 부재 = 위반 판정
+ */
+function requireExamId(value: string | undefined): {
+  examId: ExamId | null;
+  error: string | null;
+} {
+  if (value === undefined) {
+    return { examId: null, error: 'examId query parameter required (Hard Rule 16)' };
+  }
+  if (value === '') {
+    return { examId: null, error: 'examId must not be empty' };
+  }
+  if (!isValidExamId(value)) {
+    return { examId: null, error: `Invalid examId: ${value}` };
+  }
+  return { examId: value, error: null };
+}
+
 export function createProgressRoutes(): Hono<ProgressEnv> {
   const router = new Hono<ProgressEnv>();
 
@@ -110,6 +145,19 @@ export function createProgressRoutes(): Hono<ProgressEnv> {
   router.get('/summary', async (c) => {
     const logger = buildLogger(c.env).child({ route: 'summary' });
     const userId = c.var.userId;
+
+    // Hard Rule 16 — examId 시그니처 강제 (B-C1 흡수)
+    const examIdParam = requireExamId(c.req.query('examId'));
+    if (examIdParam.error || !examIdParam.examId) {
+      return c.json(
+        { error: 'VALIDATION_ERROR', message: examIdParam.error ?? 'examId required' },
+        422,
+      );
+    }
+    // Year 1: examId 검증만 (단일 시험이라 WHERE 절 미추가).
+    // Year 2 마이그레이션 0019 후: WHERE user_id = ? AND exam_id = ? 추가.
+    void examIdParam.examId;
+
     try {
       const row = await c.env.DB.prepare(
         `SELECT
@@ -143,6 +191,18 @@ export function createProgressRoutes(): Hono<ProgressEnv> {
   router.post('/review', async (c) => {
     const logger = buildLogger(c.env).child({ route: 'review' });
     const userId = c.var.userId;
+
+    // Hard Rule 16 — examId 시그니처 강제 (B-C1 흡수)
+    const examIdParam = requireExamId(c.req.query('examId'));
+    if (examIdParam.error || !examIdParam.examId) {
+      return c.json(
+        { error: 'VALIDATION_ERROR', message: examIdParam.error ?? 'examId required' },
+        422,
+      );
+    }
+    // Year 1: examId 검증만. Year 2 마이그레이션 0019 후: knowledge_nodes / user_progress 의
+    // WHERE 절에 exam_id = ? 추가로 cross-tenant 격리.
+    void examIdParam.examId;
 
     // TD-030 방어선 1: per-user 분당 요청 상한. enumeration oracle 열거 속도 제한.
     // review 라우트는 hot-path enumeration 표적 — 기본 60/min 대신 20/min 으로 보수 하향 (CR-2).
@@ -245,6 +305,18 @@ export function createProgressRoutes(): Hono<ProgressEnv> {
   router.get('/due', async (c) => {
     const logger = buildLogger(c.env).child({ route: 'due' });
     const userId = c.var.userId;
+
+    // Hard Rule 16 — examId 시그니처 강제 (B-C1 흡수)
+    const examIdParam = requireExamId(c.req.query('examId'));
+    if (examIdParam.error || !examIdParam.examId) {
+      return c.json(
+        { error: 'VALIDATION_ERROR', message: examIdParam.error ?? 'examId required' },
+        422,
+      );
+    }
+    // Year 1: examId 검증만. Year 2 마이그레이션 0019 후: WHERE 절 추가.
+    void examIdParam.examId;
+
     try {
       const result = await c.env.DB.prepare(
         `SELECT id, node_id, card_type, fsrs_next_review

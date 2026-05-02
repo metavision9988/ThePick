@@ -31,7 +31,10 @@ const __dirname = dirname(__filename);
 /** migrations 디렉토리 경로 — apps/api/src/__tests__/helpers 기준 상대 경로. */
 const MIGRATIONS_DIR = join(__dirname, '..', '..', '..', '..', '..', 'migrations');
 
-/** 시나리오 테스트에 필요한 migration 만 로드. */
+/**
+ * 시나리오 테스트에 필요한 migration 만 로드.
+ * 1차 5-페르소나 quality MIN-Q1 영속 + Phase 1 5-페르소나 CRIT-QPHASE1-3 흡수 — 0013~0018 추가.
+ */
 const SCENARIO_MIGRATIONS = [
   '0001_initial_schema.sql',
   '0002_1st_exam_extension.sql',
@@ -45,6 +48,12 @@ const SCENARIO_MIGRATIONS = [
   '0010_status_transitions_and_page_ref_guard.sql',
   '0011_revision_2026_constants_seed.sql',
   '0012_rate_limits.sql',
+  '0013_active_view_and_review_decisions.sql',
+  '0014_phase05_critical_hardening.sql',
+  '0015_batch_runs.sql',
+  '0016_knowledge_nodes_batch_idempotency.sql',
+  '0017_engine_telemetry.sql',
+  '0018_enforce_draft_only_insert.sql',
 ];
 
 export interface SqliteBackedD1 {

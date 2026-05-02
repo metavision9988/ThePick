@@ -11,7 +11,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { ACCESS_TOKEN_COOKIE } from '@thepick/shared';
+import { ACCESS_TOKEN_COOKIE, EXAM_IDS } from '@thepick/shared';
 import { createD1FromSqlite, type SqliteBackedD1 } from '../../__tests__/helpers/d1-from-sqlite.js';
 import { signAccessToken } from '../../auth/session.js';
 import { createProgressRoutes, type ProgressBindings } from '../routes.js';
@@ -49,7 +49,7 @@ function seedNode(id: string): void {
   ctx.raw
     .prepare(
       `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status)
-       VALUES (?, 'CONCEPT', '테스트 노드', '999', 2026, 5, 'approved')`,
+       VALUES (?, 'CONCEPT', '테스트 노드', '999', 2026, 5, 'draft')`,
     )
     .run(id);
 }
@@ -91,13 +91,22 @@ async function accessToken(
   return signAccessToken(userId, sessionId, VALID_JWT_SECRET);
 }
 
+// Phase 1 5-페르소나 B-C1 흡수 — examId query 시그니처 강제 (Hard Rule 16).
+// 테스트 helper 가 모든 path 에 examId 기본 주입 (이미 query 가 있으면 그대로 둠).
+// 명시적으로 invalid examId 검증하려는 케이스만 path 에 ?examId= 직접 전달.
+function withExamId(path: string): string {
+  if (path.includes('examId=')) return path;
+  const separator = path.includes('?') ? '&' : '?';
+  return `${path}${separator}examId=${EXAM_IDS.SON_HAE_PYEONG_GA_SA}`;
+}
+
 async function call(path: string, init: RequestInit = {}, token?: string): Promise<Response> {
   const app = createProgressRoutes();
   const headers = new Headers(init.headers);
   if (token !== undefined) {
     headers.set('cookie', `${ACCESS_TOKEN_COOKIE}=${token}`);
   }
-  return app.request(path, { ...init, headers }, env());
+  return app.request(withExamId(path), { ...init, headers }, env());
 }
 
 interface SummaryBody {
@@ -479,5 +488,54 @@ describe('GET /api/progress/due', () => {
     const res = await call('/due', {}, tokenA);
     const body = (await res.json()) as DueBody;
     expect(body.count).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 1 5-페르소나 B-C1 흡수 — Hard Rule 16 examId 시그니처 검증
+// ---------------------------------------------------------------------------
+
+describe('Hard Rule 16 — examId 시그니처 강제', () => {
+  it('GET /summary examId query 부재 → 422', async () => {
+    const userId = crypto.randomUUID();
+    seedUser(userId, 'no-examid@example.com');
+    const token = await accessToken(userId);
+    // call() helper 가 자동 주입하므로 여기서는 직접 app.request 사용
+    const app = createProgressRoutes();
+    const headers = new Headers();
+    headers.set('cookie', `${ACCESS_TOKEN_COOKIE}=${token}`);
+    const res = await app.request('/summary', { headers }, env());
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { error: string; message: string };
+    expect(body.error).toBe('VALIDATION_ERROR');
+    expect(body.message).toContain('examId');
+  });
+
+  it('GET /summary examId 빈 문자열 → 422', async () => {
+    const userId = crypto.randomUUID();
+    seedUser(userId, 'empty-examid@example.com');
+    const token = await accessToken(userId);
+    const app = createProgressRoutes();
+    const headers = new Headers();
+    headers.set('cookie', `${ACCESS_TOKEN_COOKIE}=${token}`);
+    const res = await app.request('/summary?examId=', { headers }, env());
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { error: string; message: string };
+    expect(body.error).toBe('VALIDATION_ERROR');
+    expect(body.message).toMatch(/examId.*empty/);
+  });
+
+  it('GET /summary 잘못된 examId → 422 (Hard Rule 17 EXAM_IDS allowlist)', async () => {
+    const userId = crypto.randomUUID();
+    seedUser(userId, 'invalid-examid@example.com');
+    const token = await accessToken(userId);
+    const app = createProgressRoutes();
+    const headers = new Headers();
+    headers.set('cookie', `${ACCESS_TOKEN_COOKIE}=${token}`);
+    const res = await app.request('/summary?examId=invalid-exam-id', { headers }, env());
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { error: string; message: string };
+    expect(body.error).toBe('VALIDATION_ERROR');
+    expect(body.message).toContain('Invalid examId');
   });
 });
