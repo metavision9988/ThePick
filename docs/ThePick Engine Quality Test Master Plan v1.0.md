@@ -14,6 +14,14 @@
 > - P1 게이트: 18 → **20** (CHA-03 / CHA-05 합류).
 > - 본 패치는 §11.1 / §11.2 / §13.1 에만 적용. 시나리오 본문 (§5 카오스 등) 정의는 변경 없음.
 
+> **v1.0.2 패치 (2026-05-02 — Session 033)**
+>
+> - **silent pivot 6건 footnote 영속** — Sprint 1 §5.4 PARTIAL 보강 중 발견된 "Master Plan v1.0 명세 vs 실 동작" 차이 6건 (REC-02 / REC-01 / PRC-01 / PRF-01 / PRF-02 / FUZ-04) 을 본문 footnote 로 명시. 시나리오 본문 합격 기준은 BATCH-1 적재 자료 도입 후 expansion 의무.
+> - 진산님 결정 키워드: **"silent pivot 6건 — 옵션 A 일괄"** (handoff-session-033 §3.1) 정합.
+> - footnote 라벨 컨벤션: `[^v1.0.2-{shortId}]` — 라인 1130 이후 정의부 참조.
+> - 본 패치는 §1 (CHA-06) / §2 (FUZ-04) / §4 (PRF-01/02) / §8 (PRC-01) / §10 (REC-01/02) 합격 기준 셀에 마커 추가. 본문 텍스트 변경 없음.
+> - 메모리 정합: `feedback_no_shortcuts` (framework 보강 = 땜빵 X, BATCH-1 적재 후 expansion 의무) + `feedback_document_first_workflow` (진산님 결정 영속).
+
 ---
 
 ## 0. 도입 — 왜 셀프체크는 부족한가
@@ -222,14 +230,14 @@
 
 ### **FUZ-04 — 산식 sandbox 우회 시도**
 
-| 항목            | 내용                                                                                                                                                                                                                                                                             |
-| :-------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **목적**        | math.js AST sandbox가 차단한다고 주장하는 위험 노드 12종 외부 vector 발견 시도                                                                                                                                                                                                   |
-| **시나리오**    | 12종 시도: (1) `Function('return 1')()` (2) `eval('1+1')` (3) `setTimeout` (4) `import('fs')` (5) `process.env` (6) `globalThis` (7) `__proto__` 조작 (8) circular reference (9) `Symbol.iterator` 오버라이드 (10) BigInt 폭탄 `2n**1000n` (11) Promise resolve (12) Reflect API |
-| **측정 도구**   | Vitest + formula-engine.sandbox                                                                                                                                                                                                                                                  |
-| **합격 기준**   | (a) 12/12 모두 `SandboxViolationError` / (b) 실제 함수 실행 0건 (sentinel: global counter mutation 안 됨)                                                                                                                                                                        |
-| **불합격 분류** | Critical: 1건이라도 실행                                                                                                                                                                                                                                                         |
-| **자동화**      | ✅ Vitest                                                                                                                                                                                                                                                                        |
+| 항목            | 내용                                                                                                                                                                                                                                                                                                 |
+| :-------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **목적**        | math.js AST sandbox가 차단한다고 주장하는 위험 노드 12종 외부 vector 발견 시도                                                                                                                                                                                                                       |
+| **시나리오**    | 12종 시도: (1) `Function('return 1')()` (2) `eval('1+1')` (3) `setTimeout` (4) `import('fs')` (5) `process.env` (6) `globalThis` (7) `__proto__` 조작 (8) circular reference [^v1.0.2-fuz04vec8] (9) `Symbol.iterator` 오버라이드 (10) BigInt 폭탄 `2n**1000n` (11) Promise resolve (12) Reflect API |
+| **측정 도구**   | Vitest + formula-engine.sandbox                                                                                                                                                                                                                                                                      |
+| **합격 기준**   | (a) 12/12 모두 `SandboxViolationError` / (b) 실제 함수 실행 0건 (sentinel: global counter mutation 안 됨)                                                                                                                                                                                            |
+| **불합격 분류** | Critical: 1건이라도 실행                                                                                                                                                                                                                                                                             |
+| **자동화**      | ✅ Vitest                                                                                                                                                                                                                                                                                            |
 
 ### **FUZ-05 — examId 변조 시도**
 
@@ -355,7 +363,7 @@
 | 항목            | 내용                                                                                                 |
 | :-------------- | :--------------------------------------------------------------------------------------------------- |
 | **목적**        | Workers 50ms CPU 한도 대비 산식 51개 일괄 처리 baseline                                              |
-| **시나리오**    | 51개 산식 × 5 시나리오 = 255건 calculate() 호출 / 3회 반복 측정 / median                             |
+| **시나리오**    | 51개 산식 × 5 시나리오 = 255건 calculate() 호출 / 3회 반복 측정 / median [^v1.0.2-prf01]             |
 | **측정 도구**   | Vitest + `performance.now()`                                                                         |
 | **합격 기준**   | (a) 단일 calculate p99 < 5ms / (b) 51개 직렬 처리 < 100ms / (c) AST cache hit rate > 90% (반복 호출) |
 | **불합격 분류** | Critical: 단일 > 50ms / Major: cache miss > 30%                                                      |
@@ -363,14 +371,14 @@
 
 ### **PRF-02 — naive DFS vs Tarjan SCC 비교 (BREAKER 핵심)**
 
-| 항목            | 내용                                                                                                                                                                  |
-| :-------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **목적**        | §3.2.3 naive DFS의 임계 노드 수 = Tarjan 도입 트리거 결정                                                                                                             |
-| **시나리오**    | 합성 그래프 N=100 / 1,000 / 5,000 / 10,000 / 50,000 노드 × E=4×N 엣지 / 두 알고리즘 모두 실행                                                                         |
-| **측정 도구**   | Vitest + `performance.now()`                                                                                                                                          |
-| **합격 기준**   | (a) N=5,000에서 naive DFS < 30ms / (b) N=10,000에서 < 100ms (Worker timeout 위험) / (c) Tarjan은 N=50,000에서도 < 500ms / (d) **두 알고리즘 결과 100% 일치** (sanity) |
-| **불합격 분류** | **Critical: N=BATCH-1 추정 노드 수에서 naive > 50ms (Tarjan 즉시 도입 트리거)**                                                                                       |
-| **자동화**      | ✅ Vitest                                                                                                                                                             |
+| 항목            | 내용                                                                                                                                                                                   |
+| :-------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **목적**        | §3.2.3 naive DFS의 임계 노드 수 = Tarjan 도입 트리거 결정                                                                                                                              |
+| **시나리오**    | 합성 그래프 N=100 / 1,000 / 5,000 / 10,000 / 50,000 노드 × E=4×N 엣지 / 두 알고리즘 모두 실행                                                                                          |
+| **측정 도구**   | Vitest + `performance.now()`                                                                                                                                                           |
+| **합격 기준**   | (a) N=5,000에서 naive DFS < 30ms / (b) N=10,000에서 < 100ms (Worker timeout 위험) / (c) Tarjan은 N=50,000에서도 < 500ms [^v1.0.2-prf02c] / (d) **두 알고리즘 결과 100% 일치** (sanity) |
+| **불합격 분류** | **Critical: N=BATCH-1 추정 노드 수에서 naive > 50ms (Tarjan 즉시 도입 트리거)**                                                                                                        |
+| **자동화**      | ✅ Vitest                                                                                                                                                                              |
 
 ### **PRF-03 — D1 복합 쿼리 EXPLAIN 분석**
 
@@ -671,7 +679,7 @@
 | 항목            | 내용                                                                                              |
 | :-------------- | :------------------------------------------------------------------------------------------------ |
 | **목적**        | Hard Rule 2 (LLM 산식 계산 금지) 정합성. 산식 51개 결과 = 교재 예시값 6 decimal 일치              |
-| **시나리오**    | 51개 산식 × 5 시나리오 = 255건 / 교재 fixture에서 추출한 expected_value 비교                      |
+| **시나리오**    | 51개 산식 × 5 시나리오 = 255건 / 교재 fixture에서 추출한 expected_value 비교 [^v1.0.2-prc01]      |
 | **측정 도구**   | Vitest + decimal.js로 비교                                                                        |
 | **합격 기준**   | (a) 255/255 모두 6 decimal 일치 / (b) 부동소수점 epsilon < 1e-9 / (c) 단위 변환 (g/kg, ml/l) 정확 |
 | **불합격 분류** | **Critical: 1건이라도 6 decimal 불일치 = 신뢰성 깨짐**                                            |
@@ -761,14 +769,14 @@
 
 ### **REC-01 — Kill 시점 다변화 (5/25/50/75/95%)**
 
-| 항목            | 내용                                                                                                                                                           |
-| :-------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **목적**        | AC-RP-3은 50% kill 1건. 다양한 kill 시점에서 동일 invariant 검증                                                                                               |
-| **시나리오**    | 동일 BATCH × 5 시점 kill × 각 10회 반복 = 50회 / 각 invariant_fields 비교                                                                                      |
-| **측정 도구**   | Vitest + signal-handlers                                                                                                                                       |
-| **합격 기준**   | (a) 50/50 모두 recover 후 invariant 일치 / (b) 5% kill = stage 1만 영향 / (c) 95% kill = atomic skip (already_completed) / (d) data_loss_estimate=none for all |
-| **불합격 분류** | Critical: 1건이라도 invariant 불일치                                                                                                                           |
-| **자동화**      | ✅ Vitest (시간 소요)                                                                                                                                          |
+| 항목            | 내용                                                                                                                                                                            |
+| :-------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **목적**        | AC-RP-3은 50% kill 1건. 다양한 kill 시점에서 동일 invariant 검증                                                                                                                |
+| **시나리오**    | 동일 BATCH × 5 시점 kill × 각 10회 반복 = 50회 / 각 invariant_fields 비교                                                                                                       |
+| **측정 도구**   | Vitest + signal-handlers                                                                                                                                                        |
+| **합격 기준**   | (a) 50/50 모두 recover 후 invariant 일치 / (b) 5% kill = stage 1만 영향 / (c) 95% kill = atomic skip (already_completed) [^v1.0.2-rec01c] / (d) data_loss_estimate=none for all |
+| **불합격 분류** | Critical: 1건이라도 invariant 불일치                                                                                                                                            |
+| **자동화**      | ✅ Vitest (시간 소요)                                                                                                                                                           |
 
 ### **REC-02 — Checkpoint 1바이트 변조**
 
@@ -777,7 +785,7 @@
 | **목적**        | SHA-256 무결성 검증의 sensitivity                                                                                                    |
 | **시나리오**    | 정상 checkpoint × 5종 변조 시도: (1) 1바이트 flip (2) trailing 0 추가 (3) JSON key reorder (4) 공백 추가 (5) BOM 추가 / recover 시도 |
 | **측정 도구**   | Vitest + Buffer manipulation                                                                                                         |
-| **합격 기준**   | (a) 5/5 모두 `CheckpointCorruptedError` / (b) error에 변조 위치 힌트 / (c) recover 거부 (`recovery_failed`)                          |
+| **합격 기준**   | (a) 5/5 모두 `CheckpointCorruptedError` [^v1.0.2-rec02] / (b) error에 변조 위치 힌트 / (c) recover 거부 (`recovery_failed`)          |
 | **불합격 분류** | Critical: 1건이라도 통과                                                                                                             |
 | **자동화**      | ✅ Vitest                                                                                                                            |
 
@@ -883,6 +891,18 @@
 - **MSW** (Phase 2 진입 직전 — CHA-03 P1 본격 구현 시점): Anthropic / Vectorize HTTP mock
 
 [^v1.0.1-msw]: v1.0 원본 "✅ 이미 사용" 표기는 사실 부정확 (pnpm-lock 미존재). v1.0.1 패치 (Sprint 1 §5.2 4-Pass Pass 4 MAJOR-3 흡수) 로 정정. CHA-03 / CHA-05 P1 재분류 (decision-2026-05-02) 정합 — MSW 도입은 Phase 2 진입 직전 의무. 본 시점 FUZ-02 fixtures 는 fs.readFile 직접 패턴 사용 (apps/api MSW 미경유). 상세: `docs/quality/test-patterns.md` §2 + ADR-028.
+
+[^v1.0.2-rec02]: v1.0 명세 "5/5 모두 throw" 는 v1.0.2 시점에 **3/5 throw + 2/5 의도된 통과** 로 정정. 실 구현 (`apps/batch/__tests__/rec-02-checkpoint-tampering.test.ts`) 은 정합성 정의를 다음과 같이 분리: (1) byte flip → throw, (2) trailing 0 → throw, (3) JSON key reorder → **canonical JSON 정합 통과**, (4) 공백 추가 → **canonical JSON 정합 통과**, (5) BOM 추가 → throw. canonical JSON 정합 (key sort + whitespace strip) 정책상 의미적으로 동일한 JSON 은 통과해야 하므로 (3)/(4) 통과는 의도. v1.0.2 시점 본 명세를 footnote 로 영속하며, raw 파일 forensic chain-of-custody (file-level integrity) 별도 hash 도입은 **Sprint 2 또는 Phase 1 5-페르소나 심층 리뷰 시점 결정 의무** (handoff-033 §3.1 옵션 B/C 후속 결정). 근거: handoff-session-033 §3.1 #1 + Sprint 1 §5.4 4-Pass Pass 3 A3 / Pass 4 M-1 (이월 MAJOR ledger).
+
+[^v1.0.2-rec01c]: v1.0 명세 "95% kill = atomic skip (already_completed)" 는 v1.0.2 시점에 **state='killed' 인 경우 fully_recovered** 로 정정. 실 구현 (`apps/batch/__tests__/rec-01-kill-points-parametrized.test.ts`) 의 recover.ts 결정 트리: (a) state='completed' → already_completed (atomic skip), (b) state='killed' → resume_from_checkpoint → fully_recovered, (c) state='in_progress' (lock stale) → concurrent_run_detected. 95% kill 은 (b) 경로 = recovery 후 fully_recovered (data_loss_estimate=none 유지). v1.0 명세의 "atomic skip" 표현은 (a) 경로에 한정. 본 footnote 로 명세-구현 정합 영속. 근거: handoff-session-033 §3.1 #2 + Sprint 1 §5.4 4-Pass Pass 4 M-4.
+
+[^v1.0.2-prc01]: v1.0 명세 "51개 산식 × 5 시나리오 = 255건" 은 v1.0.2 시점에 **131/255 (51%) framework 보강** 으로 명시. 실 구현 (`packages/formula-engine/src/__tests__/prc-01-precision-framework.test.ts`) 은 BATCH1~5 골든 산식 119건 + framework 보강 12건 = 131건. 잔여 124건 (=255-131) 은 **BATCH-1 적재 시점 교재 fixture 도입 후 expansion 의무** (메모리 `feedback_no_shortcuts` — framework 보강 = 땜빵 X, BATCH-1 적재 후 expansion 정책). 합격 기준 (a)/(b)/(c) 는 expansion 후 자동 적용. 근거: handoff-session-033 §3.1 #3 + Sprint 1 §5.4 4-Pass Pass 4 M-3 (이월 MAJOR ledger — BATCH1~5 골든 dynamic 카운트 산출 Sprint 2 초기).
+
+[^v1.0.2-prf01]: v1.0 명세 "51개 산식 × 5 시나리오" 는 v1.0.2 시점에 **BATCH1 6 sample × 5 시나리오 = 30 measurements** 로 측정 baseline 한정. 실 구현 (`packages/formula-engine/src/__tests__/prf-01-formula-engine-perf.test.ts`) 은 BATCH1 6 sample 직렬 < 12ms (51 산식 비례 추정 < 100ms 범위 내). 잔여 45 산식 expansion 은 **BATCH-1 적재 시점 의무** (PRC-01 의무와 동시). 합격 기준 (a)/(b)/(c) 는 BATCH1 6 sample 시점 PASS, 51 산식 전체 검증은 expansion 후 회귀 게이트로 영속. 근거: handoff-session-033 §3.1 #4 + Sprint 1 §5.4 4-Pass Pass 1 MAJOR-S1 (cache silent false-pass — 즉시 흡수 완료, parseFormula 직접 호출 패턴).
+
+[^v1.0.2-prf02c]: v1.0 명세 "Tarjan SCC N=50,000 < 500ms" 는 v1.0.2 시점에 **Tarjan 미구현 — naive DFS only** 로 정정. 실 구현 (`packages/quality/src/__tests__/prf-02-naive-vs-tarjan.test.ts`) 은 naive DFS N=100/1K/5K/10K 측정만 수행 (handoff-027 PRF-02 BREAKER 핵심 시나리오에 따라 naive 임계 발화 시 Tarjan 도입 트리거). Tarjan SCC 알고리즘 도입은 다음 두 시점 중 하나: (a) BATCH-1 적재 시 naive DFS N=BATCH-1 추정 노드 수에서 50ms 초과 → 즉시 Tarjan 도입 (handoff-027 PRF-02 합격 기준 (a) 정합), (b) Phase 2 진입 직전 사전 도입. 합격 기준 (c) "Tarjan N=50,000 < 500ms" 는 Tarjan 도입 후 적용. 근거: handoff-session-033 §3.1 #5 + Sprint 1 §5.4 4-Pass Pass 3 A6 (N=10K assertion 추가 — silent fail-open 차단, 즉시 흡수 완료).
+
+[^v1.0.2-fuz04vec8]: v1.0 명세 vector 8 "circular reference" 는 v1.0.2 시점에 **`a+a+a` AST 자연 차단** 으로 명시. 실 구현 (`packages/formula-engine/src/__tests__/fuz-04-sandbox-bypass-12-vectors.test.ts`) 은 math.js parse 시 산식 텍스트 = AST tree (DAG 아님) 로 변환되므로 JS 객체 수준 circular reference 는 발생 불가. vector 8 의 의도는 "산식 정의 자체에 circular 참조가 존재할 때" 였으나, math.js parse 가 변수 참조를 평면 SymbolNode 로 처리하므로 circular evaluation 은 별도 sandbox 정책 (변수 lookup table 의존 사이클) 으로만 발생. 본 footnote 로 vector 8 의도와 실 동작 차이 영속. 추가 vector (JS object circular ref via prototype chain) 도입은 Sprint 2 정밀화 시점 결정. 근거: handoff-session-033 §3.1 #6 + Sprint 1 §5.4 4-Pass Pass 4 M-1.
 
 ---
 
