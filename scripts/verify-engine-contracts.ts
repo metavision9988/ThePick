@@ -135,13 +135,18 @@ interface VitestPackage {
   readonly required: number;
 }
 
+// ⚠️ CRITICAL-A1 (Sprint 1 §5.5 4-Pass Pass 2 흡수, 2026-05-02): required 카운트는 단방향
+//   감소 차단 게이트. 갱신 망각 시 +N PASS 회귀 silent. handoff-session-033 §0.3 종료 후
+//   실제 PASS 합계 = handoff §0.3 표 + §5.4 4-Pass MAJOR 5 즉시 흡수 commit a72a9c7 후 실측.
+//   Sprint 1 §5.5 종료 게이트 진입 시점 (2026-05-02) 갱신 — §5.3 + §5.4 누적 +255 회귀 차단.
+//   향후 신규 테스트 추가 step 진입 게이트에 본 카운트 동시 갱신 의무 명시.
 const VITEST_PACKAGES: readonly VitestPackage[] = [
-  { name: '@thepick/shared', dir: 'packages/shared', required: 33 },
-  { name: '@thepick/formula-engine', dir: 'packages/formula-engine', required: 251 },
-  { name: '@thepick/parser', dir: 'packages/parser', required: 136 },
-  { name: '@thepick/quality', dir: 'packages/quality', required: 41 },
-  { name: '@thepick/batch', dir: 'apps/batch', required: 236 },
-  { name: '@thepick/api', dir: 'apps/api', required: 199 },
+  { name: '@thepick/shared', dir: 'packages/shared', required: 50 },
+  { name: '@thepick/formula-engine', dir: 'packages/formula-engine', required: 303 },
+  { name: '@thepick/parser', dir: 'packages/parser', required: 155 },
+  { name: '@thepick/quality', dir: 'packages/quality', required: 57 },
+  { name: '@thepick/batch', dir: 'apps/batch', required: 309 },
+  { name: '@thepick/api', dir: 'apps/api', required: 277 },
   { name: '@thepick/ai-adapter', dir: 'packages/ai-adapter', required: 13 },
 ];
 
@@ -357,6 +362,168 @@ function countMigrations(): NumericMetric {
   };
 }
 
+// === Sprint 1 §5.5 P0 15 시나리오 매핑 (Cat 5 자동화) ===
+// Master Plan v1.0.1 (CHA-03/05 P1 재분류) + v1.0.2 (silent pivot 6 footnote) 정합.
+// 12 direct + 3 alias (REG-01/REG-02/PRC-02) = 15 매핑.
+// 각 시나리오 invariant 는 매핑 파일이 vitest 에서 PASS 일 때 검증된 것으로 간주
+// (cat 1+2+3 numerics 가 모노레포 전체 합계 + 패키지별 required 를 별도 검증).
+
+interface P0Scenario {
+  readonly id: string;
+  readonly file: string;
+  readonly mapping: 'direct' | 'alias';
+  readonly notes?: string;
+}
+
+const P0_SCENARIOS: readonly P0Scenario[] = [
+  // REG (회귀)
+  {
+    id: 'REG-01',
+    file: 'apps/batch/__tests__/reproducibility-idempotency.test.ts',
+    mapping: 'alias',
+    notes: 'BATCH-0 fixture 재실행 invariant_fields 100% 동일 (line 163 it 블록)',
+  },
+  {
+    id: 'REG-02',
+    file: 'apps/batch/__tests__/recover.test.ts',
+    mapping: 'alias',
+    notes: 'AC-R5: engine_version major 불일치 → recovery_failed (line 9 / 302 describe)',
+  },
+  // PRC (정밀도)
+  {
+    id: 'PRC-01',
+    file: 'packages/formula-engine/src/__tests__/prc-01-precision-framework.test.ts',
+    mapping: 'direct',
+    notes: 'v1.0.2 footnote — 131/255 framework 보강. BATCH-1 적재 후 expansion 의무.',
+  },
+  {
+    id: 'PRC-02',
+    file: 'apps/batch/__tests__/cost-meter.test.ts',
+    mapping: 'alias',
+    notes: 'P1-M2 정수 마이크로센트 누적 정밀도 (line 68 it 블록)',
+  },
+  // FUZ (퍼즈)
+  {
+    id: 'FUZ-01',
+    file: 'packages/parser/src/__tests__/fuz-01-pdf-malicious.test.ts',
+    mapping: 'direct',
+  },
+  {
+    id: 'FUZ-02',
+    file: 'packages/parser/src/__tests__/fuz-02-claude-malformed.test.ts',
+    mapping: 'direct',
+  },
+  {
+    id: 'FUZ-04',
+    file: 'packages/formula-engine/src/__tests__/fuz-04-sandbox-bypass-12-vectors.test.ts',
+    mapping: 'direct',
+    notes: 'v1.0.2 footnote vec 8 — circular reference AST 자연 차단.',
+  },
+  // CHA (카오스)
+  {
+    id: 'CHA-01',
+    file: 'apps/api/src/__tests__/scenarios/cha-01-d1-disconnect.test.ts',
+    mapping: 'direct',
+  },
+  {
+    id: 'CHA-02',
+    file: 'packages/formula-engine/src/__tests__/cha-02-compute-timeout.test.ts',
+    mapping: 'direct',
+  },
+  {
+    id: 'CHA-04',
+    file: 'apps/batch/__tests__/cha-04-clock-skew.test.ts',
+    mapping: 'direct',
+  },
+  {
+    id: 'CHA-06',
+    file: 'apps/api/src/scheduled/__tests__/cha-06-cron-24h-miss.test.ts',
+    mapping: 'direct',
+  },
+  // PRF (성능 — Cat 5 핵심)
+  {
+    id: 'PRF-01',
+    file: 'packages/formula-engine/src/__tests__/prf-01-formula-engine-perf.test.ts',
+    mapping: 'direct',
+    notes: 'v1.0.2 footnote — BATCH1 6 sample baseline. BATCH-1 적재 후 51 산식 expansion 의무.',
+  },
+  {
+    id: 'PRF-02',
+    file: 'packages/quality/src/__tests__/prf-02-naive-vs-tarjan.test.ts',
+    mapping: 'direct',
+    notes: 'v1.0.2 footnote (c) — Tarjan 미구현, naive DFS only. 임계 발화 시 Tarjan 도입 트리거.',
+  },
+  // REC (리커버리)
+  {
+    id: 'REC-01',
+    file: 'apps/batch/__tests__/rec-01-kill-points-parametrized.test.ts',
+    mapping: 'direct',
+    notes: 'v1.0.2 footnote (c) — 95% kill 은 state="killed" → fully_recovered 경로.',
+  },
+  {
+    id: 'REC-02',
+    file: 'apps/batch/__tests__/rec-02-checkpoint-tampering.test.ts',
+    mapping: 'direct',
+    notes: 'v1.0.2 footnote — 3/5 throw + 2/5 canonical JSON 정합 통과.',
+  },
+];
+
+function countP0Scenarios(): NumericMetric {
+  // ⚠️ MAJOR Devil's Advocate (Pass 1+2 흡수): P0 셋 무결성 = 15 entries 강제.
+  //   본 length assert 가 silent entry 삭제 (예: PRF-02 entry deletion → length 14) 차단.
+  if (P0_SCENARIOS.length !== 15) {
+    return {
+      name: `Sprint 1 §5.5 P0 셋 무결성 위반 — 기대 15, 실제 ${P0_SCENARIOS.length} (Master Plan v1.0.1 §11.1 정합 깨짐)`,
+      observed: P0_SCENARIOS.length,
+      required: 15,
+      status: 'FAIL',
+    };
+  }
+
+  let exists = 0;
+  const missing: string[] = [];
+  for (const s of P0_SCENARIOS) {
+    const fullPath = join(REPO_ROOT, s.file);
+    try {
+      const stat = readdirSync(dirname(fullPath));
+      const filename = s.file.split('/').pop() ?? '';
+      if (stat.includes(filename)) {
+        exists += 1;
+      } else {
+        missing.push(s.id);
+      }
+    } catch (err) {
+      // ⚠️ MAJOR-S1 (Pass 1 흡수): err.code 명시화 — ENOENT/EACCES/ENOTDIR/EMFILE 구분.
+      //   silent dedup 차단 + 디버깅 가능성 확보.
+      const code = (err as NodeJS.ErrnoException).code ?? 'UNKNOWN';
+      missing.push(`${s.id} (${code})`);
+    }
+  }
+  return {
+    name: `Sprint 1 §5.5 P0 15 시나리오 파일 매핑 (12 direct + 3 alias)${
+      missing.length > 0 ? ` — missing: ${missing.join(', ')}` : ''
+    }`,
+    observed: exists,
+    required: P0_SCENARIOS.length,
+    status: exists >= P0_SCENARIOS.length ? 'PASS' : 'FAIL',
+  };
+}
+
+// === Sprint 1 §5.5 P0 시나리오 it.skip / describe.skip / .todo 차단 (Pass 1 MAJOR-S3 흡수) ===
+// file 존재만으로는 silent skip 가능 (예: it.skip(...) 또는 it.todo(...)). 본 게이트로 차단.
+
+function checkP0NoSkippedTests(): BooleanMetric {
+  return grepBoolean({
+    name: 'Sprint 1 §5.5 P0 시나리오 내 it.skip / describe.skip / .todo 0건 (silent skip 차단)',
+    pattern: String.raw`(it|describe|test)\.(skip|todo)\s*\(`,
+    paths: P0_SCENARIOS.map((s) => s.file),
+    fileExtensions: ['.ts'],
+    excludeComments: true,
+    passEvidence: 'P0 15 시나리오 파일 내 it.skip / describe.skip / .todo 0건 (주석 제외)',
+    failPrefix: 'silent skip 위반',
+  });
+}
+
 // === E2E AC 시나리오 커버 파일 카운트 ===
 
 function countE2EScenarios(): NumericMetric {
@@ -454,13 +621,23 @@ async function main(): Promise<void> {
     notes: ['AC-RP-1/2/3/4/6/7 + AC-R1/3 + AC-Snapshot + AC-Cost + AC-ExamId + AC-T3 grep.'],
   };
 
+  const p0Count = countP0Scenarios();
+  const p0NoSkip = checkP0NoSkippedTests();
+  const cat5Pass = p0Count.status === 'PASS' && p0NoSkip.status === 'PASS';
   const cat5: CategoryReport = {
     id: 5,
-    name: '성능 테스트 (Cat 5)',
-    status: 'SKIP',
-    numerics: [],
-    booleans: [],
-    notes: ['Phase 2 위임 — Workers CPU 50ms 벤치 / 토큰 비용 / Vectorize latency 별도 plan.'],
+    name: 'Cat 5A — P0 시나리오 매트릭스 (Sprint 1 §5.5 자동화) | Cat 5B 성능 벤치는 Phase 2 SKIP',
+    status: cat5Pass ? 'PASS' : 'FAIL',
+    numerics: [p0Count],
+    booleans: [p0NoSkip],
+    notes: [
+      'Sprint 1 §5.5 종료 게이트 — P0 15 시나리오 파일 매핑 (12 direct + 3 alias).',
+      'Master Plan v1.0.2 footnote 6건 정합 — silent pivot (REC-02 / REC-01 / PRC-01 / PRF-01 / PRF-02 / FUZ-04).',
+      'BATCH-1 적재 후 expansion 의무 — PRC-01 51 산식 골든 + PRF-01/02 BATCH1~5 baseline + Tarjan 도입 트리거.',
+      '본 게이트 의 PASS 는 file 존재 + cat 1+2+3 numeric 의 패키지별 required 카운트 충족 (= 시나리오 invariant 간접 PASS) 의 결합. invariant 직접 검증 (vitest test-by-test) 은 cat 1+2+3 numeric 위임 — Master Plan §13.1 BATCH-1 진입 게이트 자격 = cat5 + cat1+2+3 동시 PASS.',
+      'Cat 5 분리 명세: 5A = P0 시나리오 매핑 (본 자동화, Sprint 1 §5.5 PASS) / 5B = Workers CPU 50ms 벤치 + 토큰 비용 + Vectorize latency (Phase 2 위임 SKIP). completion report v1.2 §10.6 매트릭스 + master-test-checklist v3 §5 갱신 의무.',
+      'handoff-033 §3.1 옵션 A 일괄 결정 후속 자동화 — silent pivot 6건 영속 + §5.5 종료 게이트 진입.',
+    ],
   };
 
   const formulaPkg = summaries.get('@thepick/formula-engine');
