@@ -6,7 +6,12 @@
  */
 
 import type { MathNode, EvalFunction } from 'mathjs';
-import { safeParse, type ParseResult, type ParseError } from './sandbox';
+import {
+  assertWithinComplexityBudget,
+  safeParse,
+  type ParseResult,
+  type ParseError,
+} from './sandbox';
 
 const MAX_CACHE_SIZE = 200;
 
@@ -40,6 +45,11 @@ export type AstParseResult = AstParseSuccess | AstParseFailure;
 export function parseFormula(equationTemplate: string): AstParseResult {
   const cached = cache.get(equationTemplate);
   if (cached) {
+    // Sprint 1 §5.3 4-Pass C-CODE-1 (Pass 1) 흡수:
+    // cache hit 분기가 safeParse 우회로 assertWithinComplexityBudget 미실행 회귀 vector.
+    // 한도 변경 (MAX_AST_NODE_COUNT 강화) 시 캐시된 산식이 신규 검증 우회 영구 활성.
+    // 본 재실행으로 한도 변경 후 첫 호출에서 자동 차단 보장 (CalculationTimeoutError throw → caller 매핑).
+    assertWithinComplexityBudget(cached.node);
     return {
       ok: true,
       node: cached.node,

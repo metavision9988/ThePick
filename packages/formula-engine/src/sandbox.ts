@@ -260,7 +260,7 @@ function computeAstDepth(node: MathNode): number {
   return maxChildDepth + 1;
 }
 
-function assertWithinComplexityBudget(node: MathNode): void {
+export function assertWithinComplexityBudget(node: MathNode): void {
   let nodeCount = 0;
   node.traverse(() => {
     nodeCount++;
@@ -338,8 +338,22 @@ export function safeParse(expression: string): ParseResult | ParseError {
  *   사후 (실 elapsed) 이중 방어. MAX_EVAL_MS 초과 시 CalculationTimeoutError throw.
  *   sandbox.ts AST 검증이 정상 동작 시 evaluate 는 항상 < 1ms — eval_timeout 발생 자체가
  *   defense-in-depth signal (mathjs 라이브러리 회귀 / 미예측 vector 조기 경보).
+ *
+ * 4-Pass Pass 1 M3 / Pass 3 M2 흡수:
+ *   `Date.now()` 는 vi.useFakeTimers 활성 시 mock 됨 → CHA-04 가 보호하는 NTP skew 가
+ *   CHA-02 측정에 그대로 노출. `performance.now()` 는 fake timer 영향 없는 monotonic clock —
+ *   Node 22 + Workers 양쪽 가용. globalThis.performance fallback 으로 환경 호환.
  */
 export const MAX_EVAL_MS = 50;
+
+function nowMs(): number {
+  // performance.now() 는 monotonic, fake timer 영향 X (Node 22 / Workers 모두 가용).
+  // Workers compatibility_date 2024+ 는 globalThis.performance 보장. Node 22 도 동일.
+  return typeof globalThis.performance !== 'undefined' &&
+    typeof globalThis.performance.now === 'function'
+    ? globalThis.performance.now()
+    : Date.now();
+}
 
 export function safeEvaluate(
   compiled: { evaluate: (scope: Record<string, number>) => unknown },
@@ -355,10 +369,10 @@ export function safeEvaluate(
     safeScope[key] = value;
   }
 
-  // CHA-02 — wall-clock 측정 (Date.now 호환 — Workers 의 performance.now 도 동일 인터페이스).
-  const startMs = Date.now();
+  // CHA-02 — wall-clock 측정 (performance.now 우선, fake timer 우회).
+  const startMs = nowMs();
   const result = compiled.evaluate(safeScope);
-  const elapsedMs = Date.now() - startMs;
+  const elapsedMs = nowMs() - startMs;
 
   if (elapsedMs > MAX_EVAL_MS) {
     throw new CalculationTimeoutError(

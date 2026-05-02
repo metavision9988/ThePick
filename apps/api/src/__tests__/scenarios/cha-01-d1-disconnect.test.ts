@@ -114,6 +114,25 @@ describe('withDisconnect — D1Database / D1PreparedStatement Proxy', () => {
     await expect(stmt.first<{ x: number }>()).rejects.toBeInstanceOf(SimulatedD1DisconnectError);
   });
 
+  // 4-Pass Pass 1 M-1 흡수 회귀 방어 — well-known symbol 까지 fail 주입 시
+  // `await flakyDb` 등 단순 케이스 발화. allowlist 가드로 차단 검증.
+  it('well-known symbol (then / Symbol.iterator) 은 passthrough — await flakyDb 안전', async () => {
+    const flaky = withDisconnect(ctx.db, {
+      disconnectRate: 1.0, // 100% 실패율
+      errorClass: 'D1_DISCONNECT',
+      prng: mulberry32(SEED),
+    });
+
+    // await 가 thenable 체크 (`then` 속성 접근) → Proxy 가 then 을 fail 주입하면 throw.
+    // allowlist 가드로 then 은 passthrough → undefined → await 정상 (즉시 resolve).
+    const flakyAsRecord = flaky as unknown as Record<PropertyKey, unknown>;
+    expect(flakyAsRecord.then).toBeUndefined();
+    expect(flakyAsRecord[Symbol.iterator]).toBeUndefined();
+
+    // 실 D1 메서드 (allowlist) 는 여전히 fail 주입.
+    await expect(flaky.exec('SELECT 1')).rejects.toBeInstanceOf(SimulatedD1DisconnectError);
+  });
+
   it('errorClass 별 message 포맷 정합 (retry middleware 매칭)', async () => {
     const classes: readonly DisconnectErrorClass[] = [
       'D1_DISCONNECT',
