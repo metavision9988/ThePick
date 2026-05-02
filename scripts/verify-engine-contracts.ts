@@ -146,7 +146,7 @@ const VITEST_PACKAGES: readonly VitestPackage[] = [
   { name: '@thepick/parser', dir: 'packages/parser', required: 155 },
   { name: '@thepick/quality', dir: 'packages/quality', required: 57 },
   { name: '@thepick/batch', dir: 'apps/batch', required: 309 },
-  { name: '@thepick/api', dir: 'apps/api', required: 277 },
+  { name: '@thepick/api', dir: 'apps/api', required: 285 },
   { name: '@thepick/ai-adapter', dir: 'packages/ai-adapter', required: 13 },
 ];
 
@@ -349,11 +349,12 @@ function countMigrations(): NumericMetric {
   }
   // ⚠️ MAJOR-A1 (Step 18 Pass 2 흡수, Step 19 갱신 의무): 신규 마이그레이션 추가 시 본 required 동시 갱신.
   //   - Step 16c 기준 = 16 (0001~0016)
-  //   - Step 19 engine_telemetry 도입 = 17 (0017_engine_telemetry.sql) ← 본 카운트
+  //   - Step 19 engine_telemetry 도입 = 17 (0017_engine_telemetry.sql)
+  //   - Phase 1 5-페르소나 CRIT-QPHASE1-3 흡수 = 18 (0018_enforce_draft_only_insert.sql) ← 본 카운트
   //   - master-test-checklist.md §6.2 "D1 마이그레이션 파일 카운트 required" 동일 갱신 의무 (2 파일 동시).
   //   - 본 카운트는 단방향 게이트 (감소 차단, 증가 허용) — 갱신 망각 시 신규 마이그레이션
   //     적용 검증 0건 상태로 PASS 가능. 신규 마이그레이션 추가 step plan 진입 게이트에 명시 의무.
-  const required = 17;
+  const required = 18;
   return {
     name: 'D1 마이그레이션 파일 카운트',
     observed: count,
@@ -509,6 +510,115 @@ function countP0Scenarios(): NumericMetric {
   };
 }
 
+// === Phase 1 5-페르소나 CRIT-QPHASE1-2 흡수 — Master Plan v1.0.2 footnote 6건 expansion 자동 trigger ===
+// 본 게이트는 두 단계 검증:
+//   (1) BATCH-1 fixture 존재 검증 — apps/batch/__tests__/fixtures/batch-1/ 디렉토리 또는
+//       docs/manual/batch-1/ 자료 존재 시 trigger 발화
+//   (2) trigger 발화 시 각 footnote expansion 검증 (현 카운트 vs 명세 카운트)
+// 본 시점 (Phase 1 closeout, BATCH-1 미적재) trigger 미발화 → PASS.
+// BATCH-1 적재 시점 expansion 미실행 = silent pivot 7번째 위험 → exit 1.
+// 근거: .claude/reviews/phase1-tech-debt-20260502-quality.md CRIT-QPHASE1-2.
+
+interface ExpansionObligation {
+  readonly footnoteId: string;
+  readonly description: string;
+  readonly currentState: string;
+  readonly expansionTrigger: string;
+}
+
+const EXPANSION_OBLIGATIONS: readonly ExpansionObligation[] = [
+  {
+    footnoteId: 'v1.0.2-rec02',
+    description: 'REC-02 5종 변조 시나리오',
+    currentState: '3/5 throw + 2/5 canonical JSON 정합 통과',
+    expansionTrigger:
+      'Sprint 2 또는 Phase 1 5-페르소나 심층 리뷰 시점에 raw 파일 forensic chain-of-custody 별도 hash 도입 결정 의무',
+  },
+  {
+    footnoteId: 'v1.0.2-rec01c',
+    description: 'REC-01 (c) 95% kill 정의',
+    currentState: "state='killed' → fully_recovered (Master Plan 명세 'atomic skip' 정정)",
+    expansionTrigger: 'Master Plan v1.0.2 footnote 영속 — 추가 expansion 불필요 (정의 정정 완료)',
+  },
+  {
+    footnoteId: 'v1.0.2-prc01',
+    description: 'PRC-01 51 산식 × 5 시나리오 = 255건',
+    currentState: '131/255 framework (BATCH1~5 골든 119 + framework 보강 12)',
+    expansionTrigger: 'BATCH-1 적재 시점 교재 fixture 도입 후 잔여 124건 expansion 의무',
+  },
+  {
+    footnoteId: 'v1.0.2-prf01',
+    description: 'PRF-01 51 산식 처리 속도 baseline',
+    currentState: 'BATCH1 6 sample × 5 시나리오 = 30 measurements',
+    expansionTrigger: 'BATCH-1 적재 시점 51 산식 expansion 의무 (PRC-01 의무와 동시)',
+  },
+  {
+    footnoteId: 'v1.0.2-prf02c',
+    description: 'PRF-02 (c) Tarjan SCC N=50,000',
+    currentState: 'Tarjan 미구현, naive DFS only (N=100/1K/5K/10K 측정)',
+    expansionTrigger:
+      '(a) BATCH-1 적재 시 naive DFS 임계 50ms 초과 → 즉시 Tarjan 도입, 또는 (b) Phase 2 진입 직전 사전 도입',
+  },
+  {
+    footnoteId: 'v1.0.2-fuz04vec8',
+    description: 'FUZ-04 vector 8 circular reference',
+    currentState: '`a+a+a` AST 자연 차단 (math.js parse 평면 SymbolNode)',
+    expansionTrigger:
+      'Sprint 2 정밀화 시점 추가 vector (JS object circular ref via prototype chain) 도입 결정',
+  },
+];
+
+function batch1FixtureExists(): boolean {
+  // BATCH-1 적재 fixture 존재 신호 — 다음 중 하나
+  for (const path of ['apps/batch/__tests__/fixtures/batch-1', 'docs/manual/batch-1']) {
+    try {
+      const fullPath = join(REPO_ROOT, path);
+      const stat = readdirSync(fullPath);
+      if (stat.length > 0) return true;
+    } catch {
+      // 디렉토리 부재 — fixture 미존재
+    }
+  }
+  return false;
+}
+
+function checkExpansionObligations(): BooleanMetric {
+  // 두 단계 검증
+  if (P0_SCENARIOS.length !== 15 || EXPANSION_OBLIGATIONS.length !== 6) {
+    return {
+      name: 'Master Plan v1.0.2 footnote expansion 의무 무결성 위반',
+      value: false,
+      required: true,
+      status: 'FAIL',
+      evidence: `P0_SCENARIOS=${P0_SCENARIOS.length}, EXPANSION_OBLIGATIONS=${EXPANSION_OBLIGATIONS.length} (기대 15, 6)`,
+    };
+  }
+
+  const triggered = batch1FixtureExists();
+  if (!triggered) {
+    // BATCH-1 미적재 — trigger 미발화, PASS
+    return {
+      name: 'Master Plan v1.0.2 footnote 6건 expansion trigger (BATCH-1 fixture 미존재 → trigger 미발화)',
+      value: true,
+      required: true,
+      status: 'PASS',
+      evidence:
+        'EXPANSION_OBLIGATIONS 6건 정의 영속. BATCH-1 fixture 적재 시점 expansion 의무 자동 검증 활성화. (Phase 1 closeout 시점 PASS)',
+    };
+  }
+
+  // BATCH-1 fixture 존재 — 각 obligation 의 expansion 미실행 = FAIL
+  // 본 시점 expansion 검증 로직은 각 footnote 별 별도 vitest reporter 통합 의무 (Sprint 2 mini-step)
+  // 현재는 "BATCH-1 fixture 존재 시 expansion 의무 명시" 만 영속
+  return {
+    name: 'Master Plan v1.0.2 footnote 6건 expansion 의무 (BATCH-1 fixture 적재 감지)',
+    value: false,
+    required: true,
+    status: 'FAIL',
+    evidence: `BATCH-1 fixture 적재 감지 → 6 obligation 각각 expansion 검증 의무 (REC-02 / REC-01c / PRC-01 / PRF-01 / PRF-02c / FUZ-04vec8). Sprint 2 mini-step 으로 vitest reporter 통합 + 각 footnote expansion 자동 검증 도입 의무.`,
+  };
+}
+
 // === Sprint 1 §5.5 P0 시나리오 it.skip / describe.skip / .todo 차단 (Pass 1 MAJOR-S3 흡수) ===
 // file 존재만으로는 silent skip 가능 (예: it.skip(...) 또는 it.todo(...)). 본 게이트로 차단.
 
@@ -623,13 +733,15 @@ async function main(): Promise<void> {
 
   const p0Count = countP0Scenarios();
   const p0NoSkip = checkP0NoSkippedTests();
-  const cat5Pass = p0Count.status === 'PASS' && p0NoSkip.status === 'PASS';
+  const expansionCheck = checkExpansionObligations();
+  const cat5Pass =
+    p0Count.status === 'PASS' && p0NoSkip.status === 'PASS' && expansionCheck.status === 'PASS';
   const cat5: CategoryReport = {
     id: 5,
     name: 'Cat 5A — P0 시나리오 매트릭스 (Sprint 1 §5.5 자동화) | Cat 5B 성능 벤치는 Phase 2 SKIP',
     status: cat5Pass ? 'PASS' : 'FAIL',
     numerics: [p0Count],
-    booleans: [p0NoSkip],
+    booleans: [p0NoSkip, expansionCheck],
     notes: [
       'Sprint 1 §5.5 종료 게이트 — P0 15 시나리오 파일 매핑 (12 direct + 3 alias).',
       'Master Plan v1.0.2 footnote 6건 정합 — silent pivot (REC-02 / REC-01 / PRC-01 / PRF-01 / PRF-02 / FUZ-04).',
@@ -637,6 +749,7 @@ async function main(): Promise<void> {
       '본 게이트 의 PASS 는 file 존재 + cat 1+2+3 numeric 의 패키지별 required 카운트 충족 (= 시나리오 invariant 간접 PASS) 의 결합. invariant 직접 검증 (vitest test-by-test) 은 cat 1+2+3 numeric 위임 — Master Plan §13.1 BATCH-1 진입 게이트 자격 = cat5 + cat1+2+3 동시 PASS.',
       'Cat 5 분리 명세: 5A = P0 시나리오 매핑 (본 자동화, Sprint 1 §5.5 PASS) / 5B = Workers CPU 50ms 벤치 + 토큰 비용 + Vectorize latency (Phase 2 위임 SKIP). completion report v1.2 §10.6 매트릭스 + master-test-checklist v3 §5 갱신 의무.',
       'handoff-033 §3.1 옵션 A 일괄 결정 후속 자동화 — silent pivot 6건 영속 + §5.5 종료 게이트 진입.',
+      'Phase 1 5-페르소나 CRIT-QPHASE1-2 흡수 — EXPANSION_OBLIGATIONS 6건 자동 trigger. BATCH-1 fixture 적재 감지 시 각 footnote expansion 의무 자동 발화 (silent pivot 7번째 차단). 본 시점 (Phase 1 closeout) trigger 미발화 → PASS.',
     ],
   };
 
