@@ -17,15 +17,15 @@
 
 ## 0. Executive Summary
 
-| 항목                  | 값                                                                                                           |
-| :-------------------- | :----------------------------------------------------------------------------------------------------------- |
-| 현재 위치             | **Phase 1 closeout** (Sprint 1 §5.5 완료, Group A 5/7 흡수)                                                  |
-| 누적 테스트 (실측)    | **모노레포 1174 / 1174 PASS** (overallStatus PASS, EXIT 0)                                                   |
-| 자동 게이트           | **9 / 9 PASS** (Cat 1+2+3 / 4 / 5A / 6 / 7) — Cat 5B + Cat 8 Phase 2 SKIP                                    |
-| 누적 commits          | 본 세션 기준 main +128 commits (origin 미push)                                                               |
-| 차단 게이트 (BATCH-1) | **Group A 잔여 2건** (admin-web vitest + telemetry-client wire-up)                                           |
-| 이월 MAJOR            | **70건 누적** (handoff-034 36 + Phase 1 5-페르소나 신규 34, dedup 후 ~25-30)                                 |
-| 이월 CRITICAL         | **0건** (4-Pass 검증 직후) + Phase 1 5-페르소나 13건 중 11건 Group A/B/C 분류, **잔여 2건 차세션 흡수 의무** |
+| 항목                  | 값                                                                                            |
+| :-------------------- | :-------------------------------------------------------------------------------------------- |
+| 현재 위치             | **Phase 1 closeout** (Sprint 1 §5.5 완료, **Group A 7/7 흡수 완성**)                          |
+| 누적 테스트 (실측)    | **모노레포 1200 / 1200 PASS** (overallStatus PASS, +26 from 1174 — 본 세션)                   |
+| 자동 게이트           | **9 / 9 PASS** (admin-web 신규 추가 후) — Cat 5B + Cat 8 Phase 2 SKIP                         |
+| 누적 commits          | main +132 commits (본 세션 +2: 21f57c6 telemetry-client + dec85ad admin-web)                  |
+| 차단 게이트 (BATCH-1) | **🟢 해소됨** — Group A 7/7 완성 (CRITICAL-DO-S1-1 + CRIT-QPHASE1-1 본 세션 흡수)             |
+| 이월 MAJOR            | **77건 누적** (70 + Step 037 신규 7: telemetry-client 4-Pass MAJOR 6 + 1 명시 이월 .env 권한) |
+| 이월 CRITICAL         | **0건** + Phase 1 5-페르소나 13건 모두 Group A 흡수 또는 Group B/C 분류 완료                  |
 
 ---
 
@@ -58,23 +58,27 @@
 │   │   ├── devops-architect (CRIT 1 / MAJOR 4) ................... ✅ 1c5d9d8
 │   │   └── 통합 인덱스 ........................................... ✅ phase1-tech-debt-20260502-index.md
 │   │
-│   ├── Group A — BATCH-1 진입 차단 게이트 (5/7 흡수)
+│   ├── Group A — BATCH-1 진입 차단 게이트 (7/7 ✅ 완성, Step 037)
 │   │   ├── B-C1  Hard Rule 16 progress examId 시그니처 ........... ✅ 3a39310
 │   │   ├── B-C2  production-deployment.md runbook ................ ✅ 789b28b
 │   │   ├── B-C3  engine-telemetry-gc.md runbook .................. ✅ 789b28b
 │   │   ├── CRIT-QPHASE1-2 EXPANSION_OBLIGATIONS 6건 자동 trigger .. ✅ 760fa4f
 │   │   ├── CRIT-QPHASE1-3 0018 마이그레이션 + Hard Rule 13 e2e .... ✅ 2d10ed9 + 3a39310
-│   │   ├── CRIT-QPHASE1-1 admin-web vitest + 8 tests ............. 🔴 차세션 (~3-4h)
-│   │   └── CRITICAL-DO-S1-1 apps/batch telemetry-client wire-up .. 🔴 차세션 (~2-3h)
+│   │   ├── CRITICAL-DO-S1-1 apps/batch telemetry-client wire-up .. ✅ 21f57c6 (본 세션)
+│   │   └── CRIT-QPHASE1-1 admin-web vitest + 10 tests ............ ✅ dec85ad (본 세션)
 │   │
 │   ├── Group A 4-Pass MAJOR 4건 즉시 흡수 + 통합 인덱스 .......... ✅ 9869981
 │   │
-│   └── 본 세션 회귀 흡수 chain
-│       ├── verify 회귀 batch 308/309 → 309/309 (정규식 alternation) ✅ 48545f3
-│       └── 4-Pass MAJOR-1 + MAJOR-2 흡수 (트리거 invariant + 빈문자열) ✅ b6605b6
+│   ├── Step 036 회귀 흡수 chain
+│   │   ├── verify 회귀 batch 308/309 → 309/309 (정규식 alternation) ✅ 48545f3
+│   │   └── 4-Pass MAJOR-1 + MAJOR-2 흡수 (트리거 invariant + 빈문자열) ✅ b6605b6
+│   │
+│   └── Step 037 흡수 chain (본 세션)
+│       ├── CRITICAL-DO-S1-1 telemetry-client + 4-Pass MAJOR 6 흡수 ✅ 21f57c6 (모노레포 1190)
+│       └── CRIT-QPHASE1-1 admin-web vitest + 10 tests ............. ✅ dec85ad (모노레포 1200)
 │
 ├── Phase B 보안 — localStorage admin_api_token httpOnly cookie 강화
-│   └── v1.1 §10.7 #9 잔여 흡수 ................................... 🔴 차세션 (~1.5h)
+│   └── v1.1 §10.7 #9 잔여 흡수 (실제로는 e5273da 1차 전환에서 완료, 잔여 거의 없음) 🟡 차세션 (재정의 필요)
 │
 ├── BATCH-1 진입 직전 후속 PR (~1주)
 │   ├── production migrations staging dry-run ..................... 🔴 진산님 콘솔 (Cloudflare D1)
@@ -230,19 +234,21 @@ gantt
 
 ## 4. 잔여 task 우선순위 매트릭스
 
-| 우선순위 | Task                                        | 영역        | 분량 | 차단 영향                                                         |
-| :------: | :------------------------------------------ | :---------- | :--: | :---------------------------------------------------------------- |
-|  **P0**  | CRIT-QPHASE1-1 admin-web vitest             | quality     | 3-4h | BATCH-1 진입 차단 (1차 5-페르소나 1주+ 영속)                      |
-|  **P0**  | CRITICAL-DO-S1-1 telemetry-client           | devops      | 2-3h | BATCH-1 진입 차단 (memory project_engine_observability 직접 위반) |
-|  **P1**  | Phase B httpOnly cookie 강화                | security    | 1.5h | v1.1 §10.7 #9 잔여 (영역 분리, 병렬 가능)                         |
-|  **P1**  | TD-API-001 SCENARIO_MIGRATIONS 자동 readdir | tooling     |  2h  | 본 세션 4-Pass MAJOR-3 (silent regression 위험)                   |
-|  **P1**  | TD-VRF-001 verify vitest 비결정성           | tooling     |  2h  | verify 첫 실행 310 vs 재실행 311 (본 세션 추적)                   |
-|  **P2**  | C-PERF-1 dashboard Promise.all              | performance |  1h  | Phase 2 진입 직전 의무 (10K 사용자 latency)                       |
-|  **P2**  | C-PERF-2 GC purgeOldTelemetry()             | performance |  4h  | Phase 2 진입 직전 의무 (engine_telemetry 무한 누적)               |
-|  **P2**  | C-PERF-3 rate_limits batch DELETE           | performance |  4h  | Phase 2 진입 직전 의무 (28.8M row Workers timeout)                |
-|  **P2**  | C-PERF-4 parseFormula cache key             | performance |  2h  | Phase 2 진입 직전 의무 (한도 변경 시 stale cache)                 |
-|  **P3**  | C-RF-1 resolveLoggerEnv 단일 출처           | refactoring |  1d  | 6개월 부채 (Phase 1 종료 게이트 또는 Phase 2)                     |
-|  **P3**  | C-RF-2 withRetry 통합                       | refactoring |  1d  | 6개월 부채 (Phase 1 종료 게이트 또는 Phase 2)                     |
+| 우선순위 | Task                                                 | 영역        | 분량 | 차단 영향                                                                                                    |
+| :------: | :--------------------------------------------------- | :---------- | :--: | :----------------------------------------------------------------------------------------------------------- |
+|  ✅ P0   | CRITICAL-DO-S1-1 telemetry-client                    | devops      | 2-3h | **흡수 완료** (commit 21f57c6) — memory project_engine_observability 6 게이지 wire-up                        |
+|  ✅ P0   | CRIT-QPHASE1-1 admin-web vitest                      | quality     | 3-4h | **흡수 완료** (commit dec85ad) — 10 tests + AbortController in-flight cancel                                 |
+|  **P1**  | CRIT-QPHASE1-1 4-Pass 독립 에이전트 리뷰             | quality     | 0.5h | 본 세션 background 위임 (agentId ab6c0886cb8f5e72d) — 결과 도착 시 흡수                                      |
+|  **P1**  | Phase B httpOnly cookie 추가 강화                    | security    | 1.5h | localStorage 잔여 0건 (e5273da 1차 전환에서 완료) — 작업 재정의 필요 (cookie SameSite/Secure 점검 또는 skip) |
+|  **P1**  | TD-API-001 SCENARIO_MIGRATIONS 자동 readdir          | tooling     |  2h  | Step 036 4-Pass MAJOR-3 (silent regression 위험)                                                             |
+|  **P1**  | TD-VRF-001 verify vitest 비결정성                    | tooling     |  2h  | Step 037 재현: 변경 직후 첫 실행 326/327 → 재실행 327/327                                                    |
+|  **P1**  | Pass3-MAJOR-2 .env.example THEPICK*TELEMETRY*\* 추가 | docs        | 0.2h | Step 037 명시 이월 (Hard Limit 권한 거부 → 진산님 콘솔 영역)                                                 |
+|  **P2**  | C-PERF-1 dashboard Promise.all                       | performance |  1h  | Phase 2 진입 직전 의무 (10K 사용자 latency)                                                                  |
+|  **P2**  | C-PERF-2 GC purgeOldTelemetry()                      | performance |  4h  | Phase 2 진입 직전 의무 (engine_telemetry 무한 누적)                                                          |
+|  **P2**  | C-PERF-3 rate_limits batch DELETE                    | performance |  4h  | Phase 2 진입 직전 의무 (28.8M row Workers timeout)                                                           |
+|  **P2**  | C-PERF-4 parseFormula cache key                      | performance |  2h  | Phase 2 진입 직전 의무 (한도 변경 시 stale cache)                                                            |
+|  **P3**  | C-RF-1 resolveLoggerEnv 단일 출처                    | refactoring |  1d  | 6개월 부채 (Phase 1 종료 게이트 또는 Phase 2)                                                                |
+|  **P3**  | C-RF-2 withRetry 통합                                | refactoring |  1d  | 6개월 부채 (Phase 1 종료 게이트 또는 Phase 2)                                                                |
 
 ---
 
@@ -264,19 +270,19 @@ gantt
 
 ## 6. 메모리 정합 검증
 
-| 메모리                                           | 본 시점 상태                                                                  |
-| :----------------------------------------------- | :---------------------------------------------------------------------------- |
-| `project_completion_notification_obligation`     | ❌ 위반 위험 — Group A 잔여 2건 (CRIT-QPHASE1-1 + CRITICAL-DO-S1-1) 흡수 의무 |
-| `project_engine_observability` (8 게이지)        | ❌ 위반 — telemetry wire-up 0건 (CRITICAL-DO-S1-1 흡수로 해소)                |
-| `feedback_no_shortcuts` (footnote trigger)       | ✅ 흡수 (CRIT-QPHASE1-2 760fa4f)                                              |
-| `project_source_citation_requirement` (page_ref) | ✅ 흡수 (CRIT-QPHASE1-3 + 본 세션 MAJOR-1+2 redundancy 영속)                  |
-| `feedback_review_filename_pattern` (review-\*)   | ✅ 정합 (phase1-tech-debt-_ + review-20260502-_ 영속)                         |
-| `feedback_two_fix_failures_zoom_out`             | ✅ 정합 (verify 비결정성 TD-VRF-001 ledger 명시)                              |
-| `feedback_no_granular_decisions`                 | ✅ 정합 (본 세션 MAJOR 1+2 흡수 진산님 비협의 자동 진행)                      |
-| `feedback_focus_reliability_not_schedule`        | ✅ 정합 (Cloudflare 콘솔 작업은 진산님 영역 명시)                             |
-| `feedback_single_vendor_cloudflare`              | ✅ 정합 (TD-DO-055 webhook receiver Cloudflare 단일)                          |
-| `feedback_document_first_workflow`               | ✅ 정합 (본 WBS 문서 영속)                                                    |
-| `project_anthropic_cap_pre_install`              | 🟡 BATCH-1 진입 직전 활성 (handoff-035 §1 명시)                               |
+| 메모리                                           | 본 시점 상태 (Step 037 진입 후)                                                                                                                                            |
+| :----------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `project_completion_notification_obligation`     | ✅ Group A 7/7 완성 (CRIT-QPHASE1-1 + CRITICAL-DO-S1-1 흡수) — BATCH-1 진입 차단 게이트 해소                                                                               |
+| `project_engine_observability` (8 게이지)        | ✅ 6 게이지 wire-up (cost / batch_progress / d1_slo / graph_integrity / quality_gate / formula_accuracy) + 2 deferred (reviewer_queue Phase 1 후반 + learning_slo Phase 2) |
+| `feedback_no_shortcuts` (footnote trigger)       | ✅ 흡수 (CRIT-QPHASE1-2 760fa4f)                                                                                                                                           |
+| `project_source_citation_requirement` (page_ref) | ✅ 흡수 (CRIT-QPHASE1-3 + 본 세션 MAJOR-1+2 redundancy 영속)                                                                                                               |
+| `feedback_review_filename_pattern` (review-\*)   | ✅ 정합 (phase1-tech-debt-_ + review-20260502-_ 영속)                                                                                                                      |
+| `feedback_two_fix_failures_zoom_out`             | ✅ 정합 (verify 비결정성 TD-VRF-001 ledger 명시)                                                                                                                           |
+| `feedback_no_granular_decisions`                 | ✅ 정합 (본 세션 MAJOR 1+2 흡수 진산님 비협의 자동 진행)                                                                                                                   |
+| `feedback_focus_reliability_not_schedule`        | ✅ 정합 (Cloudflare 콘솔 작업은 진산님 영역 명시)                                                                                                                          |
+| `feedback_single_vendor_cloudflare`              | ✅ 정합 (TD-DO-055 webhook receiver Cloudflare 단일)                                                                                                                       |
+| `feedback_document_first_workflow`               | ✅ 정합 (본 WBS 문서 영속)                                                                                                                                                 |
+| `project_anthropic_cap_pre_install`              | 🟡 BATCH-1 진입 직전 활성 (handoff-035 §1 명시)                                                                                                                            |
 
 ---
 
