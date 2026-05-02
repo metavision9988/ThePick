@@ -24,7 +24,18 @@ export const ENGINE_TELEMETRY_GAUGES = [
 
 export type EngineTelemetryGauge = (typeof ENGINE_TELEMETRY_GAUGES)[number];
 
-/** Phase 1 시점 활성 게이지 (learning_slo 제외 7개). admin-web 표시 정책 + write 측 차단 정책. */
+/**
+ * Phase 1 시점 활성 게이지 (learning_slo 제외 7개). admin-web 표시 정책 + write 측 차단 정책.
+ *
+ * **wire-up 진척 (Step 037 CRITICAL-DO-S1-1 흡수 시점):**
+ *   - Phase 1 초반 wire-up: 6 게이지 (batch_progress / cost / d1_slo / graph_integrity / quality_gate / formula_accuracy)
+ *   - Phase 1 후반 wire-up 예약: reviewer_queue (LLM Reviewer 도입 후 — auto-review-protocol.md Cat 8)
+ *
+ * **admin-web graceful no_data 의무:**
+ *   reviewer_queue 슬롯은 LLM Reviewer 도입 전까지 데이터 0건. dashboard 측은 "데이터 없음"
+ *   graceful 표시 의무 (영구 no_data 알림 차단). Phase 2 진입 시점에 reviewer_queue 가
+ *   여전히 wire-up 부재라면 PHASE_2_GAUGES 로 이동 검토.
+ */
 export const PHASE_1_GAUGES: ReadonlyArray<EngineTelemetryGauge> = [
   'batch_progress',
   'cost',

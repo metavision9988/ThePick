@@ -63,6 +63,7 @@ import {
 import { recoverBatch, type BatchRunsDb, type RecoveryStatus } from './recover.js';
 import { CostMeter } from './cost-meter.js';
 import { installSignalHandlers } from './signal-handlers.js';
+import type { TelemetryClient } from './adapters/telemetry-client.js';
 
 // Step 18 MINOR-A3 — 모듈 스코프 logger. 9건 console.error/warn 교체 + Workers Observability JSON.
 const VALID_LOGGER_ENVS: ReadonlySet<string> = new Set([
@@ -120,7 +121,8 @@ export interface MetaPersistenceFailure {
     | 'state_in_progress'
     | 'state_killed'
     | 'finalize_handlers'
-    | 'finalize_costmeter';
+    | 'finalize_costmeter'
+    | 'finalize_telemetry';
   readonly reason: string;
 }
 
@@ -296,6 +298,13 @@ export interface PipelineContext {
   readonly enableSignalHandlers?: boolean;
   /** writeCheckpoint fsync 강제 (기본 true). 테스트에서 false 가능. */
   readonly fsyncCheckpoint?: boolean;
+  /**
+   * TelemetryClient 주입 — POST /api/telemetry 8 게이지 emit (Step 037 CRITICAL-DO-S1-1).
+   * 미주입 시 emit silently skip. production 의무 (memory project_engine_observability).
+   * createTelemetryClientFromEnv() 가 ENV 미설정 시 NoopTelemetryClient 반환하므로
+   * caller 는 항상 한 인스턴스 주입 권장 (production 8 게이지 활성, dev/test 자동 noop).
+   */
+  readonly telemetryClient?: TelemetryClient;
 }
 
 /**
@@ -604,6 +613,20 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
 
       if (result.status === 'success') {
         lastSnapshot = toSnapshot(state, stages, stage);
+        // === Step 037 telemetry — batch_progress emit (success 시 1회) ===
+        // 단위: 0~1 ratio (migrations/0017_engine_telemetry.sql:26 정의 정합).
+        // admin-web 표시 시 percent 변환은 dashboard 측 책임.
+        ctx.telemetryClient?.emit({
+          gaugeName: 'batch_progress',
+          metricValue: (i + 1) / PIPELINE_STAGES.length,
+          metricJson: {
+            currentStage: stage,
+            stageIndex: i,
+            totalStages: PIPELINE_STAGES.length,
+            durationMs: result.durationMs,
+          },
+          sourceId: `pipeline:${stage}`,
+        });
         const cp = buildCheckpoint({
           examId: ctx.examId,
           batchRunId: ctx.batchRunId,
@@ -655,6 +678,24 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
           reason,
         });
       }
+      // === Step 037 telemetry — cost emit (정상 완료 시 1회) ===
+      // 단위: micro_cents 정수 (migrations/0017_engine_telemetry.sql:27 정의 정합).
+      // 1 USD = 100 cents = 100_000_000 micro_cents (정수 회계 표준).
+      // metricJson 에 USD float 동시 보존 — admin-web 측 표시 편의.
+      if (ctx.costMeter) {
+        const costState = ctx.costMeter.toCheckpointCostState();
+        ctx.telemetryClient?.emit({
+          gaugeName: 'cost',
+          metricValue: Math.round(costState.initial_spend_usd * 100_000_000),
+          metricJson: {
+            spendUsd: costState.initial_spend_usd,
+            callCount: costState.call_count,
+            thresholdBreaches: costState.threshold_breaches.length,
+            breaches: costState.threshold_breaches,
+          },
+          sourceId: 'pipeline:completed',
+        });
+      }
     }
   } finally {
     try {
@@ -683,6 +724,31 @@ export async function runPipeline(ctx: PipelineContext): Promise<PipelineResult>
         metaPersistenceFailures.push({
           stage: 'finalize',
           operation: 'finalize_costmeter',
+          reason,
+        });
+      }
+    }
+    // === Step 037 telemetry — flushPending (in-flight emit drain) ===
+    // emit 은 fire-and-forget 이므로 finally 단계에서 모든 in-flight Promise 대기.
+    // 미주입 또는 NoopTelemetryClient 시 즉시 resolve.
+    //
+    // try/catch defensive only: flushPending 내부는 Promise.allSettled 사용 — 정상 경로에서
+    // throw 도달 불가능 (모든 emit 실패는 logger.error 로 swallow). 본 catch 는 미래
+    // 구현 변경 (예: allSettled → all 회귀) 시 BATCH crash 차단용 방어선.
+    // SIGINT 경로 누수: signal-handlers.ts 의 process.exit 직전에는 flushPending 미호출 —
+    // best-effort 로 in-flight emit 손실 허용 (BATCH 비정상 종료 = 운영 alarm 로 가시화).
+    if (ctx.telemetryClient) {
+      try {
+        await ctx.telemetryClient.flushPending();
+      } catch (err) {
+        // SF-DA-1 일관성 — telemetry leak 가시화 (best-effort, BATCH 결과에 영향 없음)
+        const reason = err instanceof Error ? err.message : String(err);
+        log.error('TelemetryClient flushPending 실패 (logged only)', err, {
+          operation: 'finalize_telemetry',
+        });
+        metaPersistenceFailures.push({
+          stage: 'finalize',
+          operation: 'finalize_telemetry',
           reason,
         });
       }
@@ -978,6 +1044,20 @@ async function stageDbLoad(
   const loadResult = await loadDraft(ctx.db, state.contract, loadCtx);
   state.loadResult = loadResult;
 
+  // === Step 037 telemetry — d1_slo emit (D1 batch insert latency, ms) ===
+  ctx.telemetryClient?.emit({
+    gaugeName: 'd1_slo',
+    metricValue: loadResult.durationMs,
+    metricJson: {
+      nodesInserted: loadResult.nodesInserted,
+      edgesInserted: loadResult.edgesInserted,
+      formulasInserted: loadResult.formulasInserted,
+      constantsInserted: loadResult.constantsInserted,
+      skipped: loadResult.skippedIds.length,
+    },
+    sourceId: 'pipeline:db_load',
+  });
+
   return {
     stage: 'db_load',
     status: 'success',
@@ -990,7 +1070,7 @@ async function stageDbLoad(
 }
 
 async function stageIntegrityCheck(
-  _ctx: PipelineContext,
+  ctx: PipelineContext,
   state: PipelineState,
   started: number,
 ): Promise<StageResult> {
@@ -1039,6 +1119,27 @@ async function stageIntegrityCheck(
         `broken=${report.stats.brokenEdges} cycles=${report.stats.supersedeCycles}`,
     );
   }
+
+  // === Step 037 telemetry — graph_integrity emit (성공 분기 전용) ===
+  // 단위: violations_count (migrations/0017_engine_telemetry.sql:29 정의 정합).
+  // 0 = PASS, ≥1 = violation count. 위반 분기는 throw 후 runStage 가 status='failed' 로 wrap.
+  // 본 emit 은 성공 분기에 도달 = orphan + broken + cycles 모두 0 — metricValue 항상 0.
+  const violations =
+    report.stats.orphanNodes + report.stats.brokenEdges + report.stats.supersedeCycles;
+  ctx.telemetryClient?.emit({
+    gaugeName: 'graph_integrity',
+    metricValue: violations,
+    metricJson: {
+      totalNodes: report.stats.totalNodes,
+      totalEdges: report.stats.totalEdges,
+      activeNodes: report.stats.activeNodes,
+      activeEdges: report.stats.activeEdges,
+      orphanNodes: report.stats.orphanNodes,
+      brokenEdges: report.stats.brokenEdges,
+      supersedeCycles: report.stats.supersedeCycles,
+    },
+    sourceId: 'pipeline:integrity_check',
+  });
 
   return {
     stage: 'integrity_check',
@@ -1093,6 +1194,40 @@ async function stageQg2Gate(
   const nodes = state.graphNodes.length > 0 ? state.graphNodes : [];
   const edges = state.graphEdges.length > 0 ? state.graphEdges : [];
   const result = runQG2Validation(nodes, edges, ctx.goldenTests);
+
+  // === Step 037 telemetry — quality_gate + formula_accuracy emit ===
+  // quality_gate 단위: pass_count (migrations/0017_engine_telemetry.sql:30 정의 정합) — 0~totalChecks.
+  // formula_accuracy 단위: 1.0 (PASS) / 0.0 (FAIL) binary (migrations/0017_engine_telemetry.sql:31 정의 정합).
+  const passCount = result.checks.filter((c) => c.passed).length;
+  ctx.telemetryClient?.emit({
+    gaugeName: 'quality_gate',
+    metricValue: passCount,
+    metricJson: {
+      totalChecks: result.checks.length,
+      passCount,
+      failCount: result.checks.length - passCount,
+      passed: result.passed,
+      summary: result.summary,
+    },
+    sourceId: 'pipeline:qg2_gate',
+  });
+  // formula_accuracy: QG-2 checks 중 'Formula ' prefix (checkFormulaAccuracy 산출) 만 추출.
+  const formulaChecks = result.checks.filter((c) => c.name.startsWith('Formula '));
+  if (formulaChecks.length > 0) {
+    const formulaPassCount = formulaChecks.filter((c) => c.passed).length;
+    const allPassed = formulaPassCount === formulaChecks.length;
+    ctx.telemetryClient?.emit({
+      gaugeName: 'formula_accuracy',
+      metricValue: allPassed ? 1.0 : 0.0,
+      metricJson: {
+        formulaChecksTotal: formulaChecks.length,
+        formulaPassCount,
+        formulaFailCount: formulaChecks.length - formulaPassCount,
+        ratio: formulaPassCount / formulaChecks.length,
+      },
+      sourceId: 'pipeline:qg2_gate',
+    });
+  }
 
   return {
     stage: 'qg2_gate',

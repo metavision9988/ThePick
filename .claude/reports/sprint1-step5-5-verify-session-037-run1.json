@@ -1,0 +1,193 @@
+{
+  "timestamp": "2026-05-02T14:10:19.730Z",
+  "repoRoot": "/home/soo/ClaudePro/ThePick",
+  "summary": {
+    "total": 6,
+    "pass": 5,
+    "fail": 0,
+    "skip": 1,
+    "overallStatus": "PASS"
+  },
+  "categories": [
+    {
+      "id": 1,
+      "name": "단위 + 모듈 + 통합 테스트 (Cat 1+2+3)",
+      "status": "PASS",
+      "numerics": [
+        {
+          "name": "@thepick/shared 테스트 카운트",
+          "observed": 50,
+          "required": 50,
+          "status": "PASS"
+        },
+        {
+          "name": "@thepick/formula-engine 테스트 카운트",
+          "observed": 303,
+          "required": 303,
+          "status": "PASS"
+        },
+        {
+          "name": "@thepick/parser 테스트 카운트",
+          "observed": 155,
+          "required": 155,
+          "status": "PASS"
+        },
+        {
+          "name": "@thepick/quality 테스트 카운트",
+          "observed": 57,
+          "required": 57,
+          "status": "PASS"
+        },
+        {
+          "name": "@thepick/batch 테스트 카운트",
+          "observed": 311,
+          "required": 311,
+          "status": "PASS"
+        },
+        {
+          "name": "@thepick/api 테스트 카운트",
+          "observed": 285,
+          "required": 285,
+          "status": "PASS"
+        },
+        {
+          "name": "@thepick/ai-adapter 테스트 카운트",
+          "observed": 13,
+          "required": 13,
+          "status": "PASS"
+        },
+        {
+          "name": "모노레포 전체 합계",
+          "observed": 1174,
+          "required": 1174,
+          "status": "PASS"
+        }
+      ],
+      "booleans": [],
+      "notes": ["vitest --reporter=json 합계. 패키지별 required 는 master-test-checklist v1 기준."]
+    },
+    {
+      "id": 4,
+      "name": "E2E 테스트 (Cat 4)",
+      "status": "PASS",
+      "numerics": [
+        {
+          "name": "E2E AC 시나리오 커버 파일 카운트",
+          "observed": 9,
+          "required": 4,
+          "status": "PASS"
+        }
+      ],
+      "booleans": [],
+      "notes": ["AC-RP-1/2/3/4/6/7 + AC-R1/3 + AC-Snapshot + AC-Cost + AC-ExamId + AC-T3 grep."]
+    },
+    {
+      "id": 5,
+      "name": "Cat 5A — P0 시나리오 매트릭스 (Sprint 1 §5.5 자동화) | Cat 5B 성능 벤치는 Phase 2 SKIP",
+      "status": "PASS",
+      "numerics": [
+        {
+          "name": "Sprint 1 §5.5 P0 15 시나리오 파일 매핑 (12 direct + 3 alias)",
+          "observed": 15,
+          "required": 15,
+          "status": "PASS"
+        }
+      ],
+      "booleans": [
+        {
+          "name": "Sprint 1 §5.5 P0 시나리오 내 it.skip / describe.skip / .todo 0건 (silent skip 차단)",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "P0 15 시나리오 파일 내 it.skip / describe.skip / .todo 0건 (주석 제외)"
+        },
+        {
+          "name": "Master Plan v1.0.2 footnote 6건 expansion trigger (BATCH-1 fixture 미존재 → trigger 미발화)",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "EXPANSION_OBLIGATIONS 6건 정의 영속. BATCH-1 fixture 적재 시점 expansion 의무 자동 검증 활성화. (Phase 1 closeout 시점 PASS)"
+        }
+      ],
+      "notes": [
+        "Sprint 1 §5.5 종료 게이트 — P0 15 시나리오 파일 매핑 (12 direct + 3 alias).",
+        "Master Plan v1.0.2 footnote 6건 정합 — silent pivot (REC-02 / REC-01 / PRC-01 / PRF-01 / PRF-02 / FUZ-04).",
+        "BATCH-1 적재 후 expansion 의무 — PRC-01 51 산식 골든 + PRF-01/02 BATCH1~5 baseline + Tarjan 도입 트리거.",
+        "본 게이트 의 PASS 는 file 존재 + cat 1+2+3 numeric 의 패키지별 required 카운트 충족 (= 시나리오 invariant 간접 PASS) 의 결합. invariant 직접 검증 (vitest test-by-test) 은 cat 1+2+3 numeric 위임 — Master Plan §13.1 BATCH-1 진입 게이트 자격 = cat5 + cat1+2+3 동시 PASS.",
+        "Cat 5 분리 명세: 5A = P0 시나리오 매핑 (본 자동화, Sprint 1 §5.5 PASS) / 5B = Workers CPU 50ms 벤치 + 토큰 비용 + Vectorize latency (Phase 2 위임 SKIP). completion report v1.2 §10.6 매트릭스 + master-test-checklist v3 §5 갱신 의무.",
+        "handoff-033 §3.1 옵션 A 일괄 결정 후속 자동화 — silent pivot 6건 영속 + §5.5 종료 게이트 진입.",
+        "Phase 1 5-페르소나 CRIT-QPHASE1-2 흡수 — EXPANSION_OBLIGATIONS 6건 자동 trigger. BATCH-1 fixture 적재 감지 시 각 footnote expansion 의무 자동 발화 (silent pivot 7번째 차단). 본 시점 (Phase 1 closeout) trigger 미발화 → PASS."
+      ]
+    },
+    {
+      "id": 6,
+      "name": "품질 테스트 (Cat 6)",
+      "status": "PASS",
+      "numerics": [
+        {
+          "name": "Formula Engine 결정성 + sandbox property 테스트",
+          "observed": 303,
+          "required": 251,
+          "status": "PASS"
+        },
+        {
+          "name": "D1 마이그레이션 파일 카운트",
+          "observed": 18,
+          "required": 18,
+          "status": "PASS"
+        }
+      ],
+      "booleans": [],
+      "notes": [
+        "Formula Engine = QG-2/QG-5 골격. 마이그레이션 카운트 = 0014 트리거 + 0016 unique 진척."
+      ]
+    },
+    {
+      "id": 7,
+      "name": "보안 테스트 (Cat 7)",
+      "status": "PASS",
+      "numerics": [],
+      "booleans": [
+        {
+          "name": "Hard Rule 17 — EXAM_IDS 리터럴 단일 선언 (production 코드)",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "exam-ids.ts 외 production 위반 0건 (.ts 화이트리스트 + 주석 제외) (post-filter 적용)"
+        },
+        {
+          "name": "Formula Engine 동적 코드 실행 키워드 0건 (math.js AST 만 허용)",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "formula-engine src 내 동적 코드 실행 키워드 0건"
+        },
+        {
+          "name": "XSS — 위험 DOM 속성 직접 할당 0건 (sanitizer 우회 차단)",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "production code 내 위험 DOM 직접 할당 0건"
+        },
+        {
+          "name": "Step 18+19 logger 도입 — pipeline/recover/signal-handlers/cost-meter 내 console.* 0건",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "4 파일 내 console.* 0건 (주석 제외) (post-filter 적용)"
+        }
+      ],
+      "notes": [
+        "production-quality.md Hard Rule 17 + Formula Engine 동적 실행 차단 + XSS + Step 18 logger 회귀 방어."
+      ]
+    },
+    {
+      "id": 8,
+      "name": "출력 검증 (Cat 8)",
+      "status": "SKIP",
+      "numerics": [],
+      "booleans": [],
+      "notes": ["LLM 통합 후 Phase 1 후반 — Reviewer 검수 + 근거 FK 검증 별도 plan."]
+    }
+  ]
+}

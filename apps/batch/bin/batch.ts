@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { KnowledgeContract } from '@thepick/parser';
-import { EXAM_IDS } from '@thepick/shared';
+import { EXAM_IDS, createLogger } from '@thepick/shared';
 import {
   runPipeline,
   BATCH_CONFIGS,
@@ -40,6 +40,7 @@ import { openLocalDb } from '../src/loader/local-db';
 import { createAnthropicClient } from '../src/adapters/anthropic-client';
 import { createVisionClient } from '../src/adapters/vision-client';
 import { createTokenCostLogger } from '../src/adapters/token-cost-logger';
+import { createTelemetryClientFromEnv } from '../src/adapters/telemetry-client';
 import { D1BatchRunsDb } from '../src/d1-batch-runs-db';
 import { InMemoryBatchRunsDb } from '../src/in-memory-batch-runs-db';
 import type { BatchRunsDb } from '../src/recover';
@@ -192,6 +193,19 @@ async function cmdRun(args: string[]): Promise<ExitCode> {
     ? new D1BatchRunsDb(localDb.db)
     : new InMemoryBatchRunsDb();
 
+  // === Step 037 telemetry — TelemetryClient ENV 기반 생성 (미설정 시 noop) ===
+  // batchRunId 를 사전에 분리하여 telemetryClient + ctx 양쪽에서 재사용.
+  const batchRunId = randomUUID();
+  const telemetryLogger = createLogger({ service: 'thepick-batch-cli' }).child({
+    module: 'telemetry-client',
+    batchRunId,
+  });
+  const telemetryClient = createTelemetryClientFromEnv({
+    examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+    batchRunId,
+    logger: telemetryLogger,
+  });
+
   try {
     const ctx: PipelineContext = {
       batchId,
@@ -208,10 +222,12 @@ async function cmdRun(args: string[]): Promise<ExitCode> {
       fixtureContract,
       // === Step 11.6 신규 — recover/checkpoint/CostMeter 통합 ===
       examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
-      batchRunId: randomUUID(),
+      batchRunId,
       checkpointBaseDir: DEFAULT_CHECKPOINT_DIR,
       batchRunsDb,
       engineVersion: ENGINE_VERSION,
+      // === Step 037 — telemetry-client wire-up (8 게이지) ===
+      telemetryClient,
     };
 
     const result = await runPipeline(ctx);
@@ -488,10 +504,13 @@ Usage:
   thepick-batch unlock <batch_run_id> --reason="<text>"
 
 Environment:
-  ANTHROPIC_API_KEY      — 실제 Claude API 호출 시 필수 (--fixtures 생략 시)
-  THEPICK_BATCH_DB       — 로컬 SQLite 파일 경로 (default: ./thepick-local.db)
-  THEPICK_BATCH_OUT      — dry-run JSON 스냅샷 디렉터리 (default: ./out)
-  THEPICK_BATCH_LOG_DIR  — 토큰 비용 JSONL 디렉터리 (default: ./logs)
+  ANTHROPIC_API_KEY               — 실제 Claude API 호출 시 필수 (--fixtures 생략 시)
+  THEPICK_BATCH_DB                — 로컬 SQLite 파일 경로 (default: ./thepick-local.db)
+  THEPICK_BATCH_OUT               — dry-run JSON 스냅샷 디렉터리 (default: ./out)
+  THEPICK_BATCH_LOG_DIR           — 토큰 비용 JSONL 디렉터리 (default: ./logs)
+  THEPICK_TELEMETRY_API_BASE      — apps/api telemetry endpoint base URL (예: https://api.thepick.app)
+  THEPICK_TELEMETRY_ADMIN_TOKEN   — apps/api X-Admin-Token 헤더 값 (admin_session secret)
+                                    두 변수 동시 미설정 시 NoopTelemetryClient + warn 1회 (production 의무).
 
 Notes:
   - 가-0 스코프: --fixtures 모드가 주 경로 (픽스처 JSON 으로 Stage 1~9 검증).
