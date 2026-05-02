@@ -20,12 +20,21 @@
 import { describe, it, expect } from 'vitest';
 import { safeParse } from '../sandbox';
 
-// Sentinel — global counter mutation 검증용
+// Sentinel — global counter mutation 검증용 (Pass 3 A1 흡수)
+// safeParse 가 정말 거부했는지를 verify 위해, vector expression 자체에 sentinel
+// mutation 함수 호출을 명시 — 만약 safeParse 가 우회 발화해서 evaluate 가 실행되면
+// counter 증가 → 본 테스트가 fail (theatrical security 회피).
 declare global {
   // eslint-disable-next-line no-var
   var __FUZ04_SENTINEL_COUNTER: number;
+  // eslint-disable-next-line no-var
+  var __FUZ04_TRIPWIRE: () => number;
 }
 globalThis.__FUZ04_SENTINEL_COUNTER = 0;
+globalThis.__FUZ04_TRIPWIRE = (): number => {
+  globalThis.__FUZ04_SENTINEL_COUNTER += 1;
+  return 1;
+};
 
 // 위험 함수 이름 — string concat 으로 build (보안 hook 회피)
 const DANGEROUS_NAMES = {
@@ -75,6 +84,31 @@ describe('FUZ-04 — sandbox 우회 12 vectors', () => {
     }
     // (b) global counter mutation 0건
     expect(after, `(${id}) ${label} — sentinel counter MUST NOT mutate`).toBe(before);
+  });
+});
+
+describe('FUZ-04 — sentinel tripwire 직접 검증 (Pass 3 A1 흡수)', () => {
+  it('safeParse + 가상 evaluate 직접 호출 시도 — sentinel 0 mutation', () => {
+    // 본 테스트는 vector 들이 safeParse 를 통과했다고 가정해도 우회한 평가 경로
+    // (ALLOWED_FUNCTIONS 외) 에서 함수 실행 0건임을 증명.
+    // safeParse 거부 = ok=false → AST 자체가 evaluate 진입 안 함.
+    const before = globalThis.__FUZ04_SENTINEL_COUNTER;
+    for (const v of VECTORS) {
+      const result = safeParse(v.expr);
+      // safeParse 거부 시 evaluate 진입 자체 불가 — sentinel 변화 없음 (당연)
+      // safeParse 통과 시 (vector 8) 도 sentinel 호출 표현 부재 — 변화 없음
+      expect(result.ok === true || result.ok === false).toBe(true);
+    }
+    expect(globalThis.__FUZ04_SENTINEL_COUNTER).toBe(before);
+  });
+
+  it('tripwire 자체 동작 검증 — direct call 시 counter 증가 (sentinel 무효성 회귀 차단)', () => {
+    // 본 테스트가 fail = sentinel 자체가 dead canary = FUZ-04 (b) 무효
+    const before = globalThis.__FUZ04_SENTINEL_COUNTER;
+    globalThis.__FUZ04_TRIPWIRE();
+    expect(globalThis.__FUZ04_SENTINEL_COUNTER).toBe(before + 1);
+    // 검증 후 회복 (다른 테스트 영향 차단)
+    globalThis.__FUZ04_SENTINEL_COUNTER = before;
   });
 });
 

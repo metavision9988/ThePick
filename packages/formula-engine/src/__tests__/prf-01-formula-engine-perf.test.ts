@@ -19,7 +19,8 @@ import { measure } from '@thepick/shared/test-helpers/perf';
 import { calculate } from '../engine';
 import { parseFormula, clearCache } from '../ast-parser';
 
-// BATCH1 13 산식 sample inputs (batch1-golden.test.ts 의 검증된 입력 재사용)
+// BATCH1 sample inputs (batch1-golden.test.ts 의 검증된 입력 재사용 — 본 시점 6 sample)
+// Pass 4 M-2 흡수: 주석 "BATCH1 13 산식" → 실 카운트 6 sample 정합.
 interface FormulaSample {
   readonly id: string;
   readonly vars: Record<string, number>;
@@ -61,8 +62,8 @@ describe('PRF-01 (a) — 단일 calculate p99 < 5ms', () => {
 // 합격 기준 (b) — 51개 직렬 처리 < 100ms (BATCH1 13 산식 → < 25ms 비례 검증)
 // ===========================================================================
 describe('PRF-01 (b) — N개 직렬 처리 (BATCH1 = 13 산식)', () => {
-  it('BATCH1 13 산식 직렬 처리 < 25ms (51 산식 비례 < 100ms 추정)', async () => {
-    // 직렬 처리 1회 = 13 calculate. measure 가 측정.
+  it('BATCH1 6 sample 직렬 처리 < 12ms (51 산식 비례 < 100ms 추정)', async () => {
+    // 직렬 처리 1회 = 6 calculate (BATCH1_SAMPLES sample). measure 가 측정.
     const result = await measure(
       'batch1-serial',
       () => {
@@ -108,17 +109,16 @@ describe('PRF-01 (c) — AST cache hit rate > 90%', () => {
     expect(hitRate).toBeGreaterThan(0.9);
   });
 
-  it('BATCH1 6 산식 × 10 반복 = 60회 호출 → cache hit rate > 80%', () => {
+  it('BATCH1 6 산식 × 10 반복 = 60 직접 parseFormula 호출 → 6 misses + 54 hits 정확 매칭', () => {
+    // Pass 1 MAJOR-S1 흡수: calculate() 첫 호출이 cache 적재 → directParse 가
+    // 항상 hit 되는 silent false-pass 회귀 차단. 본 테스트는 calculate() 호출
+    // 없이 parseFormula() 직접 호출만 사용해서 6 misses + 54 hits 정확 매칭 검증.
     clearCache();
 
     let hits = 0;
     let misses = 0;
     for (let iter = 0; iter < 10; iter += 1) {
       for (const sample of BATCH1_SAMPLES) {
-        // 실 산식 template 호출 (cache 활용)
-        const r = calculate(sample.id, sample.vars);
-        if (!r.ok) throw new Error(`Formula ${sample.id} 실패`);
-        // calculate 내부 parseFormula 호출 — cached 여부 측정 위해 직접 호출
         const directParse = parseFormula(getEquationTemplate(sample.id));
         if (!directParse.ok) throw new Error('parseFormula 실패');
         if (directParse.cached) hits += 1;
@@ -126,10 +126,12 @@ describe('PRF-01 (c) — AST cache hit rate > 90%', () => {
       }
     }
 
+    // BATCH1 6 산식 × 10 반복 = 60회 — 각 산식 첫 1회 miss + 9회 hit
+    // 6 misses + 54 hits = 90% hit rate (정확 카운트 매칭 의무)
+    expect(misses).toBe(6); // 산식 6개 × 첫 호출 1회씩
+    expect(hits).toBe(54); // 산식 6개 × 후속 호출 9회씩
     const hitRate = hits / (hits + misses);
-    // BATCH1 6 산식 × 10 반복 = 60회 — 첫 1회 miss + 9회 hit / 산식
-    // 6 misses + 54 hits = 90% hit rate
-    expect(hitRate).toBeGreaterThan(0.85);
+    expect(hitRate).toBeCloseTo(0.9, 5); // exact 90%
   });
 });
 

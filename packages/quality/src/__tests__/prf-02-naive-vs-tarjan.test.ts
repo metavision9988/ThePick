@@ -125,12 +125,12 @@ describe('PRF-02 — naive iterative DFS 성능 임계', () => {
       { runs: 5, warmup: 2 },
     );
     expect(result.medianMs).toBeLessThan(100);
-    // p99 100ms 초과 시 즉시 Tarjan 도입 트리거 — handoff §3 보고 의무.
-    if (result.p99Ms > 100) {
-      console.warn(
-        `[PRF-02 TRIGGER] N=10K naive DFS p99=${result.p99Ms}ms > 100ms — Tarjan 도입 의무`,
-      );
-    }
+    // Pass 3 A6 흡수: p99 assertion 추가 — silent fail-open 차단.
+    // 200ms 임계 = 100ms × 2× 변동 여유. 초과 시 즉시 Tarjan 도입 트리거 fail.
+    expect(
+      result.p99Ms,
+      `PRF-02 TRIGGER: N=10K naive DFS p99=${result.p99Ms}ms — Tarjan 도입 의무`,
+    ).toBeLessThan(200);
   });
 });
 

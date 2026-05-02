@@ -224,7 +224,8 @@ describe('REC-02 시나리오 4 — 공백 추가 (silent pivot 보고)', () => 
     const { cp, filePath, raw } = await writeSampleCheckpoint('REC-02-04-mid-ws');
 
     // key 사이 공백 추가 — `"a": 1, "b": 2` → `"a": 1,    "b": 2`
-    const tampered = raw.replace(/,\n {2}"/g, ',\n     "');
+    // Pass 1 S3 흡수: CRLF 환경 대비 \r?\n 매칭 (git autocrlf platform-dependent 차단).
+    const tampered = raw.replace(/,\r?\n {2}"/g, ',\r\n     "');
     expect(tampered).not.toBe(raw);
     await writeFile(filePath, tampered, 'utf8');
 
