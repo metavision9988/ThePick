@@ -254,13 +254,30 @@ const MAX_EXPRESSION_LENGTH = 1024;
 export const MAX_AST_NODE_COUNT = 200;
 export const MAX_AST_DEPTH = 15;
 
-function computeAstDepth(node: MathNode): number {
-  let maxChildDepth = 0;
-  node.forEach((child: MathNode) => {
-    const childDepth = computeAstDepth(child);
-    if (childDepth > maxChildDepth) maxChildDepth = childDepth;
-  });
-  return maxChildDepth + 1;
+/**
+ * AST 깊이 계산 — iterative DFS (Sprint 1 §5.4 흡수 — Pass 1 M4).
+ *
+ * 이전 순수 재귀 구현은 V8 stack overflow 시 RangeError 가 engine.ts catch 우회 throw
+ * propagate 가능. iterative + 명시 stack 으로 stack-safe 변환.
+ *
+ * 결과: 동일 (모든 노드의 depth = root 부터 leaf 까지 최장 경로 + 1).
+ */
+function computeAstDepth(root: MathNode): number {
+  // stack: [node, depth] — DFS pre-order
+  const stack: { node: MathNode; depth: number }[] = [{ node: root, depth: 1 }];
+  let maxDepth = 0;
+
+  while (stack.length > 0) {
+    const frame = stack.pop();
+    if (!frame) break;
+    const { node, depth } = frame;
+    if (depth > maxDepth) maxDepth = depth;
+    node.forEach((child: MathNode) => {
+      stack.push({ node: child, depth: depth + 1 });
+    });
+  }
+
+  return maxDepth;
 }
 
 export function assertWithinComplexityBudget(node: MathNode): void {
