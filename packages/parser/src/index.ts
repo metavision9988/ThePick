@@ -30,7 +30,11 @@ export {
 } from './ontology-registry';
 export type { OntologyRegistry } from './ontology-registry';
 
-export { validateKnowledgeContract, validateRawClaudeResponse } from './schema-validator';
+export {
+  validateKnowledgeContract,
+  validateRawClaudeResponse,
+  validateRawResponseSecurity,
+} from './schema-validator';
 export type {
   KnowledgeContract,
   KnowledgeContractNode,

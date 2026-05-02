@@ -107,13 +107,17 @@
 
 ## 3. 사용 방법 (예시 테스트)
 
+> **§5.3 Day 1 4-Pass Pass 4 MAJOR-3 흡수**: 본 예시는 `validateRawClaudeResponse`
+> (raw 응답 string 입력) 호출. 이전 명세의 `validateKnowledgeContract` (parsed
+> object 입력) 는 structural validation 단계 (raw 검사 후) 에 사용 — fixture #1/2
+> 처럼 raw 단계 거부되는 vector 는 object 입력 호출이 동작 불가.
+
 ```typescript
 import { describe, it, expect } from 'vitest';
 import { resolve } from 'node:path';
 import { readFile } from 'node:fs/promises';
 
-import { validateKnowledgeContract } from '../src/schema-validator.js';
-import { KnowledgeContractValidationError } from '../src/errors.js';
+import { validateRawClaudeResponse, KnowledgeContractValidationError } from '@thepick/parser';
 
 const FIXTURE_DIR = resolve(__dirname, '../__fixtures__/claude-malformed');
 
@@ -132,9 +136,9 @@ describe('FUZ-02 — Claude 변조 응답 8종', () => {
   for (const { file, classification } of cases) {
     it(`rejects ${file} as ${classification}`, async () => {
       const raw = await readFile(resolve(FIXTURE_DIR, file), 'utf-8');
-      expect(() => validateKnowledgeContract(raw)).toThrow(KnowledgeContractValidationError);
+      expect(() => validateRawClaudeResponse(raw)).toThrow(KnowledgeContractValidationError);
       try {
-        validateKnowledgeContract(raw);
+        validateRawClaudeResponse(raw);
       } catch (err) {
         expect((err as KnowledgeContractValidationError).classification).toBe(classification);
       }

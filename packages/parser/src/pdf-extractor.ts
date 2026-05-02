@@ -10,7 +10,7 @@
  */
 
 import { execFile } from 'node:child_process';
-import { stat, readFile } from 'node:fs/promises';
+import { stat, open } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AppError, ErrorCode } from '@thepick/shared';
@@ -52,6 +52,13 @@ const SCRIPT_PATH = resolve(__dirname, '..', 'scripts', 'extract_pdf.py');
 const PYTHON_PATH = resolve(__dirname, '..', '.venv', 'bin', 'python3');
 const DEFAULT_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 const DEFAULT_PREFLIGHT_MAX_BYTES = 50 * 1024 * 1024; // 50 MB
+/**
+ * Hard ceiling — PDF 파일 크기 절대 한도. 본 한도 초과 시 사전 거부 (4-Pass §5.3 C-4).
+ * sparse 파일 / OOM 공격 차단. 200 MB 는 정상 교재 합본 PDF 의 5x 마진.
+ */
+const HARD_FILE_SIZE_LIMIT = 200 * 1024 * 1024; // 200 MB
+/** Tail scan window — %%EOF / startxref 검사용 마지막 N bytes */
+const TAIL_SCAN_BYTES = 1024;
 
 /**
  * Compression bomb threshold — declared `/Length` exceeding actual file size by
@@ -96,8 +103,16 @@ export function getActivePdfSubprocessCount(): number {
  * 모든 vector subprocess 호출 전 거부 → zombie 0건 보장.
  */
 async function preflightPdfChecks(pdfPath: string, preflightMaxBytes: number): Promise<void> {
-  const stats = await stat(pdfPath);
-  const fileSize = stats.size;
+  // stat / 파일 핸들 fs error → PdfParseError 분류 (4-Pass §5.3 MAJOR-1 흡수)
+  let fileSize: number;
+  try {
+    const stats = await stat(pdfPath);
+    fileSize = stats.size;
+  } catch (err) {
+    throw new PdfParseError('PDF_PARSE_FAILED', `Cannot stat PDF: ${(err as Error).message}`, {
+      pdfPath,
+    });
+  }
 
   if (fileSize === 0) {
     throw new PdfParseError('EMPTY_INPUT', `Empty PDF file (0 bytes): ${pdfPath}`, {
@@ -114,12 +129,43 @@ async function preflightPdfChecks(pdfPath: string, preflightMaxBytes: number): P
     );
   }
 
-  const bytes = await readFile(pdfPath);
-  const readBytes = Math.min(fileSize, preflightMaxBytes);
-  const scanWindow = readBytes >= fileSize ? bytes : bytes.subarray(0, readBytes);
+  // Hard ceiling — sparse / OOM 공격 차단 (4-Pass §5.3 C-4)
+  if (fileSize > HARD_FILE_SIZE_LIMIT) {
+    throw new PdfParseError(
+      'PDF_PARSE_FAILED',
+      `PDF too large (${fileSize} bytes > ${HARD_FILE_SIZE_LIMIT} hard limit) — sparse file / OOM protection`,
+      { pdfPath, fileSize },
+    );
+  }
+
+  // 부분 read — head (preflightMaxBytes) + tail (1KB) 만 메모리 적재.
+  // 전체 readFile 우회로 sparse 10GB 공격 / 정상 100MB 교재 합본 OOM 방지.
+  const headSize = Math.min(fileSize, preflightMaxBytes);
+  const tailSize = Math.min(fileSize, TAIL_SCAN_BYTES);
+  const headBuf = Buffer.alloc(headSize);
+  const tailBuf = Buffer.alloc(tailSize);
+  let fd;
+  try {
+    fd = await open(pdfPath, 'r');
+    await fd.read(headBuf, 0, headSize, 0);
+    if (fileSize > headSize) {
+      // tail 이 head 와 겹치지 않을 때만 별도 read
+      await fd.read(tailBuf, 0, tailSize, fileSize - tailSize);
+    } else {
+      // 작은 파일 — head 의 끝부분이 곧 tail
+      headBuf.copy(tailBuf, 0, fileSize - tailSize, fileSize);
+    }
+  } catch (err) {
+    throw new PdfParseError('PDF_PARSE_FAILED', `Cannot read PDF: ${(err as Error).message}`, {
+      pdfPath,
+      fileSize,
+    });
+  } finally {
+    if (fd) await fd.close();
+  }
 
   // %PDF- signature (파일 시작)
-  if (!scanWindow.subarray(0, 8).includes(PDF_SIGNATURE)) {
+  if (!headBuf.subarray(0, 8).includes(PDF_SIGNATURE)) {
     throw new PdfParseError('MALFORMED_HEADER', `Missing %PDF- signature: ${pdfPath}`, {
       pdfPath,
       fileSize,
@@ -127,8 +173,7 @@ async function preflightPdfChecks(pdfPath: string, preflightMaxBytes: number): P
   }
 
   // tail %%EOF (마지막 1KB 윈도우)
-  const tailWindow = bytes.subarray(Math.max(0, fileSize - 1024));
-  if (!tailWindow.includes(Buffer.from('%%EOF', 'latin1'))) {
+  if (!tailBuf.includes(Buffer.from('%%EOF', 'latin1'))) {
     throw new PdfParseError(
       'MALFORMED_HEADER',
       `Missing %%EOF trailer (header-only or truncated PDF): ${pdfPath}`,
@@ -136,8 +181,12 @@ async function preflightPdfChecks(pdfPath: string, preflightMaxBytes: number): P
     );
   }
 
-  // PDF binary 는 latin1 안전 (UTF-8 변환 시 binary 손상)
-  const text = scanWindow.toString('latin1');
+  // PDF binary 는 latin1 안전 (UTF-8 변환 시 binary 손상). head + tail 결합.
+  // tail 이 head 안에 이미 포함된 작은 파일은 head 만으로 충분.
+  const text =
+    fileSize > headSize
+      ? headBuf.toString('latin1') + tailBuf.toString('latin1')
+      : headBuf.toString('latin1');
 
   // /JavaScript action — /S /JavaScript 는 강한 시그널
   if (/\/S\s*\/JavaScript\b/.test(text) || /\/JavaScript\b/.test(text)) {
@@ -229,12 +278,17 @@ export async function extractPdf(
   return new Promise<ExtractionResult>((promiseResolve, reject) => {
     activeSubprocessCount++;
     let settled = false;
+    let counterDecremented = false;
     const settle = (fn: () => void): void => {
       if (settled) return;
       settled = true;
       fn();
     };
-    const decrement = (): void => {
+    // Idempotent decrement — child 'exit' / 'error' / execFile callback 다중 fire 시
+    // 단일 감산만 발생. cross-call 오감산 차단 (4-Pass §5.3 C-1).
+    const decrementOnce = (): void => {
+      if (counterDecremented) return;
+      counterDecremented = true;
       if (activeSubprocessCount > 0) activeSubprocessCount--;
     };
 
@@ -243,6 +297,10 @@ export async function extractPdf(
       args,
       { timeout, maxBuffer: 100 * 1024 * 1024 },
       (error, stdout, stderr) => {
+        // callback 진입 시 보조 감산 — 'exit' / 'error' 이벤트 미발화 환경 (detached
+        // process 등) 에서 영구 +1 누수 차단.
+        decrementOnce();
+
         // Log stderr warnings from pdfplumber (data quality signals)
         if (stderr && !error) {
           console.warn(`[PDFExtractor] Warnings for ${pdfPath}:\n${stderr}`);
@@ -315,12 +373,10 @@ export async function extractPdf(
       },
     );
 
-    // subprocess lifecycle counter — exit / error 모두 감산하여 zombie 추적
-    child.once('exit', decrement);
-    child.once('error', () => {
-      decrement();
-      // 'error' 시 callback 이 자동 fire — 별도 reject 불필요.
-    });
+    // subprocess lifecycle counter — idempotent decrement (4-Pass §5.3 C-1).
+    // exit / error / callback 어느 경로에서든 단일 감산.
+    child.once('exit', decrementOnce);
+    child.once('error', decrementOnce);
   });
 }
 

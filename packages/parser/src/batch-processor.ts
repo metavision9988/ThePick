@@ -13,6 +13,7 @@ import type { Section } from './section-splitter';
 import type { ExtractedTable } from './table-extractor';
 import {
   validateKnowledgeContract,
+  validateRawResponseSecurity,
   type KnowledgeContract,
   type ValidationResult,
 } from './schema-validator';
@@ -282,6 +283,12 @@ function parseContractJson(raw: string): KnowledgeContract {
   // Claude가 ```json ... ``` 블록으로 감쌀 수 있으므로 추출
   const jsonMatch = raw.match(/`{3,}json\s*([\s\S]*?)\s*`{3,}/);
   const jsonStr = jsonMatch ? jsonMatch[1] : raw.trim();
+
+  // FUZ-02 raw 단계 보안 검사 — D1 1MB / XSS / Hard Rule 17 / depth 차단.
+  // 4-Pass §5.3 C-3 흡수 (validateRawResponseSecurity production wiring).
+  // KnowledgeContractValidationError 가 throw 시 processBatch 의 catch 가 generic
+  // Error 처리하므로 분류 정보는 err.message ("[XSS_PAYLOAD_DETECTED] ...") 로 보존.
+  validateRawResponseSecurity(jsonStr);
 
   const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
 

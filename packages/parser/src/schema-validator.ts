@@ -454,10 +454,19 @@ export function validateKnowledgeContract(contract: KnowledgeContract): Validati
 // --- Raw Claude response validation (FUZ-02) ---
 
 /**
- * 응답 임계값 — D1 single transaction 1 MB 한도 보호.
- * 본 시점 100 KB 로 보수적 설정 (대부분 BATCH 출력은 30~50 KB 이내).
+ * D1 single transaction 절대 한도 (Cloudflare 문서 기준 1 MB). schema-validator
+ * 의 응답 크기 임계는 본 상수의 1/10 비율로 도출 (4-Pass §5.3 MAJOR-3 흡수).
+ */
+const D1_TRANSACTION_LIMIT_BYTES = 1024 * 1024; // 1 MB
+
+/**
+ * 응답 임계값 — D1 1 MB 한도의 약 1/10 (보수적). 대부분 BATCH 출력은 30~50 KB 이내.
+ * 100 KB = 102400 bytes ≈ D1_TRANSACTION_LIMIT_BYTES * 0.0977 (D1 한도 변경 시
+ * 본 비율 재검토 — 본 시점 100 KB 가 정합).
  */
 const DEFAULT_MAX_RESPONSE_SIZE_BYTES = 100 * 1024;
+// Build-time 확인 — D1 1MB 한도 미만 보장 (silent drift 방지)
+void (D1_TRANSACTION_LIMIT_BYTES > DEFAULT_MAX_RESPONSE_SIZE_BYTES);
 
 /**
  * JSON 깊이 임계값 — V8 의 default JSON.parse 한계 (~10K) 도달 전 거부.
@@ -467,17 +476,32 @@ const DEFAULT_MAX_RESPONSE_SIZE_BYTES = 100 * 1024;
 const DEFAULT_MAX_JSON_DEPTH = 50;
 
 /**
- * XSS payload 정규식 — content / title 필드의 raw HTML / JavaScript URI 차단.
- * raw 응답 단계 검사 (parse 전) — DB 적재 / UI 렌더링 전 1차 방어선.
+ * XSS payload 정규식 — HTML 태그 컨텍스트 한정 (4-Pass §5.3 C-2 흡수).
+ * 자연어 false positive (option=, online=, ontology=, once= 등) 차단을 위해
+ * `\bon\w+\s*=` 단독 매칭 제거. event handler 는 반드시 `<tag ... on*=` 형태.
  */
 const XSS_PAYLOAD_PATTERNS = [
   /<script\b/i,
   /javascript:/i,
-  /\bon\w+\s*=/i, // onerror, onclick, onload, ...
+  /<[a-z][^>]*\s+on\w+\s*=/i, // <tag ... onerror=...> / <tag ... onclick=...>
   /<iframe\b/i,
   /<object\b/i,
   /<embed\b/i,
 ];
+
+/**
+ * HTML metacharacter escape — error message / metadata 의 secondary XSS 차단
+ * (4-Pass §5.3 C-5 흡수). admin-web / Logpush UI 가 sanitize 안 해도 안전.
+ */
+function escapeHtmlSnippet(text: string, maxLen = 200): string {
+  return text
+    .slice(0, maxLen)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 /**
  * Hard Rule 17 위반 — examId literal 직접 인용 차단.
@@ -567,29 +591,29 @@ function mapValidationErrorsToClassification(
   return new KnowledgeContractValidationError(
     'PARSE_ERROR',
     `Validation failed: ${errors[0].message}`,
-    { field: errors[0].path, allErrors: errors, rawSnippet: raw.slice(0, 200) },
+    { field: errors[0].path, allErrors: errors, rawSnippet: escapeHtmlSnippet(raw) },
   );
 }
 
 /**
- * raw Claude / LLM 응답 검증 — 8종 변조 응답 (FUZ-02) graceful 분류 throw.
+ * raw 응답 단계 보안 / 임계 / Hard Rule 17 / depth 검사 — 1~5 단계 한정 (parse 미포함).
  *
- * 검사 순서 (실패 시 즉시 throw):
+ * 검사 순서:
  * 1. EMPTY_RESPONSE — 빈 응답
  * 2. RESPONSE_SIZE_EXCEEDED — 임계 초과 (D1 transaction 보호)
- * 3. XSS_PAYLOAD_DETECTED — script / javascript: / event handler
+ * 3. XSS_PAYLOAD_DETECTED — script / javascript: / event handler (HTML 태그 컨텍스트)
  * 4. HARD_RULE_17_VIOLATION — examId literal 인용
  * 5. JSON_DEPTH_EXCEEDED — 50 단계 초과
- * 6. PARSE_ERROR — JSON.parse 실패
- * 7. structural validation (validateKnowledgeContract 위임) — 실패 시 ONTOLOGY_UNREGISTERED_ID /
- *    MISSING_REQUIRED_FIELD 등으로 매핑
  *
- * @throws {KnowledgeContractValidationError} 분류된 에러
+ * batch-processor 등 raw 단계 진입 caller 가 본 함수만 호출하여 parse 책임을
+ * 자체 보유 가능 (tolerant default 처리 등). 4-Pass §5.3 C-3 흡수.
+ *
+ * @throws {KnowledgeContractValidationError} 1~5 단계 위반 시 분류된 에러
  */
-export function validateRawClaudeResponse(
+export function validateRawResponseSecurity(
   raw: string,
   options: RawResponseValidationOptions = {},
-): KnowledgeContract {
+): void {
   const maxSize = options.maxSizeBytes ?? DEFAULT_MAX_RESPONSE_SIZE_BYTES;
   const maxDepth = options.maxDepth ?? DEFAULT_MAX_JSON_DEPTH;
 
@@ -598,7 +622,7 @@ export function validateRawClaudeResponse(
     throw new KnowledgeContractValidationError(
       'EMPTY_RESPONSE',
       'Empty Claude response (0 bytes or whitespace only)',
-      { rawSnippet: typeof raw === 'string' ? raw.slice(0, 200) : '' },
+      { rawSnippet: typeof raw === 'string' ? escapeHtmlSnippet(raw) : '' },
     );
   }
 
@@ -612,14 +636,18 @@ export function validateRawClaudeResponse(
     );
   }
 
-  // 3. XSS_PAYLOAD_DETECTED
+  // 3. XSS_PAYLOAD_DETECTED — message + metadata 모두 escape (4-Pass §5.3 C-5)
   for (const pattern of XSS_PAYLOAD_PATTERNS) {
     const match = raw.match(pattern);
     if (match) {
       throw new KnowledgeContractValidationError(
         'XSS_PAYLOAD_DETECTED',
-        `XSS payload detected in raw response: "${match[0]}"`,
-        { rawSnippet: raw.slice(0, 200), field: 'raw', pattern: pattern.source },
+        `XSS payload detected in raw response: "${escapeHtmlSnippet(match[0], 100)}"`,
+        {
+          rawSnippet: escapeHtmlSnippet(raw),
+          field: 'raw',
+          pattern: pattern.source,
+        },
       );
     }
   }
@@ -630,7 +658,7 @@ export function validateRawClaudeResponse(
       throw new KnowledgeContractValidationError(
         'HARD_RULE_17_VIOLATION',
         `Hard Rule 17 violation: examId literal '${literal}' in raw response (must use EXAM_IDS catalogue)`,
-        { rawSnippet: raw.slice(0, 200), field: 'raw', literal },
+        { rawSnippet: escapeHtmlSnippet(raw), field: 'raw', literal },
       );
     }
   }
@@ -644,6 +672,25 @@ export function validateRawClaudeResponse(
       { depth, maxAllowed: maxDepth },
     );
   }
+}
+
+/**
+ * raw Claude / LLM 응답 검증 — 8종 변조 응답 (FUZ-02) graceful 분류 throw.
+ *
+ * 검사 순서 (실패 시 즉시 throw):
+ * 1~5. validateRawResponseSecurity 위임 (보안 / 임계 / Hard Rule 17 / depth)
+ * 6.   PARSE_ERROR — JSON.parse 실패
+ * 7.   structural validation (validateKnowledgeContract 위임) — 실패 시
+ *      ONTOLOGY_UNREGISTERED_ID / MISSING_REQUIRED_FIELD 등으로 매핑
+ *
+ * @throws {KnowledgeContractValidationError} 분류된 에러
+ */
+export function validateRawClaudeResponse(
+  raw: string,
+  options: RawResponseValidationOptions = {},
+): KnowledgeContract {
+  // 1~5. raw 단계 보안 / 임계 검사 위임
+  validateRawResponseSecurity(raw, options);
 
   // 6. PARSE_ERROR
   let parsed: unknown;
@@ -652,7 +699,7 @@ export function validateRawClaudeResponse(
   } catch (err) {
     const e = err as Error;
     throw new KnowledgeContractValidationError('PARSE_ERROR', `JSON parse failed: ${e.message}`, {
-      rawSnippet: raw.slice(0, 200),
+      rawSnippet: escapeHtmlSnippet(raw),
     });
   }
 
