@@ -17,6 +17,17 @@
         "selector": "Literal[value='son-hae-pyeong-ga-sa']",
         "message": "Hard Rule 17: 시험 ID 리터럴은 packages/shared/src/constants/exam-ids.ts 에서만 선언. 다른 코드는 `EXAM_IDS.SON_HAE_PYEONG_GA_SA` 경유."
       }
+    ],
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["**/__tests__/helpers/**", "**/__tests__/**", "**/test-helpers/**"],
+            "message": "Production 코드는 __tests__/helpers / test-helpers 임포트 금지. 본 헬퍼들은 wrangler bundle 에 포함되면 chaos 코드 (d1-disconnect-mock 등) 가 production 활성화 회귀 vector. Sprint 1 §5.3 4-Pass C-CODE-2 흡수."
+          }
+        ]
+      }
     ]
   },
   "overrides": [
@@ -24,6 +35,19 @@
       "files": ["packages/shared/src/constants/exam-ids.ts"],
       "rules": {
         "no-restricted-syntax": "off"
+      }
+    },
+    {
+      "files": [
+        "**/__tests__/**",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.spec.ts",
+        "**/test-helpers/**",
+        "**/__fixtures__/**"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
       }
     }
   ],
