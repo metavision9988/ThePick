@@ -64,6 +64,15 @@ describe('isRetryable', () => {
     expect(isRetryable(new Error('D1_ERROR: 503 Service Unavailable'))).toBe(true);
   });
 
+  // CHA-01 Sprint 1 §5.3 — D1 disconnect / unavailable 패턴 정합 (chaos test wrapper).
+  it('marks D1_DISCONNECT as retryable (CHA-01 — disconnect simulation)', () => {
+    expect(isRetryable(new Error('D1_DISCONNECT: simulated 10% disconnect rate'))).toBe(true);
+  });
+
+  it('marks D1_UNAVAILABLE as retryable (CHA-01)', () => {
+    expect(isRetryable(new Error('D1_UNAVAILABLE: connection lost'))).toBe(true);
+  });
+
   it('defaults to non-retryable for unknown errors (safe default)', () => {
     expect(isRetryable(new Error('Some random error'))).toBe(false);
   });

@@ -47,6 +47,8 @@ const RETRYABLE_MESSAGE_PATTERNS: readonly RegExp[] = [
   /network/i,
   /D1_ERROR.*5\d\d/i,
   /D1_DUMP_ERROR/i,
+  /D1_DISCONNECT/i,
+  /D1_UNAVAILABLE/i,
   /unreachable/i,
 ];
 
