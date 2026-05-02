@@ -204,7 +204,7 @@ describe('draft-loader', () => {
     ).rejects.toThrow(/defaultAppliesTo/);
   });
 
-  it('node page_ref 트리거 방어선 — 직접 INSERT 는 차단됨 (0010 마이그레이션)', () => {
+  it('node page_ref 트리거 방어선 — 직접 INSERT 는 차단됨 (0010 + 0018 마이그레이션 의도된 redundancy)', () => {
     expect(() =>
       ctx.raw
         .prepare(
@@ -212,7 +212,7 @@ describe('draft-loader', () => {
            VALUES ('X-001', 'CONCEPT', '테스트', 2026, 5, 'draft')`,
         )
         .run(),
-    ).toThrow(/page_ref is required/);
+    ).toThrow(/page_ref is required|Hard Rule 13 violation/);
   });
 
   it('빈 contract 도 처리 (nothing to load)', async () => {
