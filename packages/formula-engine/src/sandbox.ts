@@ -240,16 +240,19 @@ export interface ParseError {
  * AST 노드를 순회하여 허용되지 않은 함수/프로퍼티를 차단한다.
  *
  * Sprint 1 §5.3 CHA-02 — AST 복잡도/깊이 사전 차단:
- *   - MAX_AST_NODE_COUNT: 노드 총수 한도. 정상 산식 (F-01~F-68) 모두 ≤ 50,
- *     500 은 10× 여유. "1+1+1+..." 250+ 반복 같은 폭탄 차단.
- *   - MAX_AST_DEPTH: 트리 깊이 한도. 정상 산식 모두 ≤ 10, 30 은 3× 여유.
- *     `((((...))))` 같은 중첩 폭탄 차단.
+ *   - MAX_AST_NODE_COUNT: 노드 총수 한도. 정상 산식 (F-01~F-68) 모두 ≤ 50.
+ *     Sprint 1 §5.4 흡수 (Pass 3 MAJOR-10): 500 → 200 보수화 (4× 여유).
+ *     "1+1+1+..." 100+ 반복 같은 폭탄 차단 즉시 발화.
+ *   - MAX_AST_DEPTH: 트리 깊이 한도. 정상 산식 모두 ≤ 10.
+ *     Sprint 1 §5.4 흡수 (Pass 3 MAJOR-10): 30 → 15 보수화 (1.5× 여유).
+ *     `((((...))))` 같은 중첩 폭탄 차단 즉시 발화.
  *   - 한도 초과 시 CalculationTimeoutError throw → engine.calculate() 가
  *     COMPUTE_TIMEOUT FormulaError 로 매핑.
+ *   - 한도 변경 절차: ADR-029 §2.4 (cache invalidation + 회귀 게이트 + Decision Log).
  */
 const MAX_EXPRESSION_LENGTH = 1024;
-export const MAX_AST_NODE_COUNT = 500;
-export const MAX_AST_DEPTH = 30;
+export const MAX_AST_NODE_COUNT = 200;
+export const MAX_AST_DEPTH = 15;
 
 function computeAstDepth(node: MathNode): number {
   let maxChildDepth = 0;

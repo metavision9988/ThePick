@@ -34,15 +34,20 @@ import {
 describe('CHA-02 — AST 복잡도 사전 차단 (MAX_AST_NODE_COUNT)', () => {
   it('safeParse 는 노드 수 한도 초과 시 CalculationTimeoutError throw', () => {
     // "1+1+1+...+1" — 1+1 쌍당 2 chars. MAX_EXPRESSION_LENGTH=1024 한도 안에서
-    // MAX_AST_NODE_COUNT=500 초과 필요. 300회 반복 → ~599 chars (length OK) + ~599 nodes (over 500).
-    // 단, 좌결합 AST 라 nodeCount 가 depth 보다 먼저 트립 — assertWithinComplexityBudget 의
-    // nodeCount 우선 체크 정합.
-    const expression = Array.from({ length: 300 }, () => '1').join('+');
-    expect(expression.length).toBeLessThanOrEqual(1024); // MAX_EXPRESSION_LENGTH 미초과 보장
+    // MAX_AST_NODE_COUNT=200 초과 필요 (Sprint 1 §5.4 보수화: 500 → 200).
+    // 좌결합 AST 라 nodeCount 가 depth 보다 먼저 트립 — assertWithinComplexityBudget 의
+    // nodeCount 우선 체크 정합. 단, depth 가 nodeCount 보다 먼저 트립 시 ast_too_deep
+    // 으로 fallthrough — depth 를 회피하기 위해 우괄호로 그룹화.
+    // 300회 좌결합 → depth ≈ 301 > MAX_AST_DEPTH=15 → ast_too_deep 먼저 트립.
+    // → 본 테스트는 nodeCount 단독 트립을 검증하기 위해 우괄호 단순 합산:
+    //   "(1+1)+(1+1)+..." = depth=2 + nodeCount=N 형태.
+    // 100 그룹 → nodeCount=400 (한도 200 초과), depth=2 (한도 15 미만).
+    const groups = Array.from({ length: 100 }, () => '(1+1)').join('+');
+    expect(groups.length).toBeLessThanOrEqual(1024); // MAX_EXPRESSION_LENGTH 미초과 보장
 
     let thrown: unknown;
     try {
-      safeParse(expression);
+      safeParse(groups);
     } catch (e) {
       thrown = e;
     }
@@ -54,9 +59,10 @@ describe('CHA-02 — AST 복잡도 사전 차단 (MAX_AST_NODE_COUNT)', () => {
     );
   });
 
-  it('한도 이내 산식 (20회 반복) 은 정상 통과', () => {
-    // 좌결합 AST 라 reps 수 ≈ depth. MAX_AST_DEPTH=30 안에서 검증.
-    const expression = Array.from({ length: 20 }, () => '1').join('+');
+  it('한도 이내 산식 (10회 반복) 은 정상 통과', () => {
+    // 좌결합 AST 라 reps 수 ≈ depth. MAX_AST_DEPTH=15 안에서 검증.
+    // 10회 → depth ≈ 11 < 15. nodeCount ≈ 21 < 200.
+    const expression = Array.from({ length: 10 }, () => '1').join('+');
     const result = safeParse(expression);
     expect(result.ok).toBe(true);
   });
@@ -65,8 +71,8 @@ describe('CHA-02 — AST 복잡도 사전 차단 (MAX_AST_NODE_COUNT)', () => {
 describe('CHA-02 — AST 깊이 사전 차단 (MAX_AST_DEPTH)', () => {
   it('safeParse 는 중첩 깊이 한도 초과 시 CalculationTimeoutError throw', () => {
     // ((((1)))) — 깊이 N: ParenthesisNode N + ConstantNode 1.
-    // MAX_AST_DEPTH=30 → 35 깊이 중첩 polyethylene.
-    const expression = '('.repeat(35) + '1' + ')'.repeat(35);
+    // Sprint 1 §5.4 보수화: MAX_AST_DEPTH=30 → 15 → 20 깊이 중첩 trip.
+    const expression = '('.repeat(20) + '1' + ')'.repeat(20);
     expect(expression.length).toBeLessThanOrEqual(1024);
 
     let thrown: unknown;
