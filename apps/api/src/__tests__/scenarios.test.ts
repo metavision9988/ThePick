@@ -818,12 +818,14 @@ function progressEnv(overrides: EnvOverrides = {}) {
 }
 
 function seedKnowledgeNode(nodeId: string): void {
-  // Hard Rule 13 (마이그레이션 0018) 정합 — INSERT status=draft + page_ref 강제.
+  // Hard Rule 13 (마이그레이션 0018) + ADR-030 (마이그레이션 0019) 정합:
+  //   - status=draft + page_ref 강제 (0010/0018)
+  //   - book_page / pdf_page NOT NULL 강제 (0019)
   // 시나리오 테스트는 dangling FK 차단 검증 목적이므로 status 전이 시뮬레이션 불필요.
   ctx.raw
     .prepare(
-      `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status)
-       VALUES (?, 'CONCEPT', '시나리오 테스트 노드', '999', 2026, 5, 'draft')`,
+      `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status, book_page, pdf_page)
+       VALUES (?, 'CONCEPT', '시나리오 테스트 노드', '999', 2026, 5, 'draft', 999, 999)`,
     )
     .run(nodeId);
 }

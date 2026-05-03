@@ -9,6 +9,11 @@ import { loadDraft, DraftLoadError } from '../loader/draft-loader';
 import { openLocalDb, type LocalD1 } from '../loader/local-db';
 
 function minimalContract(): KnowledgeContract {
+  // ADR-030: PDF p.N = 본문 p.(N-7) (BATCH-1 손해평가사 교재 offset).
+  // book_page / pdf_page 모두 NOT NULL (마이그레이션 0019 트리거).
+  // chapter / section 은 raw 텍스트 (`docs/batch-load/batch-1-raw-pages-403-434.txt`) 와 정합:
+  //   book_page=396 → 제1장 제3절 (CONCEPT-001 영역)
+  //   book_page=407 → 제2장 제2절 (F-99 영역, 적과전 종합위험 산식)
   return {
     nodes: [
       {
@@ -18,6 +23,10 @@ function minimalContract(): KnowledgeContract {
         content: '적과 전까지 종합위험 방식 적용',
         truth_weight: 5,
         source_page: 403,
+        book_page: 396,
+        pdf_page: 403,
+        chapter: '제1장 농업재해보험 손해평가 개관',
+        section: '제3절 현지조사 내용',
       },
       {
         id: 'F-99',
@@ -26,6 +35,10 @@ function minimalContract(): KnowledgeContract {
         content: 'F-01 산식 래퍼',
         truth_weight: 8,
         source_page: 414,
+        book_page: 407,
+        pdf_page: 414,
+        chapter: '제2장 농작물재해보험 손해평가',
+        section: '제2절 과수작물 손해평가 및 보험금 산정',
       },
     ],
     edges: [
@@ -205,11 +218,13 @@ describe('draft-loader', () => {
   });
 
   it('node page_ref 트리거 방어선 — 직접 INSERT 는 차단됨 (0010 + 0018 마이그레이션 의도된 redundancy)', () => {
+    // ADR-030: book_page / pdf_page 채워 0019 트리거 우회 → 0010/0018 page_ref 트리거가 우선 발화.
+    // 본 테스트는 0010/0018 invariant 검증이 목적이므로 0019 차단을 의도적으로 비켜간다.
     expect(() =>
       ctx.raw
         .prepare(
-          `INSERT INTO knowledge_nodes (id, type, name, version_year, truth_weight, status)
-           VALUES ('X-001', 'CONCEPT', '테스트', 2026, 5, 'draft')`,
+          `INSERT INTO knowledge_nodes (id, type, name, version_year, truth_weight, status, book_page, pdf_page)
+           VALUES ('X-001', 'CONCEPT', '테스트', 2026, 5, 'draft', 396, 403)`,
         )
         .run(),
     ).toThrow(/page_ref is required|Hard Rule 13 violation/);
@@ -235,11 +250,12 @@ describe('draft-loader', () => {
   // 빈 문자열 차단이 silently 깨졌을 때 회귀를 잡을 명시적 테스트. 0018 은 NULL only 라 빈 문자열
   // 케이스에서 fire 하지 않으므로, 본 테스트는 0010 단독 invariant 를 검증한다.
   it('0010 strict superset — page_ref 빈 문자열도 차단 (NULL 아닌 케이스, 0018 미커버)', () => {
+    // ADR-030: book_page / pdf_page 채워 0019 트리거 우회 → 0010 빈문자열 차단 트리거가 우선 발화.
     expect(() =>
       ctx.raw
         .prepare(
-          `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status)
-           VALUES ('Y-001', 'CONCEPT', '테스트', '', 2026, 5, 'draft')`,
+          `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status, book_page, pdf_page)
+           VALUES ('Y-001', 'CONCEPT', '테스트', '', 2026, 5, 'draft', 396, 403)`,
         )
         .run(),
     ).toThrow(/page_ref is required/);

@@ -46,10 +46,11 @@ function seedUser(id: string, email: string): void {
 }
 
 function seedNode(id: string): void {
+  // ADR-030 (마이그레이션 0019) 정합 — book_page / pdf_page NOT NULL 강제.
   ctx.raw
     .prepare(
-      `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status)
-       VALUES (?, 'CONCEPT', '테스트 노드', '999', 2026, 5, 'draft')`,
+      `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status, book_page, pdf_page)
+       VALUES (?, 'CONCEPT', '테스트 노드', '999', 2026, 5, 'draft', 999, 999)`,
     )
     .run(id);
 }

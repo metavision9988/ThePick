@@ -34,6 +34,12 @@ const MIGRATIONS_DIR = join(__dirname, '..', '..', '..', '..', '..', 'migrations
 /**
  * 시나리오 테스트에 필요한 migration 만 로드.
  * 1차 5-페르소나 quality MIN-Q1 영속 + Phase 1 5-페르소나 CRIT-QPHASE1-3 흡수 — 0013~0018 추가.
+ * Step 039 4-Pass CRIT-1 (Pass 1 + 2 일치) 흡수 — 0019 추가 (ADR-030 dual-schema dormancy 차단).
+ *
+ * ★ TD-API-001 (Step 036 silent-failure-hunter MAJOR-3) 누적 부채:
+ *   본 배열 + scripts/verify-engine-contracts.ts 의 readdir 자동 wrapper 가 분리되어
+ *   향후 마이그레이션 추가 시 본 배열 갱신 망각하면 동일 dual-schema dormancy 회귀 위험.
+ *   Sprint 2 초기 자동 readdir 통합 의무 (handoff §주의사항 + WBS §5 ledger).
  */
 const SCENARIO_MIGRATIONS = [
   '0001_initial_schema.sql',
@@ -54,6 +60,7 @@ const SCENARIO_MIGRATIONS = [
   '0016_knowledge_nodes_batch_idempotency.sql',
   '0017_engine_telemetry.sql',
   '0018_enforce_draft_only_insert.sql',
+  '0019_knowledge_nodes_page_chapter_meta.sql',
 ];
 
 export interface SqliteBackedD1 {
