@@ -3,15 +3,17 @@
 > **살아있는 문서** — Group A 잔여 2건 흡수 시 / Phase B 흡수 시 / BATCH-1 진입 시점에 갱신.
 > handoff-N+1 작성 시 본 문서 status 동기화 의무.
 
-작성일: 2026-05-02 ~22:00 KST (Session 035)
+작성일: 2026-05-02 ~22:00 KST (Session 035) → 2026-05-03 ~00:40 KST 갱신 (Session 038 진입)
 정합 출처:
 
-- `.jjokjipge/handoff-session-035.md` §0~§5
+- `.jjokjipge/handoff-session-038.md` §0~§7 (최신)
+- `.jjokjipge/handoff-session-037.md` `.jjokjipge/handoff-session-036.md` `.jjokjipge/handoff-session-035.md`
 - `.claude/reviews/phase1-tech-debt-20260502-index.md` (5-페르소나 통합)
 - `.claude/reviews/review-20260502-group-a-4pass-index.md` (Group A 4-Pass)
-- `.claude/reviews/review-20260502-batch-loader-regex-regression.md` (본 세션 회귀 흡수)
+- `.claude/reviews/review-20260502-telemetry-client-pass1234-index.md` (Step 037 telemetry-client 4-Pass)
+- `.claude/reviews/review-20260502-admin-web-vitest-pass1234.md` (Step 037 admin-web 4-Pass)
 - `scripts/verify-engine-contracts.ts` (자동 게이트 baseline)
-- `.claude/reports/sprint1-step5-5-verify-after-group-a-20260502.json` (실측)
+- `.claude/reports/sprint1-step5-5-verify-session-038-entry-run{1,2}.json` (Step 038 진입 실측, deterministic PASS)
 
 ---
 
@@ -78,7 +80,9 @@
 │       └── CRIT-QPHASE1-1 admin-web vitest + 10 tests ............. ✅ dec85ad (모노레포 1200)
 │
 ├── Phase B 보안 — localStorage admin_api_token httpOnly cookie 강화
-│   └── v1.1 §10.7 #9 잔여 흡수 (실제로는 e5273da 1차 전환에서 완료, 잔여 거의 없음) 🟡 차세션 (재정의 필요)
+│   ├── localStorage 잔여 0건 (e5273da 1차 전환에서 완료) ............. ✅ Step 038 reconnaissance 확인
+│   ├── HttpOnly + SameSite=Strict + Secure (production/staging) ..... ✅ telemetry/admin-token.ts:104,108,112 + auth/routes.ts:518
+│   └── 작업 재정의 결과: skip (추가 작업 무의미, evidence 기반) ..... ✅ Step 038 진산님 비협의 자율 결정
 │
 ├── BATCH-1 진입 직전 후속 PR (~1주)
 │   ├── production migrations staging dry-run ..................... 🔴 진산님 콘솔 (Cloudflare D1)
@@ -175,12 +179,21 @@ gantt
     verify 회귀 fix (regex alternation):done, sess_reg, 2026-05-02 18:18, 3m
     4-Pass MAJOR 1+2 즉시 흡수         :done, sess_m12, 2026-05-02 21:43, 3m
 
-    section Group A 잔여 2건 (★ 차세션)
-    CRIT-QPHASE1-1 admin-web vitest    :crit, ga_rem1, 2026-05-03 09:00, 4h
-    CRITICAL-DO-S1-1 telemetry-client  :crit, ga_rem2, 2026-05-03 13:00, 3h
+    section Step 037 Group A 잔여 2건 흡수
+    CRITICAL-DO-S1-1 telemetry-client  :done, s37_dos1, 2026-05-02 22:10, 45m
+    4-Pass telemetry-client + MAJOR 6  :done, s37_4p1, 2026-05-02 22:55, 30m
+    CRIT-QPHASE1-1 admin-web vitest    :done, s37_q1, 2026-05-02 23:25, 25m
+    4-Pass admin-web (background→도착) :done, s37_4p2, 2026-05-02 23:50, 8m
+    WBS §1+§4+§6 + handoff-038 영속    :done, s37_doc, 2026-05-02 23:58, 32m
 
-    section Phase B 보안 강화 (병렬 가능)
-    httpOnly cookie 추가 강화          :active, phb_v2, 2026-05-03 16:00, 2h
+    section Step 038 진입
+    verify 연속 2회 deterministic PASS :done, s38_vrf, 2026-05-03 00:30, 2m
+    Phase B reconnaissance + skip 결정 :done, s38_phb, 2026-05-03 00:32, 5m
+    WBS §2 Gantt + §3 카운트 갱신      :active, s38_wbs, 2026-05-03 00:37, 10m
+
+    section Phase B 보안 강화 (★ skip 결정 — Step 038)
+    localStorage 잔여 0건 (e5273da)    :done, phb_loc, 2026-05-01 22:56, 10m
+    HttpOnly+SameSite+Secure 적용 검증 :done, phb_cookie, 2026-05-01 23:16, 16m
 
     section BATCH-1 진입 직전 후속 PR (~1주)
     production staging dry-run         :         post1, 2026-05-04, 1d
@@ -220,35 +233,35 @@ gantt
 
 ## 3. 카테고리별 진척 (Cat 1~8 — verify-engine-contracts.ts 자동 게이트)
 
-| Cat   | 영역                                           | 상태 | observed / required | 비고                                                                                           |
-| :---- | :--------------------------------------------- | :--: | :------------------ | :--------------------------------------------------------------------------------------------- |
-| 1+2+3 | 단위 + 모듈 + 통합 (vitest)                    |  ✅  | 1174 / 1174         | shared 50 / formula-engine 303 / parser 155 / quality 57 / batch 311 / api 285 / ai-adapter 13 |
-| 4     | E2E (AC 시나리오)                              |  ✅  | 9 / 4               | AC-RP-1/2/3/4/6/7 + AC-R1/3 + AC-Snapshot + AC-Cost + AC-ExamId + AC-T3                        |
-| 5A    | P0 시나리오 매트릭스 (Sprint 1 §5.5)           |  ✅  | 15 / 15             | 12 direct + 3 alias / silent skip 0건 / footnote 6건 expansion trigger 영속                    |
-| 5B    | Workers CPU 50ms 벤치 + 토큰 + Vectorize       |  ⚪  | SKIP                | Phase 2 위임 — completion report v1.2 §10.6 매트릭스                                           |
-| 6     | Formula 결정성 + 마이그레이션                  |  ✅  | 303 / 251 + 18 / 18 | Formula Engine = QG-2/QG-5 골격 / 0014 트리거 + 0016 unique + 0018 Hard Rule 13                |
-| 7     | 보안 (Hard Rule 17 / 동적 실행 / XSS / logger) |  ✅  | 4 boolean PASS      | EXAM_IDS 단일 선언 / math.js AST 만 허용 / innerHTML 0건 / Step 18+19 logger 정합              |
-| 8     | 출력 검증 (LLM Reviewer + 근거 FK)             |  ⚪  | SKIP                | LLM 통합 후 Phase 1 후반 — Reviewer 검수 + 근거 FK 검증 별도 plan                              |
+| Cat   | 영역                                           | 상태 | observed / required | 비고                                                                                                                     |
+| :---- | :--------------------------------------------- | :--: | :------------------ | :----------------------------------------------------------------------------------------------------------------------- |
+| 1+2+3 | 단위 + 모듈 + 통합 (vitest)                    |  ✅  | 1200 / 1200         | shared 50 / formula-engine 303 / parser 155 / quality 57 / batch 327 / api 285 / ai-adapter 13 / admin-web 10 (Step 037) |
+| 4     | E2E (AC 시나리오)                              |  ✅  | 9 / 4               | AC-RP-1/2/3/4/6/7 + AC-R1/3 + AC-Snapshot + AC-Cost + AC-ExamId + AC-T3                                                  |
+| 5A    | P0 시나리오 매트릭스 (Sprint 1 §5.5)           |  ✅  | 15 / 15             | 12 direct + 3 alias / silent skip 0건 / footnote 6건 expansion trigger 영속                                              |
+| 5B    | Workers CPU 50ms 벤치 + 토큰 + Vectorize       |  ⚪  | SKIP                | Phase 2 위임 — completion report v1.2 §10.6 매트릭스                                                                     |
+| 6     | Formula 결정성 + 마이그레이션                  |  ✅  | 303 / 251 + 18 / 18 | Formula Engine = QG-2/QG-5 골격 / 0014 트리거 + 0016 unique + 0018 Hard Rule 13                                          |
+| 7     | 보안 (Hard Rule 17 / 동적 실행 / XSS / logger) |  ✅  | 4 boolean PASS      | EXAM_IDS 단일 선언 / math.js AST 만 허용 / innerHTML 0건 / Step 18+19 logger 정합                                        |
+| 8     | 출력 검증 (LLM Reviewer + 근거 FK)             |  ⚪  | SKIP                | LLM 통합 후 Phase 1 후반 — Reviewer 검수 + 근거 FK 검증 별도 plan                                                        |
 
 ---
 
 ## 4. 잔여 task 우선순위 매트릭스
 
-| 우선순위 | Task                                                 | 영역        | 분량 | 차단 영향                                                                                                    |
-| :------: | :--------------------------------------------------- | :---------- | :--: | :----------------------------------------------------------------------------------------------------------- |
-|  ✅ P0   | CRITICAL-DO-S1-1 telemetry-client                    | devops      | 2-3h | **흡수 완료** (commit 21f57c6) — memory project_engine_observability 6 게이지 wire-up                        |
-|  ✅ P0   | CRIT-QPHASE1-1 admin-web vitest                      | quality     | 3-4h | **흡수 완료** (commit dec85ad) — 10 tests + AbortController in-flight cancel                                 |
-|  **P1**  | CRIT-QPHASE1-1 4-Pass 독립 에이전트 리뷰             | quality     | 0.5h | 본 세션 background 위임 (agentId ab6c0886cb8f5e72d) — 결과 도착 시 흡수                                      |
-|  **P1**  | Phase B httpOnly cookie 추가 강화                    | security    | 1.5h | localStorage 잔여 0건 (e5273da 1차 전환에서 완료) — 작업 재정의 필요 (cookie SameSite/Secure 점검 또는 skip) |
-|  **P1**  | TD-API-001 SCENARIO_MIGRATIONS 자동 readdir          | tooling     |  2h  | Step 036 4-Pass MAJOR-3 (silent regression 위험)                                                             |
-|  **P1**  | TD-VRF-001 verify vitest 비결정성                    | tooling     |  2h  | Step 037 재현: 변경 직후 첫 실행 326/327 → 재실행 327/327                                                    |
-|  **P1**  | Pass3-MAJOR-2 .env.example THEPICK*TELEMETRY*\* 추가 | docs        | 0.2h | Step 037 명시 이월 (Hard Limit 권한 거부 → 진산님 콘솔 영역)                                                 |
-|  **P2**  | C-PERF-1 dashboard Promise.all                       | performance |  1h  | Phase 2 진입 직전 의무 (10K 사용자 latency)                                                                  |
-|  **P2**  | C-PERF-2 GC purgeOldTelemetry()                      | performance |  4h  | Phase 2 진입 직전 의무 (engine_telemetry 무한 누적)                                                          |
-|  **P2**  | C-PERF-3 rate_limits batch DELETE                    | performance |  4h  | Phase 2 진입 직전 의무 (28.8M row Workers timeout)                                                           |
-|  **P2**  | C-PERF-4 parseFormula cache key                      | performance |  2h  | Phase 2 진입 직전 의무 (한도 변경 시 stale cache)                                                            |
-|  **P3**  | C-RF-1 resolveLoggerEnv 단일 출처                    | refactoring |  1d  | 6개월 부채 (Phase 1 종료 게이트 또는 Phase 2)                                                                |
-|  **P3**  | C-RF-2 withRetry 통합                                | refactoring |  1d  | 6개월 부채 (Phase 1 종료 게이트 또는 Phase 2)                                                                |
+| 우선순위 | Task                                                 | 영역        | 분량 | 차단 영향                                                                                           |
+| :------: | :--------------------------------------------------- | :---------- | :--: | :-------------------------------------------------------------------------------------------------- |
+|  ✅ P0   | CRITICAL-DO-S1-1 telemetry-client                    | devops      | 2-3h | **흡수 완료** (commit 21f57c6) — memory project_engine_observability 6 게이지 wire-up               |
+|  ✅ P0   | CRIT-QPHASE1-1 admin-web vitest                      | quality     | 3-4h | **흡수 완료** (commit dec85ad) — 10 tests + AbortController in-flight cancel                        |
+|  ✅ P1   | CRIT-QPHASE1-1 4-Pass 독립 에이전트 리뷰             | quality     | 0.5h | **완료** (Step 037 종료 직전 도착) — CRITICAL 0 / MAJOR 0 / MINOR 1 / 완료 가능 판정                |
+|  ✅ P1   | Phase B httpOnly cookie 추가 강화                    | security    | 1.5h | **skip 결정** (Step 038) — localStorage 0건 + HttpOnly+SameSite+Secure 모두 적용 + 테스트 검증 완료 |
+|  **P1**  | TD-API-001 SCENARIO_MIGRATIONS 자동 readdir          | tooling     |  2h  | Step 036 4-Pass MAJOR-3 (silent regression 위험)                                                    |
+|  **P1**  | TD-VRF-001 verify vitest 비결정성                    | tooling     |  2h  | Step 037 재현: 변경 직후 첫 실행 326/327 → 재실행 327/327                                           |
+|  **P1**  | Pass3-MAJOR-2 .env.example THEPICK*TELEMETRY*\* 추가 | docs        | 0.2h | Step 037 명시 이월 (Hard Limit 권한 거부 → 진산님 콘솔 영역)                                        |
+|  **P2**  | C-PERF-1 dashboard Promise.all                       | performance |  1h  | Phase 2 진입 직전 의무 (10K 사용자 latency)                                                         |
+|  **P2**  | C-PERF-2 GC purgeOldTelemetry()                      | performance |  4h  | Phase 2 진입 직전 의무 (engine_telemetry 무한 누적)                                                 |
+|  **P2**  | C-PERF-3 rate_limits batch DELETE                    | performance |  4h  | Phase 2 진입 직전 의무 (28.8M row Workers timeout)                                                  |
+|  **P2**  | C-PERF-4 parseFormula cache key                      | performance |  2h  | Phase 2 진입 직전 의무 (한도 변경 시 stale cache)                                                   |
+|  **P3**  | C-RF-1 resolveLoggerEnv 단일 출처                    | refactoring |  1d  | 6개월 부채 (Phase 1 종료 게이트 또는 Phase 2)                                                       |
+|  **P3**  | C-RF-2 withRetry 통합                                | refactoring |  1d  | 6개월 부채 (Phase 1 종료 게이트 또는 Phase 2)                                                       |
 
 ---
 
