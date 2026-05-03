@@ -3,31 +3,35 @@
 > **살아있는 문서** — Group A 잔여 2건 흡수 시 / Phase B 흡수 시 / BATCH-1 진입 시점에 갱신.
 > handoff-N+1 작성 시 본 문서 status 동기화 의무.
 
-작성일: 2026-05-02 ~22:00 KST (Session 035) → 2026-05-03 ~00:40 KST 갱신 (Session 038 진입)
+작성일: 2026-05-02 ~22:00 KST (Session 035) → 2026-05-03 ~02:40 KST 갱신 (Session 039 종료)
 정합 출처:
 
-- `.jjokjipge/handoff-session-038.md` §0~§7 (최신)
-- `.jjokjipge/handoff-session-037.md` `.jjokjipge/handoff-session-036.md` `.jjokjipge/handoff-session-035.md`
+- `.jjokjipge/handoff-session-039.md` §0~§7 (Session 038 종료)
+- `.jjokjipge/handoff-session-038.md` `.jjokjipge/handoff-session-037.md` `.jjokjipge/handoff-session-036.md` `.jjokjipge/handoff-session-035.md`
 - `.claude/reviews/phase1-tech-debt-20260502-index.md` (5-페르소나 통합)
 - `.claude/reviews/review-20260502-group-a-4pass-index.md` (Group A 4-Pass)
 - `.claude/reviews/review-20260502-telemetry-client-pass1234-index.md` (Step 037 telemetry-client 4-Pass)
 - `.claude/reviews/review-20260502-admin-web-vitest-pass1234.md` (Step 037 admin-web 4-Pass)
+- **`.claude/reviews/review-20260503-step039-adr030-index.md` (Step 039 ADR-030 회귀 fix 4-Pass — CRIT 2건 흡수)**
 - `scripts/verify-engine-contracts.ts` (자동 게이트 baseline)
 - `.claude/reports/sprint1-step5-5-verify-session-038-entry-run{1,2}.json` (Step 038 진입 실측, deterministic PASS)
+- `.claude/reports/sprint1-step5-5-verify-session-039-entry-run{1,2}.json` (Step 039 진입 — 회귀 -17 detection)
+- `.claude/reports/sprint1-step5-5-verify-session-039-postfix-run{1,2}.json` (Step 039 코드 fix 후 PASS)
+- `.claude/reports/sprint1-step5-5-verify-session-039-final-run{1,2}.json` (Step 039 CRIT 2건 흡수 후 영속 PASS)
 
 ---
 
 ## 0. Executive Summary
 
-| 항목                  | 값                                                                                            |
-| :-------------------- | :-------------------------------------------------------------------------------------------- |
-| 현재 위치             | **Phase 1 closeout** (Sprint 1 §5.5 완료, **Group A 7/7 흡수 완성**)                          |
-| 누적 테스트 (실측)    | **모노레포 1200 / 1200 PASS** (overallStatus PASS, +26 from 1174 — 본 세션)                   |
-| 자동 게이트           | **9 / 9 PASS** (admin-web 신규 추가 후) — Cat 5B + Cat 8 Phase 2 SKIP                         |
-| 누적 commits          | main +132 commits (본 세션 +2: 21f57c6 telemetry-client + dec85ad admin-web)                  |
-| 차단 게이트 (BATCH-1) | **🟢 해소됨** — Group A 7/7 완성 (CRITICAL-DO-S1-1 + CRIT-QPHASE1-1 본 세션 흡수)             |
-| 이월 MAJOR            | **77건 누적** (70 + Step 037 신규 7: telemetry-client 4-Pass MAJOR 6 + 1 명시 이월 .env 권한) |
-| 이월 CRITICAL         | **0건** + Phase 1 5-페르소나 13건 모두 Group A 흡수 또는 Group B/C 분류 완료                  |
+| 항목                  | 값                                                                                                                            |
+| :-------------------- | :---------------------------------------------------------------------------------------------------------------------------- |
+| 현재 위치             | **Phase 1 closeout** (Sprint 1 §5.5 완료, Group A 7/7 + Step 039 ADR-030 회귀 4-Pass CRIT 2건 흡수)                           |
+| 누적 테스트 (실측)    | **모노레포 1200 / 1200 PASS** (overallStatus PASS, Step 039 진입 -17 회귀 → CRIT 2건 흡수 후 영속 회복)                       |
+| 자동 게이트           | **5 PASS / 1 SKIP / 0 FAIL** (Cat 5B Phase 2 SKIP)                                                                            |
+| 누적 commits          | main +135 commits (Session 038 +3: 14a3968 + b96b2c1 + 73426e9. Session 039 commit 후보 정리 중)                              |
+| 차단 게이트 (BATCH-1) | **🟢 해소됨** — Group A 7/7 + Step 039 ADR-030 4-Pass CRIT 2건 흡수 + dual-schema dormancy 부재                               |
+| 이월 MAJOR            | **83건 누적** (77 + Step 039 신규 6: Pass 1+2 잔여 + Pass 3 M-1/M-2 + Pass 4 MAJOR 1, 본 세션 PWA db.ts +1 흡수)              |
+| 이월 CRITICAL         | **0건** — Step 039 4-Pass dedup CRIT 2건 (SCENARIO_MIGRATIONS dual-schema + chapter/section misattribution) 모두 본 세션 흡수 |
 
 ---
 
@@ -111,12 +115,17 @@
     ├── reconnaissance 5건 (batch-loadmap + ontology + pdfplumber + D1 + 자료) ✅ Session 038
     ├── pdfplumber p.403~434 32p 텍스트 추출 (v1) ................. ✅ Session 038
     ├── 진산님 1차 검수 — Q1/Q2/Q3 결정 (페이지+챕터/표 column merge/Claude multimodal) ✅ Session 038
-    ├── ADR-030 + 마이그레이션 0019 작성 ......................... ✅ Session 038 (본 세션)
+    ├── ADR-030 + 마이그레이션 0019 작성 ......................... ✅ Session 038
+    ├── ADR-030 Proposed → Accepted 전환 ......................... ✅ Session 039
+    ├── verify -17 회귀 detection + 17건 fix (loader/state-machine/hard-rule-13/pipeline) ✅ Session 039
+    ├── 4-Pass CRIT-D-1 흡수 (SCENARIO_MIGRATIONS 0019 + seed 4 컬럼) ✅ Session 039
+    ├── 4-Pass CRIT-D-2 흡수 (chapter/section misattribution 정정) ✅ Session 039
+    ├── Pass 2 MAJOR-A2-1 흡수 (PWA IndexedDB IKnowledgeNode 4 필드) ✅ Session 039
     ├── 추출 스크립트 v2 (extract_text + extract_tables + 챕터/절 + 그림 메타) 🔴 다음 세션
     ├── BATCH-1 v2 재추출 + Knowledge Graph JSON 생성 ............. 🔴 다음 세션
     ├── 진산님 2차 검수 (sample 5 노드 + 산식 1) .................. 🔴 다음 세션
     ├── SQL INSERT 스크립트 + 진산님 wrangler d1 적용 ............. 🔴 진산님 콘솔
-    └── batch-loadmap.md ☐ → ✅ + handoff-040 + 8 게이지 실측 ..... 🔴 다음 세션
+    └── batch-loadmap.md ☐ → ✅ + handoff-041 + 8 게이지 실측 ..... 🔴 다음 세션
 ```
 
 **범례:** ✅ 완료 / 🟡 진행 중 / 🔴 대기 (Phase 1 차단 게이트) / ⚪ Phase 2 이월
@@ -276,17 +285,21 @@ gantt
 
 ## 5. Devil's Advocate Ledger (이월 리스크)
 
-| ID          | 문제                                                        | 발견 출처                             | 흡수 시점                      |
-| :---------- | :---------------------------------------------------------- | :------------------------------------ | :----------------------------- |
-| TD-API-001  | SCENARIO_MIGRATIONS 두 wrapper 분기 (수동 vs auto-readdir)  | 본 세션 silent-failure-hunter MAJOR-3 | Sprint 2 초기                  |
-| TD-VRF-001  | verify vitest 카운트 비결정성 (첫 310 / 재 311)             | 본 세션 자체 관측                     | Sprint 2 초기                  |
-| TD-DO-053   | Cron 15분 health-check trigger                              | Phase 1 5-페르소나 devops             | Phase 2                        |
-| TD-DO-054   | engine-version-bump.md runbook                              | Phase 1 5-페르소나 devops             | Phase 2                        |
-| TD-DO-055   | CI 실패 Cloudflare webhook receiver                         | Phase 1 5-페르소나 devops             | Phase 2 (Cloudflare 단일 벤더) |
-| TD-DO-056   | production-deployment.md staging dry-run                    | Phase 1 5-페르소나 devops             | ✅ 본 세션 흡수 (789b28b)      |
-| TD-PHASE2-1 | 0019 슬롯 ADR-030 우선 차지 (B-C1 = 0020, B-C3 = 0021 이월) | Session 038 ADR-030 / 0019 결정       | ✅ 본 세션 해소 (ADR-030)      |
-| TD-PHASE2-2 | Year 2 progress API examId frontend 회귀 차단               | Group A 4-Pass Pass 4                 | BATCH-1 적재 후 PWA 통합       |
-| TD-PHASE2-3 | engine-telemetry-gc.md DDL drift 검증                       | Group A 4-Pass Pass 4                 | Phase 2                        |
+| ID          | 문제                                                                                                                                                   | 발견 출처                                                         | 흡수 시점                                             |
+| :---------- | :----------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------- | :---------------------------------------------------- |
+| TD-API-001  | SCENARIO_MIGRATIONS 두 wrapper 분기 (수동 vs auto-readdir) — Step 039 dual-schema dormancy 폭발 후 0019 추가로 임시 봉합. 자동 readdir 통합 의무 영속. | Step 036 silent-failure-hunter MAJOR-3 / Step 039 4-Pass CRIT-D-1 | Sprint 2 초기 (자동 readdir 통합 + array 단일 출처화) |
+| TD-VRF-001  | verify vitest 카운트 비결정성 (첫 310 / 재 311) — Step 039 batch 1건 fail 후 재실행 327 PASS 재현                                                      | Step 037 자체 관측 + Step 039 재현                                | Sprint 2 초기                                         |
+| TD-DO-053   | Cron 15분 health-check trigger                                                                                                                         | Phase 1 5-페르소나 devops                                         | Phase 2                                               |
+| TD-DO-054   | engine-version-bump.md runbook                                                                                                                         | Phase 1 5-페르소나 devops                                         | Phase 2                                               |
+| TD-DO-055   | CI 실패 Cloudflare webhook receiver                                                                                                                    | Phase 1 5-페르소나 devops                                         | Phase 2 (Cloudflare 단일 벤더)                        |
+| TD-DO-056   | production-deployment.md staging dry-run                                                                                                               | Phase 1 5-페르소나 devops                                         | ✅ 본 세션 흡수 (789b28b)                             |
+| TD-PHASE2-1 | 0019 슬롯 ADR-030 우선 차지 (B-C1 = 0020, B-C3 = 0021 이월)                                                                                            | Session 038 ADR-030 / 0019 결정                                   | ✅ Session 038 해소 (ADR-030)                         |
+| TD-PHASE2-2 | Year 2 progress API examId frontend 회귀 차단                                                                                                          | Group A 4-Pass Pass 4                                             | BATCH-1 적재 후 PWA 통합                              |
+| TD-PHASE2-3 | engine-telemetry-gc.md DDL drift 검증                                                                                                                  | Group A 4-Pass Pass 4                                             | Phase 2                                               |
+| TD-S39-1    | 트리거 한국어 메시지 외부 logging stack(Logpush) 호환                                                                                                  | Session 039 Pass 3 ADVOCATE M-1                                   | BATCH-1 v2 / Cloudflare Logpush 도입 시               |
+| TD-S39-2    | admin-web NULL chapter/section UI 컨트랙트 부재                                                                                                        | Session 039 Pass 3 ADVOCATE M-2                                   | admin-web /telemetry 본격 작업 시                     |
+| TD-S39-3    | handoff-039 §3 BATCH-1 영역 매핑 표가 raw 텍스트 헤더와 misattribute → 차세션 표 재작성 의무                                                           | Session 039 Pass 4 CONTRACT MAJOR-1                               | ✅ handoff-040 §3 raw 텍스트 정합 재작성              |
+| TD-S39-4    | chapter/section 길이 캡 부재 + page_ref vs book_page 통합 표시 컨벤션 미정                                                                             | Session 039 Pass 3 MINOR                                          | Phase 2 진입 전                                       |
 
 ---
 
