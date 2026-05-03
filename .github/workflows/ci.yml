@@ -59,6 +59,8 @@ jobs:
                --filter @thepick/quality \
                --filter @thepick/batch \
                --filter @thepick/api \
+               --filter @thepick/ai-adapter \
+               --filter @thepick/admin-web \
                test
 
       # Step 18 — Engine Hardening 자동 검증 (master-test-checklist v1 / Cat 1+4+6+7).
