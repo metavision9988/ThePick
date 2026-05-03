@@ -107,7 +107,16 @@
 │   ├── tech-debt TD-API-001 SCENARIO_MIGRATIONS 두 wrapper 분기 ... 🔴 Sprint 2 (본 세션 4-Pass MAJOR-3)
 │   └── tech-debt TD-VRF-001 verify vitest 비결정성 (310 vs 311) ... 🔴 Sprint 2 (본 세션 추적)
 │
-└── BATCH-1 적재 진입 (Step 20) ................................... ⚪ 진산님 트리거 (Path A = Claude Code 직접 처리)
+└── BATCH-1 적재 진입 (Step 20) — 진산님 "GO" 트리거 (Session 038)
+    ├── reconnaissance 5건 (batch-loadmap + ontology + pdfplumber + D1 + 자료) ✅ Session 038
+    ├── pdfplumber p.403~434 32p 텍스트 추출 (v1) ................. ✅ Session 038
+    ├── 진산님 1차 검수 — Q1/Q2/Q3 결정 (페이지+챕터/표 column merge/Claude multimodal) ✅ Session 038
+    ├── ADR-030 + 마이그레이션 0019 작성 ......................... ✅ Session 038 (본 세션)
+    ├── 추출 스크립트 v2 (extract_text + extract_tables + 챕터/절 + 그림 메타) 🔴 다음 세션
+    ├── BATCH-1 v2 재추출 + Knowledge Graph JSON 생성 ............. 🔴 다음 세션
+    ├── 진산님 2차 검수 (sample 5 노드 + 산식 1) .................. 🔴 다음 세션
+    ├── SQL INSERT 스크립트 + 진산님 wrangler d1 적용 ............. 🔴 진산님 콘솔
+    └── batch-loadmap.md ☐ → ✅ + handoff-040 + 8 게이지 실측 ..... 🔴 다음 세션
 ```
 
 **범례:** ✅ 완료 / 🟡 진행 중 / 🔴 대기 (Phase 1 차단 게이트) / ⚪ Phase 2 이월
@@ -267,17 +276,17 @@ gantt
 
 ## 5. Devil's Advocate Ledger (이월 리스크)
 
-| ID          | 문제                                                       | 발견 출처                             | 흡수 시점                      |
-| :---------- | :--------------------------------------------------------- | :------------------------------------ | :----------------------------- |
-| TD-API-001  | SCENARIO_MIGRATIONS 두 wrapper 분기 (수동 vs auto-readdir) | 본 세션 silent-failure-hunter MAJOR-3 | Sprint 2 초기                  |
-| TD-VRF-001  | verify vitest 카운트 비결정성 (첫 310 / 재 311)            | 본 세션 자체 관측                     | Sprint 2 초기                  |
-| TD-DO-053   | Cron 15분 health-check trigger                             | Phase 1 5-페르소나 devops             | Phase 2                        |
-| TD-DO-054   | engine-version-bump.md runbook                             | Phase 1 5-페르소나 devops             | Phase 2                        |
-| TD-DO-055   | CI 실패 Cloudflare webhook receiver                        | Phase 1 5-페르소나 devops             | Phase 2 (Cloudflare 단일 벤더) |
-| TD-DO-056   | production-deployment.md staging dry-run                   | Phase 1 5-페르소나 devops             | ✅ 본 세션 흡수 (789b28b)      |
-| TD-PHASE2-1 | 0019 마이그레이션 번호 conflict (B-C1 + B-C3 양쪽 슬롯)    | Group A 4-Pass Pass 2                 | Sprint 2 진입 ADR              |
-| TD-PHASE2-2 | Year 2 progress API examId frontend 회귀 차단              | Group A 4-Pass Pass 4                 | BATCH-1 적재 후 PWA 통합       |
-| TD-PHASE2-3 | engine-telemetry-gc.md DDL drift 검증                      | Group A 4-Pass Pass 4                 | Phase 2                        |
+| ID          | 문제                                                        | 발견 출처                             | 흡수 시점                      |
+| :---------- | :---------------------------------------------------------- | :------------------------------------ | :----------------------------- |
+| TD-API-001  | SCENARIO_MIGRATIONS 두 wrapper 분기 (수동 vs auto-readdir)  | 본 세션 silent-failure-hunter MAJOR-3 | Sprint 2 초기                  |
+| TD-VRF-001  | verify vitest 카운트 비결정성 (첫 310 / 재 311)             | 본 세션 자체 관측                     | Sprint 2 초기                  |
+| TD-DO-053   | Cron 15분 health-check trigger                              | Phase 1 5-페르소나 devops             | Phase 2                        |
+| TD-DO-054   | engine-version-bump.md runbook                              | Phase 1 5-페르소나 devops             | Phase 2                        |
+| TD-DO-055   | CI 실패 Cloudflare webhook receiver                         | Phase 1 5-페르소나 devops             | Phase 2 (Cloudflare 단일 벤더) |
+| TD-DO-056   | production-deployment.md staging dry-run                    | Phase 1 5-페르소나 devops             | ✅ 본 세션 흡수 (789b28b)      |
+| TD-PHASE2-1 | 0019 슬롯 ADR-030 우선 차지 (B-C1 = 0020, B-C3 = 0021 이월) | Session 038 ADR-030 / 0019 결정       | ✅ 본 세션 해소 (ADR-030)      |
+| TD-PHASE2-2 | Year 2 progress API examId frontend 회귀 차단               | Group A 4-Pass Pass 4                 | BATCH-1 적재 후 PWA 통합       |
+| TD-PHASE2-3 | engine-telemetry-gc.md DDL drift 검증                       | Group A 4-Pass Pass 4                 | Phase 2                        |
 
 ---
 
