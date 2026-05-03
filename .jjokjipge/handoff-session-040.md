@@ -208,16 +208,96 @@ Phase 2 진입 직전 의무.
 ## 7. 핵심 문서 (1차 읽기 의무, 우선순위 순)
 
 1. `.jjokjipge/handoff-session-040.md` — 본 세션 종합 (본 문서)
-2. `.jjokjipge/wbs-quality-progress.md` — Step 039 진척 갱신 (§0 + §1 + §5 + §6)
-3. **★ 차세션 첫 의무**: `.claude/reviews/review-20260503-step039-adr030-index.md` (4-Pass 통합 인덱스)
-4. `docs/adr/ADR-030-knowledge-nodes-page-chapter-meta.md` (Accepted)
-5. `migrations/0019_knowledge_nodes_page_chapter_meta.sql` (production 적용 진산님 콘솔)
-6. `docs/batch-load/batch-1-raw-pages-403-434.txt` — BATCH-1 v1 추출 (다음 세션 v2 재추출 의무)
-7. `docs/plans/batch-loadmap.md` — BATCH-1 ☐ + 검수 체크리스트 3단계
+2. **★ 차세션 첫 의무**: `docs/reports/engine-quality-test-completion-v1.0-20260503.md` (Master Plan §13.1 P0 15/15 PASS 영속 — 본 세션 후속 작성)
+3. `.jjokjipge/wbs-quality-progress.md` — Step 039 진척 갱신 (§0 + §1 + §5 + §6)
+4. **★ 차세션 첫 의무**: `.claude/reviews/review-20260503-step039-adr030-index.md` (4-Pass 통합 인덱스)
+5. `.claude/reviews/review-20260503-step039-hookgate-diagnosis.md` (Hook gate timing race 진단 + 3안 — 본 세션 후속)
+6. `docs/adr/ADR-030-knowledge-nodes-page-chapter-meta.md` (Accepted)
+7. `migrations/0019_knowledge_nodes_page_chapter_meta.sql` (production 적용 진산님 콘솔)
+8. `docs/batch-load/batch-1-raw-pages-403-434.txt` — BATCH-1 v1 추출 (다음 세션 v2 재추출 의무)
+9. `docs/plans/batch-loadmap.md` — BATCH-1 ☐ + 검수 체크리스트 3단계 (★ 차세션 본격 진입)
+
+---
+
+## 8. 본 세션 후속 작업 (Step 039 후반부, ~02:50 → ~16:55 KST)
+
+핸드오프-040 §0~§7 작성 후 진산님 트리거로 추가 진행한 3 영역:
+
+### 8.1 Hook gate timing race 진단 + 3안 layered defense (~15:00~15:38)
+
+**원인**: Stop hook `~/.claude/hooks/review-gate.sh` 가 commit 후 false positive 발화 ("코드 변경 1건 감지. 독립 에이전트 리뷰 산출물 없음"). MARKER 갱신 타이밍과 review 산출물 mtime race.
+
+**3안 적용 (★ 글로벌 영역 ~/.claude/)**:
+
+- **A**: `~/.claude/hooks/review-gate.sh` v1→v2 — line 48-55 검색 logic `-newer MARKER` → "최근 24h grace + 독립 에이전트 grep" (env `REVIEW_GATE_GRACE_MIN` override)
+- **C**: `~/.claude/hooks/mark-review-pending.sh` (신설) + `~/.claude/settings.json` PostToolUse(Edit|Write) 매처 등록 — MARKER 갱신을 코드 변경 시점만 정확히 정의 (commit/lint-staged 분리)
+- **B**: `~/.claude/hooks/mark-review-complete.sh` (신설) — 4-Pass 산출물 작성 후 Claude 명시 호출 helper (review mtime 갱신 + MARKER backdate)
+
+**검증**: 3 hook live test 모두 EXIT=0. 영속: `.claude/reviews/review-20260503-step039-hookgate-diagnosis.md`.
+
+**영속 부채 (차세션 의무)**:
+
+- mark-review-pending.sh + review-gate.sh v2 면제 규칙 drift 차단 (한 hook 수정 시 동시 수정)
+- 차세션 진입 시 false positive 발화 0건 확인 의무
+- mark-review-complete.sh 호출 시점 — 4-Pass 산출물 직후 명시 호출 패턴 정착 (auto-review-protocol.md 갱신 후보)
+
+### 8.2 Engine Quality Test 완료 보고서 v1.0 영속 (~16:00~16:55)
+
+**진산님 의문 정정**: "엔진 완성 = BATCH 적재 완료" (내 오해) → "엔진 골격 = Master Plan v1.0 P0 15건" (진산님 시야).
+
+**결과 영속**: `docs/reports/engine-quality-test-completion-v1.0-20260503.md` (22KB / 10 §)
+
+핵심 영속:
+
+- §0 Executive Summary: ★ Master Plan §13.1 "Phase 1 → BATCH-1 진입 게이트 (P0 15/15)" 통과 ✅ (Critical FAIL 0건)
+- §2 테스트 전후: Sprint 0 baseline (PASS 3 / PARTIAL 7 / NOT-IMPL 7) → Sprint 1 종료 (P0 15/15 PASS) → Step 036~039 후속 흡수
+- §3 P0 15건 시나리오별 매핑 (CHA 4 + FUZ 3 + PRF 2 + REG 2 + PRC 2 + REC 2 = 15)
+- §4 SLO 종합 (회복성/결정성/격리성/무결성/신뢰성/성능/부하/보안)
+- §5 Sprint 2 (P1 20건) + Sprint 3 (P2 15건) 미시작 영역 정의 + 진입 트리거
+- §6 v1.0.2 footnote 6건 영속 + expansion 트리거
+- §7 Devil's Advocate 4건 반론 (P0 15/15 ≠ Phase 1 완성 / verify 1200 ≠ 50 시나리오 / silent assumption)
+- §8 차세션 BATCH-1 진입 게이트 9단계 절차
+- §9 14 BATCH 로드맵 + 3단계 검증 의무
+- §10 결론 + 다음 마일스톤 (~10-12 세션 누적 = Phase 1 종료)
+
+### 8.3 진산님 메타포 정합 — 차세션 BATCH-1 본격 진입
+
+> "본격 batch 적재 작업 해보자구"
+
+**차세션(040) 의무 = BATCH-1 적재 진입 (Step 20)**. handoff-040 §1.2 + §2.1 정합:
+
+1. verify 영속 재실행 (TD-VRF-001 차단)
+2. ★ 진산님 콘솔 — `wrangler d1 migrations apply <db-name> --remote` (BATCH-1 INSERT 전 의무)
+3. 추출 스크립트 v2 작성 (handoff-039 §5.4 7가지 묶음)
+4. BATCH-1 v2 재추출 + 그림 페이지 PNG 추출
+5. 그림 페이지 Claude multimodal 분석 (옵션 C)
+6. Knowledge Graph JSON 생성 (60 노드 + 200 엣지, 산식 13개 Golden 기존, 4 컬럼 채움)
+7. 진산님 2차 검수 (sample 5 노드 + 산식 1)
+8. SQL INSERT + 진산님 wrangler d1 적용
+9. 3단계 검증 (Level 1 표면 + Level 2 내용 + Level 3 학습 효과 역추적)
+10. batch-loadmap.md ☐ → ✅ + handoff-041 + 8 게이지 실측
+
+**진산님 트리거 키워드** (메모리 `project_batch_load_workflow` 정합):
+
+- "BATCH-1 적재" / "BATCH 1 적재"
+- "다음 배치 적재" / "다음 BATCH 적재"
+- "계속 적재" / "이어서 적재"
+
+→ 진산님이 차세션 진입 후 위 키워드 발화 시 Claude 가 자동 진행 (본 handoff §8.3 절차 정합).
+
+### 8.4 차세션 진입 직전 영속 부채 ledger
+
+| ID                               | 영역                                   | 의무                                                        |
+| :------------------------------- | :------------------------------------- | :---------------------------------------------------------- |
+| handoff-040 §3 silent assumption | "제1장 풀 타이틀" raw 텍스트 외 추정값 | BATCH-1 v2 추출 시 PDF p.395 이전 페이지 cross-check + 정정 |
+| Hook gate v2 + 페어 hook         | 글로벌 영역 영속                       | 차세션 진입 시 false positive 발화 0건 확인                 |
+| TD-API-001 영속                  | SCENARIO_MIGRATIONS 자동 readdir 통합  | Sprint 2 초기                                               |
+| TD-VRF-001                       | verify vitest 비결정성                 | Sprint 2 초기                                               |
+| TD-S39-1~4                       | Step 039 4-Pass 잔여 MAJOR/MINOR       | 시점별 흡수 (BATCH-1 v2 / admin-web 본격 / Phase 2)         |
 
 ---
 
 **핸드오프 작성**: Claude (Opus 4.7 1M context) — Session 039
-**다음 세션**: Session 040 — verify 영속 + 진산님 0019 production 적용 + 추출 스크립트 v2 + BATCH-1 v2 재추출 + 그림 multimodal + Knowledge Graph JSON 생성
-**작성 효력**: 2026-05-03 ~02:50 KST
+**다음 세션**: Session 040 — verify 영속 + 진산님 0019 production 적용 + ★ BATCH-1 본격 적재 (추출 v2 + Knowledge Graph JSON + 3단계 검증 + DB INSERT)
+**작성 효력**: 2026-05-03 ~02:50 KST (§0~§7) + ~16:55 KST (§8 후속)
 **예상 완료**: handoff-041 (Knowledge Graph JSON 검수 + SQL 적재 + batch-loadmap ☐ → ✅ + 8 게이지 실측 첫 보고)
