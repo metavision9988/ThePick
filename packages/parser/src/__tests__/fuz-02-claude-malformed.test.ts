@@ -101,6 +101,8 @@ describe('FUZ-02 — Claude 변조 응답 8종 graceful 분류 거부', () => {
           content: '정상 콘텐츠',
           truth_weight: 5,
           source_page: 100,
+          book_page: 100,
+          pdf_page: 100,
         },
       ],
       edges: [],

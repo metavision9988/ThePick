@@ -62,14 +62,22 @@ function step16bTestFields(args: {
 
 /** 합성 contract — 40 노드 / 80 엣지로 QG-2 규모 조건 충족. pipeline.integration.test.ts 차용. */
 function syntheticLargeContract(): KnowledgeContract {
-  const nodes = Array.from({ length: 40 }, (_, i) => ({
-    id: `CONCEPT-${String(i + 1).padStart(3, '0')}`,
-    type: 'CONCEPT' as const,
-    title: `노드 ${i + 1}`,
-    content: `설명 ${i + 1}`,
-    truth_weight: 5,
-    source_page: 403 + (i % 32),
-  }));
+  // ADR-030: PDF p.N = 본문 p.(N-7). book_page / pdf_page 는 마이그레이션 0019 트리거 NOT NULL 의무.
+  const nodes = Array.from({ length: 40 }, (_, i) => {
+    const pdfPage = 403 + (i % 32);
+    return {
+      id: `CONCEPT-${String(i + 1).padStart(3, '0')}`,
+      type: 'CONCEPT' as const,
+      title: `노드 ${i + 1}`,
+      content: `설명 ${i + 1}`,
+      truth_weight: 5,
+      source_page: pdfPage,
+      book_page: pdfPage - 7,
+      pdf_page: pdfPage,
+      chapter: '제2장 농작물재해보험',
+      section: '제3절 현지조사 내용',
+    };
+  });
   const edges = [] as KnowledgeContract['edges'];
   for (let i = 0; i < 80; i++) {
     const from = i % 40;

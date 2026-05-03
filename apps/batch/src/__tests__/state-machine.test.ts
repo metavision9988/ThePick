@@ -64,11 +64,11 @@ describe('state-machine — DB 통합 (in-memory SQLite)', () => {
 
   beforeEach(() => {
     ctx = openLocalDb({ path: ':memory:' });
-    // 테스트 대상 노드 선주입 (page_ref 필수)
+    // 테스트 대상 노드 선주입 (page_ref 필수 + ADR-030 book_page/pdf_page 필수)
     ctx.raw
       .prepare(
-        `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status)
-         VALUES (?, 'CONCEPT', '테스트 노드', '403', 2026, 5, 'draft')`,
+        `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status, book_page, pdf_page)
+         VALUES (?, 'CONCEPT', '테스트 노드', '403', 2026, 5, 'draft', 396, 403)`,
       )
       .run('CONCEPT-001');
   });

@@ -24,6 +24,19 @@ export interface IKnowledgeNode {
   lv2Crop: string | null;
   lv3Investigation: string | null;
   pageRef: string | null;
+  /**
+   * ADR-030 / migrations/0019 — 사용자 노출용 본문 페이지 ("교재 본문 p.396 참고").
+   * D1 컬럼 자체는 NULLABLE (ALTER TABLE ADD COLUMN 제약 + 기존 row 호환), 다만
+   * 신규 INSERT 는 트리거 enforce_book_page_on_insert 가 NOT NULL 강제.
+   * Phase 2 sync engine 활성 시 D1 → IndexedDB mirror 의무 (수험자 "근거 보기" UX 1급).
+   */
+  bookPage: number | null;
+  /** ADR-030 / migrations/0019 — PDF 추적용 페이지. 본문/PDF offset 분리 (수험자 노출 X). */
+  pdfPage: number | null;
+  /** ADR-030 — 챕터 타이틀 (예: "제1장 농업재해보험 손해평가 개관"). 법령 노드 등 NULL 허용. */
+  chapter: string | null;
+  /** ADR-030 — 절 타이틀 (예: "제3절 현지조사 내용"). NULL 허용. */
+  section: string | null;
   batchId: string | null;
   versionYear: number;
   supersededBy: string | null;

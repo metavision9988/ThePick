@@ -113,46 +113,69 @@ const CARD_TYPES = ['flashcard', 'ox', 'blank', 'exam', 'calculation'] as const;
 // 1. Knowledge Nodes (Temporal Graph + Truth Weight)
 // ---------------------------------------------------------------------------
 
-export const knowledgeNodes = sqliteTable('knowledge_nodes', {
-  id: text('id').primaryKey(),
-  type: text('type', { enum: NODE_TYPES }).notNull(),
-  name: text('name').notNull(),
-  description: text('description'),
-  lv1Insurance: text('lv1_insurance'),
-  lv2Crop: text('lv2_crop'),
-  lv3Investigation: text('lv3_investigation'),
-  /** 출처 페이지 참조 — 북극성(출처 추적성) 강제. migrations/0010 INSERT 트리거에서 NULL/빈문자열 거부. */
-  pageRef: text('page_ref').notNull(),
-  batchId: text('batch_id'),
-  versionYear: integer('version_year').notNull(),
-  supersededBy: text('superseded_by'),
-  truthWeight: integer('truth_weight').notNull().default(5),
-  /**
-   * @deprecated 현재 상태 조회에 **사용하지 말 것** (ADR-010).
-   *
-   * 본 컬럼은 INSERT 시점의 초기 상태 스냅샷(항상 'draft')일 뿐이며, migrations/0010
-   * 트리거 `prevent_nodes_update` 로 UPDATE 가 DB 레벨 차단된다. 실시간 현재 상태
-   * 조회는 **반드시** `status_transitions` 최신 레코드를 COALESCE 패턴으로 조회:
-   *
-   *   COALESCE(
-   *     (SELECT to_status FROM status_transitions
-   *       WHERE target_type = 'node' AND target_id = knowledge_nodes.id
-   *       ORDER BY transitioned_at DESC LIMIT 1),
-   *     'draft'
-   *   )
-   *
-   * `node.status === 'approved'` 같은 코드는 항상 false (모든 레코드가 'draft' 스냅샷).
-   * Phase 2 이후 DROP 고려.
-   */
-  status: text('status', { enum: CONTENT_STATUSES }).notNull().default('draft'),
-  examScope: text('exam_scope', { enum: EXAM_SCOPES }).default('2nd'),
-  createdAt: text('created_at')
-    .notNull()
-    .default(sql`(datetime('now'))`),
-  updatedAt: text('updated_at')
-    .notNull()
-    .default(sql`(datetime('now'))`),
-});
+export const knowledgeNodes = sqliteTable(
+  'knowledge_nodes',
+  {
+    id: text('id').primaryKey(),
+    type: text('type', { enum: NODE_TYPES }).notNull(),
+    name: text('name').notNull(),
+    description: text('description'),
+    lv1Insurance: text('lv1_insurance'),
+    lv2Crop: text('lv2_crop'),
+    lv3Investigation: text('lv3_investigation'),
+    /** 출처 페이지 참조 — 북극성(출처 추적성) 강제. migrations/0010 INSERT 트리거에서 NULL/빈문자열 거부. */
+    pageRef: text('page_ref').notNull(),
+    /**
+     * 사용자(수험자) 노출용 본문 페이지 (ADR-030 / migrations/0019).
+     * DB 트리거 enforce_book_page_on_insert 가 INSERT 시 NULL 차단 (NOT NULL 강제).
+     * 컬럼 자체는 NULLABLE — ALTER TABLE ADD COLUMN 제약 + 기존 row 호환.
+     */
+    bookPage: integer('book_page'),
+    /**
+     * PDF 추적용 페이지 (ADR-030 / migrations/0019). 본문 페이지와 offset 가능.
+     * DB 트리거 enforce_pdf_page_on_insert 가 INSERT 시 NULL 차단.
+     */
+    pdfPage: integer('pdf_page'),
+    /** 챕터 타이틀 (ADR-030, NULL 허용 — 법령 노드 등). */
+    chapter: text('chapter'),
+    /** 절 타이틀 (ADR-030, NULL 허용). */
+    section: text('section'),
+    batchId: text('batch_id'),
+    versionYear: integer('version_year').notNull(),
+    supersededBy: text('superseded_by'),
+    truthWeight: integer('truth_weight').notNull().default(5),
+    /**
+     * @deprecated 현재 상태 조회에 **사용하지 말 것** (ADR-010).
+     *
+     * 본 컬럼은 INSERT 시점의 초기 상태 스냅샷(항상 'draft')일 뿐이며, migrations/0010
+     * 트리거 `prevent_nodes_update` 로 UPDATE 가 DB 레벨 차단된다. 실시간 현재 상태
+     * 조회는 **반드시** `status_transitions` 최신 레코드를 COALESCE 패턴으로 조회:
+     *
+     *   COALESCE(
+     *     (SELECT to_status FROM status_transitions
+     *       WHERE target_type = 'node' AND target_id = knowledge_nodes.id
+     *       ORDER BY transitioned_at DESC LIMIT 1),
+     *     'draft'
+     *   )
+     *
+     * `node.status === 'approved'` 같은 코드는 항상 false (모든 레코드가 'draft' 스냅샷).
+     * Phase 2 이후 DROP 고려.
+     */
+    status: text('status', { enum: CONTENT_STATUSES }).notNull().default('draft'),
+    examScope: text('exam_scope', { enum: EXAM_SCOPES }).default('2nd'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => ({
+    // ADR-030 / migrations/0019 인덱스 1:1 정합 (drizzle-kit drop 방지).
+    bookPageIdx: index('idx_nodes_book_page').on(table.bookPage),
+    chapterIdx: index('idx_nodes_chapter').on(table.chapter),
+  }),
+);
 
 // ---------------------------------------------------------------------------
 // 2. Knowledge Edges

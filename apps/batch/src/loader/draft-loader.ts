@@ -308,11 +308,14 @@ function buildNodeInserts(
   skipped: string[],
 ): D1Stmt[] {
   const stmts: D1Stmt[] = [];
+  // ADR-030 / migrations/0019 — book_page / pdf_page 명시 INSERT (NOT NULL 트리거 충족).
+  // chapter / section 은 NULLABLE (법령 노드 등 호환).
   const sql = `
     INSERT OR IGNORE INTO knowledge_nodes
       (id, type, name, description, lv1_insurance, lv2_crop, lv3_investigation,
-       page_ref, batch_id, batch_run_id, source_id, version_year, truth_weight, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')
+       page_ref, book_page, pdf_page, chapter, section,
+       batch_id, batch_run_id, source_id, version_year, truth_weight, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')
   `;
   for (const node of contract.nodes) {
     if (existing.has(node.id)) {
@@ -332,6 +335,10 @@ function buildNodeInserts(
           node.lv2_crop ?? null,
           node.lv3_investigation ?? null,
           pageRef,
+          node.book_page,
+          node.pdf_page,
+          node.chapter ?? null,
+          node.section ?? null,
           ctx.batchId,
           ctx.batchRunId,
           buildSourceId(pageRef, node.id),

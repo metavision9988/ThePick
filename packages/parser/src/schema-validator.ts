@@ -35,7 +35,26 @@ export interface KnowledgeContractNode {
   lv2_crop?: string;
   lv3_investigation?: string;
   truth_weight: number;
+  /**
+   * 출처 페이지 — page_ref 텍스트 생성 fallback (legacy). PDF 페이지 기준으로 보존.
+   * ADR-030 도입 후 신규 BATCH 추출은 book_page/pdf_page 를 명시 채움.
+   */
   source_page: number;
+  /**
+   * 사용자(수험자) 노출용 본문 페이지 (ADR-030). 교재 footer 페이지 번호 기준.
+   * 마이그레이션 0019 트리거 enforce_book_page_on_insert 가 NULL INSERT 차단.
+   * 본문/PDF 페이지 단위가 동일한 자료(법령 PDF 등)는 pdf_page 와 동일 값.
+   */
+  book_page: number;
+  /**
+   * PDF 추적용 페이지 (ADR-030). 검수 단계 PDF 직접 검증 시 사용.
+   * 마이그레이션 0019 트리거 enforce_pdf_page_on_insert 가 NULL INSERT 차단.
+   */
+  pdf_page: number;
+  /** 챕터 타이틀 (ADR-030, 예: "제1장 농업재해보험 손해평가 개관"). NULL 허용 — 법령 노드 등. */
+  chapter?: string;
+  /** 절 타이틀 (ADR-030, 예: "제3절 현지조사 내용"). NULL 허용. */
+  section?: string;
 }
 
 export interface KnowledgeContractEdge {
@@ -279,6 +298,58 @@ export function validateKnowledgeContract(contract: KnowledgeContract): Validati
           'MISSING_SOURCE_PAGE',
           'source_page is required (source citation). Must be a positive integer.',
           node.source_page,
+        ),
+      );
+    }
+
+    // ADR-030: book_page (required) — 사용자 노출용 본문 페이지. DB 트리거 enforce_book_page_on_insert 1차 방어선.
+    if (!isValidSourcePage(node.book_page)) {
+      errors.push(
+        err(
+          `${prefix}.book_page`,
+          'MISSING_SOURCE_PAGE',
+          'book_page is required (ADR-030 사용자 노출용 본문 페이지). Must be a positive integer.',
+          node.book_page,
+        ),
+      );
+    }
+
+    // ADR-030: pdf_page (required) — PDF 추적용. DB 트리거 enforce_pdf_page_on_insert 1차 방어선.
+    if (!isValidSourcePage(node.pdf_page)) {
+      errors.push(
+        err(
+          `${prefix}.pdf_page`,
+          'MISSING_SOURCE_PAGE',
+          'pdf_page is required (ADR-030 PDF 추적용). Must be a positive integer.',
+          node.pdf_page,
+        ),
+      );
+    }
+
+    // ADR-030: chapter / section (optional) — 있으면 non-empty string.
+    if (
+      node.chapter !== undefined &&
+      (typeof node.chapter !== 'string' || node.chapter.trim() === '')
+    ) {
+      errors.push(
+        err(
+          `${prefix}.chapter`,
+          'MISSING_REQUIRED_FIELD',
+          'chapter must be a non-empty string when provided (ADR-030). Use undefined for nodes without chapter (e.g., LAW-NNN).',
+          node.chapter,
+        ),
+      );
+    }
+    if (
+      node.section !== undefined &&
+      (typeof node.section !== 'string' || node.section.trim() === '')
+    ) {
+      errors.push(
+        err(
+          `${prefix}.section`,
+          'MISSING_REQUIRED_FIELD',
+          'section must be a non-empty string when provided (ADR-030). Use undefined for nodes without section.',
+          node.section,
         ),
       );
     }

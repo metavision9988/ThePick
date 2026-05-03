@@ -25,6 +25,8 @@ function validContract(): KnowledgeContract {
         lv2_crop: '사과',
         truth_weight: 5,
         source_page: 403,
+        book_page: 396,
+        pdf_page: 403,
       },
       {
         id: 'F-01',
@@ -33,6 +35,8 @@ function validContract(): KnowledgeContract {
         content: '보험가입금액 = 표준수확량 × 기준가격',
         truth_weight: 8,
         source_page: 410,
+        book_page: 403,
+        pdf_page: 410,
       },
     ],
     edges: [
@@ -329,6 +333,8 @@ describe('validateKnowledgeContract', () => {
             content: '법률 내용',
             truth_weight: 10,
             source_page: 1,
+            book_page: 1,
+            pdf_page: 1,
           },
         ],
         edges: [],
@@ -472,6 +478,8 @@ describe('validateKnowledgeContract', () => {
         content: '중복 내용',
         truth_weight: 5,
         source_page: 404,
+        book_page: 397,
+        pdf_page: 404,
       });
 
       const result = validateKnowledgeContract(contract);
@@ -519,6 +527,8 @@ describe('validateKnowledgeContract', () => {
         content: 'test',
         truth_weight: 3,
         source_page: 403,
+        book_page: 396,
+        pdf_page: 403,
       });
       contract.edges.push({
         source_id: 'INVALID-99',

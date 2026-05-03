@@ -80,6 +80,8 @@ describe('parser ontology Lock 위반 차단 (AC-PA-3 — INVALID_NODE_ID_PATTER
                 content: 'y',
                 truth_weight: 5,
                 source_page: 1,
+                book_page: 1,
+                pdf_page: 1,
               },
             ],
             edges: [],
@@ -121,6 +123,8 @@ describe('parser ontology Lock 위반 차단 (AC-PA-4 — DANGLING_EDGE_REFERENC
                 content: 'y',
                 truth_weight: 5,
                 source_page: 1,
+                book_page: 1,
+                pdf_page: 1,
               },
             ],
             edges: [

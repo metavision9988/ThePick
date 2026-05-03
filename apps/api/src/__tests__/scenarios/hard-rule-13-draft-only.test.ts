@@ -23,14 +23,18 @@ describe('Hard Rule 13 — knowledge_nodes draft-only INSERT 강제 (마이그�
     backend = null;
   });
 
+  // ADR-030 / migrations/0019: 본 4 테스트는 0018 트리거 (Hard Rule 13 / page_ref) 검증이
+  // 목적이므로, book_page / pdf_page 를 명시 채워 0019 트리거를 의도적으로 비켜간다.
+  // 0019 자체 검증은 별도 시나리오로 분리 가능 (Phase 2 이월 후보).
+
   it('status=approved INSERT → trigger ABORT (prevent_non_draft_insert)', async () => {
     backend = await createD1FromAllMigrations();
 
     await expect(
       backend.db
         .prepare(
-          `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status)
-           VALUES ('TEST-RULE13-APPROVED', 'CONCEPT', 'test', '교재 1쪽', 2026, 5, 'approved')`,
+          `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status, book_page, pdf_page)
+           VALUES ('TEST-RULE13-APPROVED', 'CONCEPT', 'test', '교재 1쪽', 2026, 5, 'approved', 1, 1)`,
         )
         .run(),
     ).rejects.toThrow(/Hard Rule 13/);
@@ -42,8 +46,8 @@ describe('Hard Rule 13 — knowledge_nodes draft-only INSERT 강제 (마이그�
     await expect(
       backend.db
         .prepare(
-          `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status)
-           VALUES ('TEST-RULE13-PUBLISHED', 'CONCEPT', 'test', '교재 1쪽', 2026, 5, 'published')`,
+          `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status, book_page, pdf_page)
+           VALUES ('TEST-RULE13-PUBLISHED', 'CONCEPT', 'test', '교재 1쪽', 2026, 5, 'published', 1, 1)`,
         )
         .run(),
     ).rejects.toThrow(/Hard Rule 13/);
@@ -55,8 +59,8 @@ describe('Hard Rule 13 — knowledge_nodes draft-only INSERT 강제 (마이그�
     await expect(
       backend.db
         .prepare(
-          `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status)
-           VALUES ('TEST-RULE13-NULLPAGE', 'CONCEPT', 'test', NULL, 2026, 5, 'draft')`,
+          `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status, book_page, pdf_page)
+           VALUES ('TEST-RULE13-NULLPAGE', 'CONCEPT', 'test', NULL, 2026, 5, 'draft', 1, 1)`,
         )
         .run(),
     ).rejects.toThrow(/page_ref/);
@@ -67,8 +71,8 @@ describe('Hard Rule 13 — knowledge_nodes draft-only INSERT 강제 (마이그�
 
     const result = await backend.db
       .prepare(
-        `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status)
-         VALUES ('TEST-RULE13-OK', 'CONCEPT', 'test', '교재 100쪽', 2026, 5, 'draft')`,
+        `INSERT INTO knowledge_nodes (id, type, name, page_ref, version_year, truth_weight, status, book_page, pdf_page)
+         VALUES ('TEST-RULE13-OK', 'CONCEPT', 'test', '교재 100쪽', 2026, 5, 'draft', 100, 107)`,
       )
       .run();
     expect(result.success).toBe(true);

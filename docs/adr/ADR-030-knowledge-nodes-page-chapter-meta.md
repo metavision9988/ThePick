@@ -1,6 +1,6 @@
 # ADR-030: Knowledge Nodes 페이지/챕터 메타 4 컬럼 도입 (book_page / pdf_page / chapter / section)
 
-- **상태:** Proposed (2026-05-03 진산님 승인 예정 — Session 038 §"데이터 모델 영향은 승인")
+- **상태:** Accepted (2026-05-03 진산님 승인 — Session 039 차세션 진입 직후 verify -17 회귀 보고 + "권고대로 모두 처리" 트리거)
 - **결정일:** 2026-05-03
 - **결정자:** 진산 (사용자) — Session 038 BATCH-1 진입 직전 페이지 표기 정합화 결정
 - **작성:** Claude (Opus 4.7 1M context) — Session 038 BATCH-1 reconnaissance 결과 반영
