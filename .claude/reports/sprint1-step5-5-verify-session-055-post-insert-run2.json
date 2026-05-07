@@ -1,0 +1,427 @@
+{
+  "timestamp": "2026-05-07T23:15:30.230Z",
+  "repoRoot": "/home/soo/ClaudePro/ThePick",
+  "summary": {
+    "total": 8,
+    "pass": 7,
+    "fail": 0,
+    "skip": 1,
+    "overallStatus": "PASS"
+  },
+  "categories": [
+    {
+      "id": 1,
+      "name": "단위 + 모듈 + 통합 테스트 (Cat 1+2+3)",
+      "status": "PASS",
+      "numerics": [
+        {
+          "name": "@thepick/shared 테스트 카운트",
+          "observed": 50,
+          "required": 50,
+          "status": "PASS"
+        },
+        {
+          "name": "@thepick/formula-engine 테스트 카운트",
+          "observed": 303,
+          "required": 303,
+          "status": "PASS"
+        },
+        {
+          "name": "@thepick/parser 테스트 카운트",
+          "observed": 179,
+          "required": 179,
+          "status": "PASS"
+        },
+        {
+          "name": "@thepick/quality 테스트 카운트",
+          "observed": 57,
+          "required": 57,
+          "status": "PASS"
+        },
+        {
+          "name": "@thepick/batch 테스트 카운트",
+          "observed": 327,
+          "required": 327,
+          "status": "PASS"
+        },
+        {
+          "name": "@thepick/api 테스트 카운트",
+          "observed": 309,
+          "required": 309,
+          "status": "PASS"
+        },
+        {
+          "name": "@thepick/ai-adapter 테스트 카운트",
+          "observed": 13,
+          "required": 13,
+          "status": "PASS"
+        },
+        {
+          "name": "@thepick/admin-web 테스트 카운트",
+          "observed": 10,
+          "required": 10,
+          "status": "PASS"
+        },
+        {
+          "name": "모노레포 전체 합계",
+          "observed": 1248,
+          "required": 1248,
+          "status": "PASS"
+        }
+      ],
+      "booleans": [],
+      "notes": ["vitest --reporter=json 합계. 패키지별 required 는 master-test-checklist v1 기준."]
+    },
+    {
+      "id": 4,
+      "name": "E2E 테스트 (Cat 4)",
+      "status": "PASS",
+      "numerics": [
+        {
+          "name": "E2E AC 시나리오 커버 파일 카운트",
+          "observed": 9,
+          "required": 4,
+          "status": "PASS"
+        }
+      ],
+      "booleans": [],
+      "notes": ["AC-RP-1/2/3/4/6/7 + AC-R1/3 + AC-Snapshot + AC-Cost + AC-ExamId + AC-T3 grep."]
+    },
+    {
+      "id": 5,
+      "name": "Cat 5A — P0 시나리오 매트릭스 (Sprint 1 §5.5 자동화) | Cat 5B 성능 벤치는 Phase 2 SKIP",
+      "status": "PASS",
+      "numerics": [
+        {
+          "name": "Sprint 1 §5.5 P0 15 시나리오 파일 매핑 (12 direct + 3 alias)",
+          "observed": 15,
+          "required": 15,
+          "status": "PASS"
+        }
+      ],
+      "booleans": [
+        {
+          "name": "Sprint 1 §5.5 P0 시나리오 내 it.skip / describe.skip / .todo 0건 (silent skip 차단)",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "P0 15 시나리오 파일 내 it.skip / describe.skip / .todo 0건 (주석 제외)"
+        },
+        {
+          "name": "Master Plan v1.0.2 footnote 6건 expansion trigger (BATCH-1 fixture 미존재 → trigger 미발화)",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "EXPANSION_OBLIGATIONS 6건 정의 영속. BATCH-1 fixture 적재 시점 expansion 의무 자동 검증 활성화. (Phase 1 closeout 시점 PASS)"
+        }
+      ],
+      "notes": [
+        "Sprint 1 §5.5 종료 게이트 — P0 15 시나리오 파일 매핑 (12 direct + 3 alias).",
+        "Master Plan v1.0.2 footnote 6건 정합 — silent pivot (REC-02 / REC-01 / PRC-01 / PRF-01 / PRF-02 / FUZ-04).",
+        "BATCH-1 적재 후 expansion 의무 — PRC-01 51 산식 골든 + PRF-01/02 BATCH1~5 baseline + Tarjan 도입 트리거.",
+        "본 게이트 의 PASS 는 file 존재 + cat 1+2+3 numeric 의 패키지별 required 카운트 충족 (= 시나리오 invariant 간접 PASS) 의 결합. invariant 직접 검증 (vitest test-by-test) 은 cat 1+2+3 numeric 위임 — Master Plan §13.1 BATCH-1 진입 게이트 자격 = cat5 + cat1+2+3 동시 PASS.",
+        "Cat 5 분리 명세: 5A = P0 시나리오 매핑 (본 자동화, Sprint 1 §5.5 PASS) / 5B = Workers CPU 50ms 벤치 + 토큰 비용 + Vectorize latency (Phase 2 위임 SKIP). completion report v1.2 §10.6 매트릭스 + master-test-checklist v3 §5 갱신 의무.",
+        "handoff-033 §3.1 옵션 A 일괄 결정 후속 자동화 — silent pivot 6건 영속 + §5.5 종료 게이트 진입.",
+        "Phase 1 5-페르소나 CRIT-QPHASE1-2 흡수 — EXPANSION_OBLIGATIONS 6건 자동 trigger. BATCH-1 fixture 적재 감지 시 각 footnote expansion 의무 자동 발화 (silent pivot 7번째 차단). 본 시점 (Phase 1 closeout) trigger 미발화 → PASS."
+      ]
+    },
+    {
+      "id": 6,
+      "name": "품질 테스트 (Cat 6)",
+      "status": "PASS",
+      "numerics": [
+        {
+          "name": "Formula Engine 결정성 + sandbox property 테스트",
+          "observed": 303,
+          "required": 251,
+          "status": "PASS"
+        },
+        {
+          "name": "D1 마이그레이션 파일 카운트",
+          "observed": 25,
+          "required": 25,
+          "status": "PASS"
+        }
+      ],
+      "booleans": [],
+      "notes": [
+        "Formula Engine = QG-2/QG-5 골격. 마이그레이션 카운트 = 0014 트리거 + 0016 unique 진척."
+      ]
+    },
+    {
+      "id": 7,
+      "name": "보안 테스트 (Cat 7)",
+      "status": "PASS",
+      "numerics": [],
+      "booleans": [
+        {
+          "name": "Hard Rule 17 — EXAM_IDS 리터럴 단일 선언 (production 코드)",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "exam-ids.ts 외 production 위반 0건 (.ts 화이트리스트 + 주석 제외) (post-filter 적용)"
+        },
+        {
+          "name": "Formula Engine 동적 코드 실행 키워드 0건 (math.js AST 만 허용)",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "formula-engine src 내 동적 코드 실행 키워드 0건"
+        },
+        {
+          "name": "XSS — 위험 DOM 속성 직접 할당 0건 (sanitizer 우회 차단)",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "production code 내 위험 DOM 직접 할당 0건"
+        },
+        {
+          "name": "Step 18+19 logger 도입 — pipeline/recover/signal-handlers/cost-meter 내 console.* 0건",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "4 파일 내 console.* 0건 (주석 제외) (post-filter 적용)"
+        }
+      ],
+      "notes": [
+        "production-quality.md Hard Rule 17 + Formula Engine 동적 실행 차단 + XSS + Step 18 logger 회귀 방어."
+      ]
+    },
+    {
+      "id": 8,
+      "name": "출력 검증 (Cat 8)",
+      "status": "SKIP",
+      "numerics": [],
+      "booleans": [],
+      "notes": ["LLM 통합 후 Phase 1 후반 — Reviewer 검수 + 근거 FK 검증 별도 plan."]
+    },
+    {
+      "id": 9,
+      "name": "Table-as-Micro-KG schema 정합 (ADR-032 v1.5.0, Cat 9)",
+      "status": "PASS",
+      "numerics": [
+        {
+          "name": "ontology node_types 카운트 (v1.4.0+ = 11)",
+          "observed": 11,
+          "required": 11,
+          "status": "PASS"
+        },
+        {
+          "name": "ontology edge_types 카운트 (v1.5.0 = 18)",
+          "observed": 18,
+          "required": 18,
+          "status": "PASS"
+        }
+      ],
+      "booleans": [
+        {
+          "name": "node_type TABLE 등록",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "TABLE ∈ node_types"
+        },
+        {
+          "name": "node_type ROW_HEADER 등록",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "ROW_HEADER ∈ node_types"
+        },
+        {
+          "name": "node_type COL_HEADER 등록",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "COL_HEADER ∈ node_types"
+        },
+        {
+          "name": "node_type CELL 등록",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "CELL ∈ node_types"
+        },
+        {
+          "name": "edge_type HAS_ROW 등록",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "HAS_ROW ∈ edge_types"
+        },
+        {
+          "name": "edge_type HAS_COLUMN 등록",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "HAS_COLUMN ∈ edge_types"
+        },
+        {
+          "name": "edge_type BELONGS_TO_ROW 등록",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "BELONGS_TO_ROW ∈ edge_types"
+        },
+        {
+          "name": "edge_type BELONGS_TO_COLUMN 등록",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "BELONGS_TO_COLUMN ∈ edge_types"
+        },
+        {
+          "name": "edge_type CONTAINS_TABLE 등록",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "CONTAINS_TABLE ∈ edge_types"
+        },
+        {
+          "name": "TABLE ID 패턴 정합",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "TABLE = ^TBL-\\d{3}$"
+        },
+        {
+          "name": "ROW_HEADER ID 패턴 정합",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "ROW_HEADER = ^TROW-\\d{3}-\\d{2}$"
+        },
+        {
+          "name": "COL_HEADER ID 패턴 정합",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "COL_HEADER = ^TCOL-\\d{3}-\\d{2}$"
+        },
+        {
+          "name": "CELL ID 패턴 정합",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "CELL = ^TCELL-\\d{3}-\\d{2}-\\d{2}$"
+        },
+        {
+          "name": "COL_HEADER ↔ topic_cluster (TC-) prefix 충돌 회피",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "COL_HEADER 패턴 = ^TCOL-\\d{3}-\\d{2}$ (TCOL- prefix 의무)"
+        },
+        {
+          "name": "마이그레이션 0021_table_as_micro_kg.sql 파일",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "존재"
+        },
+        {
+          "name": "마이그레이션 0022_table_structures_update_guard.sql 파일 (D-PHASE2-1=α)",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "존재"
+        },
+        {
+          "name": "마이그레이션 0023_table_cells_pattern_h.sql 파일 (D-PHASE2-7=α 패턴-H Nested Table)",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "존재"
+        },
+        {
+          "name": "마이그레이션 0024_table_structures_pattern_h.sql 파일 (D-PHASE2-8=α pattern_type CHECK 8종)",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "존재 + 'H_nested' CHECK 포함"
+        },
+        {
+          "name": "0024 12-step procedure가 0022 trigger 재생성 (Session 052 5-Persona DA-C1)",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "0024 SQL에 'CREATE TRIGGER prevent_table_structures_critical_update' 포함 — Hard Rule 28 보존"
+        },
+        {
+          "name": "마이그레이션 0025_table_cells_partial_index.sql 파일 (PE-C1 partial index)",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "존재"
+        },
+        {
+          "name": "마이그레이션 0026_table_subordinate_update_guards.sql 파일 + trigger 3종 (BA-C2)",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "존재 + table_cells/headers/node_links UPDATE 차단 trigger 3종 모두 정의"
+        },
+        {
+          "name": "ontology-registry version = 1.5.0",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "version = 1.5.0"
+        }
+      ],
+      "notes": [
+        "ADR-032 Phase 1 Foundation + Phase 2 진입 게이트 — ontology v1.5.0 + 4 ID 패턴 + 마이그레이션 0021/0022/0023 영속 검증.",
+        "D-TABLE-1 (α: TBL/TROW/TCOL/TCELL prefix) + D-TABLE-2 (α: 4 정규화 테이블) + D-PHASE2-7 (α: 패턴-H Nested Table) 결정 정합.",
+        "Phase 2 BATCH-1+6+7+R1 재추출 진입 시 D1 카운트 검증 항목 추가 의무."
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Drizzle ↔ SQL enum 자동 동기화 (NC-1 정책 강제, Cat 10)",
+      "status": "PASS",
+      "numerics": [],
+      "booleans": [
+        {
+          "name": "TABLE_PATTERN_TYPES ↔ table_structures.pattern_type",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "8종 일치 (A_simple, B_2level, C_3level, D_merged, E_na, F_formula, G_temporal, H_nested)"
+        },
+        {
+          "name": "TABLE_CELL_VALUE_TYPES ↔ table_cells.value_type",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "6종 일치 (text, number, formula, na, merged_ref, nested_table)"
+        },
+        {
+          "name": "TABLE_STATUSES ↔ table_structures.status",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "4종 일치 (draft, active, flagged, deprecated)"
+        },
+        {
+          "name": "TABLE_HEADER_AXES ↔ table_headers.axis",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "2종 일치 (row, column)"
+        },
+        {
+          "name": "TABLE_NODE_LINK_RELATION_TYPES ↔ table_node_links.relation_type",
+          "value": true,
+          "required": true,
+          "status": "PASS",
+          "evidence": "3종 일치 (extracted_from, referenced_by, supersedes)"
+        }
+      ],
+      "notes": [
+        "NC-1 정책 (drizzle-kit 금지 + 수동 동기화) 강제. Session 052 5-Persona R-M4 흡수.",
+        "Drizzle as const 배열과 SQL CHECK IN(...) 양쪽 정합 자동 확인.",
+        "drift 시 D1 INSERT CHECK constraint failure → BATCH rollback 위험 (4-Pass CRIT-A 재발)."
+      ]
+    }
+  ]
+}

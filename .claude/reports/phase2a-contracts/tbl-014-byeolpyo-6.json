@@ -1,0 +1,195 @@
+{
+  "_meta": {
+    "comment": "별표 6 손해정도비율 10단계 — TBL-014 (LAW-141, book_page=695, pdf_page=702). 26년 정합 10% 단위 10단계. status='draft'.",
+    "session": "055",
+    "created_at": "2026-05-08",
+    "validate_only": "INSERT 시 nodes/edges/formulas/constants는 SKIP (이미 D1 적재). tables[]만 INSERT."
+  },
+  "nodes": [],
+  "edges": [],
+  "formulas": [],
+  "constants": [],
+  "tables": [
+    {
+      "id": "TBL-014",
+      "source_node_id": "LAW-141",
+      "title": "표본구간별 손해정도비율 10% 단위 10단계 (26년 정합)",
+      "pattern_type": "A_simple",
+      "row_count": 10,
+      "col_count": 2,
+      "source": "교재 별표6 / book_page=695 / pdf_page=702 / LAW-141 description 분해",
+      "book_page": 695,
+      "pdf_page": 702,
+      "chapter": "별표",
+      "section": "별표6",
+      "headers": [
+        { "id": "TROW-014-01", "axis": "row", "level": 1, "index_pos": 1, "text": "1~10%" },
+        { "id": "TROW-014-02", "axis": "row", "level": 1, "index_pos": 2, "text": "11~20%" },
+        { "id": "TROW-014-03", "axis": "row", "level": 1, "index_pos": 3, "text": "21~30%" },
+        { "id": "TROW-014-04", "axis": "row", "level": 1, "index_pos": 4, "text": "31~40%" },
+        { "id": "TROW-014-05", "axis": "row", "level": 1, "index_pos": 5, "text": "41~50%" },
+        { "id": "TROW-014-06", "axis": "row", "level": 1, "index_pos": 6, "text": "51~60%" },
+        { "id": "TROW-014-07", "axis": "row", "level": 1, "index_pos": 7, "text": "61~70%" },
+        { "id": "TROW-014-08", "axis": "row", "level": 1, "index_pos": 8, "text": "71~80%" },
+        { "id": "TROW-014-09", "axis": "row", "level": 1, "index_pos": 9, "text": "81~90%" },
+        { "id": "TROW-014-10", "axis": "row", "level": 1, "index_pos": 10, "text": "91~100%" },
+        {
+          "id": "TCOL-014-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "손해정도 구간"
+        },
+        {
+          "id": "TCOL-014-02",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 2,
+          "text": "손해정도비율"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-014-01-01",
+          "row_id": "TROW-014-01",
+          "col_id": "TCOL-014-01",
+          "value_text": "1~10%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-01-02",
+          "row_id": "TROW-014-01",
+          "col_id": "TCOL-014-02",
+          "value_text": "10%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-02-01",
+          "row_id": "TROW-014-02",
+          "col_id": "TCOL-014-01",
+          "value_text": "11~20%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-02-02",
+          "row_id": "TROW-014-02",
+          "col_id": "TCOL-014-02",
+          "value_text": "20%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-03-01",
+          "row_id": "TROW-014-03",
+          "col_id": "TCOL-014-01",
+          "value_text": "21~30%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-03-02",
+          "row_id": "TROW-014-03",
+          "col_id": "TCOL-014-02",
+          "value_text": "30%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-04-01",
+          "row_id": "TROW-014-04",
+          "col_id": "TCOL-014-01",
+          "value_text": "31~40%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-04-02",
+          "row_id": "TROW-014-04",
+          "col_id": "TCOL-014-02",
+          "value_text": "40%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-05-01",
+          "row_id": "TROW-014-05",
+          "col_id": "TCOL-014-01",
+          "value_text": "41~50%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-05-02",
+          "row_id": "TROW-014-05",
+          "col_id": "TCOL-014-02",
+          "value_text": "50%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-06-01",
+          "row_id": "TROW-014-06",
+          "col_id": "TCOL-014-01",
+          "value_text": "51~60%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-06-02",
+          "row_id": "TROW-014-06",
+          "col_id": "TCOL-014-02",
+          "value_text": "60%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-07-01",
+          "row_id": "TROW-014-07",
+          "col_id": "TCOL-014-01",
+          "value_text": "61~70%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-07-02",
+          "row_id": "TROW-014-07",
+          "col_id": "TCOL-014-02",
+          "value_text": "70%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-08-01",
+          "row_id": "TROW-014-08",
+          "col_id": "TCOL-014-01",
+          "value_text": "71~80%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-08-02",
+          "row_id": "TROW-014-08",
+          "col_id": "TCOL-014-02",
+          "value_text": "80%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-09-01",
+          "row_id": "TROW-014-09",
+          "col_id": "TCOL-014-01",
+          "value_text": "81~90%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-09-02",
+          "row_id": "TROW-014-09",
+          "col_id": "TCOL-014-02",
+          "value_text": "90%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-10-01",
+          "row_id": "TROW-014-10",
+          "col_id": "TCOL-014-01",
+          "value_text": "91~100%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-014-10-02",
+          "row_id": "TROW-014-10",
+          "col_id": "TCOL-014-02",
+          "value_text": "100%",
+          "value_type": "text"
+        }
+      ]
+    }
+  ]
+}

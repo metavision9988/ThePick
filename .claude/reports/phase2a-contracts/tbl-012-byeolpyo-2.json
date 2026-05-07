@@ -1,0 +1,166 @@
+{
+  "_meta": {
+    "comment": "별표 2 미보상비율 4단계 적용표 — TBL-012 (LAW-139, book_page=688, pdf_page=695). status='draft' (D-TABLE-5=β G5.5 admin 검수 후 active 전환 의무).",
+    "session": "055",
+    "created_at": "2026-05-08",
+    "validate_only": "INSERT 시 nodes/edges/formulas/constants는 SKIP (이미 D1 적재). tables[]만 INSERT."
+  },
+  "nodes": [],
+  "edges": [],
+  "formulas": [],
+  "constants": [],
+  "tables": [
+    {
+      "id": "TBL-012",
+      "source_node_id": "LAW-139",
+      "title": "농작물재해보험 미보상비율 4단계 적용표",
+      "pattern_type": "A_simple",
+      "row_count": 4,
+      "col_count": 4,
+      "source": "교재 별표2 / book_page=688 / pdf_page=695 / LAW-139 description 분해",
+      "book_page": 688,
+      "pdf_page": 695,
+      "chapter": "별표",
+      "section": "별표2",
+      "headers": [
+        { "id": "TROW-012-01", "axis": "row", "level": 1, "index_pos": 1, "text": "해당없음" },
+        { "id": "TROW-012-02", "axis": "row", "level": 1, "index_pos": 2, "text": "미흡" },
+        { "id": "TROW-012-03", "axis": "row", "level": 1, "index_pos": 3, "text": "불량" },
+        { "id": "TROW-012-04", "axis": "row", "level": 1, "index_pos": 4, "text": "매우불량" },
+        { "id": "TCOL-012-01", "axis": "column", "level": 1, "index_pos": 1, "text": "단계" },
+        { "id": "TCOL-012-02", "axis": "column", "level": 1, "index_pos": 2, "text": "비율" },
+        {
+          "id": "TCOL-012-03",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 3,
+          "text": "감자·고추 외 적용 (3항목 분포)"
+        },
+        {
+          "id": "TCOL-012-04",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 4,
+          "text": "감자·고추 적용 (2항목 분포)"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-012-01-01",
+          "row_id": "TROW-012-01",
+          "col_id": "TCOL-012-01",
+          "value_text": "해당없음",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-012-01-02",
+          "row_id": "TROW-012-01",
+          "col_id": "TCOL-012-02",
+          "value_text": "0%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-012-01-03",
+          "row_id": "TROW-012-01",
+          "col_id": "TCOL-012-03",
+          "value_text": "잡초·병해충 농지 면적 20% 미만 분포",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-012-01-04",
+          "row_id": "TROW-012-01",
+          "col_id": "TCOL-012-04",
+          "value_text": "잡초 농지 면적 20% 미만 분포 (병해충 별도 보상)",
+          "value_type": "text"
+        },
+
+        {
+          "id": "TCELL-012-02-01",
+          "row_id": "TROW-012-02",
+          "col_id": "TCOL-012-01",
+          "value_text": "미흡",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-012-02-02",
+          "row_id": "TROW-012-02",
+          "col_id": "TCOL-012-02",
+          "value_text": "10% 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-012-02-03",
+          "row_id": "TROW-012-02",
+          "col_id": "TCOL-012-03",
+          "value_text": "제초상태·병해충상태·기타 3항목 미흡 (개별 적용 후 합산)",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-012-02-04",
+          "row_id": "TROW-012-02",
+          "col_id": "TCOL-012-04",
+          "value_text": "제초상태·기타 2항목 미흡 (개별 적용 후 합산)",
+          "value_type": "text"
+        },
+
+        {
+          "id": "TCELL-012-03-01",
+          "row_id": "TROW-012-03",
+          "col_id": "TCOL-012-01",
+          "value_text": "불량",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-012-03-02",
+          "row_id": "TROW-012-03",
+          "col_id": "TCOL-012-02",
+          "value_text": "20% 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-012-03-03",
+          "row_id": "TROW-012-03",
+          "col_id": "TCOL-012-03",
+          "value_text": "3항목 불량 또는 경작불능조사 결과 수확량 조사 결정 + 영농활동 증빙자료 부족",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-012-03-04",
+          "row_id": "TROW-012-03",
+          "col_id": "TCOL-012-04",
+          "value_text": "2항목 불량 또는 경작불능조사 결과 수확량 조사 결정 + 영농활동 증빙자료 부족",
+          "value_type": "text"
+        },
+
+        {
+          "id": "TCELL-012-04-01",
+          "row_id": "TROW-012-04",
+          "col_id": "TCOL-012-01",
+          "value_text": "매우불량",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-012-04-02",
+          "row_id": "TROW-012-04",
+          "col_id": "TCOL-012-02",
+          "value_text": "20% 이상",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-012-04-03",
+          "row_id": "TROW-012-04",
+          "col_id": "TCOL-012-03",
+          "value_text": "60% 이상 분포 + 증빙자료 없음",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-012-04-04",
+          "row_id": "TROW-012-04",
+          "col_id": "TCOL-012-04",
+          "value_text": "60% 이상 분포 + 증빙자료 없음",
+          "value_type": "text"
+        }
+      ]
+    }
+  ]
+}

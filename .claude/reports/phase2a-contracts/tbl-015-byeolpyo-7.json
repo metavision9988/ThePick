@@ -1,0 +1,100 @@
+{
+  "_meta": {
+    "comment": "별표 7 고추 병충해 등급별 인정비율 — TBL-015 (LAW-142, book_page=695, pdf_page=702). 1·2·3등급 70/50/30%. status='draft'.",
+    "session": "055",
+    "created_at": "2026-05-08",
+    "validate_only": "INSERT 시 nodes/edges/formulas/constants는 SKIP (이미 D1 적재). tables[]만 INSERT."
+  },
+  "nodes": [],
+  "edges": [],
+  "formulas": [],
+  "constants": [],
+  "tables": [
+    {
+      "id": "TBL-015",
+      "source_node_id": "LAW-142",
+      "title": "고추 병충해 등급별 인정비율 (1·2·3등급)",
+      "pattern_type": "A_simple",
+      "row_count": 3,
+      "col_count": 3,
+      "source": "교재 별표7 / book_page=695 / pdf_page=702 / LAW-142 description 분해",
+      "book_page": 695,
+      "pdf_page": 702,
+      "chapter": "별표",
+      "section": "별표7",
+      "headers": [
+        { "id": "TROW-015-01", "axis": "row", "level": 1, "index_pos": 1, "text": "1등급" },
+        { "id": "TROW-015-02", "axis": "row", "level": 1, "index_pos": 2, "text": "2등급" },
+        { "id": "TROW-015-03", "axis": "row", "level": 1, "index_pos": 3, "text": "3등급" },
+        { "id": "TCOL-015-01", "axis": "column", "level": 1, "index_pos": 1, "text": "등급" },
+        { "id": "TCOL-015-02", "axis": "column", "level": 1, "index_pos": 2, "text": "인정비율" },
+        { "id": "TCOL-015-03", "axis": "column", "level": 1, "index_pos": 3, "text": "병충해 종류" }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-015-01-01",
+          "row_id": "TROW-015-01",
+          "col_id": "TCOL-015-01",
+          "value_text": "1등급",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-015-01-02",
+          "row_id": "TROW-015-01",
+          "col_id": "TCOL-015-02",
+          "value_text": "70%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-015-01-03",
+          "row_id": "TROW-015-01",
+          "col_id": "TCOL-015-03",
+          "value_text": "역병·풋마름병·바이러스병·세균성점무늬병·탄저병",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-015-02-01",
+          "row_id": "TROW-015-02",
+          "col_id": "TCOL-015-01",
+          "value_text": "2등급",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-015-02-02",
+          "row_id": "TROW-015-02",
+          "col_id": "TCOL-015-02",
+          "value_text": "50%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-015-02-03",
+          "row_id": "TROW-015-02",
+          "col_id": "TCOL-015-03",
+          "value_text": "잿빛곰팡이병·시들음병·담배가루이·담배나방",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-015-03-01",
+          "row_id": "TROW-015-03",
+          "col_id": "TCOL-015-01",
+          "value_text": "3등급",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-015-03-02",
+          "row_id": "TROW-015-03",
+          "col_id": "TCOL-015-02",
+          "value_text": "30%",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-015-03-03",
+          "row_id": "TROW-015-03",
+          "col_id": "TCOL-015-03",
+          "value_text": "흰가루병·균핵병·무름병·진딧물 및 기타",
+          "value_type": "text"
+        }
+      ]
+    }
+  ]
+}
