@@ -1,0 +1,32 @@
+-- ============================================================
+-- 0022_rollback.sql
+--
+-- Reverses: migrations/0022_table_structures_update_guard.sql
+--   (ADR-032 D-PHASE2-1=α — prevent_table_structures_critical_update trigger)
+--
+-- 효과:
+--   - prevent_table_structures_critical_update trigger 제거
+--
+-- 결과 상태:
+--   table_structures critical 컬럼 (id/source_node_id/title/pattern_type/row_count/
+--   col_count/source) UPDATE 무방비. Hard Rule 28 (Temporal Graph) 일관성 위배.
+--   본 down은 trigger 자체에 회귀가 발견된 경우만 사용.
+--
+-- ★ 0024 down 선행 의무:
+--   0024 forward가 본 trigger를 자체 재생성하므로, 0024 down이 우선 적용되어야
+--   0022 forward 정의의 trigger가 복원된 상태가 됨. 본 0022 down은 그 후 단순 DROP.
+--
+-- 데이터 영향: 0 (trigger DROP만)
+--
+-- 적용 순서:
+--   wrangler d1 execute thepick-db-staging \
+--     --remote --file=docs/runbooks/migration-rollback/0022_rollback.sql
+--   (production 동일, --env production)
+--
+-- 적용 후 의무:
+--   1. d1_migrations 테이블에서 0022 row 수동 삭제
+--      → DELETE FROM d1_migrations WHERE name LIKE '0022_%';
+--   2. verify-engine-contracts.ts Cat 9 trigger 검증 FAIL 정상 (down 의도)
+-- ============================================================
+
+DROP TRIGGER IF EXISTS prevent_table_structures_critical_update;

@@ -342,6 +342,527 @@ function detectNestedTableCycle(adj: Map<string, Set<string>>): string[] | null 
  * @param formulaIds 선언된 formulas[].id 집합 (cell.formula_id dangling 검증)
  * @returns ValidationError[] (빈 배열 = 본 단계 PASS)
  */
+/**
+ * Session 054 R-M1 흡수: validateTablesSection 480 LOC God function 분리.
+ * 책임 분리: validateTableMeta / validateTableHeaders / validateTableCells /
+ * validateTableCrossPattern + detectNestedTableCycle (기존 분리 유지).
+ *
+ * 모든 ValidationError 의 path / code / message / value 는 분리 전과 동일.
+ * 호출 순서·continue 분기 시멘틱 보존.
+ */
+
+interface CellTypeFlags {
+  hasFormulaCell: boolean;
+  hasMergedRefCell: boolean;
+  hasNaCell: boolean;
+  hasNestedTableCell: boolean;
+}
+
+/**
+ * 표 메타 필드 검증 — id/pattern_type/title/source/book_page/pdf_page/chapter/section/row_count/col_count.
+ * 반환: 후속 검증을 진행해도 되는지 (false → caller 가 continue).
+ */
+function validateTableMeta(
+  table: KnowledgeContractTable,
+  tablePrefix: string,
+  errors: ValidationError[],
+): boolean {
+  // 1. tables[].id Ontology Lock — 누락 시 후속 검증 skip
+  if (!table.id || typeof table.id !== 'string') {
+    errors.push(
+      err(`${tablePrefix}.id`, 'MISSING_REQUIRED_FIELD', 'tables[].id is required', table.id),
+    );
+    return false;
+  }
+  if (!isValidNodeId('TABLE', table.id)) {
+    errors.push(
+      err(
+        `${tablePrefix}.id`,
+        'INVALID_TABLE_ID',
+        `Table ID "${table.id}" does not match pattern: ${registry.node_id_patterns.TABLE}`,
+        table.id,
+      ),
+    );
+  }
+
+  // 1b. pattern_type 화이트리스트 (Session 052 CRIT-B — 1차 방어선, 0024 D1 CHECK 8종 정합)
+  if (!VALID_TABLE_PATTERN_TYPES.includes(table.pattern_type)) {
+    errors.push(
+      err(
+        `${tablePrefix}.pattern_type`,
+        'INVALID_TABLE_PATTERN_TYPE',
+        `Unknown pattern_type: "${table.pattern_type}". Allowed: ${VALID_TABLE_PATTERN_TYPES.join(', ')}`,
+        table.pattern_type,
+      ),
+    );
+  }
+
+  // 필수 메타 필드
+  if (!table.title) {
+    errors.push(
+      err(
+        `${tablePrefix}.title`,
+        'MISSING_REQUIRED_FIELD',
+        'tables[].title is required',
+        table.title,
+      ),
+    );
+  }
+  if (!table.source) {
+    errors.push(
+      err(
+        `${tablePrefix}.source`,
+        'MISSING_REQUIRED_FIELD',
+        'tables[].source is required',
+        table.source,
+      ),
+    );
+  }
+
+  // 1c. ADR-030 페이지 메타 강제 (Session 052 CRIT-D — 북극성 출처 추적성)
+  if (!isValidSourcePage(table.book_page)) {
+    errors.push(
+      err(
+        `${tablePrefix}.book_page`,
+        'MISSING_SOURCE_PAGE',
+        'tables[].book_page is required (ADR-030 사용자 노출용 본문 페이지). Must be a positive integer.',
+        table.book_page,
+      ),
+    );
+  }
+  if (!isValidSourcePage(table.pdf_page)) {
+    errors.push(
+      err(
+        `${tablePrefix}.pdf_page`,
+        'MISSING_SOURCE_PAGE',
+        'tables[].pdf_page is required (ADR-030 PDF 추적용). Must be a positive integer.',
+        table.pdf_page,
+      ),
+    );
+  }
+  if (
+    table.chapter !== undefined &&
+    (typeof table.chapter !== 'string' || table.chapter.trim() === '')
+  ) {
+    errors.push(
+      err(
+        `${tablePrefix}.chapter`,
+        'MISSING_REQUIRED_FIELD',
+        'tables[].chapter must be a non-empty string when provided (ADR-030).',
+        table.chapter,
+      ),
+    );
+  }
+  if (
+    table.section !== undefined &&
+    (typeof table.section !== 'string' || table.section.trim() === '')
+  ) {
+    errors.push(
+      err(
+        `${tablePrefix}.section`,
+        'MISSING_REQUIRED_FIELD',
+        'tables[].section must be a non-empty string when provided (ADR-030).',
+        table.section,
+      ),
+    );
+  }
+  if (
+    typeof table.row_count !== 'number' ||
+    !Number.isInteger(table.row_count) ||
+    table.row_count < 1
+  ) {
+    errors.push(
+      err(
+        `${tablePrefix}.row_count`,
+        'MISSING_REQUIRED_FIELD',
+        'tables[].row_count must be a positive integer',
+        table.row_count,
+      ),
+    );
+  }
+  if (
+    typeof table.col_count !== 'number' ||
+    !Number.isInteger(table.col_count) ||
+    table.col_count < 1
+  ) {
+    errors.push(
+      err(
+        `${tablePrefix}.col_count`,
+        'MISSING_REQUIRED_FIELD',
+        'tables[].col_count must be a positive integer',
+        table.col_count,
+      ),
+    );
+  }
+
+  return true;
+}
+
+/**
+ * 표 헤더 검증 — axis/level/index_pos + ID 패턴 (TROW/TCOL) + index_pos gap.
+ * 반환: 후속 cells 검증에 필요한 row/col header ID 집합.
+ */
+function validateTableHeaders(
+  table: KnowledgeContractTable,
+  tablePrefix: string,
+  errors: ValidationError[],
+): { rowHeaderIds: Set<string>; colHeaderIds: Set<string> } {
+  const rowHeaderIds = new Set<string>();
+  const colHeaderIds = new Set<string>();
+  const rowIndexes = new Set<number>();
+  const colIndexes = new Set<number>();
+
+  if (!Array.isArray(table.headers)) {
+    errors.push(
+      err(
+        `${tablePrefix}.headers`,
+        'INVALID_CONTRACT_STRUCTURE',
+        'tables[].headers must be an array',
+        table.headers,
+      ),
+    );
+  } else {
+    for (let h = 0; h < table.headers.length; h++) {
+      const header = table.headers[h];
+      const hp = `${tablePrefix}.headers[${h}]`;
+
+      if (!header || typeof header !== 'object' || !header.id) {
+        errors.push(err(`${hp}.id`, 'MISSING_REQUIRED_FIELD', 'header.id is required', header?.id));
+        continue;
+      }
+
+      if (header.axis === 'row') {
+        if (!isValidNodeId('ROW_HEADER', header.id)) {
+          errors.push(
+            err(
+              `${hp}.id`,
+              'INVALID_TABLE_HEADER_ID',
+              `axis='row' requires TROW prefix: ${registry.node_id_patterns.ROW_HEADER}, got "${header.id}"`,
+              header.id,
+            ),
+          );
+        } else {
+          rowHeaderIds.add(header.id);
+          if (typeof header.index_pos === 'number') rowIndexes.add(header.index_pos);
+        }
+      } else if (header.axis === 'column') {
+        if (!isValidNodeId('COL_HEADER', header.id)) {
+          errors.push(
+            err(
+              `${hp}.id`,
+              'INVALID_TABLE_HEADER_ID',
+              `axis='column' requires TCOL prefix: ${registry.node_id_patterns.COL_HEADER}, got "${header.id}"`,
+              header.id,
+            ),
+          );
+        } else {
+          colHeaderIds.add(header.id);
+          if (typeof header.index_pos === 'number') colIndexes.add(header.index_pos);
+        }
+      } else {
+        errors.push(
+          err(
+            `${hp}.axis`,
+            'MISSING_REQUIRED_FIELD',
+            `header.axis must be 'row' or 'column', got "${header.axis}"`,
+            header.axis,
+          ),
+        );
+      }
+    }
+  }
+
+  // index_pos gap 정합 (row_count / col_count 기준 1..N 모두 채워져야 함)
+  if (typeof table.row_count === 'number' && table.row_count >= 1) {
+    for (let i = 1; i <= table.row_count; i++) {
+      if (!rowIndexes.has(i)) {
+        errors.push(
+          err(
+            `${tablePrefix}.headers`,
+            'TABLE_HEADER_INDEX_GAP',
+            `Missing row header at index_pos=${i} (row_count=${table.row_count})`,
+            i,
+          ),
+        );
+      }
+    }
+  }
+  if (typeof table.col_count === 'number' && table.col_count >= 1) {
+    for (let i = 1; i <= table.col_count; i++) {
+      if (!colIndexes.has(i)) {
+        errors.push(
+          err(
+            `${tablePrefix}.headers`,
+            'TABLE_HEADER_INDEX_GAP',
+            `Missing column header at index_pos=${i} (col_count=${table.col_count})`,
+            i,
+          ),
+        );
+      }
+    }
+  }
+
+  return { rowHeaderIds, colHeaderIds };
+}
+
+/**
+ * 표 셀 검증 — value_type 6종 + FK 정합 (formula/merged_ref/nested_table) + dangling row_id/col_id.
+ * 부수효과: nestedEdges 누적 (caller 가 cycle 검출에 사용).
+ * 반환: pattern_type ↔ value_type cross-validation 에 필요한 셀 타입 플래그 4종.
+ */
+function validateTableCells(
+  table: KnowledgeContractTable,
+  tablePrefix: string,
+  rowHeaderIds: Set<string>,
+  colHeaderIds: Set<string>,
+  formulaIds: ReadonlySet<string>,
+  tableIdSet: Set<string>,
+  nestedEdges: Map<string, Set<string>>,
+  errors: ValidationError[],
+): CellTypeFlags {
+  const flags: CellTypeFlags = {
+    hasFormulaCell: false,
+    hasMergedRefCell: false,
+    hasNaCell: false,
+    hasNestedTableCell: false,
+  };
+
+  if (!Array.isArray(table.cells)) {
+    errors.push(
+      err(
+        `${tablePrefix}.cells`,
+        'INVALID_CONTRACT_STRUCTURE',
+        'tables[].cells must be an array',
+        table.cells,
+      ),
+    );
+    return flags;
+  }
+
+  for (let c = 0; c < table.cells.length; c++) {
+    const cell = table.cells[c];
+    const cp = `${tablePrefix}.cells[${c}]`;
+
+    if (!cell || typeof cell !== 'object' || !cell.id) {
+      errors.push(err(`${cp}.id`, 'MISSING_REQUIRED_FIELD', 'cell.id is required', cell?.id));
+      continue;
+    }
+
+    if (!isValidNodeId('CELL', cell.id)) {
+      errors.push(
+        err(
+          `${cp}.id`,
+          'INVALID_TABLE_CELL_ID',
+          `Cell ID "${cell.id}" does not match pattern: ${registry.node_id_patterns.CELL}`,
+          cell.id,
+        ),
+      );
+    }
+
+    // value_type 6종 검증
+    if (!VALID_TABLE_VALUE_TYPES.includes(cell.value_type)) {
+      errors.push(
+        err(
+          `${cp}.value_type`,
+          'INVALID_TABLE_VALUE_TYPE',
+          `Unknown value_type: "${cell.value_type}". Allowed: ${VALID_TABLE_VALUE_TYPES.join(', ')}`,
+          cell.value_type,
+        ),
+      );
+      continue;
+    }
+
+    // value_type ↔ FK 정합
+    if (cell.value_type === 'formula') {
+      flags.hasFormulaCell = true;
+      if (!cell.formula_id) {
+        errors.push(
+          err(
+            `${cp}.formula_id`,
+            'MISSING_REQUIRED_FIELD',
+            "value_type='formula' requires formula_id",
+            cell.formula_id,
+          ),
+        );
+      } else if (!formulaIds.has(cell.formula_id)) {
+        errors.push(
+          err(
+            `${cp}.formula_id`,
+            'DANGLING_TABLE_CELL_REFERENCE',
+            `formula_id "${cell.formula_id}" not in declared formulas[]`,
+            cell.formula_id,
+          ),
+        );
+      }
+    } else if (cell.value_type === 'merged_ref') {
+      flags.hasMergedRefCell = true;
+      if (!cell.merged_with_id) {
+        errors.push(
+          err(
+            `${cp}.merged_with_id`,
+            'MISSING_REQUIRED_FIELD',
+            "value_type='merged_ref' requires merged_with_id",
+            cell.merged_with_id,
+          ),
+        );
+      } else if (!isValidNodeId('CELL', cell.merged_with_id)) {
+        errors.push(
+          err(
+            `${cp}.merged_with_id`,
+            'DANGLING_TABLE_CELL_REFERENCE',
+            `merged_with_id "${cell.merged_with_id}" not a valid TCELL pattern`,
+            cell.merged_with_id,
+          ),
+        );
+      }
+    } else if (cell.value_type === 'na') {
+      flags.hasNaCell = true;
+    } else if (cell.value_type === 'nested_table') {
+      flags.hasNestedTableCell = true;
+      if (!cell.nested_table_id) {
+        errors.push(
+          err(
+            `${cp}.nested_table_id`,
+            'MISSING_REQUIRED_FIELD',
+            "value_type='nested_table' requires nested_table_id (패턴-H)",
+            cell.nested_table_id,
+          ),
+        );
+      } else if (cell.nested_table_id === table.id) {
+        // Session 052 CRIT-C: 자기 참조 명시 거부 (UI 무한 재귀 / 정답 결정 불가).
+        errors.push(
+          err(
+            `${cp}.nested_table_id`,
+            'NESTED_TABLE_SELF_REFERENCE',
+            `nested_table_id "${cell.nested_table_id}" cannot reference its own table (self-loop forbidden)`,
+            cell.nested_table_id,
+          ),
+        );
+      } else if (!isValidNodeId('TABLE', cell.nested_table_id)) {
+        // 패턴 위반 nested_table_id (TBL prefix 부재) — DANGLING보다 더 정확한 메시지.
+        errors.push(
+          err(
+            `${cp}.nested_table_id`,
+            'INVALID_TABLE_ID',
+            `nested_table_id "${cell.nested_table_id}" does not match TABLE pattern: ${registry.node_id_patterns.TABLE}`,
+            cell.nested_table_id,
+          ),
+        );
+      } else if (!tableIdSet.has(cell.nested_table_id)) {
+        errors.push(
+          err(
+            `${cp}.nested_table_id`,
+            'DANGLING_NESTED_TABLE_REFERENCE',
+            `nested_table_id "${cell.nested_table_id}" not declared in tables[]`,
+            cell.nested_table_id,
+          ),
+        );
+      } else {
+        // Session 052 CRIT-C: 다단 사이클(A→B→A 등) 검출용 인접 그래프 누적.
+        let neighbors = nestedEdges.get(table.id);
+        if (!neighbors) {
+          neighbors = new Set<string>();
+          nestedEdges.set(table.id, neighbors);
+        }
+        neighbors.add(cell.nested_table_id);
+      }
+    }
+
+    // dangling row_id / col_id (table 단위)
+    if (cell.row_id && rowHeaderIds.size > 0 && !rowHeaderIds.has(cell.row_id)) {
+      errors.push(
+        err(
+          `${cp}.row_id`,
+          'DANGLING_TABLE_CELL_REFERENCE',
+          `row_id "${cell.row_id}" not in this table's row headers`,
+          cell.row_id,
+        ),
+      );
+    }
+    if (cell.col_id && colHeaderIds.size > 0 && !colHeaderIds.has(cell.col_id)) {
+      errors.push(
+        err(
+          `${cp}.col_id`,
+          'DANGLING_TABLE_CELL_REFERENCE',
+          `col_id "${cell.col_id}" not in this table's column headers`,
+          cell.col_id,
+        ),
+      );
+    }
+  }
+
+  return flags;
+}
+
+/**
+ * pattern_type ↔ value_type cross-validation — 8 패턴 무결성 체크.
+ * Session 052 CRIT-A 흡수: H_nested 패턴은 nested_table 셀 ≥1 의무.
+ */
+function validateTableCrossPattern(
+  table: KnowledgeContractTable,
+  tablePrefix: string,
+  flags: CellTypeFlags,
+  errors: ValidationError[],
+): void {
+  if (table.pattern_type === 'F_formula' && !flags.hasFormulaCell) {
+    errors.push(
+      err(
+        `${tablePrefix}.pattern_type`,
+        'TABLE_PATTERN_VALUETYPE_MISMATCH',
+        "pattern_type='F_formula' requires ≥1 cell with value_type='formula'",
+        table.pattern_type,
+      ),
+    );
+  }
+  if (table.pattern_type === 'D_merged' && !flags.hasMergedRefCell) {
+    errors.push(
+      err(
+        `${tablePrefix}.pattern_type`,
+        'TABLE_PATTERN_VALUETYPE_MISMATCH',
+        "pattern_type='D_merged' requires ≥1 cell with value_type='merged_ref'",
+        table.pattern_type,
+      ),
+    );
+  }
+  if (table.pattern_type === 'E_na' && !flags.hasNaCell) {
+    errors.push(
+      err(
+        `${tablePrefix}.pattern_type`,
+        'TABLE_PATTERN_VALUETYPE_MISMATCH',
+        "pattern_type='E_na' requires ≥1 cell with value_type='na'",
+        table.pattern_type,
+      ),
+    );
+  }
+  if (
+    table.pattern_type === 'A_simple' &&
+    (flags.hasFormulaCell || flags.hasMergedRefCell || flags.hasNestedTableCell)
+  ) {
+    errors.push(
+      err(
+        `${tablePrefix}.pattern_type`,
+        'TABLE_PATTERN_VALUETYPE_MISMATCH',
+        "pattern_type='A_simple' allows only text/number/na cells (no formula/merged_ref/nested_table)",
+        table.pattern_type,
+      ),
+    );
+  }
+  if (table.pattern_type === 'H_nested' && !flags.hasNestedTableCell) {
+    errors.push(
+      err(
+        `${tablePrefix}.pattern_type`,
+        'TABLE_PATTERN_VALUETYPE_MISMATCH',
+        "pattern_type='H_nested' requires ≥1 cell with value_type='nested_table'",
+        table.pattern_type,
+      ),
+    );
+  }
+}
+
+/**
+ * 표 섹션 전체 검증 orchestrator — 3-pass 구조 보존.
+ * 1) tables[].id 수집 → 2) 표 단위 본문 검증 → 3) nested_table 사이클 검출.
+ */
 function validateTablesSection(
   tables: KnowledgeContractTable[],
   formulaIds: ReadonlySet<string>,
@@ -376,458 +897,19 @@ function validateTablesSection(
       continue;
     }
 
-    // 1. tables[].id Ontology Lock
-    if (!table.id || typeof table.id !== 'string') {
-      errors.push(
-        err(`${tablePrefix}.id`, 'MISSING_REQUIRED_FIELD', 'tables[].id is required', table.id),
-      );
-      continue;
-    }
-    if (!isValidNodeId('TABLE', table.id)) {
-      errors.push(
-        err(
-          `${tablePrefix}.id`,
-          'INVALID_TABLE_ID',
-          `Table ID "${table.id}" does not match pattern: ${registry.node_id_patterns.TABLE}`,
-          table.id,
-        ),
-      );
-    }
-
-    // 1b. pattern_type 화이트리스트 검증 (Session 052 CRIT-B 흡수 — 1차 방어선)
-    //     LLM hallucination 시 unknown pattern → schema-validator 단계 거부.
-    //     마이그레이션 0024 D1 CHECK 8종과 정합.
-    if (!VALID_TABLE_PATTERN_TYPES.includes(table.pattern_type)) {
-      errors.push(
-        err(
-          `${tablePrefix}.pattern_type`,
-          'INVALID_TABLE_PATTERN_TYPE',
-          `Unknown pattern_type: "${table.pattern_type}". Allowed: ${VALID_TABLE_PATTERN_TYPES.join(', ')}`,
-          table.pattern_type,
-        ),
-      );
-    }
-
-    // 필수 메타 필드
-    if (!table.title) {
-      errors.push(
-        err(
-          `${tablePrefix}.title`,
-          'MISSING_REQUIRED_FIELD',
-          'tables[].title is required',
-          table.title,
-        ),
-      );
-    }
-    if (!table.source) {
-      errors.push(
-        err(
-          `${tablePrefix}.source`,
-          'MISSING_REQUIRED_FIELD',
-          'tables[].source is required',
-          table.source,
-        ),
-      );
-    }
-
-    // 1c. ADR-030 페이지 메타 강제 — Session 052 CRIT-D 흡수 (북극성 출처 추적성).
-    if (!isValidSourcePage(table.book_page)) {
-      errors.push(
-        err(
-          `${tablePrefix}.book_page`,
-          'MISSING_SOURCE_PAGE',
-          'tables[].book_page is required (ADR-030 사용자 노출용 본문 페이지). Must be a positive integer.',
-          table.book_page,
-        ),
-      );
-    }
-    if (!isValidSourcePage(table.pdf_page)) {
-      errors.push(
-        err(
-          `${tablePrefix}.pdf_page`,
-          'MISSING_SOURCE_PAGE',
-          'tables[].pdf_page is required (ADR-030 PDF 추적용). Must be a positive integer.',
-          table.pdf_page,
-        ),
-      );
-    }
-    if (
-      table.chapter !== undefined &&
-      (typeof table.chapter !== 'string' || table.chapter.trim() === '')
-    ) {
-      errors.push(
-        err(
-          `${tablePrefix}.chapter`,
-          'MISSING_REQUIRED_FIELD',
-          'tables[].chapter must be a non-empty string when provided (ADR-030).',
-          table.chapter,
-        ),
-      );
-    }
-    if (
-      table.section !== undefined &&
-      (typeof table.section !== 'string' || table.section.trim() === '')
-    ) {
-      errors.push(
-        err(
-          `${tablePrefix}.section`,
-          'MISSING_REQUIRED_FIELD',
-          'tables[].section must be a non-empty string when provided (ADR-030).',
-          table.section,
-        ),
-      );
-    }
-    if (
-      typeof table.row_count !== 'number' ||
-      !Number.isInteger(table.row_count) ||
-      table.row_count < 1
-    ) {
-      errors.push(
-        err(
-          `${tablePrefix}.row_count`,
-          'MISSING_REQUIRED_FIELD',
-          'tables[].row_count must be a positive integer',
-          table.row_count,
-        ),
-      );
-    }
-    if (
-      typeof table.col_count !== 'number' ||
-      !Number.isInteger(table.col_count) ||
-      table.col_count < 1
-    ) {
-      errors.push(
-        err(
-          `${tablePrefix}.col_count`,
-          'MISSING_REQUIRED_FIELD',
-          'tables[].col_count must be a positive integer',
-          table.col_count,
-        ),
-      );
-    }
-
-    // 2. headers 검증 — axis-prefix 매칭 + index_pos 수집
-    const rowHeaderIds = new Set<string>();
-    const colHeaderIds = new Set<string>();
-    const rowIndexes = new Set<number>();
-    const colIndexes = new Set<number>();
-
-    if (!Array.isArray(table.headers)) {
-      errors.push(
-        err(
-          `${tablePrefix}.headers`,
-          'INVALID_CONTRACT_STRUCTURE',
-          'tables[].headers must be an array',
-          table.headers,
-        ),
-      );
-    } else {
-      for (let h = 0; h < table.headers.length; h++) {
-        const header = table.headers[h];
-        const hp = `${tablePrefix}.headers[${h}]`;
-
-        if (!header || typeof header !== 'object' || !header.id) {
-          errors.push(
-            err(`${hp}.id`, 'MISSING_REQUIRED_FIELD', 'header.id is required', header?.id),
-          );
-          continue;
-        }
-
-        if (header.axis === 'row') {
-          if (!isValidNodeId('ROW_HEADER', header.id)) {
-            errors.push(
-              err(
-                `${hp}.id`,
-                'INVALID_TABLE_HEADER_ID',
-                `axis='row' requires TROW prefix: ${registry.node_id_patterns.ROW_HEADER}, got "${header.id}"`,
-                header.id,
-              ),
-            );
-          } else {
-            rowHeaderIds.add(header.id);
-            if (typeof header.index_pos === 'number') rowIndexes.add(header.index_pos);
-          }
-        } else if (header.axis === 'column') {
-          if (!isValidNodeId('COL_HEADER', header.id)) {
-            errors.push(
-              err(
-                `${hp}.id`,
-                'INVALID_TABLE_HEADER_ID',
-                `axis='column' requires TCOL prefix: ${registry.node_id_patterns.COL_HEADER}, got "${header.id}"`,
-                header.id,
-              ),
-            );
-          } else {
-            colHeaderIds.add(header.id);
-            if (typeof header.index_pos === 'number') colIndexes.add(header.index_pos);
-          }
-        } else {
-          errors.push(
-            err(
-              `${hp}.axis`,
-              'MISSING_REQUIRED_FIELD',
-              `header.axis must be 'row' or 'column', got "${header.axis}"`,
-              header.axis,
-            ),
-          );
-        }
-      }
-    }
-
-    // 3. headers index_pos gap 정합 (row_count / col_count 기준 1..N 모두 채워져야 함)
-    if (typeof table.row_count === 'number' && table.row_count >= 1) {
-      for (let i = 1; i <= table.row_count; i++) {
-        if (!rowIndexes.has(i)) {
-          errors.push(
-            err(
-              `${tablePrefix}.headers`,
-              'TABLE_HEADER_INDEX_GAP',
-              `Missing row header at index_pos=${i} (row_count=${table.row_count})`,
-              i,
-            ),
-          );
-        }
-      }
-    }
-    if (typeof table.col_count === 'number' && table.col_count >= 1) {
-      for (let i = 1; i <= table.col_count; i++) {
-        if (!colIndexes.has(i)) {
-          errors.push(
-            err(
-              `${tablePrefix}.headers`,
-              'TABLE_HEADER_INDEX_GAP',
-              `Missing column header at index_pos=${i} (col_count=${table.col_count})`,
-              i,
-            ),
-          );
-        }
-      }
-    }
-
-    // 4. cells 검증
-    let hasFormulaCell = false;
-    let hasMergedRefCell = false;
-    let hasNaCell = false;
-    let hasNestedTableCell = false;
-
-    if (!Array.isArray(table.cells)) {
-      errors.push(
-        err(
-          `${tablePrefix}.cells`,
-          'INVALID_CONTRACT_STRUCTURE',
-          'tables[].cells must be an array',
-          table.cells,
-        ),
-      );
-    } else {
-      for (let c = 0; c < table.cells.length; c++) {
-        const cell = table.cells[c];
-        const cp = `${tablePrefix}.cells[${c}]`;
-
-        if (!cell || typeof cell !== 'object' || !cell.id) {
-          errors.push(err(`${cp}.id`, 'MISSING_REQUIRED_FIELD', 'cell.id is required', cell?.id));
-          continue;
-        }
-
-        if (!isValidNodeId('CELL', cell.id)) {
-          errors.push(
-            err(
-              `${cp}.id`,
-              'INVALID_TABLE_CELL_ID',
-              `Cell ID "${cell.id}" does not match pattern: ${registry.node_id_patterns.CELL}`,
-              cell.id,
-            ),
-          );
-        }
-
-        // value_type 6종 검증
-        if (!VALID_TABLE_VALUE_TYPES.includes(cell.value_type)) {
-          errors.push(
-            err(
-              `${cp}.value_type`,
-              'INVALID_TABLE_VALUE_TYPE',
-              `Unknown value_type: "${cell.value_type}". Allowed: ${VALID_TABLE_VALUE_TYPES.join(', ')}`,
-              cell.value_type,
-            ),
-          );
-          continue;
-        }
-
-        // value_type ↔ FK 정합
-        if (cell.value_type === 'formula') {
-          hasFormulaCell = true;
-          if (!cell.formula_id) {
-            errors.push(
-              err(
-                `${cp}.formula_id`,
-                'MISSING_REQUIRED_FIELD',
-                "value_type='formula' requires formula_id",
-                cell.formula_id,
-              ),
-            );
-          } else if (!formulaIds.has(cell.formula_id)) {
-            errors.push(
-              err(
-                `${cp}.formula_id`,
-                'DANGLING_TABLE_CELL_REFERENCE',
-                `formula_id "${cell.formula_id}" not in declared formulas[]`,
-                cell.formula_id,
-              ),
-            );
-          }
-        } else if (cell.value_type === 'merged_ref') {
-          hasMergedRefCell = true;
-          if (!cell.merged_with_id) {
-            errors.push(
-              err(
-                `${cp}.merged_with_id`,
-                'MISSING_REQUIRED_FIELD',
-                "value_type='merged_ref' requires merged_with_id",
-                cell.merged_with_id,
-              ),
-            );
-          } else if (!isValidNodeId('CELL', cell.merged_with_id)) {
-            errors.push(
-              err(
-                `${cp}.merged_with_id`,
-                'DANGLING_TABLE_CELL_REFERENCE',
-                `merged_with_id "${cell.merged_with_id}" not a valid TCELL pattern`,
-                cell.merged_with_id,
-              ),
-            );
-          }
-        } else if (cell.value_type === 'na') {
-          hasNaCell = true;
-        } else if (cell.value_type === 'nested_table') {
-          hasNestedTableCell = true;
-          if (!cell.nested_table_id) {
-            errors.push(
-              err(
-                `${cp}.nested_table_id`,
-                'MISSING_REQUIRED_FIELD',
-                "value_type='nested_table' requires nested_table_id (패턴-H)",
-                cell.nested_table_id,
-              ),
-            );
-          } else if (cell.nested_table_id === table.id) {
-            // Session 052 CRIT-C 흡수: 자기 참조 명시 거부 (UI 무한 재귀 / 정답 결정 불가).
-            errors.push(
-              err(
-                `${cp}.nested_table_id`,
-                'NESTED_TABLE_SELF_REFERENCE',
-                `nested_table_id "${cell.nested_table_id}" cannot reference its own table (self-loop forbidden)`,
-                cell.nested_table_id,
-              ),
-            );
-          } else if (!isValidNodeId('TABLE', cell.nested_table_id)) {
-            // 패턴 위반 nested_table_id (TBL prefix 부재) — DANGLING보다 더 정확한 메시지.
-            errors.push(
-              err(
-                `${cp}.nested_table_id`,
-                'INVALID_TABLE_ID',
-                `nested_table_id "${cell.nested_table_id}" does not match TABLE pattern: ${registry.node_id_patterns.TABLE}`,
-                cell.nested_table_id,
-              ),
-            );
-          } else if (!tableIdSet.has(cell.nested_table_id)) {
-            errors.push(
-              err(
-                `${cp}.nested_table_id`,
-                'DANGLING_NESTED_TABLE_REFERENCE',
-                `nested_table_id "${cell.nested_table_id}" not declared in tables[]`,
-                cell.nested_table_id,
-              ),
-            );
-          } else {
-            // Session 052 CRIT-C 흡수: 다단 사이클(A→B→A 등) 검출용 인접 그래프 누적.
-            let neighbors = nestedEdges.get(table.id);
-            if (!neighbors) {
-              neighbors = new Set<string>();
-              nestedEdges.set(table.id, neighbors);
-            }
-            neighbors.add(cell.nested_table_id);
-          }
-        }
-
-        // dangling row_id / col_id (table 단위)
-        if (cell.row_id && rowHeaderIds.size > 0 && !rowHeaderIds.has(cell.row_id)) {
-          errors.push(
-            err(
-              `${cp}.row_id`,
-              'DANGLING_TABLE_CELL_REFERENCE',
-              `row_id "${cell.row_id}" not in this table's row headers`,
-              cell.row_id,
-            ),
-          );
-        }
-        if (cell.col_id && colHeaderIds.size > 0 && !colHeaderIds.has(cell.col_id)) {
-          errors.push(
-            err(
-              `${cp}.col_id`,
-              'DANGLING_TABLE_CELL_REFERENCE',
-              `col_id "${cell.col_id}" not in this table's column headers`,
-              cell.col_id,
-            ),
-          );
-        }
-      }
-    }
-
-    // 5. pattern_type ↔ value_type cross-validation
-    if (table.pattern_type === 'F_formula' && !hasFormulaCell) {
-      errors.push(
-        err(
-          `${tablePrefix}.pattern_type`,
-          'TABLE_PATTERN_VALUETYPE_MISMATCH',
-          "pattern_type='F_formula' requires ≥1 cell with value_type='formula'",
-          table.pattern_type,
-        ),
-      );
-    }
-    if (table.pattern_type === 'D_merged' && !hasMergedRefCell) {
-      errors.push(
-        err(
-          `${tablePrefix}.pattern_type`,
-          'TABLE_PATTERN_VALUETYPE_MISMATCH',
-          "pattern_type='D_merged' requires ≥1 cell with value_type='merged_ref'",
-          table.pattern_type,
-        ),
-      );
-    }
-    if (table.pattern_type === 'E_na' && !hasNaCell) {
-      errors.push(
-        err(
-          `${tablePrefix}.pattern_type`,
-          'TABLE_PATTERN_VALUETYPE_MISMATCH',
-          "pattern_type='E_na' requires ≥1 cell with value_type='na'",
-          table.pattern_type,
-        ),
-      );
-    }
-    if (
-      table.pattern_type === 'A_simple' &&
-      (hasFormulaCell || hasMergedRefCell || hasNestedTableCell)
-    ) {
-      errors.push(
-        err(
-          `${tablePrefix}.pattern_type`,
-          'TABLE_PATTERN_VALUETYPE_MISMATCH',
-          "pattern_type='A_simple' allows only text/number/na cells (no formula/merged_ref/nested_table)",
-          table.pattern_type,
-        ),
-      );
-    }
-    // Session 052 CRIT-A 흡수: H_nested 패턴은 nested_table 셀 ≥1 의무.
-    if (table.pattern_type === 'H_nested' && !hasNestedTableCell) {
-      errors.push(
-        err(
-          `${tablePrefix}.pattern_type`,
-          'TABLE_PATTERN_VALUETYPE_MISMATCH',
-          "pattern_type='H_nested' requires ≥1 cell with value_type='nested_table'",
-          table.pattern_type,
-        ),
-      );
-    }
+    if (!validateTableMeta(table, tablePrefix, errors)) continue;
+    const { rowHeaderIds, colHeaderIds } = validateTableHeaders(table, tablePrefix, errors);
+    const flags = validateTableCells(
+      table,
+      tablePrefix,
+      rowHeaderIds,
+      colHeaderIds,
+      formulaIds,
+      tableIdSet,
+      nestedEdges,
+      errors,
+    );
+    validateTableCrossPattern(table, tablePrefix, flags, errors);
   }
 
   // 3차 pass: nested_table 사이클 검출 (Session 052 CRIT-C 흡수).
