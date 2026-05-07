@@ -1,0 +1,2618 @@
+{
+  "_meta": {
+    "comment": "별표 1 LAW-138 — TBL-001 부모 (H_nested 15 분류) + 15 sub-tables (TBL-002~011 + TBL-016~020). PDF 정확 매트릭스 기반.",
+    "session": "055",
+    "created_at": "2026-05-08",
+    "validate_only": "INSERT 시 nodes/edges/formulas/constants는 SKIP. tables[]만 INSERT."
+  },
+  "nodes": [],
+  "edges": [],
+  "formulas": [],
+  "constants": [],
+  "tables": [
+    {
+      "id": "TBL-001",
+      "source_node_id": "LAW-138",
+      "title": "농작물재해보험 품목별 표본주(구간)수 표 — 15 분류 nested 부모 (옵션 C 패턴-H)",
+      "pattern_type": "H_nested",
+      "row_count": 15,
+      "col_count": 1,
+      "source": "교재 별표1 / book_page=684 / pdf_page=691 / LAW-138 PDF 정확 매트릭스",
+      "book_page": 684,
+      "pdf_page": 691,
+      "chapter": "별표",
+      "section": "별표1",
+      "headers": [
+        {
+          "id": "TROW-001-01",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 1,
+          "text": "사과/배/단감/떫은감/포도(농업수입안정 포함)/복숭아/자두/밤/호두/무화과/감귤(만감류)"
+        },
+        {
+          "id": "TROW-001-02",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 2,
+          "text": "유자"
+        },
+        {
+          "id": "TROW-001-03",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 3,
+          "text": "참다래/블루베리"
+        },
+        {
+          "id": "TROW-001-04",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 4,
+          "text": "매실/대추/살구"
+        },
+        {
+          "id": "TROW-001-05",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 5,
+          "text": "오미자"
+        },
+        {
+          "id": "TROW-001-06",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 6,
+          "text": "오디"
+        },
+        {
+          "id": "TROW-001-07",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 7,
+          "text": "복분자"
+        },
+        {
+          "id": "TROW-001-08",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 8,
+          "text": "감귤(온주밀감류)"
+        },
+        {
+          "id": "TROW-001-09",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 9,
+          "text": "벼/밀/보리/귀리"
+        },
+        {
+          "id": "TROW-001-10",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 10,
+          "text": "고구마/양파/마늘/옥수수/양배추/단호박 (수입보장 포함)"
+        },
+        {
+          "id": "TROW-001-11",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 11,
+          "text": "감자/차/콩/팥/수박/당근/생강/고랭지무/가을무(일반)/고랭지배추/가을배추 (수입보장 포함)"
+        },
+        {
+          "id": "TROW-001-12",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 12,
+          "text": "인삼"
+        },
+        {
+          "id": "TROW-001-13",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 13,
+          "text": "고추/메밀/브로콜리/배추(봄/고랭지/월동)/무/파/시금치/양상추"
+        },
+        {
+          "id": "TROW-001-14",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 14,
+          "text": "두릅"
+        },
+        {
+          "id": "TROW-001-15",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 15,
+          "text": "참깨/녹두"
+        },
+        {
+          "id": "TCOL-001-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "표본주(구간)수 표"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-001-01-01",
+          "row_id": "TROW-001-01",
+          "col_id": "TCOL-001-01",
+          "value_text": "→ TBL-002 (사과/배/단감/떫은감/포도(농업수입안정 포함)/복숭아/자두/밤/호두/무화과/감귤(만감류))",
+          "value_type": "nested_table",
+          "nested_table_id": "TBL-002"
+        },
+        {
+          "id": "TCELL-001-02-01",
+          "row_id": "TROW-001-02",
+          "col_id": "TCOL-001-01",
+          "value_text": "→ TBL-003 (유자)",
+          "value_type": "nested_table",
+          "nested_table_id": "TBL-003"
+        },
+        {
+          "id": "TCELL-001-03-01",
+          "row_id": "TROW-001-03",
+          "col_id": "TCOL-001-01",
+          "value_text": "→ TBL-004 (참다래/블루베리)",
+          "value_type": "nested_table",
+          "nested_table_id": "TBL-004"
+        },
+        {
+          "id": "TCELL-001-04-01",
+          "row_id": "TROW-001-04",
+          "col_id": "TCOL-001-01",
+          "value_text": "→ TBL-005 (매실/대추/살구)",
+          "value_type": "nested_table",
+          "nested_table_id": "TBL-005"
+        },
+        {
+          "id": "TCELL-001-05-01",
+          "row_id": "TROW-001-05",
+          "col_id": "TCOL-001-01",
+          "value_text": "→ TBL-006 (오미자)",
+          "value_type": "nested_table",
+          "nested_table_id": "TBL-006"
+        },
+        {
+          "id": "TCELL-001-06-01",
+          "row_id": "TROW-001-06",
+          "col_id": "TCOL-001-01",
+          "value_text": "→ TBL-007 (오디)",
+          "value_type": "nested_table",
+          "nested_table_id": "TBL-007"
+        },
+        {
+          "id": "TCELL-001-07-01",
+          "row_id": "TROW-001-07",
+          "col_id": "TCOL-001-01",
+          "value_text": "→ TBL-008 (복분자)",
+          "value_type": "nested_table",
+          "nested_table_id": "TBL-008"
+        },
+        {
+          "id": "TCELL-001-08-01",
+          "row_id": "TROW-001-08",
+          "col_id": "TCOL-001-01",
+          "value_text": "→ TBL-009 (감귤(온주밀감류))",
+          "value_type": "nested_table",
+          "nested_table_id": "TBL-009"
+        },
+        {
+          "id": "TCELL-001-09-01",
+          "row_id": "TROW-001-09",
+          "col_id": "TCOL-001-01",
+          "value_text": "→ TBL-010 (벼/밀/보리/귀리)",
+          "value_type": "nested_table",
+          "nested_table_id": "TBL-010"
+        },
+        {
+          "id": "TCELL-001-10-01",
+          "row_id": "TROW-001-10",
+          "col_id": "TCOL-001-01",
+          "value_text": "→ TBL-011 (고구마/양파/마늘/옥수수/양배추/단호박 (수입보장 포함))",
+          "value_type": "nested_table",
+          "nested_table_id": "TBL-011"
+        },
+        {
+          "id": "TCELL-001-11-01",
+          "row_id": "TROW-001-11",
+          "col_id": "TCOL-001-01",
+          "value_text": "→ TBL-016 (감자/차/콩/팥/수박/당근/생강/고랭지무/가을무(일반)/고랭지배추/가을배추 (수입보장 포함))",
+          "value_type": "nested_table",
+          "nested_table_id": "TBL-016"
+        },
+        {
+          "id": "TCELL-001-12-01",
+          "row_id": "TROW-001-12",
+          "col_id": "TCOL-001-01",
+          "value_text": "→ TBL-017 (인삼)",
+          "value_type": "nested_table",
+          "nested_table_id": "TBL-017"
+        },
+        {
+          "id": "TCELL-001-13-01",
+          "row_id": "TROW-001-13",
+          "col_id": "TCOL-001-01",
+          "value_text": "→ TBL-018 (고추/메밀/브로콜리/배추(봄/고랭지/월동)/무/파/시금치/양상추)",
+          "value_type": "nested_table",
+          "nested_table_id": "TBL-018"
+        },
+        {
+          "id": "TCELL-001-14-01",
+          "row_id": "TROW-001-14",
+          "col_id": "TCOL-001-01",
+          "value_text": "→ TBL-019 (두릅)",
+          "value_type": "nested_table",
+          "nested_table_id": "TBL-019"
+        },
+        {
+          "id": "TCELL-001-15-01",
+          "row_id": "TROW-001-15",
+          "col_id": "TCOL-001-01",
+          "value_text": "→ TBL-020 (참깨/녹두)",
+          "value_type": "nested_table",
+          "nested_table_id": "TBL-020"
+        }
+      ]
+    },
+    {
+      "id": "TBL-002",
+      "source_node_id": "LAW-138",
+      "title": "사과/배/단감 등 표본주수 표 (50주~1000주+ 13구간)",
+      "pattern_type": "A_simple",
+      "row_count": 13,
+      "col_count": 2,
+      "source": "교재 별표1 / book_page=684 / pdf_page=691 / LAW-138 PDF 정확 매트릭스 — sub-table",
+      "book_page": 684,
+      "pdf_page": 691,
+      "chapter": "별표",
+      "section": "별표1",
+      "headers": [
+        {
+          "id": "TROW-002-01",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 1,
+          "text": "50주 미만"
+        },
+        {
+          "id": "TROW-002-02",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 2,
+          "text": "50주 이상 100주 미만"
+        },
+        {
+          "id": "TROW-002-03",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 3,
+          "text": "100주 이상 150주 미만"
+        },
+        {
+          "id": "TROW-002-04",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 4,
+          "text": "150주 이상 200주 미만"
+        },
+        {
+          "id": "TROW-002-05",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 5,
+          "text": "200주 이상 300주 미만"
+        },
+        {
+          "id": "TROW-002-06",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 6,
+          "text": "300주 이상 400주 미만"
+        },
+        {
+          "id": "TROW-002-07",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 7,
+          "text": "400주 이상 500주 미만"
+        },
+        {
+          "id": "TROW-002-08",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 8,
+          "text": "500주 이상 600주 미만"
+        },
+        {
+          "id": "TROW-002-09",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 9,
+          "text": "600주 이상 700주 미만"
+        },
+        {
+          "id": "TROW-002-10",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 10,
+          "text": "700주 이상 800주 미만"
+        },
+        {
+          "id": "TROW-002-11",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 11,
+          "text": "800주 이상 900주 미만"
+        },
+        {
+          "id": "TROW-002-12",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 12,
+          "text": "900주 이상 1,000주 미만"
+        },
+        {
+          "id": "TROW-002-13",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 13,
+          "text": "1,000주 이상"
+        },
+        {
+          "id": "TCOL-002-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "조사대상주수"
+        },
+        {
+          "id": "TCOL-002-02",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 2,
+          "text": "표본주수"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-002-01-01",
+          "row_id": "TROW-002-01",
+          "col_id": "TCOL-002-01",
+          "value_text": "50주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-01-02",
+          "row_id": "TROW-002-01",
+          "col_id": "TCOL-002-02",
+          "value_text": "5",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-02-01",
+          "row_id": "TROW-002-02",
+          "col_id": "TCOL-002-01",
+          "value_text": "50주 이상 100주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-02-02",
+          "row_id": "TROW-002-02",
+          "col_id": "TCOL-002-02",
+          "value_text": "6",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-03-01",
+          "row_id": "TROW-002-03",
+          "col_id": "TCOL-002-01",
+          "value_text": "100주 이상 150주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-03-02",
+          "row_id": "TROW-002-03",
+          "col_id": "TCOL-002-02",
+          "value_text": "7",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-04-01",
+          "row_id": "TROW-002-04",
+          "col_id": "TCOL-002-01",
+          "value_text": "150주 이상 200주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-04-02",
+          "row_id": "TROW-002-04",
+          "col_id": "TCOL-002-02",
+          "value_text": "8",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-05-01",
+          "row_id": "TROW-002-05",
+          "col_id": "TCOL-002-01",
+          "value_text": "200주 이상 300주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-05-02",
+          "row_id": "TROW-002-05",
+          "col_id": "TCOL-002-02",
+          "value_text": "9",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-06-01",
+          "row_id": "TROW-002-06",
+          "col_id": "TCOL-002-01",
+          "value_text": "300주 이상 400주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-06-02",
+          "row_id": "TROW-002-06",
+          "col_id": "TCOL-002-02",
+          "value_text": "10",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-07-01",
+          "row_id": "TROW-002-07",
+          "col_id": "TCOL-002-01",
+          "value_text": "400주 이상 500주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-07-02",
+          "row_id": "TROW-002-07",
+          "col_id": "TCOL-002-02",
+          "value_text": "11",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-08-01",
+          "row_id": "TROW-002-08",
+          "col_id": "TCOL-002-01",
+          "value_text": "500주 이상 600주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-08-02",
+          "row_id": "TROW-002-08",
+          "col_id": "TCOL-002-02",
+          "value_text": "12",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-09-01",
+          "row_id": "TROW-002-09",
+          "col_id": "TCOL-002-01",
+          "value_text": "600주 이상 700주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-09-02",
+          "row_id": "TROW-002-09",
+          "col_id": "TCOL-002-02",
+          "value_text": "13",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-10-01",
+          "row_id": "TROW-002-10",
+          "col_id": "TCOL-002-01",
+          "value_text": "700주 이상 800주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-10-02",
+          "row_id": "TROW-002-10",
+          "col_id": "TCOL-002-02",
+          "value_text": "14",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-11-01",
+          "row_id": "TROW-002-11",
+          "col_id": "TCOL-002-01",
+          "value_text": "800주 이상 900주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-11-02",
+          "row_id": "TROW-002-11",
+          "col_id": "TCOL-002-02",
+          "value_text": "15",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-12-01",
+          "row_id": "TROW-002-12",
+          "col_id": "TCOL-002-01",
+          "value_text": "900주 이상 1,000주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-12-02",
+          "row_id": "TROW-002-12",
+          "col_id": "TCOL-002-02",
+          "value_text": "16",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-13-01",
+          "row_id": "TROW-002-13",
+          "col_id": "TCOL-002-01",
+          "value_text": "1,000주 이상",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-002-13-02",
+          "row_id": "TROW-002-13",
+          "col_id": "TCOL-002-02",
+          "value_text": "17",
+          "value_type": "text"
+        }
+      ]
+    },
+    {
+      "id": "TBL-003",
+      "source_node_id": "LAW-138",
+      "title": "유자 표본주수 표 (50주~800주+ 6구간)",
+      "pattern_type": "A_simple",
+      "row_count": 6,
+      "col_count": 2,
+      "source": "교재 별표1 / book_page=684 / pdf_page=691 / LAW-138 PDF 정확 매트릭스 — sub-table",
+      "book_page": 684,
+      "pdf_page": 691,
+      "chapter": "별표",
+      "section": "별표1",
+      "headers": [
+        {
+          "id": "TROW-003-01",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 1,
+          "text": "50주 미만"
+        },
+        {
+          "id": "TROW-003-02",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 2,
+          "text": "50주 이상 100주 미만"
+        },
+        {
+          "id": "TROW-003-03",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 3,
+          "text": "100주 이상 200주 미만"
+        },
+        {
+          "id": "TROW-003-04",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 4,
+          "text": "200주 이상 500주 미만"
+        },
+        {
+          "id": "TROW-003-05",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 5,
+          "text": "500주 이상 800주 미만"
+        },
+        {
+          "id": "TROW-003-06",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 6,
+          "text": "800주 이상"
+        },
+        {
+          "id": "TCOL-003-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "조사대상주수"
+        },
+        {
+          "id": "TCOL-003-02",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 2,
+          "text": "표본주수"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-003-01-01",
+          "row_id": "TROW-003-01",
+          "col_id": "TCOL-003-01",
+          "value_text": "50주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-003-01-02",
+          "row_id": "TROW-003-01",
+          "col_id": "TCOL-003-02",
+          "value_text": "5",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-003-02-01",
+          "row_id": "TROW-003-02",
+          "col_id": "TCOL-003-01",
+          "value_text": "50주 이상 100주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-003-02-02",
+          "row_id": "TROW-003-02",
+          "col_id": "TCOL-003-02",
+          "value_text": "6",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-003-03-01",
+          "row_id": "TROW-003-03",
+          "col_id": "TCOL-003-01",
+          "value_text": "100주 이상 200주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-003-03-02",
+          "row_id": "TROW-003-03",
+          "col_id": "TCOL-003-02",
+          "value_text": "7",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-003-04-01",
+          "row_id": "TROW-003-04",
+          "col_id": "TCOL-003-01",
+          "value_text": "200주 이상 500주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-003-04-02",
+          "row_id": "TROW-003-04",
+          "col_id": "TCOL-003-02",
+          "value_text": "8",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-003-05-01",
+          "row_id": "TROW-003-05",
+          "col_id": "TCOL-003-01",
+          "value_text": "500주 이상 800주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-003-05-02",
+          "row_id": "TROW-003-05",
+          "col_id": "TCOL-003-02",
+          "value_text": "9",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-003-06-01",
+          "row_id": "TROW-003-06",
+          "col_id": "TCOL-003-01",
+          "value_text": "800주 이상",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-003-06-02",
+          "row_id": "TROW-003-06",
+          "col_id": "TCOL-003-02",
+          "value_text": "10",
+          "value_type": "text"
+        }
+      ]
+    },
+    {
+      "id": "TBL-004",
+      "source_node_id": "LAW-138",
+      "title": "참다래/블루베리 표본주수 표 (50주~800주+ 6구간)",
+      "pattern_type": "A_simple",
+      "row_count": 6,
+      "col_count": 2,
+      "source": "교재 별표1 / book_page=684 / pdf_page=691 / LAW-138 PDF 정확 매트릭스 — sub-table",
+      "book_page": 684,
+      "pdf_page": 691,
+      "chapter": "별표",
+      "section": "별표1",
+      "headers": [
+        {
+          "id": "TROW-004-01",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 1,
+          "text": "50주 미만"
+        },
+        {
+          "id": "TROW-004-02",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 2,
+          "text": "50주 이상 100주 미만"
+        },
+        {
+          "id": "TROW-004-03",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 3,
+          "text": "100주 이상 200주 미만"
+        },
+        {
+          "id": "TROW-004-04",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 4,
+          "text": "200주 이상 500주 미만"
+        },
+        {
+          "id": "TROW-004-05",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 5,
+          "text": "500주 이상 800주 미만"
+        },
+        {
+          "id": "TROW-004-06",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 6,
+          "text": "800주 이상"
+        },
+        {
+          "id": "TCOL-004-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "조사대상주수"
+        },
+        {
+          "id": "TCOL-004-02",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 2,
+          "text": "표본주수"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-004-01-01",
+          "row_id": "TROW-004-01",
+          "col_id": "TCOL-004-01",
+          "value_text": "50주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-004-01-02",
+          "row_id": "TROW-004-01",
+          "col_id": "TCOL-004-02",
+          "value_text": "5",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-004-02-01",
+          "row_id": "TROW-004-02",
+          "col_id": "TCOL-004-01",
+          "value_text": "50주 이상 100주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-004-02-02",
+          "row_id": "TROW-004-02",
+          "col_id": "TCOL-004-02",
+          "value_text": "6",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-004-03-01",
+          "row_id": "TROW-004-03",
+          "col_id": "TCOL-004-01",
+          "value_text": "100주 이상 200주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-004-03-02",
+          "row_id": "TROW-004-03",
+          "col_id": "TCOL-004-02",
+          "value_text": "7",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-004-04-01",
+          "row_id": "TROW-004-04",
+          "col_id": "TCOL-004-01",
+          "value_text": "200주 이상 500주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-004-04-02",
+          "row_id": "TROW-004-04",
+          "col_id": "TCOL-004-02",
+          "value_text": "8",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-004-05-01",
+          "row_id": "TROW-004-05",
+          "col_id": "TCOL-004-01",
+          "value_text": "500주 이상 800주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-004-05-02",
+          "row_id": "TROW-004-05",
+          "col_id": "TCOL-004-02",
+          "value_text": "9",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-004-06-01",
+          "row_id": "TROW-004-06",
+          "col_id": "TCOL-004-01",
+          "value_text": "800주 이상",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-004-06-02",
+          "row_id": "TROW-004-06",
+          "col_id": "TCOL-004-02",
+          "value_text": "10",
+          "value_type": "text"
+        }
+      ]
+    },
+    {
+      "id": "TBL-005",
+      "source_node_id": "LAW-138",
+      "title": "매실/대추/살구 표본주수 표 (100주~1000주+ 5구간)",
+      "pattern_type": "A_simple",
+      "row_count": 5,
+      "col_count": 2,
+      "source": "교재 별표1 / book_page=684 / pdf_page=691 / LAW-138 PDF 정확 매트릭스 — sub-table",
+      "book_page": 684,
+      "pdf_page": 691,
+      "chapter": "별표",
+      "section": "별표1",
+      "headers": [
+        {
+          "id": "TROW-005-01",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 1,
+          "text": "100주 미만"
+        },
+        {
+          "id": "TROW-005-02",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 2,
+          "text": "100주 이상 300주 미만"
+        },
+        {
+          "id": "TROW-005-03",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 3,
+          "text": "300주 이상 500주 미만"
+        },
+        {
+          "id": "TROW-005-04",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 4,
+          "text": "500주 이상 1,000주 미만"
+        },
+        {
+          "id": "TROW-005-05",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 5,
+          "text": "1,000주 이상"
+        },
+        {
+          "id": "TCOL-005-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "조사대상주수"
+        },
+        {
+          "id": "TCOL-005-02",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 2,
+          "text": "표본주수"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-005-01-01",
+          "row_id": "TROW-005-01",
+          "col_id": "TCOL-005-01",
+          "value_text": "100주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-005-01-02",
+          "row_id": "TROW-005-01",
+          "col_id": "TCOL-005-02",
+          "value_text": "5",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-005-02-01",
+          "row_id": "TROW-005-02",
+          "col_id": "TCOL-005-01",
+          "value_text": "100주 이상 300주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-005-02-02",
+          "row_id": "TROW-005-02",
+          "col_id": "TCOL-005-02",
+          "value_text": "7",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-005-03-01",
+          "row_id": "TROW-005-03",
+          "col_id": "TCOL-005-01",
+          "value_text": "300주 이상 500주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-005-03-02",
+          "row_id": "TROW-005-03",
+          "col_id": "TCOL-005-02",
+          "value_text": "9",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-005-04-01",
+          "row_id": "TROW-005-04",
+          "col_id": "TCOL-005-01",
+          "value_text": "500주 이상 1,000주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-005-04-02",
+          "row_id": "TROW-005-04",
+          "col_id": "TCOL-005-02",
+          "value_text": "12",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-005-05-01",
+          "row_id": "TROW-005-05",
+          "col_id": "TCOL-005-01",
+          "value_text": "1,000주 이상",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-005-05-02",
+          "row_id": "TROW-005-05",
+          "col_id": "TCOL-005-02",
+          "value_text": "16",
+          "value_type": "text"
+        }
+      ]
+    },
+    {
+      "id": "TBL-006",
+      "source_node_id": "LAW-138",
+      "title": "오미자 표본주수 표 (유인틀 길이 500m~6000m+ 6구간)",
+      "pattern_type": "A_simple",
+      "row_count": 6,
+      "col_count": 2,
+      "source": "교재 별표1 / book_page=684 / pdf_page=691 / LAW-138 PDF 정확 매트릭스 — sub-table",
+      "book_page": 684,
+      "pdf_page": 691,
+      "chapter": "별표",
+      "section": "별표1",
+      "headers": [
+        {
+          "id": "TROW-006-01",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 1,
+          "text": "500m 미만"
+        },
+        {
+          "id": "TROW-006-02",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 2,
+          "text": "500m 이상 1,000m 미만"
+        },
+        {
+          "id": "TROW-006-03",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 3,
+          "text": "1,000m 이상 2,000m 미만"
+        },
+        {
+          "id": "TROW-006-04",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 4,
+          "text": "2,000m 이상 4,000m 미만"
+        },
+        {
+          "id": "TROW-006-05",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 5,
+          "text": "4,000m 이상 6,000m 미만"
+        },
+        {
+          "id": "TROW-006-06",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 6,
+          "text": "6,000m 이상"
+        },
+        {
+          "id": "TCOL-006-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "조사대상 유인틀 길이"
+        },
+        {
+          "id": "TCOL-006-02",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 2,
+          "text": "표본주수"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-006-01-01",
+          "row_id": "TROW-006-01",
+          "col_id": "TCOL-006-01",
+          "value_text": "500m 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-006-01-02",
+          "row_id": "TROW-006-01",
+          "col_id": "TCOL-006-02",
+          "value_text": "5",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-006-02-01",
+          "row_id": "TROW-006-02",
+          "col_id": "TCOL-006-01",
+          "value_text": "500m 이상 1,000m 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-006-02-02",
+          "row_id": "TROW-006-02",
+          "col_id": "TCOL-006-02",
+          "value_text": "6",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-006-03-01",
+          "row_id": "TROW-006-03",
+          "col_id": "TCOL-006-01",
+          "value_text": "1,000m 이상 2,000m 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-006-03-02",
+          "row_id": "TROW-006-03",
+          "col_id": "TCOL-006-02",
+          "value_text": "7",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-006-04-01",
+          "row_id": "TROW-006-04",
+          "col_id": "TCOL-006-01",
+          "value_text": "2,000m 이상 4,000m 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-006-04-02",
+          "row_id": "TROW-006-04",
+          "col_id": "TCOL-006-02",
+          "value_text": "8",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-006-05-01",
+          "row_id": "TROW-006-05",
+          "col_id": "TCOL-006-01",
+          "value_text": "4,000m 이상 6,000m 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-006-05-02",
+          "row_id": "TROW-006-05",
+          "col_id": "TCOL-006-02",
+          "value_text": "9",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-006-06-01",
+          "row_id": "TROW-006-06",
+          "col_id": "TCOL-006-01",
+          "value_text": "6,000m 이상",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-006-06-02",
+          "row_id": "TROW-006-06",
+          "col_id": "TCOL-006-02",
+          "value_text": "10",
+          "value_type": "text"
+        }
+      ]
+    },
+    {
+      "id": "TBL-007",
+      "source_node_id": "LAW-138",
+      "title": "오디 표본주수 표 (50주~600주+ 8구간)",
+      "pattern_type": "A_simple",
+      "row_count": 8,
+      "col_count": 2,
+      "source": "교재 별표1 / book_page=684 / pdf_page=691 / LAW-138 PDF 정확 매트릭스 — sub-table",
+      "book_page": 684,
+      "pdf_page": 691,
+      "chapter": "별표",
+      "section": "별표1",
+      "headers": [
+        {
+          "id": "TROW-007-01",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 1,
+          "text": "50주 미만"
+        },
+        {
+          "id": "TROW-007-02",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 2,
+          "text": "50주 이상 100주 미만"
+        },
+        {
+          "id": "TROW-007-03",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 3,
+          "text": "100주 이상 200주 미만"
+        },
+        {
+          "id": "TROW-007-04",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 4,
+          "text": "200주 이상 300주 미만"
+        },
+        {
+          "id": "TROW-007-05",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 5,
+          "text": "300주 이상 400주 미만"
+        },
+        {
+          "id": "TROW-007-06",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 6,
+          "text": "400주 이상 500주 미만"
+        },
+        {
+          "id": "TROW-007-07",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 7,
+          "text": "500주 이상 600주 미만"
+        },
+        {
+          "id": "TROW-007-08",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 8,
+          "text": "600주 이상"
+        },
+        {
+          "id": "TCOL-007-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "조사대상주수"
+        },
+        {
+          "id": "TCOL-007-02",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 2,
+          "text": "표본주수"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-007-01-01",
+          "row_id": "TROW-007-01",
+          "col_id": "TCOL-007-01",
+          "value_text": "50주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-007-01-02",
+          "row_id": "TROW-007-01",
+          "col_id": "TCOL-007-02",
+          "value_text": "6",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-007-02-01",
+          "row_id": "TROW-007-02",
+          "col_id": "TCOL-007-01",
+          "value_text": "50주 이상 100주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-007-02-02",
+          "row_id": "TROW-007-02",
+          "col_id": "TCOL-007-02",
+          "value_text": "7",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-007-03-01",
+          "row_id": "TROW-007-03",
+          "col_id": "TCOL-007-01",
+          "value_text": "100주 이상 200주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-007-03-02",
+          "row_id": "TROW-007-03",
+          "col_id": "TCOL-007-02",
+          "value_text": "8",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-007-04-01",
+          "row_id": "TROW-007-04",
+          "col_id": "TCOL-007-01",
+          "value_text": "200주 이상 300주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-007-04-02",
+          "row_id": "TROW-007-04",
+          "col_id": "TCOL-007-02",
+          "value_text": "9",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-007-05-01",
+          "row_id": "TROW-007-05",
+          "col_id": "TCOL-007-01",
+          "value_text": "300주 이상 400주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-007-05-02",
+          "row_id": "TROW-007-05",
+          "col_id": "TCOL-007-02",
+          "value_text": "10",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-007-06-01",
+          "row_id": "TROW-007-06",
+          "col_id": "TCOL-007-01",
+          "value_text": "400주 이상 500주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-007-06-02",
+          "row_id": "TROW-007-06",
+          "col_id": "TCOL-007-02",
+          "value_text": "11",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-007-07-01",
+          "row_id": "TROW-007-07",
+          "col_id": "TCOL-007-01",
+          "value_text": "500주 이상 600주 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-007-07-02",
+          "row_id": "TROW-007-07",
+          "col_id": "TCOL-007-02",
+          "value_text": "12",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-007-08-01",
+          "row_id": "TROW-007-08",
+          "col_id": "TCOL-007-01",
+          "value_text": "600주 이상",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-007-08-02",
+          "row_id": "TROW-007-08",
+          "col_id": "TCOL-007-02",
+          "value_text": "13",
+          "value_type": "text"
+        }
+      ]
+    },
+    {
+      "id": "TBL-008",
+      "source_node_id": "LAW-138",
+      "title": "복분자 표본포기수 표 (1000~3000포기+ 6구간)",
+      "pattern_type": "A_simple",
+      "row_count": 6,
+      "col_count": 2,
+      "source": "교재 별표1 / book_page=684 / pdf_page=691 / LAW-138 PDF 정확 매트릭스 — sub-table",
+      "book_page": 684,
+      "pdf_page": 691,
+      "chapter": "별표",
+      "section": "별표1",
+      "headers": [
+        {
+          "id": "TROW-008-01",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 1,
+          "text": "1,000포기 미만"
+        },
+        {
+          "id": "TROW-008-02",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 2,
+          "text": "1,000포기 이상 1,500포기 미만"
+        },
+        {
+          "id": "TROW-008-03",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 3,
+          "text": "1,500포기 이상 2,000포기 미만"
+        },
+        {
+          "id": "TROW-008-04",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 4,
+          "text": "2,000포기 이상 2,500포기 미만"
+        },
+        {
+          "id": "TROW-008-05",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 5,
+          "text": "2,500포기 이상 3,000포기 미만"
+        },
+        {
+          "id": "TROW-008-06",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 6,
+          "text": "3,000포기 이상"
+        },
+        {
+          "id": "TCOL-008-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "가입포기수"
+        },
+        {
+          "id": "TCOL-008-02",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 2,
+          "text": "표본포기수"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-008-01-01",
+          "row_id": "TROW-008-01",
+          "col_id": "TCOL-008-01",
+          "value_text": "1,000포기 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-008-01-02",
+          "row_id": "TROW-008-01",
+          "col_id": "TCOL-008-02",
+          "value_text": "8",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-008-02-01",
+          "row_id": "TROW-008-02",
+          "col_id": "TCOL-008-01",
+          "value_text": "1,000포기 이상 1,500포기 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-008-02-02",
+          "row_id": "TROW-008-02",
+          "col_id": "TCOL-008-02",
+          "value_text": "9",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-008-03-01",
+          "row_id": "TROW-008-03",
+          "col_id": "TCOL-008-01",
+          "value_text": "1,500포기 이상 2,000포기 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-008-03-02",
+          "row_id": "TROW-008-03",
+          "col_id": "TCOL-008-02",
+          "value_text": "10",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-008-04-01",
+          "row_id": "TROW-008-04",
+          "col_id": "TCOL-008-01",
+          "value_text": "2,000포기 이상 2,500포기 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-008-04-02",
+          "row_id": "TROW-008-04",
+          "col_id": "TCOL-008-02",
+          "value_text": "11",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-008-05-01",
+          "row_id": "TROW-008-05",
+          "col_id": "TCOL-008-01",
+          "value_text": "2,500포기 이상 3,000포기 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-008-05-02",
+          "row_id": "TROW-008-05",
+          "col_id": "TCOL-008-02",
+          "value_text": "12",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-008-06-01",
+          "row_id": "TROW-008-06",
+          "col_id": "TCOL-008-01",
+          "value_text": "3,000포기 이상",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-008-06-02",
+          "row_id": "TROW-008-06",
+          "col_id": "TCOL-008-02",
+          "value_text": "13",
+          "value_type": "text"
+        }
+      ]
+    },
+    {
+      "id": "TBL-009",
+      "source_node_id": "LAW-138",
+      "title": "감귤(온주밀감류) 표본주수 표 (5000~10000㎡+ 3구간)",
+      "pattern_type": "A_simple",
+      "row_count": 3,
+      "col_count": 2,
+      "source": "교재 별표1 / book_page=684 / pdf_page=691 / LAW-138 PDF 정확 매트릭스 — sub-table",
+      "book_page": 684,
+      "pdf_page": 691,
+      "chapter": "별표",
+      "section": "별표1",
+      "headers": [
+        {
+          "id": "TROW-009-01",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 1,
+          "text": "5,000㎡ 미만"
+        },
+        {
+          "id": "TROW-009-02",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 2,
+          "text": "5,000㎡ 이상 10,000㎡ 미만"
+        },
+        {
+          "id": "TROW-009-03",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 3,
+          "text": "10,000㎡ 이상"
+        },
+        {
+          "id": "TCOL-009-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "가입면적"
+        },
+        {
+          "id": "TCOL-009-02",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 2,
+          "text": "표본주수"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-009-01-01",
+          "row_id": "TROW-009-01",
+          "col_id": "TCOL-009-01",
+          "value_text": "5,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-009-01-02",
+          "row_id": "TROW-009-01",
+          "col_id": "TCOL-009-02",
+          "value_text": "4",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-009-02-01",
+          "row_id": "TROW-009-02",
+          "col_id": "TCOL-009-01",
+          "value_text": "5,000㎡ 이상 10,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-009-02-02",
+          "row_id": "TROW-009-02",
+          "col_id": "TCOL-009-02",
+          "value_text": "6",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-009-03-01",
+          "row_id": "TROW-009-03",
+          "col_id": "TCOL-009-01",
+          "value_text": "10,000㎡ 이상",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-009-03-02",
+          "row_id": "TROW-009-03",
+          "col_id": "TCOL-009-02",
+          "value_text": "8",
+          "value_type": "text"
+        }
+      ]
+    },
+    {
+      "id": "TBL-010",
+      "source_node_id": "LAW-138",
+      "title": "벼/밀/보리/귀리 표본구간수 표 (2000~6000㎡+ 6구간)",
+      "pattern_type": "A_simple",
+      "row_count": 6,
+      "col_count": 2,
+      "source": "교재 별표1 / book_page=684 / pdf_page=691 / LAW-138 PDF 정확 매트릭스 — sub-table",
+      "book_page": 684,
+      "pdf_page": 691,
+      "chapter": "별표",
+      "section": "별표1",
+      "headers": [
+        {
+          "id": "TROW-010-01",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 1,
+          "text": "2,000㎡ 미만"
+        },
+        {
+          "id": "TROW-010-02",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 2,
+          "text": "2,000㎡ 이상 3,000㎡ 미만"
+        },
+        {
+          "id": "TROW-010-03",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 3,
+          "text": "3,000㎡ 이상 4,000㎡ 미만"
+        },
+        {
+          "id": "TROW-010-04",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 4,
+          "text": "4,000㎡ 이상 5,000㎡ 미만"
+        },
+        {
+          "id": "TROW-010-05",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 5,
+          "text": "5,000㎡ 이상 6,000㎡ 미만"
+        },
+        {
+          "id": "TROW-010-06",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 6,
+          "text": "6,000㎡ 이상"
+        },
+        {
+          "id": "TCOL-010-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "조사대상면적"
+        },
+        {
+          "id": "TCOL-010-02",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 2,
+          "text": "표본구간"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-010-01-01",
+          "row_id": "TROW-010-01",
+          "col_id": "TCOL-010-01",
+          "value_text": "2,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-010-01-02",
+          "row_id": "TROW-010-01",
+          "col_id": "TCOL-010-02",
+          "value_text": "3",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-010-02-01",
+          "row_id": "TROW-010-02",
+          "col_id": "TCOL-010-01",
+          "value_text": "2,000㎡ 이상 3,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-010-02-02",
+          "row_id": "TROW-010-02",
+          "col_id": "TCOL-010-02",
+          "value_text": "4",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-010-03-01",
+          "row_id": "TROW-010-03",
+          "col_id": "TCOL-010-01",
+          "value_text": "3,000㎡ 이상 4,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-010-03-02",
+          "row_id": "TROW-010-03",
+          "col_id": "TCOL-010-02",
+          "value_text": "5",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-010-04-01",
+          "row_id": "TROW-010-04",
+          "col_id": "TCOL-010-01",
+          "value_text": "4,000㎡ 이상 5,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-010-04-02",
+          "row_id": "TROW-010-04",
+          "col_id": "TCOL-010-02",
+          "value_text": "6",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-010-05-01",
+          "row_id": "TROW-010-05",
+          "col_id": "TCOL-010-01",
+          "value_text": "5,000㎡ 이상 6,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-010-05-02",
+          "row_id": "TROW-010-05",
+          "col_id": "TCOL-010-02",
+          "value_text": "7",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-010-06-01",
+          "row_id": "TROW-010-06",
+          "col_id": "TCOL-010-01",
+          "value_text": "6,000㎡ 이상",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-010-06-02",
+          "row_id": "TROW-010-06",
+          "col_id": "TCOL-010-02",
+          "value_text": "8",
+          "value_type": "text"
+        }
+      ]
+    },
+    {
+      "id": "TBL-011",
+      "source_node_id": "LAW-138",
+      "title": "고구마/양파/마늘/옥수수/양배추/단호박 표본구간수 표 (1500~4500㎡+ 4구간)",
+      "pattern_type": "A_simple",
+      "row_count": 4,
+      "col_count": 2,
+      "source": "교재 별표1 / book_page=684 / pdf_page=691 / LAW-138 PDF 정확 매트릭스 — sub-table",
+      "book_page": 684,
+      "pdf_page": 691,
+      "chapter": "별표",
+      "section": "별표1",
+      "headers": [
+        {
+          "id": "TROW-011-01",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 1,
+          "text": "1,500㎡ 미만"
+        },
+        {
+          "id": "TROW-011-02",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 2,
+          "text": "1,500㎡ 이상 3,000㎡ 미만"
+        },
+        {
+          "id": "TROW-011-03",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 3,
+          "text": "3,000㎡ 이상 4,500㎡ 미만"
+        },
+        {
+          "id": "TROW-011-04",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 4,
+          "text": "4,500㎡ 이상"
+        },
+        {
+          "id": "TCOL-011-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "조사대상면적"
+        },
+        {
+          "id": "TCOL-011-02",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 2,
+          "text": "표본구간"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-011-01-01",
+          "row_id": "TROW-011-01",
+          "col_id": "TCOL-011-01",
+          "value_text": "1,500㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-011-01-02",
+          "row_id": "TROW-011-01",
+          "col_id": "TCOL-011-02",
+          "value_text": "4",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-011-02-01",
+          "row_id": "TROW-011-02",
+          "col_id": "TCOL-011-01",
+          "value_text": "1,500㎡ 이상 3,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-011-02-02",
+          "row_id": "TROW-011-02",
+          "col_id": "TCOL-011-02",
+          "value_text": "5",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-011-03-01",
+          "row_id": "TROW-011-03",
+          "col_id": "TCOL-011-01",
+          "value_text": "3,000㎡ 이상 4,500㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-011-03-02",
+          "row_id": "TROW-011-03",
+          "col_id": "TCOL-011-02",
+          "value_text": "6",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-011-04-01",
+          "row_id": "TROW-011-04",
+          "col_id": "TCOL-011-01",
+          "value_text": "4,500㎡ 이상",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-011-04-02",
+          "row_id": "TROW-011-04",
+          "col_id": "TCOL-011-02",
+          "value_text": "7",
+          "value_type": "text"
+        }
+      ]
+    },
+    {
+      "id": "TBL-016",
+      "source_node_id": "LAW-138",
+      "title": "감자/차/콩/팥/수박/당근 등 표본구간수 표 (2500~10000㎡+ 5구간)",
+      "pattern_type": "A_simple",
+      "row_count": 5,
+      "col_count": 2,
+      "source": "교재 별표1 / book_page=684 / pdf_page=691 / LAW-138 PDF 정확 매트릭스 — sub-table",
+      "book_page": 684,
+      "pdf_page": 691,
+      "chapter": "별표",
+      "section": "별표1",
+      "headers": [
+        {
+          "id": "TROW-016-01",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 1,
+          "text": "2,500㎡ 미만"
+        },
+        {
+          "id": "TROW-016-02",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 2,
+          "text": "2,500㎡ 이상 5,000㎡ 미만"
+        },
+        {
+          "id": "TROW-016-03",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 3,
+          "text": "5,000㎡ 이상 7,500㎡ 미만"
+        },
+        {
+          "id": "TROW-016-04",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 4,
+          "text": "7,500㎡ 이상 10,000㎡ 미만"
+        },
+        {
+          "id": "TROW-016-05",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 5,
+          "text": "10,000㎡ 이상"
+        },
+        {
+          "id": "TCOL-016-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "조사대상면적"
+        },
+        {
+          "id": "TCOL-016-02",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 2,
+          "text": "표본구간"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-016-01-01",
+          "row_id": "TROW-016-01",
+          "col_id": "TCOL-016-01",
+          "value_text": "2,500㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-016-01-02",
+          "row_id": "TROW-016-01",
+          "col_id": "TCOL-016-02",
+          "value_text": "4",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-016-02-01",
+          "row_id": "TROW-016-02",
+          "col_id": "TCOL-016-01",
+          "value_text": "2,500㎡ 이상 5,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-016-02-02",
+          "row_id": "TROW-016-02",
+          "col_id": "TCOL-016-02",
+          "value_text": "5",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-016-03-01",
+          "row_id": "TROW-016-03",
+          "col_id": "TCOL-016-01",
+          "value_text": "5,000㎡ 이상 7,500㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-016-03-02",
+          "row_id": "TROW-016-03",
+          "col_id": "TCOL-016-02",
+          "value_text": "6",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-016-04-01",
+          "row_id": "TROW-016-04",
+          "col_id": "TCOL-016-01",
+          "value_text": "7,500㎡ 이상 10,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-016-04-02",
+          "row_id": "TROW-016-04",
+          "col_id": "TCOL-016-02",
+          "value_text": "7",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-016-05-01",
+          "row_id": "TROW-016-05",
+          "col_id": "TCOL-016-01",
+          "value_text": "10,000㎡ 이상",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-016-05-02",
+          "row_id": "TROW-016-05",
+          "col_id": "TCOL-016-02",
+          "value_text": "8",
+          "value_type": "text"
+        }
+      ]
+    },
+    {
+      "id": "TBL-017",
+      "source_node_id": "LAW-138",
+      "title": "인삼 표본칸수 표 (300~1800칸+ 8구간)",
+      "pattern_type": "A_simple",
+      "row_count": 8,
+      "col_count": 2,
+      "source": "교재 별표1 / book_page=684 / pdf_page=691 / LAW-138 PDF 정확 매트릭스 — sub-table",
+      "book_page": 684,
+      "pdf_page": 691,
+      "chapter": "별표",
+      "section": "별표1",
+      "headers": [
+        {
+          "id": "TROW-017-01",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 1,
+          "text": "300칸 미만"
+        },
+        {
+          "id": "TROW-017-02",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 2,
+          "text": "300칸 이상 500칸 미만"
+        },
+        {
+          "id": "TROW-017-03",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 3,
+          "text": "500칸 이상 700칸 미만"
+        },
+        {
+          "id": "TROW-017-04",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 4,
+          "text": "700칸 이상 900칸 미만"
+        },
+        {
+          "id": "TROW-017-05",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 5,
+          "text": "900칸 이상 1,200칸 미만"
+        },
+        {
+          "id": "TROW-017-06",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 6,
+          "text": "1,200칸 이상 1,500칸 미만"
+        },
+        {
+          "id": "TROW-017-07",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 7,
+          "text": "1,500칸 이상 1,800칸 미만"
+        },
+        {
+          "id": "TROW-017-08",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 8,
+          "text": "1,800칸 이상"
+        },
+        {
+          "id": "TCOL-017-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "피해칸수"
+        },
+        {
+          "id": "TCOL-017-02",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 2,
+          "text": "표본칸수"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-017-01-01",
+          "row_id": "TROW-017-01",
+          "col_id": "TCOL-017-01",
+          "value_text": "300칸 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-017-01-02",
+          "row_id": "TROW-017-01",
+          "col_id": "TCOL-017-02",
+          "value_text": "3칸",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-017-02-01",
+          "row_id": "TROW-017-02",
+          "col_id": "TCOL-017-01",
+          "value_text": "300칸 이상 500칸 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-017-02-02",
+          "row_id": "TROW-017-02",
+          "col_id": "TCOL-017-02",
+          "value_text": "4칸",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-017-03-01",
+          "row_id": "TROW-017-03",
+          "col_id": "TCOL-017-01",
+          "value_text": "500칸 이상 700칸 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-017-03-02",
+          "row_id": "TROW-017-03",
+          "col_id": "TCOL-017-02",
+          "value_text": "5칸",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-017-04-01",
+          "row_id": "TROW-017-04",
+          "col_id": "TCOL-017-01",
+          "value_text": "700칸 이상 900칸 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-017-04-02",
+          "row_id": "TROW-017-04",
+          "col_id": "TCOL-017-02",
+          "value_text": "6칸",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-017-05-01",
+          "row_id": "TROW-017-05",
+          "col_id": "TCOL-017-01",
+          "value_text": "900칸 이상 1,200칸 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-017-05-02",
+          "row_id": "TROW-017-05",
+          "col_id": "TCOL-017-02",
+          "value_text": "7칸",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-017-06-01",
+          "row_id": "TROW-017-06",
+          "col_id": "TCOL-017-01",
+          "value_text": "1,200칸 이상 1,500칸 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-017-06-02",
+          "row_id": "TROW-017-06",
+          "col_id": "TCOL-017-02",
+          "value_text": "8칸",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-017-07-01",
+          "row_id": "TROW-017-07",
+          "col_id": "TCOL-017-01",
+          "value_text": "1,500칸 이상 1,800칸 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-017-07-02",
+          "row_id": "TROW-017-07",
+          "col_id": "TCOL-017-02",
+          "value_text": "9칸",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-017-08-01",
+          "row_id": "TROW-017-08",
+          "col_id": "TCOL-017-01",
+          "value_text": "1,800칸 이상",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-017-08-02",
+          "row_id": "TROW-017-08",
+          "col_id": "TCOL-017-02",
+          "value_text": "10칸",
+          "value_type": "text"
+        }
+      ]
+    },
+    {
+      "id": "TBL-018",
+      "source_node_id": "LAW-138",
+      "title": "고추/메밀/브로콜리/배추/무/파/시금치/양상추 표본구간(이랑)수 표 (3000~15000㎡+ 4구간)",
+      "pattern_type": "A_simple",
+      "row_count": 4,
+      "col_count": 2,
+      "source": "교재 별표1 / book_page=684 / pdf_page=691 / LAW-138 PDF 정확 매트릭스 — sub-table",
+      "book_page": 684,
+      "pdf_page": 691,
+      "chapter": "별표",
+      "section": "별표1",
+      "headers": [
+        {
+          "id": "TROW-018-01",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 1,
+          "text": "3,000㎡ 미만"
+        },
+        {
+          "id": "TROW-018-02",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 2,
+          "text": "3,000㎡ 이상 7,000㎡ 미만"
+        },
+        {
+          "id": "TROW-018-03",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 3,
+          "text": "7,000㎡ 이상 15,000㎡ 미만"
+        },
+        {
+          "id": "TROW-018-04",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 4,
+          "text": "15,000㎡ 이상"
+        },
+        {
+          "id": "TCOL-018-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "피해면적"
+        },
+        {
+          "id": "TCOL-018-02",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 2,
+          "text": "표본구간(이랑) 수"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-018-01-01",
+          "row_id": "TROW-018-01",
+          "col_id": "TCOL-018-01",
+          "value_text": "3,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-018-01-02",
+          "row_id": "TROW-018-01",
+          "col_id": "TCOL-018-02",
+          "value_text": "4",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-018-02-01",
+          "row_id": "TROW-018-02",
+          "col_id": "TCOL-018-01",
+          "value_text": "3,000㎡ 이상 7,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-018-02-02",
+          "row_id": "TROW-018-02",
+          "col_id": "TCOL-018-02",
+          "value_text": "6",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-018-03-01",
+          "row_id": "TROW-018-03",
+          "col_id": "TCOL-018-01",
+          "value_text": "7,000㎡ 이상 15,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-018-03-02",
+          "row_id": "TROW-018-03",
+          "col_id": "TCOL-018-02",
+          "value_text": "8",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-018-04-01",
+          "row_id": "TROW-018-04",
+          "col_id": "TCOL-018-01",
+          "value_text": "15,000㎡ 이상",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-018-04-02",
+          "row_id": "TROW-018-04",
+          "col_id": "TCOL-018-02",
+          "value_text": "10",
+          "value_type": "text"
+        }
+      ]
+    },
+    {
+      "id": "TBL-019",
+      "source_node_id": "LAW-138",
+      "title": "두릅 표본구간(이랑)수 표 (3000~15000㎡+ 4구간)",
+      "pattern_type": "A_simple",
+      "row_count": 4,
+      "col_count": 2,
+      "source": "교재 별표1 / book_page=684 / pdf_page=691 / LAW-138 PDF 정확 매트릭스 — sub-table",
+      "book_page": 684,
+      "pdf_page": 691,
+      "chapter": "별표",
+      "section": "별표1",
+      "headers": [
+        {
+          "id": "TROW-019-01",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 1,
+          "text": "3,000㎡ 미만"
+        },
+        {
+          "id": "TROW-019-02",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 2,
+          "text": "3,000㎡ 이상 7,000㎡ 미만"
+        },
+        {
+          "id": "TROW-019-03",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 3,
+          "text": "7,000㎡ 이상 15,000㎡ 미만"
+        },
+        {
+          "id": "TROW-019-04",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 4,
+          "text": "15,000㎡ 이상"
+        },
+        {
+          "id": "TCOL-019-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "조사대상면적"
+        },
+        {
+          "id": "TCOL-019-02",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 2,
+          "text": "표본구간(이랑) 수"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-019-01-01",
+          "row_id": "TROW-019-01",
+          "col_id": "TCOL-019-01",
+          "value_text": "3,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-019-01-02",
+          "row_id": "TROW-019-01",
+          "col_id": "TCOL-019-02",
+          "value_text": "4",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-019-02-01",
+          "row_id": "TROW-019-02",
+          "col_id": "TCOL-019-01",
+          "value_text": "3,000㎡ 이상 7,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-019-02-02",
+          "row_id": "TROW-019-02",
+          "col_id": "TCOL-019-02",
+          "value_text": "6",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-019-03-01",
+          "row_id": "TROW-019-03",
+          "col_id": "TCOL-019-01",
+          "value_text": "7,000㎡ 이상 15,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-019-03-02",
+          "row_id": "TROW-019-03",
+          "col_id": "TCOL-019-02",
+          "value_text": "8",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-019-04-01",
+          "row_id": "TROW-019-04",
+          "col_id": "TCOL-019-01",
+          "value_text": "15,000㎡ 이상",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-019-04-02",
+          "row_id": "TROW-019-04",
+          "col_id": "TCOL-019-02",
+          "value_text": "10",
+          "value_type": "text"
+        }
+      ]
+    },
+    {
+      "id": "TBL-020",
+      "source_node_id": "LAW-138",
+      "title": "참깨/녹두 표본구간수 표 (1000~10000㎡+ 5구간)",
+      "pattern_type": "A_simple",
+      "row_count": 6,
+      "col_count": 2,
+      "source": "교재 별표1 / book_page=684 / pdf_page=691 / LAW-138 PDF 정확 매트릭스 — sub-table",
+      "book_page": 684,
+      "pdf_page": 691,
+      "chapter": "별표",
+      "section": "별표1",
+      "headers": [
+        {
+          "id": "TROW-020-01",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 1,
+          "text": "1,000㎡ 미만"
+        },
+        {
+          "id": "TROW-020-02",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 2,
+          "text": "1,000㎡ 이상 2,500㎡ 미만"
+        },
+        {
+          "id": "TROW-020-03",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 3,
+          "text": "2,500㎡ 이상 5,000㎡ 미만"
+        },
+        {
+          "id": "TROW-020-04",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 4,
+          "text": "5,000㎡ 이상 7,500㎡ 미만"
+        },
+        {
+          "id": "TROW-020-05",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 5,
+          "text": "7,500㎡ 이상 10,000㎡ 미만"
+        },
+        {
+          "id": "TROW-020-06",
+          "axis": "row",
+          "level": 1,
+          "index_pos": 6,
+          "text": "10,000㎡ 이상"
+        },
+        {
+          "id": "TCOL-020-01",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 1,
+          "text": "조사대상면적"
+        },
+        {
+          "id": "TCOL-020-02",
+          "axis": "column",
+          "level": 1,
+          "index_pos": 2,
+          "text": "표본구간"
+        }
+      ],
+      "cells": [
+        {
+          "id": "TCELL-020-01-01",
+          "row_id": "TROW-020-01",
+          "col_id": "TCOL-020-01",
+          "value_text": "1,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-020-01-02",
+          "row_id": "TROW-020-01",
+          "col_id": "TCOL-020-02",
+          "value_text": "3",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-020-02-01",
+          "row_id": "TROW-020-02",
+          "col_id": "TCOL-020-01",
+          "value_text": "1,000㎡ 이상 2,500㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-020-02-02",
+          "row_id": "TROW-020-02",
+          "col_id": "TCOL-020-02",
+          "value_text": "4",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-020-03-01",
+          "row_id": "TROW-020-03",
+          "col_id": "TCOL-020-01",
+          "value_text": "2,500㎡ 이상 5,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-020-03-02",
+          "row_id": "TROW-020-03",
+          "col_id": "TCOL-020-02",
+          "value_text": "5",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-020-04-01",
+          "row_id": "TROW-020-04",
+          "col_id": "TCOL-020-01",
+          "value_text": "5,000㎡ 이상 7,500㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-020-04-02",
+          "row_id": "TROW-020-04",
+          "col_id": "TCOL-020-02",
+          "value_text": "6",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-020-05-01",
+          "row_id": "TROW-020-05",
+          "col_id": "TCOL-020-01",
+          "value_text": "7,500㎡ 이상 10,000㎡ 미만",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-020-05-02",
+          "row_id": "TROW-020-05",
+          "col_id": "TCOL-020-02",
+          "value_text": "7",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-020-06-01",
+          "row_id": "TROW-020-06",
+          "col_id": "TCOL-020-01",
+          "value_text": "10,000㎡ 이상",
+          "value_type": "text"
+        },
+        {
+          "id": "TCELL-020-06-02",
+          "row_id": "TROW-020-06",
+          "col_id": "TCOL-020-02",
+          "value_text": "8",
+          "value_type": "text"
+        }
+      ]
+    }
+  ]
+}
