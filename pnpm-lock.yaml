@@ -97,6 +97,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: ^4.20260415.1
         version: 4.20260418.1
+      '@thepick/parser':
+        specifier: workspace:*
+        version: link:../../packages/parser
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.0.0
         version: 8.58.1(@typescript-eslint/parser@8.58.1(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1)(typescript@5.9.3)

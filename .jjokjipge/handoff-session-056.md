@@ -102,6 +102,56 @@
 - 즉시 grep -v 로 제거 → 재시도 PASS
 - **TD-S49-1 (신규)**: 본 세션 적용 SQL 제너레이터 (Stage 1C topic_clusters python script)도 BEGIN/COMMIT 미추가 정합 영속 의무. 본 세션 SQL 파일 영속 (BEGIN/COMMIT 제거 후)이라 재현 시 정합. 차후 SQL 제너레이터 작성 시 동일 패턴 의무.
 
+### I. ★ 표 처리 강화 plan + ADR-032 영속 (Session 049 후반부, 진산 발화 트리거)
+
+**Trigger**: 진산 "다른 자격증에서도 2차 시험 문제는 표 형식 출제 多 / 비정형 표 정확 이해 + 재현 능력 = 본 프로젝트 핵심 / 엔진 + BATCH 처리에 반드시 반영 / 면밀히 분석해서 개선 보완 추가 방안 문서로 만들고 진행"
+
+**산출물 (3 파일 + 1 memory)**:
+
+- `docs/plans/table-processing-architecture-v1.md` (★ 본 plan, §1~§10)
+- `docs/adr/ADR-032-table-as-micro-kg.md` (Status: Proposed → 진산 D-TABLE-1~6 후 Accepted)
+- `~/.claude/projects/.../memory/project_table_processing_core_capability.md` (신규 memory)
+
+**핵심 결정 (ADR-032)**:
+
+- Graph RAG 정밀 진화 (Table-as-Micro-KG) 채택 / RAG-Anything VLM 배제 (Cloudflare 정합 + 비용)
+- ontology v1.3.0 → **v1.4.0**: TABLE / ROW_HEADER / COL_HEADER / CELL 4 노드 + HAS_ROW/COLUMN + BELONGS_TO_ROW/COLUMN 4 엣지
+- ID 패턴 (TC-NNN topic_cluster 충돌 회피): TBL-NNN / TROW-NNN-NN / TCOL-NNN-NN / TCELL-NNN-NN-NN
+- 마이그레이션 0021 (4 신규 테이블 정규화 — α 권장): table_structures / table_headers / table_cells / table_node_links
+- BATCH 처리 prompt 강화: KnowledgeContract.tables[] schema 추가
+- RAG 검색: Row-level 임베딩 + Cell-level 질의
+
+**비정형 표 패턴 7종 카탈로그**:
+
+- A 1차원 단순 그리드 ~75% / B 2-Level 헤더 ~15% / C 3-Level ~5% / D 셀 병합 ~3% / E N/A ~2% / F 산식 셀 ~5% / G 시간축 ~3%
+
+**Multi-exam 정합 (ADR-007 Year 2 zero-cost)**:
+
+- 손해평가사 ~15% / 공인중개사 ~25% / 위험물 ~30% / 소방 ~20% / 전기 ~10% — 도메인 무관 패턴
+
+**★ 진산 결정 의무 (D-TABLE-1~6, 차세션 050+ spot check)**:
+| ID | 결정 | 권장 |
+|---|---|---|
+| D-TABLE-1 | ID 패턴 | α (TBL/TROW/TCOL/TCELL prefix) |
+| D-TABLE-2 | schema 대안 | α (4 정규화 테이블) |
+| D-TABLE-3 | 기존 BATCH 재추출 범위 | β (BATCH-1+6+7+R1만) |
+| D-TABLE-4 | BATCH 처리 패턴 변경 시점 | α (신규 BATCH부터, 점진) |
+| D-TABLE-5 | 인간 검수 G5.5 UX | β → α (Phase 1 수동, Phase 2 admin-web UI) |
+| D-TABLE-6 | RAG 검색 강화 시점 | β (Phase 2 데이터 적재 후) |
+
+**Phase 분해**:
+
+- Phase 1 (차세션 050~053): ontology v1.4.0 + 마이그레이션 0021 + BATCH prompt 확장
+- Phase 2 (054~058): BATCH-7 별표 + BATCH-1/6/R1 재추출
+- Phase 3: 학습 UI 표 렌더링 (Astro)
+- Phase 4 (Year 2): exams/<exam_id>/table-patterns.ts adapter
+
+**Reality Anchor (3 이유)**:
+
+1. 셀 병합 패턴-D 정확 추출 한계 → 인간 검수 G5.5 강제
+2. 다중 헤더 의미축 분리 ~85% → 시간축 강제 분리 검증 로직
+3. D1 노드 +5,000 → cost cap 활성 의무 (Phase 2 진입 전)
+
 ### H. ★ 4-Pass 독립 에이전트 리뷰 (review-gate.sh hook 트리거)
 
 **리뷰 위치**: `.claude/reviews/review-20260507-094340-session-049-stage-1c.md`
@@ -225,19 +275,23 @@ ontology_registry version : 1.3.0 (★ topic_cluster_id_pattern 추가)
 # ★ TD-VRF-001 flaky 발현 시 즉시 retry로 PASS 확보
 ```
 
-### 2. ★ 진산 결정 트리거 (택1) — 다음 단계 진입 (★ 단계 1C 본 세션 049 완료, 갱신)
+### 2. ★ 진산 결정 트리거 (택1) — 다음 단계 진입 (★ 단계 1C 적재 + 표 처리 plan 영속 완료, 갱신)
 
-| 트리거                                   | 진행                                                                                                                                                                                |
-| :--------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **"D-S1C 결정"** ★ 단계 1C 후속 (★ 권장) | D-S1C-1~5 진산 spot check 5건 → ontology-registry topic_cluster_id_pattern 등록 plan (L3 plan + 인간 승인) → topic_clusters D1 INSERT (staging+production) → question_ids 매핑 영속 |
-| **"cell-level 정제"** ★ 단계 1C 정밀화   | 자료2 PDF Vision multimodal 재추출 (PyMuPDF dpi=300 → Read tool) 또는 인간 검수 — D-S1C-2 결정 후                                                                                   |
-| **"라인 정제"** ★ Stage 1B γ 정밀화      | candidates.json `needs_line_refinement = 9건` 정확 라인 범위 정제 (자료6 Q-020, 자료5 Q-019, 자료9 Q-004/007/014, 자료17 Q-002/010/011/018)                                         |
-| **"drift overlay"** ★ 25→26년 정정       | 자료5/6/9/17 = 25년 → 26년 정합 변경 사항 명시 작성 — REV-2026-\* 매핑                                                                                                              |
-| **"Phase 2 plan"** ★ L3 영역             | 마이그레이션 0020 plan 작성 (Stage 1B link table 2종 + Stage 1C topic_cluster_id_pattern + question_ids 매핑 일괄, plan + 진산 인간 승인 의무)                                      |
-| **"BATCH-Q 2차 5~10회"** ★ β 옵션        | 자료5/6/9/15/17 풀이 raw → 2차 1~10회 적재 (TD-S46-2 해결 자산, 별도 plan 작성 후)                                                                                                  |
-| **"엔진 추출"** 류                       | **handoff-042 §9 carry-over 정합 보류 의무** (사용자 앱 PWA + Level 3 미충족)                                                                                                       |
+| 트리거                                                      | 진행                                                                                                                                                            |
+| :---------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **"D-TABLE 결정"** ★★ 표 처리 강화 즉시 진입 (★ 권장 1순위) | D-TABLE-1~6 진산 spot check → ontology v1.4.0 적용 → 마이그레이션 0021 staging+production → batch-processor.ts schema 확장 → Phase 2 재추출 (BATCH-7 별표 우선) |
+| **"D-S1C 결정"** ★ 단계 1C 후속                             | D-S1C-2 cell-level 인간 검수 → question_ids 매핑 영속 (545 ↔ 50 topic_clusters)                                                                                 |
 
-★ **권장 트리거**: "D-S1C 결정" (단계 1C 후속 — 가장 즉시 가치, ontology-registry plan + D1 INSERT 가시적 적재). 그 후 drift overlay → Phase 2 plan 일괄.
+| 트리거                                 | 진행                                                                                                                                           |
+| :------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
+| **"cell-level 정제"** ★ 단계 1C 정밀화 | 자료2 PDF Vision multimodal 재추출 (PyMuPDF dpi=300 → Read tool) 또는 인간 검수 — D-S1C-2 결정 후                                              |
+| **"라인 정제"** ★ Stage 1B γ 정밀화    | candidates.json `needs_line_refinement = 9건` 정확 라인 범위 정제 (자료6 Q-020, 자료5 Q-019, 자료9 Q-004/007/014, 자료17 Q-002/010/011/018)    |
+| **"drift overlay"** ★ 25→26년 정정     | 자료5/6/9/17 = 25년 → 26년 정합 변경 사항 명시 작성 — REV-2026-\* 매핑                                                                         |
+| **"Phase 2 plan"** ★ L3 영역           | 마이그레이션 0020 plan 작성 (Stage 1B link table 2종 + Stage 1C topic_cluster_id_pattern + question_ids 매핑 일괄, plan + 진산 인간 승인 의무) |
+| **"BATCH-Q 2차 5~10회"** ★ β 옵션      | 자료5/6/9/15/17 풀이 raw → 2차 1~10회 적재 (TD-S46-2 해결 자산, 별도 plan 작성 후)                                                             |
+| **"엔진 추출"** 류                     | **handoff-042 §9 carry-over 정합 보류 의무** (사용자 앱 PWA + Level 3 미충족)                                                                  |
+
+★ **권장 트리거 (Session 049 후반부 갱신)**: **"D-TABLE 결정"** ★★ — 표 처리 강화 plan + ADR-032 영속 완료 (진산 발화 직격). 본 plan 진행이 다중 자격증 핵심 역량 + ADR-007 Year 2 zero-cost adapter 정합. D-S1C 후속은 표 처리 Phase 2 재추출 시 question_ids 매핑 함께 처리 권장.
 
 ## 주의사항
 

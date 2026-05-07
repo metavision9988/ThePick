@@ -33,7 +33,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -106,13 +106,19 @@ interface ExecResult {
   readonly status: number;
 }
 
-function safeExec(cmd: string, args: readonly string[], cwd: string): ExecResult {
+function safeExec(
+  cmd: string,
+  args: readonly string[],
+  cwd: string,
+  extraEnv?: NodeJS.ProcessEnv,
+): ExecResult {
   try {
     const stdout = execFileSync(cmd, args, {
       cwd,
       encoding: 'utf-8',
       maxBuffer: 64 * 1024 * 1024,
       stdio: ['ignore', 'pipe', 'pipe'],
+      env: extraEnv ? { ...process.env, ...extraEnv } : process.env,
     });
     return { stdout, status: 0 };
   } catch (err) {
@@ -143,10 +149,11 @@ interface VitestPackage {
 const VITEST_PACKAGES: readonly VitestPackage[] = [
   { name: '@thepick/shared', dir: 'packages/shared', required: 50 },
   { name: '@thepick/formula-engine', dir: 'packages/formula-engine', required: 303 },
-  { name: '@thepick/parser', dir: 'packages/parser', required: 155 },
+  { name: '@thepick/parser', dir: 'packages/parser', required: 179 },
   { name: '@thepick/quality', dir: 'packages/quality', required: 57 },
   { name: '@thepick/batch', dir: 'apps/batch', required: 327 },
-  { name: '@thepick/api', dir: 'apps/api', required: 285 },
+  // Session 053 B4 + B6 흡수: +18 (migration-0024-pattern-h) + +6 (batch-loader-e2e) = 285→309
+  { name: '@thepick/api', dir: 'apps/api', required: 309 },
   { name: '@thepick/ai-adapter', dir: 'packages/ai-adapter', required: 13 },
   // Step 037 CRIT-QPHASE1-1 흡수 — admin-web vitest setup + 8 tests + 2 추가 방어선 (10).
   { name: '@thepick/admin-web', dir: 'apps/admin-web', required: 10 },
@@ -161,7 +168,12 @@ interface VitestSummary {
 
 function runVitestPackage(pkg: VitestPackage): VitestSummary {
   const cwd = join(REPO_ROOT, pkg.dir);
-  const res = safeExec('pnpm', ['exec', 'vitest', 'run', '--reporter=json'], cwd);
+  // IN_VERIFY_SUBPROCESS=1 — Session 053 B5 흡수: packages/quality/verify-cat9-mutation.test.ts
+  // 가 spawn 재귀(verify→vitest→test→verify) 차단 위해 본 env 감지 시 skip. 비-quality
+  // 패키지는 무영향 (env 미참조). standalone `pnpm test` 호출은 env 부재 → 정상 실행.
+  const res = safeExec('pnpm', ['exec', 'vitest', 'run', '--reporter=json'], cwd, {
+    IN_VERIFY_SUBPROCESS: '1',
+  });
   const start = res.stdout.indexOf('{');
   const end = res.stdout.lastIndexOf('}');
   if (start === -1 || end === -1) {
@@ -352,16 +364,475 @@ function countMigrations(): NumericMetric {
   // ⚠️ MAJOR-A1 (Step 18 Pass 2 흡수, Step 19 갱신 의무): 신규 마이그레이션 추가 시 본 required 동시 갱신.
   //   - Step 16c 기준 = 16 (0001~0016)
   //   - Step 19 engine_telemetry 도입 = 17 (0017_engine_telemetry.sql)
-  //   - Phase 1 5-페르소나 CRIT-QPHASE1-3 흡수 = 18 (0018_enforce_draft_only_insert.sql) ← 본 카운트
+  //   - Phase 1 5-페르소나 CRIT-QPHASE1-3 흡수 = 18 (0018_enforce_draft_only_insert.sql)
+  //   - ADR-030 BATCH-1 진입 직전 차단 게이트 = 19 (0019_knowledge_nodes_page_chapter_meta.sql)
+  //   - 0020 슬롯 = B-C1 (user_progress.exam_id, Year 2 zero-cost) 이월 (handoff-038 §주의사항)
+  //   - ADR-032 Session 050 Phase 1 = 20 (0021_table_as_micro_kg.sql, 0020 슬롯 부재 + 0021 신규)
+  //   - ADR-032 D-PHASE2-1=α Session 050 종착 = 21 (0022_table_structures_update_guard.sql)
+  //   - ADR-032 D-PHASE2-7=α Session 051 = 22 (0023_table_cells_pattern_h.sql, 패턴-H Nested Table)
+  //   - ADR-032 D-PHASE2-8=α Session 052 4-Pass CRIT-A 흡수 = 23 (0024_table_structures_pattern_h.sql, pattern_type CHECK 8종)
+  //   - Session 052 5-Persona PE-C1 흡수 = 24 (0025_table_cells_partial_index.sql, admin G5.5 성능)
+  //   - Session 052 5-Persona BA-C2 흡수 = 25 (0026_table_subordinate_update_guards.sql, Hard Rule 28 일관) ← 본 카운트
   //   - master-test-checklist.md §6.2 "D1 마이그레이션 파일 카운트 required" 동일 갱신 의무 (2 파일 동시).
   //   - 본 카운트는 단방향 게이트 (감소 차단, 증가 허용) — 갱신 망각 시 신규 마이그레이션
   //     적용 검증 0건 상태로 PASS 가능. 신규 마이그레이션 추가 step plan 진입 게이트에 명시 의무.
-  const required = 18;
+  const required = 25;
   return {
     name: 'D1 마이그레이션 파일 카운트',
     observed: count,
     required,
     status: count >= required ? 'PASS' : 'FAIL',
+  };
+}
+
+// === Cat 9 — Table-as-Micro-KG schema 정합 (ADR-032 v1.4.0 + v1.5.0 D-PHASE2-7=α) ===
+//
+// 검증 항목:
+//   1. ontology v1.5.0 = 11 node_types (TABLE/ROW_HEADER/COL_HEADER/CELL 포함)
+//   2. 18 edge_types (HAS_ROW/HAS_COLUMN/BELONGS_TO_ROW/BELONGS_TO_COLUMN/CONTAINS_TABLE 포함)
+//   3. 4 신규 ID 패턴 (TBL/TROW/TCOL/TCELL prefix — TC- topic_cluster 충돌 회피)
+//   4. 마이그레이션 0021_table_as_micro_kg.sql + 0022_table_structures_update_guard.sql + 0023_table_cells_pattern_h.sql 파일 존재
+//
+// Phase 2 BATCH 재추출 시점 (D-TABLE-3=β: BATCH-1+6+7+R1) 데이터 적재 후
+// 본 Cat 에 D1 카운트 검증 항목 추가 의무 (예: table_structures >= 1 등).
+
+interface OntologyRegistryShape {
+  version: string;
+  node_types: string[];
+  edge_types: string[];
+  node_id_patterns: Record<string, string>;
+}
+
+function loadOntologyRegistry(): OntologyRegistryShape | null {
+  try {
+    const path = join(REPO_ROOT, 'packages/parser/src/ontology-registry.json');
+    return JSON.parse(readFileSync(path, 'utf8')) as OntologyRegistryShape;
+  } catch {
+    return null;
+  }
+}
+
+function buildTableKgCategory(): CategoryReport {
+  const registry = loadOntologyRegistry();
+  const numerics: NumericMetric[] = [];
+  const booleans: BooleanMetric[] = [];
+
+  if (!registry) {
+    return {
+      id: 9,
+      name: 'Table-as-Micro-KG schema 정합 (ADR-032 v1.5.0, Cat 9)',
+      status: 'FAIL',
+      numerics: [],
+      booleans: [
+        {
+          name: 'ontology-registry.json 로드',
+          value: false,
+          required: true,
+          status: 'FAIL',
+          evidence: 'packages/parser/src/ontology-registry.json 미로드',
+        },
+      ],
+      notes: ['ADR-032 Phase 1 Foundation — registry 파일 부재 또는 JSON 파싱 실패.'],
+    };
+  }
+
+  // 1. node_types 11종 (v1.3.0 7종 + v1.4.0 4종 신규)
+  numerics.push({
+    name: 'ontology node_types 카운트 (v1.4.0+ = 11)',
+    observed: registry.node_types.length,
+    required: 11,
+    status: registry.node_types.length === 11 ? 'PASS' : 'FAIL',
+  });
+
+  // 2. edge_types 18종 (v1.3.0 13종 + v1.4.0 4종 + v1.5.0 CONTAINS_TABLE 1종)
+  numerics.push({
+    name: 'ontology edge_types 카운트 (v1.5.0 = 18)',
+    observed: registry.edge_types.length,
+    required: 18,
+    status: registry.edge_types.length === 18 ? 'PASS' : 'FAIL',
+  });
+
+  const passBoolean = (name: string, ok: boolean, evidence: string): BooleanMetric => ({
+    name,
+    value: ok,
+    required: true,
+    status: ok ? 'PASS' : 'FAIL',
+    evidence,
+  });
+
+  // 3. 4 신규 node_types 존재 (TABLE/ROW_HEADER/COL_HEADER/CELL)
+  const REQUIRED_NEW_NODE_TYPES = ['TABLE', 'ROW_HEADER', 'COL_HEADER', 'CELL'] as const;
+  for (const nt of REQUIRED_NEW_NODE_TYPES) {
+    const ok = registry.node_types.includes(nt);
+    booleans.push(
+      passBoolean(`node_type ${nt} 등록`, ok, ok ? `${nt} ∈ node_types` : `${nt} 미등록`),
+    );
+  }
+
+  // 4. 5 신규 edge_types 존재 (HAS_ROW/HAS_COLUMN/BELONGS_TO_ROW/BELONGS_TO_COLUMN + v1.5.0 CONTAINS_TABLE)
+  const REQUIRED_NEW_EDGE_TYPES = [
+    'HAS_ROW',
+    'HAS_COLUMN',
+    'BELONGS_TO_ROW',
+    'BELONGS_TO_COLUMN',
+    'CONTAINS_TABLE',
+  ] as const;
+  for (const et of REQUIRED_NEW_EDGE_TYPES) {
+    const ok = registry.edge_types.includes(et);
+    booleans.push(
+      passBoolean(`edge_type ${et} 등록`, ok, ok ? `${et} ∈ edge_types` : `${et} 미등록`),
+    );
+  }
+
+  // 5. 4 신규 ID 패턴 정합 (TC- topic_cluster 충돌 회피 의무)
+  const REQUIRED_PATTERNS: Array<[string, string]> = [
+    ['TABLE', '^TBL-\\d{3}$'],
+    ['ROW_HEADER', '^TROW-\\d{3}-\\d{2}$'],
+    ['COL_HEADER', '^TCOL-\\d{3}-\\d{2}$'],
+    ['CELL', '^TCELL-\\d{3}-\\d{2}-\\d{2}$'],
+  ];
+  for (const [nt, expected] of REQUIRED_PATTERNS) {
+    const actual = registry.node_id_patterns[nt];
+    const ok = actual === expected;
+    booleans.push(
+      passBoolean(
+        `${nt} ID 패턴 정합`,
+        ok,
+        ok ? `${nt} = ${expected}` : `expected ${expected} / actual ${actual ?? 'undefined'}`,
+      ),
+    );
+  }
+
+  // 6. COL_HEADER 패턴 ↔ topic_cluster 패턴 충돌 회피 (TCOL ≠ TC)
+  const colPattern = registry.node_id_patterns.COL_HEADER ?? '';
+  booleans.push(
+    passBoolean(
+      'COL_HEADER ↔ topic_cluster (TC-) prefix 충돌 회피',
+      colPattern.startsWith('^TCOL-'),
+      `COL_HEADER 패턴 = ${colPattern || 'undefined'} (TCOL- prefix 의무)`,
+    ),
+  );
+
+  // 7. 마이그레이션 0021 파일 존재
+  const migrPath = join(REPO_ROOT, 'migrations/0021_table_as_micro_kg.sql');
+  const migrExists = existsSync(migrPath);
+  booleans.push(
+    passBoolean(
+      '마이그레이션 0021_table_as_micro_kg.sql 파일',
+      migrExists,
+      migrExists ? '존재' : '미존재 — staging+production 미적용 위험',
+    ),
+  );
+
+  // 7b. 마이그레이션 0022 파일 존재 (ADR-032 D-PHASE2-1=α)
+  const migr22Path = join(REPO_ROOT, 'migrations/0022_table_structures_update_guard.sql');
+  const migr22Exists = existsSync(migr22Path);
+  booleans.push(
+    passBoolean(
+      '마이그레이션 0022_table_structures_update_guard.sql 파일 (D-PHASE2-1=α)',
+      migr22Exists,
+      migr22Exists ? '존재' : '미존재 — Hard Rule 28 trigger 미적용 위험',
+    ),
+  );
+
+  // 7c. 마이그레이션 0023 파일 존재 (ADR-032 D-PHASE2-7=α 패턴-H)
+  const migr23Path = join(REPO_ROOT, 'migrations/0023_table_cells_pattern_h.sql');
+  const migr23Exists = existsSync(migr23Path);
+  booleans.push(
+    passBoolean(
+      '마이그레이션 0023_table_cells_pattern_h.sql 파일 (D-PHASE2-7=α 패턴-H Nested Table)',
+      migr23Exists,
+      migr23Exists ? '존재' : '미존재 — value_type 6종 + nested_table_id 컬럼 미적용 위험',
+    ),
+  );
+
+  // 7d. 마이그레이션 0024 파일 존재 + content H_nested 포함 (ADR-032 D-PHASE2-8=α Session 052 CRIT-A)
+  const migr24Path = join(REPO_ROOT, 'migrations/0024_table_structures_pattern_h.sql');
+  const migr24Exists = existsSync(migr24Path);
+  let migr24HasHnested = false;
+  let migr24HasTriggerRecreation = false;
+  if (migr24Exists) {
+    try {
+      const content = readFileSync(migr24Path, 'utf8');
+      migr24HasHnested = content.includes("'H_nested'");
+      // Session 052 5-Persona DA-C1 흡수: 0024 12-step procedure는 table_structures DROP시
+      // 자동 제거되는 0022 trigger를 재생성할 책임. trigger 재생성 누락 시 Hard Rule 28 무력화.
+      migr24HasTriggerRecreation = content.includes(
+        'CREATE TRIGGER prevent_table_structures_critical_update',
+      );
+    } catch {
+      migr24HasHnested = false;
+      migr24HasTriggerRecreation = false;
+    }
+  }
+  booleans.push(
+    passBoolean(
+      '마이그레이션 0024_table_structures_pattern_h.sql 파일 (D-PHASE2-8=α pattern_type CHECK 8종)',
+      migr24Exists && migr24HasHnested,
+      migr24Exists
+        ? migr24HasHnested
+          ? "존재 + 'H_nested' CHECK 포함"
+          : "존재하나 'H_nested' 미포함 — pattern_type CHECK 7종 회귀 위험"
+        : '미존재 — pattern_type CHECK 8종 미적용 위험 (LLM H_nested emit 시 D1 INSERT silent fail)',
+    ),
+  );
+  booleans.push(
+    passBoolean(
+      '0024 12-step procedure가 0022 trigger 재생성 (Session 052 5-Persona DA-C1)',
+      migr24HasTriggerRecreation,
+      migr24HasTriggerRecreation
+        ? "0024 SQL에 'CREATE TRIGGER prevent_table_structures_critical_update' 포함 — Hard Rule 28 보존"
+        : 'trigger 재생성 누락 — table_structures DROP 시 자동 제거 후 재생성 책임 위반 (Hard Rule 28 무력화)',
+    ),
+  );
+
+  // 7e. 마이그레이션 0025 + 0026 파일 존재 (Session 052 5-Persona PE-C1 + BA-C2 흡수)
+  const migr25Path = join(REPO_ROOT, 'migrations/0025_table_cells_partial_index.sql');
+  const migr25Exists = existsSync(migr25Path);
+  booleans.push(
+    passBoolean(
+      '마이그레이션 0025_table_cells_partial_index.sql 파일 (PE-C1 partial index)',
+      migr25Exists,
+      migr25Exists ? '존재' : '미존재 — admin G5.5 cross-table 쿼리 풀스캔 회귀 위험',
+    ),
+  );
+
+  const migr26Path = join(REPO_ROOT, 'migrations/0026_table_subordinate_update_guards.sql');
+  const migr26Exists = existsSync(migr26Path);
+  let migr26HasAllTriggers = false;
+  if (migr26Exists) {
+    try {
+      const content = readFileSync(migr26Path, 'utf8');
+      migr26HasAllTriggers =
+        content.includes('CREATE TRIGGER prevent_table_cells_critical_update') &&
+        content.includes('CREATE TRIGGER prevent_table_headers_critical_update') &&
+        content.includes('CREATE TRIGGER prevent_table_node_links_update');
+    } catch {
+      migr26HasAllTriggers = false;
+    }
+  }
+  booleans.push(
+    passBoolean(
+      '마이그레이션 0026_table_subordinate_update_guards.sql 파일 + trigger 3종 (BA-C2)',
+      migr26Exists && migr26HasAllTriggers,
+      migr26Exists
+        ? migr26HasAllTriggers
+          ? '존재 + table_cells/headers/node_links UPDATE 차단 trigger 3종 모두 정의'
+          : '존재하나 trigger 3종 정의 누락 — Hard Rule 28 inconsistent enforcement'
+        : '미존재 — table_cells/headers/node_links UPDATE 무방비 (Hard Rule 28 위반)',
+    ),
+  );
+
+  // 8. registry version = 1.5.0 (v1.4.0 → v1.5.0 D-PHASE2-7=α CONTAINS_TABLE)
+  booleans.push(
+    passBoolean(
+      'ontology-registry version = 1.5.0',
+      registry.version === '1.5.0',
+      `version = ${registry.version}`,
+    ),
+  );
+
+  const allPass =
+    numerics.every((m) => m.status === 'PASS') && booleans.every((b) => b.status === 'PASS');
+
+  return {
+    id: 9,
+    name: 'Table-as-Micro-KG schema 정합 (ADR-032 v1.5.0, Cat 9)',
+    status: allPass ? 'PASS' : 'FAIL',
+    numerics,
+    booleans,
+    notes: [
+      'ADR-032 Phase 1 Foundation + Phase 2 진입 게이트 — ontology v1.5.0 + 4 ID 패턴 + 마이그레이션 0021/0022/0023 영속 검증.',
+      'D-TABLE-1 (α: TBL/TROW/TCOL/TCELL prefix) + D-TABLE-2 (α: 4 정규화 테이블) + D-PHASE2-7 (α: 패턴-H Nested Table) 결정 정합.',
+      'Phase 2 BATCH-1+6+7+R1 재추출 진입 시 D1 카운트 검증 항목 추가 의무.',
+    ],
+  };
+}
+
+// === Cat 10 — Drizzle ORM ↔ SQL CHECK enum 자동 동기화 (Session 052 5-Persona R-M4) ===
+//
+// 검증 항목:
+//   1. apps/api/src/db/schema.ts 에 정의된 const X = [...] as const 추출
+//   2. migrations/*.sql 파일들에서 column CHECK (col IN ('a','b',...)) 추출
+//   3. enum 별 양쪽 문자열 집합 일치 확인 (drift 시 FAIL)
+//
+// 단일 진실 소스 위반 차단:
+//   - NC-1 정책 (drizzle-kit 금지 + 수동 동기화)에 따라 schema.ts 와 SQL 양쪽 수동 갱신.
+//   - 누락 시 Drizzle 타입은 통과하나 D1 INSERT CHECK constraint failure → BATCH rollback.
+//   - 본 Cat 이 enum drift 차단 자동화 (Session 052 4-Pass CRIT-A 재발 방지).
+
+interface EnumPair {
+  readonly drizzleConstName: string;
+  readonly sqlTable: string;
+  readonly sqlColumn: string;
+  readonly migrationFile: string;
+}
+
+const ENUM_SYNC_PAIRS: ReadonlyArray<EnumPair> = [
+  // ADR-032 v1.5.0 + Session 052 D-PHASE2-8=α
+  {
+    drizzleConstName: 'TABLE_PATTERN_TYPES',
+    sqlTable: 'table_structures',
+    sqlColumn: 'pattern_type',
+    migrationFile: 'migrations/0024_table_structures_pattern_h.sql',
+  },
+  {
+    drizzleConstName: 'TABLE_CELL_VALUE_TYPES',
+    sqlTable: 'table_cells',
+    sqlColumn: 'value_type',
+    migrationFile: 'migrations/0023_table_cells_pattern_h.sql',
+  },
+  {
+    drizzleConstName: 'TABLE_STATUSES',
+    sqlTable: 'table_structures',
+    sqlColumn: 'status',
+    migrationFile: 'migrations/0024_table_structures_pattern_h.sql',
+  },
+  {
+    drizzleConstName: 'TABLE_HEADER_AXES',
+    sqlTable: 'table_headers',
+    sqlColumn: 'axis',
+    migrationFile: 'migrations/0021_table_as_micro_kg.sql',
+  },
+  {
+    drizzleConstName: 'TABLE_NODE_LINK_RELATION_TYPES',
+    sqlTable: 'table_node_links',
+    sqlColumn: 'relation_type',
+    migrationFile: 'migrations/0021_table_as_micro_kg.sql',
+  },
+];
+
+function extractDrizzleEnumValues(content: string, constName: string): string[] | null {
+  const pattern = new RegExp(`const\\s+${constName}\\s*=\\s*\\[([\\s\\S]*?)\\]\\s*as\\s+const`);
+  const match = content.match(pattern);
+  if (!match) return null;
+  const arrayBody = match[1];
+  const literalPattern = /['"]([^'"]+)['"]/g;
+  return [...arrayBody.matchAll(literalPattern)].map((m) => m[1]);
+}
+
+function extractSqlCheckValues(content: string, column: string): string[] | null {
+  const pattern = new RegExp(
+    `${column}\\s+TEXT[^,]*?CHECK\\s*\\(\\s*${column}\\s+IN\\s*\\(([\\s\\S]*?)\\)\\s*\\)`,
+    'i',
+  );
+  const match = content.match(pattern);
+  if (!match) return null;
+  const inBody = match[1];
+  const literalPattern = /'([^']+)'/g;
+  return [...inBody.matchAll(literalPattern)].map((m) => m[1]);
+}
+
+function buildEnumSyncCategory(): CategoryReport {
+  const booleans: BooleanMetric[] = [];
+  const passBoolean = (name: string, ok: boolean, evidence: string): BooleanMetric => ({
+    name,
+    value: ok,
+    required: true,
+    status: ok ? 'PASS' : 'FAIL',
+    evidence,
+  });
+
+  const schemaPath = join(REPO_ROOT, 'apps/api/src/db/schema.ts');
+  let schemaContent = '';
+  try {
+    schemaContent = readFileSync(schemaPath, 'utf8');
+  } catch {
+    return {
+      id: 10,
+      name: 'Drizzle ↔ SQL enum 자동 동기화 (NC-1 정책 강제, Cat 10)',
+      status: 'FAIL',
+      numerics: [],
+      booleans: [
+        {
+          name: 'apps/api/src/db/schema.ts 로드',
+          value: false,
+          required: true,
+          status: 'FAIL',
+          evidence: 'apps/api/src/db/schema.ts 미로드',
+        },
+      ],
+      notes: ['Drizzle schema.ts 로드 실패 — NC-1 정책 검증 불가.'],
+    };
+  }
+
+  for (const pair of ENUM_SYNC_PAIRS) {
+    const drizzleValues = extractDrizzleEnumValues(schemaContent, pair.drizzleConstName);
+    const sqlPath = join(REPO_ROOT, pair.migrationFile);
+    let sqlContent = '';
+    try {
+      sqlContent = readFileSync(sqlPath, 'utf8');
+    } catch {
+      booleans.push(
+        passBoolean(
+          `${pair.drizzleConstName} ↔ ${pair.sqlTable}.${pair.sqlColumn}`,
+          false,
+          `${pair.migrationFile} 미로드`,
+        ),
+      );
+      continue;
+    }
+
+    const sqlValues = extractSqlCheckValues(sqlContent, pair.sqlColumn);
+
+    if (!drizzleValues || drizzleValues.length === 0) {
+      booleans.push(
+        passBoolean(
+          `${pair.drizzleConstName} Drizzle 추출`,
+          false,
+          `schema.ts에 const ${pair.drizzleConstName} 미발견 또는 빈 배열`,
+        ),
+      );
+      continue;
+    }
+    if (!sqlValues || sqlValues.length === 0) {
+      booleans.push(
+        passBoolean(
+          `${pair.sqlTable}.${pair.sqlColumn} SQL CHECK 추출`,
+          false,
+          `${pair.migrationFile}에 ${pair.sqlColumn} CHECK IN(...) 미발견`,
+        ),
+      );
+      continue;
+    }
+
+    const drizzleSet = new Set(drizzleValues);
+    const sqlSet = new Set(sqlValues);
+    const drizzleOnly = [...drizzleSet].filter((v) => !sqlSet.has(v));
+    const sqlOnly = [...sqlSet].filter((v) => !drizzleSet.has(v));
+    const synced = drizzleOnly.length === 0 && sqlOnly.length === 0;
+
+    let evidence: string;
+    if (synced) {
+      evidence = `${drizzleValues.length}종 일치 (${drizzleValues.join(', ')})`;
+    } else {
+      const parts: string[] = [];
+      if (drizzleOnly.length > 0) parts.push(`Drizzle only: [${drizzleOnly.join(', ')}]`);
+      if (sqlOnly.length > 0) parts.push(`SQL only: [${sqlOnly.join(', ')}]`);
+      evidence = `drift! ${parts.join(' / ')} (Drizzle ${drizzleValues.length}종 / SQL ${sqlValues.length}종)`;
+    }
+
+    booleans.push(
+      passBoolean(
+        `${pair.drizzleConstName} ↔ ${pair.sqlTable}.${pair.sqlColumn}`,
+        synced,
+        evidence,
+      ),
+    );
+  }
+
+  const allPass = booleans.every((b) => b.status === 'PASS');
+  return {
+    id: 10,
+    name: 'Drizzle ↔ SQL enum 자동 동기화 (NC-1 정책 강제, Cat 10)',
+    status: allPass ? 'PASS' : 'FAIL',
+    numerics: [],
+    booleans,
+    notes: [
+      'NC-1 정책 (drizzle-kit 금지 + 수동 동기화) 강제. Session 052 5-Persona R-M4 흡수.',
+      'Drizzle as const 배열과 SQL CHECK IN(...) 양쪽 정합 자동 확인.',
+      'drift 시 D1 INSERT CHECK constraint failure → BATCH rollback 위험 (4-Pass CRIT-A 재발).',
+    ],
   };
 }
 
@@ -799,7 +1270,10 @@ async function main(): Promise<void> {
     notes: ['LLM 통합 후 Phase 1 후반 — Reviewer 검수 + 근거 FK 검증 별도 plan.'],
   };
 
-  const categories = [cat123, cat4, cat5, cat6, cat7, cat8];
+  const cat9 = buildTableKgCategory();
+  const cat10 = buildEnumSyncCategory();
+
+  const categories = [cat123, cat4, cat5, cat6, cat7, cat8, cat9, cat10];
   const counted = categories.filter((c) => c.status !== 'SKIP');
   const passCount = counted.filter((c) => c.status === 'PASS').length;
   const failCount = counted.filter((c) => c.status === 'FAIL').length;

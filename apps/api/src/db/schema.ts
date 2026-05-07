@@ -64,6 +64,7 @@ const NODE_TYPES = [
 const CONTENT_STATUSES = ['draft', 'review', 'approved', 'published', 'flagged'] as const;
 const EXAM_QUESTION_STATUSES = ['active', 'deprecated', 'flagged'] as const;
 const EDGE_TYPES = [
+  // 13 domain edges (Year 1 baseline)
   'APPLIES_TO',
   'REQUIRES_INVESTIGATION',
   'PREREQUISITE',
@@ -77,7 +78,39 @@ const EDGE_TYPES = [
   'SHARED_WITH',
   'DIFFERS_FROM',
   'CROSS_REF',
+  // 4 table-as-micro-KG edges (ADR-032 v1.4.0)
+  'HAS_ROW',
+  'HAS_COLUMN',
+  'BELONGS_TO_ROW',
+  'BELONGS_TO_COLUMN',
+  // 1 nested-table edge (ADR-032 v1.5.0 D-PHASE2-7=α 패턴-H)
+  'CONTAINS_TABLE',
 ] as const;
+// Table-as-Micro-KG enums (migrations/0021 + 0023 + 0024)
+// 8 pattern_types — 7 v1.4.0 (A~G) + 1 v1.5.0 H_nested (Session 052 CRIT-A 흡수,
+// migrations/0024 D1 CHECK 7→8 정합)
+const TABLE_PATTERN_TYPES = [
+  'A_simple',
+  'B_2level',
+  'C_3level',
+  'D_merged',
+  'E_na',
+  'F_formula',
+  'G_temporal',
+  'H_nested',
+] as const;
+const TABLE_STATUSES = ['draft', 'active', 'flagged', 'deprecated'] as const;
+const TABLE_HEADER_AXES = ['row', 'column'] as const;
+// 6 value_types (5 v1.4.0 + nested_table v1.5.0 패턴-H)
+const TABLE_CELL_VALUE_TYPES = [
+  'text',
+  'number',
+  'formula',
+  'na',
+  'merged_ref',
+  'nested_table',
+] as const;
+const TABLE_NODE_LINK_RELATION_TYPES = ['extracted_from', 'referenced_by', 'supersedes'] as const;
 const CONFUSION_LEVELS = ['safe', 'warn', 'danger'] as const;
 const CONSTANT_CATEGORIES = [
   'threshold',
@@ -650,3 +683,160 @@ export const engineTelemetry = sqliteTable(
 
 export type EngineTelemetry = typeof engineTelemetry.$inferSelect;
 export type NewEngineTelemetry = typeof engineTelemetry.$inferInsert;
+
+// ============================================================
+// Table-as-Micro-KG (ADR-032 v1.4.0 + v1.5.0 D-PHASE2-7=α)
+// ============================================================
+// 비정형 표 정확 이해/재현 — 다중 자격증 핵심 역량.
+// migrations/0021_table_as_micro_kg.sql (4 테이블 + 10 인덱스)
+// migrations/0022_table_structures_update_guard.sql (critical UPDATE 차단 trigger)
+// migrations/0023_table_cells_pattern_h.sql (value_type 6종 + nested_table_id 패턴-H)
+// migrations/0024_table_structures_pattern_h.sql (pattern_type CHECK 8종 — Session 052 CRIT-A)
+//
+// Drizzle 정책 (NC-1): 본 선언은 타입 파생 전용. CHECK 제약 (ID GLOB / value_type ↔ FK
+// cross-validation) + UPDATE 차단 trigger + 복합 CHECK은 SQL 본문에서 강제.
+// drizzle-kit generate / push 사용 금지.
+
+// 1. table_structures — 표 메타 + pattern_type 8종 분류 (A~H_nested) + G5.5 검수
+export const tableStructures = sqliteTable(
+  'table_structures',
+  {
+    id: text('id').primaryKey(),
+    sourceNodeId: text('source_node_id').references(() => knowledgeNodes.id),
+    title: text('title').notNull(),
+    patternType: text('pattern_type', { enum: TABLE_PATTERN_TYPES }).notNull(),
+    rowCount: integer('row_count').notNull(),
+    colCount: integer('col_count').notNull(),
+    source: text('source').notNull(),
+    status: text('status', { enum: TABLE_STATUSES }).notNull().default('draft'),
+    humanReviewedAt: integer('human_reviewed_at'),
+    createdAt: integer('created_at')
+      .notNull()
+      .default(sql`(strftime('%s','now'))`),
+    updatedAt: integer('updated_at')
+      .notNull()
+      .default(sql`(strftime('%s','now'))`),
+  },
+  (table) => ({
+    statusIdx: index('idx_table_structures_status').on(table.status),
+    patternIdx: index('idx_table_structures_pattern').on(table.patternType),
+    sourceNodeIdx: index('idx_table_structures_source_node').on(table.sourceNodeId),
+  }),
+);
+
+// 2. table_headers — 행/열 헤더 (다중 헤더 트리: parent_id self-ref)
+export const tableHeaders = sqliteTable(
+  'table_headers',
+  {
+    id: text('id').primaryKey(),
+    tableId: text('table_id')
+      .notNull()
+      .references(() => tableStructures.id),
+    axis: text('axis', { enum: TABLE_HEADER_AXES }).notNull(),
+    level: integer('level').notNull().default(1),
+    indexPos: integer('index_pos').notNull(),
+    /** 다중 헤더(패턴 B/C) 트리 표현 — 같은 table_headers 내 self-ref. */
+    parentId: text('parent_id'),
+    text: text('text').notNull(),
+    createdAt: integer('created_at')
+      .notNull()
+      .default(sql`(strftime('%s','now'))`),
+  },
+  (table) => ({
+    // (table_id, axis, level, index_pos) UNIQUE — migrations/0021 정합 (Drizzle 표현)
+    tableAxisUnique: uniqueIndex('uq_table_headers_table_axis_level_pos').on(
+      table.tableId,
+      table.axis,
+      table.level,
+      table.indexPos,
+    ),
+    tableAxisIdx: index('idx_table_headers_table_axis').on(
+      table.tableId,
+      table.axis,
+      table.level,
+      table.indexPos,
+    ),
+    parentIdx: index('idx_table_headers_parent').on(table.parentId),
+  }),
+);
+
+// 3. table_cells — 셀 본문 + value_type 6종 (v1.5.0 nested_table 포함) + FK 정합
+//   self-ref FK (mergedWithId) + nested_table_id (패턴-H, table_structures 참조)
+export const tableCells = sqliteTable(
+  'table_cells',
+  {
+    id: text('id').primaryKey(),
+    tableId: text('table_id')
+      .notNull()
+      .references(() => tableStructures.id),
+    rowId: text('row_id')
+      .notNull()
+      .references(() => tableHeaders.id),
+    colId: text('col_id')
+      .notNull()
+      .references(() => tableHeaders.id),
+    valueText: text('value_text'),
+    valueType: text('value_type', { enum: TABLE_CELL_VALUE_TYPES }).notNull(),
+    formulaId: text('formula_id').references(() => formulas.id),
+    /** 셀 병합 anchor 참조 (패턴 D) — 같은 table_cells self-ref. */
+    mergedWithId: text('merged_with_id'),
+    /** 패턴-H Nested Table — 셀 안에 표 중첩 (CELL → TABLE). v1.5.0 D-PHASE2-7=α. */
+    nestedTableId: text('nested_table_id').references(() => tableStructures.id),
+    createdAt: integer('created_at')
+      .notNull()
+      .default(sql`(strftime('%s','now'))`),
+  },
+  (table) => ({
+    // (table_id, row_id, col_id) UNIQUE — migrations/0021 정합
+    tableRowColUnique: uniqueIndex('uq_table_cells_table_row_col').on(
+      table.tableId,
+      table.rowId,
+      table.colId,
+    ),
+    tableRowColIdx: index('idx_table_cells_table_row_col').on(
+      table.tableId,
+      table.rowId,
+      table.colId,
+    ),
+    tableValueIdx: index('idx_table_cells_table_value').on(table.tableId, table.valueType),
+    formulaIdx: index('idx_table_cells_formula').on(table.formulaId),
+    nestedIdx: index('idx_table_cells_nested').on(table.nestedTableId),
+  }),
+);
+
+// 4. table_node_links — 표 ↔ knowledge_nodes 다대다 (extracted_from / referenced_by / supersedes)
+export const tableNodeLinks = sqliteTable(
+  'table_node_links',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    tableId: text('table_id')
+      .notNull()
+      .references(() => tableStructures.id),
+    relatedNodeId: text('related_node_id')
+      .notNull()
+      .references(() => knowledgeNodes.id),
+    relationType: text('relation_type', { enum: TABLE_NODE_LINK_RELATION_TYPES }).notNull(),
+    createdAt: integer('created_at')
+      .notNull()
+      .default(sql`(strftime('%s','now'))`),
+  },
+  (table) => ({
+    // (table_id, related_node_id, relation_type) UNIQUE — migrations/0021 정합
+    tableNodeRelationUnique: uniqueIndex('uq_table_node_links_table_node_relation').on(
+      table.tableId,
+      table.relatedNodeId,
+      table.relationType,
+    ),
+    relatedIdx: index('idx_table_node_links_related').on(table.relatedNodeId, table.relationType),
+    tableIdx: index('idx_table_node_links_table').on(table.tableId, table.relationType),
+  }),
+);
+
+export type TableStructure = typeof tableStructures.$inferSelect;
+export type NewTableStructure = typeof tableStructures.$inferInsert;
+export type TableHeader = typeof tableHeaders.$inferSelect;
+export type NewTableHeader = typeof tableHeaders.$inferInsert;
+export type TableCell = typeof tableCells.$inferSelect;
+export type NewTableCell = typeof tableCells.$inferInsert;
+export type TableNodeLink = typeof tableNodeLinks.$inferSelect;
+export type NewTableNodeLink = typeof tableNodeLinks.$inferInsert;

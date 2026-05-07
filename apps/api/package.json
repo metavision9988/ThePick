@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260415.1",
+    "@thepick/parser": "workspace:*",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "drizzle-kit": "^0.30.0",

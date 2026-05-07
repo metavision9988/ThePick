@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { validateKnowledgeContract, type KnowledgeContract } from '../schema-validator';
+import {
+  validateKnowledgeContract,
+  type KnowledgeContract,
+  type KnowledgeContractTable,
+} from '../schema-validator';
 import {
   registry,
   isValidNodeType,
@@ -71,8 +75,20 @@ function validContract(): KnowledgeContract {
 
 describe('ontology-registry helpers', () => {
   describe('isValidNodeType', () => {
-    it('accepts all 7 valid node types', () => {
-      const types = ['LAW', 'FORMULA', 'INVESTIGATION', 'INSURANCE', 'CROP', 'CONCEPT', 'TERM'];
+    it('accepts all 11 valid node types (v1.4.0 — 7 domain + 4 table)', () => {
+      const types = [
+        'LAW',
+        'FORMULA',
+        'INVESTIGATION',
+        'INSURANCE',
+        'CROP',
+        'CONCEPT',
+        'TERM',
+        'TABLE',
+        'ROW_HEADER',
+        'COL_HEADER',
+        'CELL',
+      ];
       for (const t of types) {
         expect(isValidNodeType(t)).toBe(true);
       }
@@ -86,7 +102,7 @@ describe('ontology-registry helpers', () => {
   });
 
   describe('isValidEdgeType', () => {
-    it('accepts all 13 valid edge types', () => {
+    it('accepts all 18 valid edge types (v1.5.0 — 13 domain + 4 table + 1 nested)', () => {
       const types = [
         'APPLIES_TO',
         'REQUIRES_INVESTIGATION',
@@ -101,6 +117,11 @@ describe('ontology-registry helpers', () => {
         'SHARED_WITH',
         'DIFFERS_FROM',
         'CROSS_REF',
+        'HAS_ROW',
+        'HAS_COLUMN',
+        'BELONGS_TO_ROW',
+        'BELONGS_TO_COLUMN',
+        'CONTAINS_TABLE',
       ];
       for (const t of types) {
         expect(isValidEdgeType(t)).toBe(true);
@@ -214,10 +235,24 @@ describe('ontology-registry helpers', () => {
       expect(inferNodeTypeFromId('TERM-050')).toBe('TERM');
     });
 
+    it('infers correct types for v1.4.0 Table-as-Micro-KG IDs (ADR-032)', () => {
+      expect(inferNodeTypeFromId('TBL-001')).toBe('TABLE');
+      expect(inferNodeTypeFromId('TROW-001-01')).toBe('ROW_HEADER');
+      expect(inferNodeTypeFromId('TCOL-001-01')).toBe('COL_HEADER');
+      expect(inferNodeTypeFromId('TCELL-001-01-01')).toBe('CELL');
+    });
+
     it('returns null for unrecognized IDs', () => {
       expect(inferNodeTypeFromId('ANIMAL-01')).toBeNull();
       expect(inferNodeTypeFromId('random')).toBeNull();
       expect(inferNodeTypeFromId('')).toBeNull();
+    });
+
+    it('does not collide TCOL- (COL_HEADER) with TC- (topic_cluster)', () => {
+      // ★ ADR-032 D-TABLE-1=α 영속: COL_HEADER prefix = TCOL-
+      // topic_cluster_id_pattern = ^TC-\d{3}$ 와 strict anchor 분리
+      expect(inferNodeTypeFromId('TCOL-001-01')).toBe('COL_HEADER');
+      expect(inferNodeTypeFromId('TC-001')).toBeNull(); // topic_cluster ID는 node_type 아님
     });
   });
 });
@@ -225,12 +260,24 @@ describe('ontology-registry helpers', () => {
 // --- Enum 동기화 테스트 (registry ↔ shared types 일치 보장) ---
 
 describe('enum synchronization', () => {
-  it('registry node_types matches all 7 expected types', () => {
-    const expected = ['LAW', 'FORMULA', 'INVESTIGATION', 'INSURANCE', 'CROP', 'CONCEPT', 'TERM'];
+  it('registry node_types matches all 11 expected types (v1.4.0 — Table-as-Micro-KG)', () => {
+    const expected = [
+      'LAW',
+      'FORMULA',
+      'INVESTIGATION',
+      'INSURANCE',
+      'CROP',
+      'CONCEPT',
+      'TERM',
+      'TABLE',
+      'ROW_HEADER',
+      'COL_HEADER',
+      'CELL',
+    ];
     expect([...registry.node_types].sort()).toEqual([...expected].sort());
   });
 
-  it('registry edge_types matches all 13 expected types', () => {
+  it('registry edge_types matches all 18 expected types (v1.5.0 — 4 table edges + CONTAINS_TABLE 패턴-H)', () => {
     const expected = [
       'APPLIES_TO',
       'REQUIRES_INVESTIGATION',
@@ -245,6 +292,11 @@ describe('enum synchronization', () => {
       'SHARED_WITH',
       'DIFFERS_FROM',
       'CROSS_REF',
+      'HAS_ROW',
+      'HAS_COLUMN',
+      'BELONGS_TO_ROW',
+      'BELONGS_TO_COLUMN',
+      'CONTAINS_TABLE',
     ];
     expect([...registry.edge_types].sort()).toEqual([...expected].sort());
   });
@@ -306,6 +358,7 @@ describe('validateKnowledgeContract', () => {
         edgesValidated: 0,
         formulasValidated: 0,
         constantsValidated: 0,
+        tablesValidated: 0,
       });
     });
   });
@@ -320,6 +373,7 @@ describe('validateKnowledgeContract', () => {
         edgesValidated: 1,
         formulasValidated: 1,
         constantsValidated: 1,
+        tablesValidated: 0,
       });
     });
 
@@ -640,6 +694,8 @@ describe('validateKnowledgeContract', () => {
             content: '',
             truth_weight: 0,
             source_page: 0,
+            book_page: 0,
+            pdf_page: 0,
           },
           {
             id: 'BAD-ID',
@@ -648,6 +704,8 @@ describe('validateKnowledgeContract', () => {
             content: '',
             truth_weight: NaN,
             source_page: 0,
+            book_page: 0,
+            pdf_page: 0,
           },
         ],
         edges: [{ source_id: '', target_id: '', edge_type: 'FAKE_EDGE' }],
@@ -683,6 +741,489 @@ describe('validateKnowledgeContract', () => {
       expect(codes.has('INVALID_CONSTANT_ID')).toBe(true);
       expect(codes.has('INVALID_CONSTANT_CATEGORY')).toBe(true);
       expect(codes.has('MISSING_SOURCE_PAGE')).toBe(true);
+    });
+  });
+});
+
+// --- Table-as-Micro-KG (ADR-032 v1.4.0 + v1.5.0 D-PHASE2-7=α 패턴-H) ---
+// MAJOR-A 흡수: validateTablesSection 본문 검증 + 패턴-H 정합
+
+function validTableA(): KnowledgeContractTable {
+  // 패턴-A 단순 그리드 1×2 (text 셀만). Session 052 CRIT-D: book_page/pdf_page 필수.
+  return {
+    id: 'TBL-001',
+    source_node_id: 'CONCEPT-001',
+    title: '테스트 패턴-A 표',
+    pattern_type: 'A_simple',
+    row_count: 1,
+    col_count: 2,
+    source: 'test_fixture',
+    book_page: 100,
+    pdf_page: 100,
+    headers: [
+      { id: 'TROW-001-01', axis: 'row', level: 1, index_pos: 1, text: '1행' },
+      { id: 'TCOL-001-01', axis: 'column', level: 1, index_pos: 1, text: '1열' },
+      { id: 'TCOL-001-02', axis: 'column', level: 1, index_pos: 2, text: '2열' },
+    ],
+    cells: [
+      {
+        id: 'TCELL-001-01-01',
+        row_id: 'TROW-001-01',
+        col_id: 'TCOL-001-01',
+        value_text: '값1',
+        value_type: 'text',
+      },
+      {
+        id: 'TCELL-001-01-02',
+        row_id: 'TROW-001-01',
+        col_id: 'TCOL-001-02',
+        value_text: '값2',
+        value_type: 'text',
+      },
+    ],
+  };
+}
+
+function contractWithTables(tables: KnowledgeContractTable[]): KnowledgeContract {
+  return {
+    nodes: [
+      {
+        id: 'CONCEPT-001',
+        type: 'CONCEPT',
+        title: '표 소속 노드',
+        content: '본문',
+        truth_weight: 5,
+        source_page: 100,
+        book_page: 100,
+        pdf_page: 100,
+      },
+    ],
+    edges: [],
+    formulas: [
+      {
+        id: 'F-01',
+        name: 'test',
+        equation_template: 'a + b',
+        variables_schema: '{"a":"number","b":"number"}',
+        source_page: 100,
+      },
+    ],
+    constants: [],
+    tables,
+  };
+}
+
+describe('validateTablesSection — Table-as-Micro-KG', () => {
+  describe('happy path', () => {
+    it('accepts a contract without tables[] (Phase 1 호환 — optional 필드)', () => {
+      const result = validateKnowledgeContract(validContract());
+      expect(result.valid).toBe(true);
+      expect(result.stats.tablesValidated).toBe(0);
+    });
+
+    it('accepts a well-formed pattern-A simple table', () => {
+      const result = validateKnowledgeContract(contractWithTables([validTableA()]));
+      expect(result.valid).toBe(true);
+      expect(result.stats.tablesValidated).toBe(1);
+    });
+
+    it('accepts a pattern-H nested table (CELL → TABLE)', () => {
+      const inner = validTableA();
+      inner.id = 'TBL-002';
+      inner.title = 'inner nested';
+      inner.headers = inner.headers.map((h) => ({
+        ...h,
+        id: h.id.replace('001', '002'),
+      }));
+      inner.cells = inner.cells.map((c) => ({
+        ...c,
+        id: c.id.replace('001', '002'),
+        row_id: c.row_id.replace('001', '002'),
+        col_id: c.col_id.replace('001', '002'),
+      }));
+
+      const outer = validTableA();
+      // outer 셀 1개를 nested_table로 — A_simple → 패턴 정합 위해 H 패턴 의무는 아니므로
+      // 본 테스트는 'pattern_type' 일관성보다는 'nested_table_id 정합'을 목표
+      // → outer를 다른 패턴으로 변경하지 않고, A_simple cell 중 1개만 nested_table로 변경 시
+      //   pattern_type ↔ value_type cross-validation에서 reject 의무 (별도 테스트)
+      // → 본 happy path는 outer에 G_temporal 등을 부여
+      outer.pattern_type = 'G_temporal';
+      outer.cells[0] = {
+        id: 'TCELL-001-01-01',
+        row_id: 'TROW-001-01',
+        col_id: 'TCOL-001-01',
+        value_type: 'nested_table',
+        nested_table_id: 'TBL-002',
+      };
+
+      const result = validateKnowledgeContract(contractWithTables([outer, inner]));
+      if (!result.valid) console.error('nested table errors:', result.errors);
+      expect(result.valid).toBe(true);
+      expect(result.stats.tablesValidated).toBe(2);
+    });
+  });
+
+  describe('table ID validation', () => {
+    it('rejects invalid TBL ID pattern (INVALID_TABLE_ID)', () => {
+      const t = validTableA();
+      t.id = 'TABLE-001';
+      const result = validateKnowledgeContract(contractWithTables([t]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({ code: 'INVALID_TABLE_ID', path: 'tables[0].id' }),
+      );
+    });
+  });
+
+  describe('header validation', () => {
+    it('rejects axis="row" with TCOL prefix (INVALID_TABLE_HEADER_ID)', () => {
+      const t = validTableA();
+      t.headers[0] = { id: 'TCOL-001-01', axis: 'row', level: 1, index_pos: 1, text: 'x' };
+      const result = validateKnowledgeContract(contractWithTables([t]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'INVALID_TABLE_HEADER_ID',
+          path: 'tables[0].headers[0].id',
+        }),
+      );
+    });
+
+    it('rejects header.index_pos gap (TABLE_HEADER_INDEX_GAP)', () => {
+      const t = validTableA();
+      // col_count=2, but only index_pos=1 column header (missing index 2)
+      t.headers = t.headers.filter((h) => !(h.axis === 'column' && h.index_pos === 2));
+      const result = validateKnowledgeContract(contractWithTables([t]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({ code: 'TABLE_HEADER_INDEX_GAP' }),
+      );
+    });
+  });
+
+  describe('cell validation', () => {
+    it('rejects invalid TCELL ID (INVALID_TABLE_CELL_ID)', () => {
+      const t = validTableA();
+      t.cells[0].id = 'CELL-001';
+      const result = validateKnowledgeContract(contractWithTables([t]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'INVALID_TABLE_CELL_ID',
+          path: 'tables[0].cells[0].id',
+        }),
+      );
+    });
+
+    it('rejects unknown value_type (INVALID_TABLE_VALUE_TYPE)', () => {
+      const t = validTableA();
+      // Unknown literal — cast 의무 (TS strict)
+      (t.cells[0] as { value_type: string }).value_type = 'unknown_type';
+      const result = validateKnowledgeContract(contractWithTables([t]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({ code: 'INVALID_TABLE_VALUE_TYPE' }),
+      );
+    });
+
+    it('rejects formula cell missing formula_id (MISSING_REQUIRED_FIELD)', () => {
+      const t = validTableA();
+      t.pattern_type = 'F_formula';
+      t.cells[0] = {
+        id: 'TCELL-001-01-01',
+        row_id: 'TROW-001-01',
+        col_id: 'TCOL-001-01',
+        value_type: 'formula',
+      };
+      const result = validateKnowledgeContract(contractWithTables([t]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'MISSING_REQUIRED_FIELD',
+          path: 'tables[0].cells[0].formula_id',
+        }),
+      );
+    });
+
+    it('rejects nested_table cell missing nested_table_id (MISSING_REQUIRED_FIELD, 패턴-H)', () => {
+      const t = validTableA();
+      t.pattern_type = 'G_temporal';
+      t.cells[0] = {
+        id: 'TCELL-001-01-01',
+        row_id: 'TROW-001-01',
+        col_id: 'TCOL-001-01',
+        value_type: 'nested_table',
+      };
+      const result = validateKnowledgeContract(contractWithTables([t]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'MISSING_REQUIRED_FIELD',
+          path: 'tables[0].cells[0].nested_table_id',
+        }),
+      );
+    });
+
+    it('rejects formula_id pointing to undeclared formula (DANGLING_TABLE_CELL_REFERENCE)', () => {
+      const t = validTableA();
+      t.pattern_type = 'F_formula';
+      t.cells[0] = {
+        id: 'TCELL-001-01-01',
+        row_id: 'TROW-001-01',
+        col_id: 'TCOL-001-01',
+        value_type: 'formula',
+        formula_id: 'F-99', // 미선언
+      };
+      const result = validateKnowledgeContract(contractWithTables([t]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'DANGLING_TABLE_CELL_REFERENCE',
+          path: 'tables[0].cells[0].formula_id',
+        }),
+      );
+    });
+
+    it('rejects nested_table_id pointing to undeclared table (DANGLING_NESTED_TABLE_REFERENCE)', () => {
+      const t = validTableA();
+      t.pattern_type = 'G_temporal';
+      t.cells[0] = {
+        id: 'TCELL-001-01-01',
+        row_id: 'TROW-001-01',
+        col_id: 'TCOL-001-01',
+        value_type: 'nested_table',
+        nested_table_id: 'TBL-999', // 미선언
+      };
+      const result = validateKnowledgeContract(contractWithTables([t]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'DANGLING_NESTED_TABLE_REFERENCE',
+          path: 'tables[0].cells[0].nested_table_id',
+        }),
+      );
+    });
+
+    it("rejects cell.row_id not in this table's row headers (DANGLING_TABLE_CELL_REFERENCE)", () => {
+      const t = validTableA();
+      t.cells[0].row_id = 'TROW-999-01'; // 미선언
+      const result = validateKnowledgeContract(contractWithTables([t]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'DANGLING_TABLE_CELL_REFERENCE',
+          path: 'tables[0].cells[0].row_id',
+        }),
+      );
+    });
+  });
+
+  describe('pattern_type cross-validation', () => {
+    it('rejects F_formula table with no formula cell (TABLE_PATTERN_VALUETYPE_MISMATCH)', () => {
+      const t = validTableA();
+      t.pattern_type = 'F_formula';
+      // cells 모두 text — formula 0건
+      const result = validateKnowledgeContract(contractWithTables([t]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'TABLE_PATTERN_VALUETYPE_MISMATCH',
+          path: 'tables[0].pattern_type',
+        }),
+      );
+    });
+
+    it('rejects A_simple table with nested_table cell (TABLE_PATTERN_VALUETYPE_MISMATCH)', () => {
+      const inner = validTableA();
+      inner.id = 'TBL-002';
+      inner.headers = inner.headers.map((h) => ({ ...h, id: h.id.replace('001', '002') }));
+      inner.cells = inner.cells.map((c) => ({
+        ...c,
+        id: c.id.replace('001', '002'),
+        row_id: c.row_id.replace('001', '002'),
+        col_id: c.col_id.replace('001', '002'),
+      }));
+
+      const outer = validTableA();
+      // outer는 A_simple로 두지만 cells에 nested_table 포함 → cross-validation 실패 의무
+      outer.cells[0] = {
+        id: 'TCELL-001-01-01',
+        row_id: 'TROW-001-01',
+        col_id: 'TCOL-001-01',
+        value_type: 'nested_table',
+        nested_table_id: 'TBL-002',
+      };
+
+      const result = validateKnowledgeContract(contractWithTables([outer, inner]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'TABLE_PATTERN_VALUETYPE_MISMATCH',
+          path: 'tables[0].pattern_type',
+        }),
+      );
+    });
+  });
+
+  // Session 052 entry 4-Pass 흡수 — CRIT-A/B/C/D 회귀 테스트
+  describe('CRIT-A — pattern_type H_nested whitelist + cross-validation', () => {
+    function validInnerTable(): KnowledgeContractTable {
+      const inner = validTableA();
+      inner.id = 'TBL-002';
+      inner.title = 'inner nested';
+      inner.headers = inner.headers.map((h) => ({ ...h, id: h.id.replace('001', '002') }));
+      inner.cells = inner.cells.map((c) => ({
+        ...c,
+        id: c.id.replace('001', '002'),
+        row_id: c.row_id.replace('001', '002'),
+        col_id: c.col_id.replace('001', '002'),
+      }));
+      return inner;
+    }
+
+    it('accepts pattern_type=H_nested with ≥1 nested_table cell (happy path)', () => {
+      const inner = validInnerTable();
+      const outer = validTableA();
+      outer.pattern_type = 'H_nested';
+      outer.cells[0] = {
+        id: 'TCELL-001-01-01',
+        row_id: 'TROW-001-01',
+        col_id: 'TCOL-001-01',
+        value_type: 'nested_table',
+        nested_table_id: 'TBL-002',
+      };
+
+      const result = validateKnowledgeContract(contractWithTables([outer, inner]));
+      if (!result.valid) console.error('H_nested happy path errors:', result.errors);
+      expect(result.valid).toBe(true);
+      expect(result.stats.tablesValidated).toBe(2);
+    });
+
+    it('rejects pattern_type=H_nested without any nested_table cell (TABLE_PATTERN_VALUETYPE_MISMATCH)', () => {
+      const t = validTableA();
+      t.pattern_type = 'H_nested';
+      // cells 모두 text — nested_table 0건
+      const result = validateKnowledgeContract(contractWithTables([t]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'TABLE_PATTERN_VALUETYPE_MISMATCH',
+          path: 'tables[0].pattern_type',
+        }),
+      );
+    });
+  });
+
+  describe('CRIT-B — pattern_type whitelist (INVALID_TABLE_PATTERN_TYPE)', () => {
+    it('rejects unknown pattern_type literal (LLM hallucination)', () => {
+      const t = validTableA();
+      // Unknown literal — cast 의무 (TS strict)
+      (t as { pattern_type: string }).pattern_type = 'Z_unknown';
+      const result = validateKnowledgeContract(contractWithTables([t]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'INVALID_TABLE_PATTERN_TYPE',
+          path: 'tables[0].pattern_type',
+        }),
+      );
+    });
+  });
+
+  describe('CRIT-C — nested_table cycle / self-reference', () => {
+    it('rejects self-loop nested_table_id (NESTED_TABLE_SELF_REFERENCE)', () => {
+      const t = validTableA();
+      t.pattern_type = 'H_nested';
+      t.cells[0] = {
+        id: 'TCELL-001-01-01',
+        row_id: 'TROW-001-01',
+        col_id: 'TCOL-001-01',
+        value_type: 'nested_table',
+        nested_table_id: 'TBL-001', // 자기 참조
+      };
+      const result = validateKnowledgeContract(contractWithTables([t]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'NESTED_TABLE_SELF_REFERENCE',
+          path: 'tables[0].cells[0].nested_table_id',
+        }),
+      );
+    });
+
+    it('rejects 2-cycle A→B→A (NESTED_TABLE_CYCLE_DETECTED)', () => {
+      const a = validTableA();
+      a.pattern_type = 'H_nested';
+      a.cells[0] = {
+        id: 'TCELL-001-01-01',
+        row_id: 'TROW-001-01',
+        col_id: 'TCOL-001-01',
+        value_type: 'nested_table',
+        nested_table_id: 'TBL-002',
+      };
+
+      const b: KnowledgeContractTable = {
+        id: 'TBL-002',
+        source_node_id: 'CONCEPT-001',
+        title: 'B (cycle target)',
+        pattern_type: 'H_nested',
+        row_count: 1,
+        col_count: 1,
+        source: 'fixture',
+        book_page: 101,
+        pdf_page: 101,
+        headers: [
+          { id: 'TROW-002-01', axis: 'row', level: 1, index_pos: 1, text: 'r' },
+          { id: 'TCOL-002-01', axis: 'column', level: 1, index_pos: 1, text: 'c' },
+        ],
+        cells: [
+          {
+            id: 'TCELL-002-01-01',
+            row_id: 'TROW-002-01',
+            col_id: 'TCOL-002-01',
+            value_type: 'nested_table',
+            nested_table_id: 'TBL-001', // A로 다시 참조 = 2-cycle
+          },
+        ],
+      };
+
+      const result = validateKnowledgeContract(contractWithTables([a, b]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'NESTED_TABLE_CYCLE_DETECTED',
+          path: 'tables',
+        }),
+      );
+    });
+  });
+
+  describe('CRIT-D — book_page / pdf_page strict source citation', () => {
+    it('rejects table missing book_page (MISSING_SOURCE_PAGE)', () => {
+      const t = validTableA();
+      (t as { book_page: unknown }).book_page = 0; // 0 invalid — isValidSourcePage false
+      const result = validateKnowledgeContract(contractWithTables([t]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'MISSING_SOURCE_PAGE',
+          path: 'tables[0].book_page',
+        }),
+      );
+    });
+
+    it('rejects table missing pdf_page (MISSING_SOURCE_PAGE)', () => {
+      const t = validTableA();
+      (t as { pdf_page: unknown }).pdf_page = -1; // 음수 invalid
+      const result = validateKnowledgeContract(contractWithTables([t]));
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContainEqual(
+        expect.objectContaining({
+          code: 'MISSING_SOURCE_PAGE',
+          path: 'tables[0].pdf_page',
+        }),
+      );
     });
   });
 });

@@ -1,6 +1,18 @@
 {
-  "version": "1.3.0",
-  "node_types": ["LAW", "FORMULA", "INVESTIGATION", "INSURANCE", "CROP", "CONCEPT", "TERM"],
+  "version": "1.5.0",
+  "node_types": [
+    "LAW",
+    "FORMULA",
+    "INVESTIGATION",
+    "INSURANCE",
+    "CROP",
+    "CONCEPT",
+    "TERM",
+    "TABLE",
+    "ROW_HEADER",
+    "COL_HEADER",
+    "CELL"
+  ],
   "edge_types": [
     "APPLIES_TO",
     "REQUIRES_INVESTIGATION",
@@ -14,7 +26,12 @@
     "SUPERSEDES",
     "SHARED_WITH",
     "DIFFERS_FROM",
-    "CROSS_REF"
+    "CROSS_REF",
+    "HAS_ROW",
+    "HAS_COLUMN",
+    "BELONGS_TO_ROW",
+    "BELONGS_TO_COLUMN",
+    "CONTAINS_TABLE"
   ],
   "node_id_patterns": {
     "LAW": "^LAW-\\d{3}$",
@@ -23,7 +40,11 @@
     "INSURANCE": "^INS-\\d{2}$",
     "CROP": "^CROP-\\d{3}$",
     "CONCEPT": "^CONCEPT-\\d{3}$",
-    "TERM": "^TERM-\\d{3}$"
+    "TERM": "^TERM-\\d{3}$",
+    "TABLE": "^TBL-\\d{3}$",
+    "ROW_HEADER": "^TROW-\\d{3}-\\d{2}$",
+    "COL_HEADER": "^TCOL-\\d{3}-\\d{2}$",
+    "CELL": "^TCELL-\\d{3}-\\d{2}-\\d{2}$"
   },
   "formula_id_pattern": "^F-\\d{2,3}$",
   "constant_id_pattern": "^CONST-\\d{3}$",
@@ -44,7 +65,11 @@
     "INSURANCE": { "deduplication_threshold": 0.93, "confusion_priority": "high" },
     "CROP": { "deduplication_threshold": 0.97, "confusion_priority": "medium" },
     "CONCEPT": { "deduplication_threshold": 0.85, "confusion_priority": "medium" },
-    "TERM": { "deduplication_threshold": 0.88, "confusion_priority": "low" }
+    "TERM": { "deduplication_threshold": 0.88, "confusion_priority": "low" },
+    "TABLE": { "deduplication_threshold": 0.97, "confusion_priority": "medium" },
+    "ROW_HEADER": { "deduplication_threshold": 1.0, "confusion_priority": "low" },
+    "COL_HEADER": { "deduplication_threshold": 1.0, "confusion_priority": "low" },
+    "CELL": { "deduplication_threshold": 1.0, "confusion_priority": "low" }
   },
   "constants_dedup_policy": {
     "strategy": "exact_match",

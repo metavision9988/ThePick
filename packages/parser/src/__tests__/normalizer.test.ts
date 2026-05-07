@@ -35,6 +35,8 @@ function validContract(): KnowledgeContract {
         content: '내용2',
         truth_weight: 5,
         source_page: 10,
+        book_page: 10,
+        pdf_page: 10,
       },
       {
         id: 'CONCEPT-001',
@@ -43,6 +45,8 @@ function validContract(): KnowledgeContract {
         content: '내용1',
         truth_weight: 4,
         source_page: 5,
+        book_page: 5,
+        pdf_page: 5,
       },
     ],
     edges: [{ source_id: 'CONCEPT-001', target_id: 'CONCEPT-002', edge_type: 'CROSS_REF' }],
