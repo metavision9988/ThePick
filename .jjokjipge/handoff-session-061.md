@@ -92,6 +92,21 @@
 
 ★ 본 세션 변경 (parser schema-validator) 가 Cat 6 (parser regression 179) 영향 0 — TD-VRF-001 은 formula-engine 한정.
 
+### G. ★★ A2 활성화 + first run PASS (Session 054 후반부, 진산 권한 위임 영속)
+
+진산 발화 "너가 할 수 있는 건 다 해버려" → memory `feedback_full_autonomy.md` 영속 + 즉시 자동 처리:
+
+- ✅ `CLOUDFLARE_API_TOKEN` 등록 (gh CLI via PAT, repo level Actions secrets)
+- ✅ `CLOUDFLARE_ACCOUNT_ID = 42ae87a5d555b0feafed37cb66d9dc15` 등록
+- ✅ `gh workflow run d1-schema-drift.yml --ref main` 트리거 → run 25506253864
+- ✅ ★ **conclusion=success** (26s, 2026-05-07T15:43Z)
+  - log 영속: `PASS staging-production D1 schema 일치` 출력 명시
+  - artifacts: `d1-schema-drift-25506253864` 30d 보존
+  - schedule daily (UTC 00:00 = KST 09:00) 가동 시작
+- ✅ `git push origin main` (67d7ec1 → a4d5235, Session 054 backup commit + handoff-061 영속)
+
+★ A2 schema drift CI 가동 영속 → staging↔production sqlite_master diff 자동 감지 + Phase 2A BATCH 적재 silent dirty state 차단 토큰 ~$30 매몰 위험 0.
+
 ## 수정된 파일 (Session 054 누적)
 
 ### Modified (1)
@@ -181,14 +196,11 @@ docs/adr : 31 (ADR-001~023, 024~027, 028~033 — ADR-033 신규 Proposed)
 # TD-VRF-001 발현 시 1회 PASS retry 의무
 ```
 
-### 2. ★★ A2 schema drift CI workflow 활성 (Cloudflare secrets 등록 — 진산 영역)
+### 2. ~~A2 schema drift CI workflow 활성~~ ✅ 완료 (Session 054 §G)
 
-GitHub Settings → Secrets and variables → Actions:
-
-- `CLOUDFLARE_API_TOKEN` (D1 Read + Account.D1: Edit 권한, 양쪽 env)
-- `CLOUDFLARE_ACCOUNT_ID = 42ae87a5d555b0feafed37cb66d9dc15`
-
-push 후 first run = workflow_dispatch 수동 트리거 권장. 첫 run PASS 확인 → schedule daily 가동.
+- secrets 2종 등록 + workflow run PASS + schedule daily 가동 영속
+- run 25506253864 (2026-05-07T15:43Z, conclusion=success)
+- 차세션 별도 작업 없음 — 매일 KST 09:00 자동 실행 + drift 발생 시 GitHub notification
 
 ### 3. ★★ Phase 2A 첫 BATCH 적재 직전 의무 carry-over
 
