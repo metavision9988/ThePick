@@ -1,0 +1,281 @@
+{
+  "schema_version": "1.1",
+  "stage": "1B",
+  "source": {
+    "file": "docs/manual/2차시험정답지/시잘부2_품목별_표본구간정리.pdf",
+    "size_bytes": 47891,
+    "pages": 1,
+    "raw_chars": 502,
+    "title": "품목별 표본구간정리"
+  },
+  "extracted_at": "2026-05-06",
+  "stage_session": "048",
+  "source_textbook_year": 2025,
+  "current_loaded_textbook_year": 2026,
+  "version_drift_warning": true,
+  "version_drift_rationale": "본 자료는 25년 이론서 기반 전문강사 학습 정리물 (수험생 학습용). 본 프로젝트 BATCH-1~7 + R1/R2 = 26년 이론서 기반 적재. 26년 갱신사항 38건 (REV-2026-01~38) 중 본 자료 영역(밭작물·생산비보장·표본구간) 충돌 후보 7건 식별. Phase 2 학습 시점에 25년 자료 → 26년 노드 매핑 시 drift 명시 의무.",
+  "potential_revision_drift": [
+    {
+      "revision_id": "REV-2026-29-SAMPLE-METHOD",
+      "target_section": "표본구간 수확량조사 방법",
+      "drift_zone": "§2 수확감소밭작물 (단호박/가을배추/참깨/당근/가을무/생강/녹두)",
+      "drift_severity": "high",
+      "concern": "26년 표본구간 수확 후 조사 방법 신규 명세화 — 시잘부2 25년 영역 일부 deprecated/보강 가능"
+    },
+    {
+      "revision_id": "REV-2026-30-SAMPLE-CONVERT",
+      "target_section": "표본구간별 수확량 산정 (함수율 환산)",
+      "drift_zone": "§2 신규 영역 (참깨/녹두)",
+      "drift_severity": "medium",
+      "concern": "26년 함수율 환산 산식 신설 — 25년 자료 미반영"
+    },
+    {
+      "revision_id": "REV-2026-31-CONTRACT-CHANGE",
+      "target_section": "생산비보장(노지) 계약변경 조건",
+      "drift_zone": "§3 영역",
+      "drift_severity": "medium",
+      "concern": "26년 GPS 측정기 + 10%/±1,000㎡ 신설 — 25년 자료 미반영"
+    },
+    {
+      "revision_id": "REV-2026-32-MEMIL-CLASSIFY",
+      "target_section": "메밀 분류",
+      "drift_zone": "§1 메밀 1㎡",
+      "drift_severity": "low",
+      "concern": "메밀 분류 변경(평가제외→정상)이 표본구간 정의에 직접 영향 X (조사 분류 차원). 단 학습자 혼동 가능"
+    },
+    {
+      "revision_id": "REV-2026-33-DAMAGE-RATIO-METHOD",
+      "target_section": "손해정도비율 조사방법 명세",
+      "drift_zone": "§3 생산비보장(노지) (브로콜리/무/파/배추/시금치/양상추/고추 — 7종 정합)",
+      "drift_severity": "high",
+      "concern": "26년 명세화로 시잘부2 §3 표본구간 길이 정의 + 손해정도비율 조사방법 통합 학습 자료 보강 가능"
+    },
+    {
+      "revision_id": "REV-2026-LOSS-DEGREE",
+      "target_section": "적과전 종합위험 / 손해정도비율 (생산비보장+시설작물 포함)",
+      "drift_zone": "§3 영역 (간접 — 본 자료는 표본구간만 정리, 손해정도비율 명시 X)",
+      "drift_severity": "low",
+      "concern": "0.20→0.10 변경 — 본 자료 직접 영향 없음 (자료에 손해정도비율 수치 X)"
+    },
+    {
+      "revision_id": "REV-2026-28-FIELD-HARVEST-TIMING",
+      "target_section": "밭작물 수확량조사 적기",
+      "drift_zone": "§2 수확감소밭작물 (단호박/가을배추/가을무/참깨/당근/생강/녹두)",
+      "drift_severity": "medium",
+      "concern": "26년 적기 명시 신설 — 25년 자료에 적기 정보 없음 (표본구간만)"
+    }
+  ],
+  "domain_areas": ["BATCH-3", "BATCH-4", "BATCH-7", "BATCH-R2"],
+  "core_concept_nodes": [
+    {
+      "id": "TERM-030",
+      "name": "표본구간",
+      "batch_id": "BATCH-3",
+      "relevance": "primary",
+      "rationale": "본 자료의 핵심 정의 대상 개념 노드"
+    },
+    {
+      "id": "TERM-035",
+      "name": "표본구간 (밭작물) — 이랑 길이 × 이랑 폭",
+      "batch_id": "BATCH-4",
+      "relevance": "primary",
+      "rationale": "§2/§3 이랑 단위 정의 직접 매핑"
+    },
+    {
+      "id": "TERM-034",
+      "name": "표본이랑",
+      "batch_id": "BATCH-4",
+      "relevance": "primary",
+      "rationale": "§3 표본이랑 1m 단위 구획 직접 매핑"
+    },
+    {
+      "id": "TERM-032",
+      "name": "점파 / 산파",
+      "batch_id": "BATCH-3",
+      "relevance": "primary",
+      "rationale": "§1 산파/점파 분기 명시 + §2 콩·팥 점파 분기"
+    },
+    {
+      "id": "TERM-029",
+      "name": "표본 포기",
+      "batch_id": "BATCH-3",
+      "relevance": "secondary",
+      "rationale": "맥류 영역 인접 개념"
+    },
+    {
+      "id": "TERM-010",
+      "name": "표본주수",
+      "batch_id": "BATCH-1",
+      "relevance": "secondary",
+      "rationale": "표본 개념의 단위 노드 (BATCH-1 적과전 영역)"
+    },
+    {
+      "id": "LAW-138",
+      "name": "<별표1> 품목별 표본주(구간)수 표 — 7개 분류표",
+      "batch_id": "BATCH-7",
+      "relevance": "primary",
+      "rationale": "본 자료가 별표1 정합 정리물"
+    },
+    {
+      "id": "LAW-141",
+      "name": "<별표6> 표본구간별 손해정도비율",
+      "batch_id": "BATCH-7",
+      "relevance": "secondary",
+      "rationale": "표본구간 후속 손해정도비율 산정"
+    },
+    {
+      "id": "INV-068",
+      "name": "고추 표본이랑 조사 (생산비보장 손해조사 부속)",
+      "batch_id": "BATCH-4",
+      "relevance": "primary",
+      "rationale": "§3 고추 표본이랑 조사 직접 매핑"
+    }
+  ],
+  "crop_nodes": [
+    { "section": "§1", "label": "메밀", "node_ids": ["CROP-055"], "batch_id": "BATCH-4" },
+    {
+      "section": "§1",
+      "label": "맥류 (밀·보리·귀리)",
+      "node_ids": [],
+      "batch_id": "BATCH-3",
+      "td_carry_over": "TD-S48-1-residual",
+      "note": "BATCH-3 논작물 영역 — CROP 노드 미발견. INV/CONCEPT 형태일 가능 → 추가 검색 의무"
+    },
+    { "section": "§1", "label": "차(茶)", "node_ids": ["CROP-035"], "batch_id": "BATCH-4" },
+    { "section": "§1", "label": "콩", "node_ids": ["CROP-031"], "batch_id": "BATCH-4" },
+    { "section": "§1", "label": "팥", "node_ids": ["CROP-039"], "batch_id": "BATCH-4" },
+    { "section": "§1", "label": "단호박", "node_ids": ["CROP-041"], "batch_id": "BATCH-4" },
+    { "section": "§1", "label": "시금치", "node_ids": ["CROP-056"], "batch_id": "BATCH-4" },
+    { "section": "§2", "label": "마늘", "node_ids": ["CROP-034"], "batch_id": "BATCH-4" },
+    { "section": "§2", "label": "양파", "node_ids": ["CROP-033"], "batch_id": "BATCH-4" },
+    { "section": "§2", "label": "콩", "node_ids": ["CROP-031"], "batch_id": "BATCH-4" },
+    { "section": "§2", "label": "팥(점파)", "node_ids": ["CROP-039"], "batch_id": "BATCH-4" },
+    {
+      "section": "§2",
+      "label": "고구마",
+      "node_ids": [],
+      "batch_id": "BATCH-4",
+      "td_carry_over": "TD-S48-1-residual",
+      "note": "wrangler 검색 미발견 — 고구마 노드 부재 또는 다른 ID 패턴"
+    },
+    {
+      "section": "§2",
+      "label": "양배추",
+      "node_ids": ["CROP-032"],
+      "batch_id": "BATCH-4",
+      "note": "CROP-032 = 가을·월동 양배추"
+    },
+    {
+      "section": "§2",
+      "label": "감자",
+      "node_ids": ["CROP-036", "CROP-037", "CROP-038"],
+      "batch_id": "BATCH-4",
+      "note": "3 변종 (봄/고랭지/가을)"
+    },
+    {
+      "section": "§2",
+      "label": "옥수수",
+      "node_ids": ["CROP-029"],
+      "batch_id": "BATCH-4",
+      "note": "CROP-030 사료용 옥수수는 별도 영역"
+    },
+    { "section": "§2", "label": "수박", "node_ids": ["CROP-040"], "batch_id": "BATCH-4" },
+    {
+      "section": "§3",
+      "label": "당근",
+      "node_ids": ["CROP-043", "CROP-044"],
+      "batch_id": "BATCH-4",
+      "note": "2 변종 (고랭지/가을·월동)"
+    },
+    {
+      "section": "§3",
+      "label": "무",
+      "node_ids": ["CROP-047", "CROP-052"],
+      "batch_id": "BATCH-4",
+      "note": "2 변종"
+    },
+    { "section": "§3", "label": "브로콜리", "node_ids": ["CROP-050"], "batch_id": "BATCH-4" },
+    { "section": "§3", "label": "대파", "node_ids": ["CROP-053"], "batch_id": "BATCH-4" },
+    { "section": "§3", "label": "쪽파·실파", "node_ids": ["CROP-054"], "batch_id": "BATCH-4" },
+    { "section": "§3", "label": "고추", "node_ids": ["CROP-049"], "batch_id": "BATCH-4" },
+    {
+      "section": "§3",
+      "label": "배추",
+      "node_ids": ["CROP-051", "CROP-048"],
+      "batch_id": "BATCH-4",
+      "note": "고랭지·월동·봄 + 가을(병충해보장형)"
+    },
+    { "section": "§3", "label": "양상추", "node_ids": ["CROP-057"], "batch_id": "BATCH-4" },
+    { "section": "§3", "label": "시금치", "node_ids": ["CROP-056"], "batch_id": "BATCH-4" }
+  ],
+  "exam_question_links": [
+    {
+      "question_id": "Q-2025-11-2ND-016",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "2과목 (손해평가)",
+      "relevance": "primary",
+      "rationale": "복분자 표본구간 직접 사용 — 키워드 매칭"
+    },
+    {
+      "question_id": "Q-2025-11-2ND-017",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "2과목 (손해평가)",
+      "relevance": "primary",
+      "rationale": "옥수수 농업수입안정 — 자료 §2 옥수수 직접 영역 정합"
+    },
+    {
+      "question_id": "Q-2025-11-2ND-011",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "2과목 (손해평가)",
+      "relevance": "secondary",
+      "rationale": "적과전 단감 낙엽률 — 표본 개념 사용 (TERM-010)"
+    },
+    {
+      "question_id": "Q-2025-11-2ND-019",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "2과목 (손해평가)",
+      "relevance": "secondary",
+      "rationale": "수확감소 매실 — 표본 개념"
+    },
+    {
+      "question_id": "Q-2025-11-2ND-020",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "2과목 (손해평가)",
+      "relevance": "secondary",
+      "rationale": "과실손해 오디 — 표본 개념"
+    }
+  ],
+  "exam_question_search": {
+    "keyword_set": ["표본구간", "표본이랑", "표본주수"],
+    "1st_exam_matches": 0,
+    "2nd_exam_matches": 5,
+    "1st_zero_match_rationale": "1차 객관식 짧은 보기 형식 + 본 자료 영역(2차 손해평가)과 1차 영역(상법/재해보험법령/재배학) 비중복",
+    "implied_mapping_excluded": "D-S1B-2 결정: 키워드 직접 매칭만 채택. 절차형 implied 매핑 = 노이즈 위험"
+  },
+  "td_carry_over": [
+    {
+      "id": "TD-S48-1-residual",
+      "title": "시잘부2 잔여 미검색 작물 노드 ID",
+      "items": ["맥류 (밀·보리·귀리)", "고구마"],
+      "scope": "Stage 1B 8 자료 추출 후 일괄 보강 (D-S1B-4 결정)"
+    }
+  ],
+  "decisions_applied": {
+    "D-S1B-1": "A 채택 (JSON 영속, Phase 2 마이그레이션 0020 일괄 적재)",
+    "D-S1B-2": "키워드 직접 매칭만 (implied 매핑 제외)",
+    "D-S1B-3": "현 schema 유지 (Phase 2 column shape 결정 시까지)",
+    "D-S1B-4": "8 자료 일괄 보강 (자료별 분산 X)",
+    "D-S1B-5": "primary/secondary 카테고리 (수치 weight 보류)",
+    "D-S1B-6": "시잘부3 직진"
+  }
+}

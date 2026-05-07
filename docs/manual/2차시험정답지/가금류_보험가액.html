@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>가금류(닭,오리) 보험가액 계산기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script> <!-- html2canvas 라이브러리 추가 -->
+    <!-- Chosen Palette: Warm Neutrals (Stone, Emerald) -->
+    <!-- Application Structure Plan: 이 애플리케이션은 탭 기반의 계산기 인터페이스를 사용하여 설계되었습니다. 각 탭은 특정 가금류(종계, 산란계 등)를 나타내며, 사용자는 탭을 전환하며 원하는 가금류를 쉽게 선택할 수 있습니다. 각 탭 내에는 주령 및 시장 가격과 같은 변수를 위한 대화형 입력(슬라이더, 숫자 필드)이 제공되며, 입력값이 변경될 때마다 실시간으로 계산 결과가 표시됩니다. 이러한 과제 중심적 설계는 정적인 보고서를 실용적인 도구로 변환하여, 단순한 텍스트보다 사용자의 이해와 활용도를 크게 높입니다. 또한, 생애주기별 가치 변화를 보여주는 차트를 추가하여 데이터의 시각적 이해를 돕습니다. -->
+    <!-- Visualization & Content Choices: 보고서 정보: 주령 기반 평가 공식 및 일령별 중량 데이터. 목표: 계산 및 시각화. 시각화/표현 방식: 입력용 대화형 슬라이더, 결과용 동적 텍스트, 생애주기별 가치 변화를 보여주는 Chart.js 라인 차트. 상호작용: 입력 변경 시 실시간 업데이트. 정당성: 이 방식은 즉각적이고 명확한 답변과 가치 변동 추이에 대한 시각적 맥락을 제공하여 복잡한 공식을 쉽게 이해할 수 있도록 합니다. 사용된 기술: 상호작용을 위한 HTML/JS, 시각화를 위한 Chart.js. SVG/Mermaid 미사용을 확인했습니다. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+        }
+        .tab-button.active {
+            border-color: #059669;
+            color: #059669;
+            background-color: #ecfdf5;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+            max-height: 40vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #059669;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        input[type=range]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #059669;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        /* 로딩 스피너 스타일 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            flex-direction: column;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #059669;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <div class="container mx-auto p-4 md:p-8" id="main-container"> <!-- 전체 화면 캡처를 위한 새로운 ID -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-emerald-800">가금류 보험가액 계산기</h1>
+            <p class="mt-2 text-stone-600">가축재해보험의 가금류 종류별 보험가액을 손쉽게 계산하고 예상해보세요.</p>
+        </header>
+
+        <div class="bg-white p-4 sm:p-6 rounded-xl shadow-md">
+            <div class="mb-6 border-b border-stone-200">
+                <nav class="-mb-px flex flex-wrap gap-2" id="tab-container">
+                    <button data-tab="breeder" class="tab-button active text-sm sm:text-base font-medium py-3 px-4 border-b-2 rounded-t-lg transition-colors duration-200">종계</button>
+                    <button data-tab="layer" class="tab-button text-sm sm:text-base font-medium py-3 px-4 border-b-2 border-transparent rounded-t-lg hover:text-emerald-600 hover:border-emerald-200 transition-colors duration-200">산란계</button>
+                    <button data-tab="broiler" class="tab-button text-sm sm:text-base font-medium py-3 px-4 border-b-2 border-transparent rounded-t-lg hover:text-emerald-600 hover:border-emerald-200 transition-colors duration-200">육계</button>
+                    <button data-tab="native" class="tab-button text-sm sm:text-base font-medium py-3 px-4 border-b-2 border-transparent rounded-t-lg hover:text-emerald-600 hover:border-emerald-200 transition-colors duration-200">토종닭</button>
+                    <button data-tab="hatchery" class="tab-button text-sm sm:text-base font-medium py-3 px-4 border-b-2 border-transparent rounded-t-lg hover:text-emerald-600 hover:border-emerald-200 transition-colors duration-200">부화장</button>
+                    <button data-tab="duck" class="tab-button text-sm sm:text-base font-medium py-3 px-4 border-b-2 border-transparent rounded-t-lg hover:text-emerald-600 hover:border-emerald-200 transition-colors duration-200">육용 오리</button>
+                    <button data-tab="duckBreeder" class="tab-button text-sm sm:text-base font-medium py-3 px-4 border-b-2 border-transparent rounded-t-lg hover:text-emerald-600 hover:border-emerald-200 transition-colors duration-200">종오리</button>
+                </nav>
+            </div>
+
+            <div id="tab-content"></div>
+        </div>
+
+        <footer class="text-center mt-8 text-sm text-stone-500">
+            <p>본 계산기는 제공된 보험가액 산정 기준을 바탕으로 한 추정치이며, 실제와 다를 수 있습니다.</p>
+            <p>&copy; 2024 Interactive Insurance Calculator. All Rights Reserved. 제작자: 손평에듀 한종찬</p>
+        </footer>
+    </div>
+
+    <!-- 로딩 오버레이 -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <p class="mt-4 text-emerald-700">화면 캡처 중...</p>
+    </div>
+
+<script>
+// 육계 일령별 중량 (g)
+const broilerWeights = {
+    1: 42, 2: 56, 3: 71, 4: 89, 5: 108, 6: 131, 7: 155, 8: 185, 9: 221, 10: 256,
+    11: 293, 12: 333, 13: 376, 14: 424, 15: 472, 16: 524, 17: 580, 18: 638, 19: 699, 20: 763,
+    21: 829, 22: 898, 23: 969, 24: 1043, 25: 1119, 26: 1196, 27: 1276, 28: 1357, 29: 1439, 30: 1522,
+    31: 1606, 32: 1692, 33: 1776, 34: 1862, 35: 1951, 36: 2006, 37: 2050, 38: 2131, 39: 2219, 40: 2300
+};
+
+// 토종닭 일령별 중량 (g)
+const nativeChickenWeights = {
+    1: 41, 2: 52, 3: 63, 4: 74, 5: 86, 6: 99, 7: 112, 8: 127, 9: 144, 10: 161,
+    11: 179, 12: 198, 13: 218, 14: 239, 15: 260, 16: 282, 17: 305, 18: 328, 19: 353, 20: 379,
+    21: 406, 22: 433, 23: 461, 24: 490, 25: 519, 26: 504, 27: 580, 28: 612, 29: 644, 30: 677,
+    31: 712, 32: 748, 33: 785, 34: 823, 35: 861, 36: 899, 37: 936, 38: 973, 39: 1011, 40: 1049,
+    41: 1087, 42: 1125, 43: 1163, 44: 1202, 45: 1241, 46: 1280, 47: 1319, 48: 1358, 49: 1397, 50: 1436,
+    51: 1477, 52: 1518, 53: 1559, 54: 1600, 55: 1641, 56: 1682, 57: 1723, 58: 1764, 59: 1805, 60: 1846,
+    61: 1887, 62: 1928, 63: 1969, 64: 2010, 65: 2050, 66: 2090, 67: 2130, 68: 2170, 69: 2210, 70: 2250,
+    71: 2290, 72: 2329, 73: 2367, 74: 2405, 75: 2442, 76: 2479, 77: 2515, 78: 2551, 79: 2585, 80: 2619,
+    81: 2649, 82: 2679, 83: 2709, 84: 2800
+};
+
+// 오리 일령별 중량 (g) - 일반 오리에만 해당
+const duckMeatWeights = {
+    1: 51, 2: 75, 3: 100, 4: 127, 5: 156, 6: 187, 7: 220, 8: 267, 9: 330, 10: 395,
+    11: 461, 12: 529, 13: 598, 14: 668, 15: 748, 16: 838, 17: 930, 18: 1025, 19: 1120, 20: 1217,
+    21: 1315, 22: 1417, 23: 1519, 24: 1621, 25: 1723, 26: 1825, 27: 1926, 28: 2027, 29: 2123, 30: 2219,
+    31: 2315, 32: 2411, 33: 2506, 34: 2601, 35: 2696, 36: 2787, 37: 2873, 38: 2960, 39: 3046, 40: 3130,
+    41: 3214, 42: 3293, 43: 3369, 44: 3434, 45: 3500
+};
+
+const poultryData = {
+    breeder: {
+        name: "종계",
+        intro: "이 섹션에서는 종계의 주령에 따른 보험가액을 계산할 수 있습니다. 슬라이더로 사고 주령을 조절하고, 기준이 되는 31주령 가격을 입력하여 예상 보험가액을 확인하세요. 그래프는 주령에 따른 가치 변화를 보여줍니다.",
+        inputs: [
+            { id: 'age', label: '사고 주령 (주)', type: 'range', min: 1, max: 70, value: 31 },
+            { id: 'price31w', label: '31주령 가격 (원)', type: 'number', value: 20000 },
+            { id: 'chickPrice', label: '병아리 평균가격 (원)', type: 'number', value: 4000 },
+            { id: 'oldChickenPrice', label: '노계 평균가격 (원)', type: 'number', value: 3000 },
+        ],
+        calculate: (vals) => {
+            const { age, price31w, chickPrice, oldChickenPrice } = vals;
+            let result, formula;
+            if (age <= 2) {
+                result = chickPrice;
+                formula = `사고 당일 포함 직전 5영업일의 육용 종계 병아리 평균가격`;
+            } else if (age >= 3 && age <= 6) {
+                result = price31w * 0.3;
+                formula = `31주령 가격 x 30%`;
+            } else if (age >= 7 && age <= 30) {
+                result = price31w * (1 - ((31 - age) * 0.028));
+                formula = `31주령 가격 x (100% - ((31주령 - ${age}주령) x 2.8%))`;
+            } else if (age === 31) {
+                result = price31w;
+                formula = `회사와 계약당시 협정한 가액 (31주령 가격)`;
+            } else if (age >= 32 && age <= 61) {
+                result = price31w * (1 - ((age - 31) * 0.026));
+                formula = `31주령 가격 x (100% - ((${age}주령 - 31주령) x 2.6%))`;
+            } else if (age >= 62 && age <= 64) {
+                result = price31w * 0.2;
+                formula = `31주령 가격 x 20%`;
+            } else { // 65주 이상
+                result = oldChickenPrice;
+                formula = `사고 당일 포함 직전 5영업일의 종계 성계육 평균가격`;
+            }
+            return { value: Math.round(result), formula };
+        },
+        chartLabels: Array.from({ length: 70 }, (_, i) => `${i + 1}주`),
+        summaryHtml: `
+            <div class="mt-6 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                <h4 class="text-md font-bold text-emerald-700 mb-2">성계 보험가액 산정 기준 (참고)</h4>
+                <ul class="list-disc list-inside text-sm text-stone-600 space-y-1">
+                    
+                    <li> <span class="font-semibold"> (병아리)  생후 2주 이하 : </span>사고 당일 포함 직전 5영업일의 육용 종계 병아리 평균가격 </li>
+                    <li><span class="font-semibold">생후 3~6주:</span> 31주령 가격 x 30%</li>
+                    <li><span class="font-semibold">생후 7~30주:</span> 31주령 가격 x (100% - ((31주령 - 사고주령) x 2.8%))</li>
+                    <li><span class="font-semibold">생후 31주:</span> 회사와 계약당시 협정한 가액</li>
+                    <li><span class="font-semibold">생후 32~61주:</span> 31주령 가격 x (100% - ((사고주령 - 31주령) x 2.6%))</li>
+                    <li><span class="font-semibold">생후 62주~64주:</span> 31주령 가격 x 20%</li>
+                    <li><span class="font-semibold">(노계)생후 65주 이상:</span> 사고 당일 포함 직전 5영업일의 종계 성계육 평균가격</li>
+                </ul>
+            </div>
+        `
+    },
+    layer: {
+        name: "산란계",
+        intro: "이 섹션에서는 산란계의 주령에 따른 보험가액을 계산합니다. 각 단계(병아리, 중추, 산란계)에 필요한 가격 정보를 입력하고 주령을 조절하여 결과를 확인하세요. 산란계 단계의 가치는 계란 가격과 생산비에 따라 변동됩니다.",
+        inputs: [
+            { id: 'age', label: '사고 주령 (주)', type: 'range', min: 1, max: 80, value: 20 },
+            { id: 'chickPrice', label: '산란실용계 병아리 가격 (원)', type: 'number', value: 1000 },
+            { id: 'pulletPrice', label: '산란중추 가격 (원)', type: 'number', value: 4500 },
+            { id: 'hen20wPrice', label: '20주 산란계 가격 (원)', type: 'number', value: 5500 },
+            { id: 'eggPrice', label: '계란 1개 평균가격 (원)', type: 'number', value: 150 },
+            { id: 'oldHenPrice', label: '산란노계 평균가격 (원)', type: 'number', value: 2000 },
+        ],
+        calculate: (vals) => {
+            const { age, chickPrice, pulletPrice, hen20wPrice, eggPrice, oldHenPrice } = vals;
+            const EGG_PROD_COST = 77;
+            let result, formula;
+
+            if (age <= 1) {
+                result = chickPrice;
+                formula = `산란실용계 병아리 평균가격`;
+            } else if (age >= 2 && age <= 9) {
+                result = chickPrice + ((pulletPrice - chickPrice) / 9) * (age - 1);
+                formula = `병아리가격 + ((중추가격 - 병아리가격) / 9) x (${age}주 - 1주)`;
+            } else if (age >= 10 && age <= 15) {
+                result = pulletPrice;
+                formula = `사고 당일 포함 직전 5영업일의 산란중추 평균가격`;
+            } else if (age >= 16 && age <= 19) {
+                result = pulletPrice + ((hen20wPrice - pulletPrice) / 5) * (age - 15);
+                formula = `산란중추가격 + ((20주 산란계가격 - 산란중추가격) / 5) x (${age}주 - 15주)`;
+            } else if (age >= 20 && age <= 70) {
+                const accidentDays = age * 7; // 사고 주령을 일령으로 변환
+                const netEggPrice = Math.max(10, eggPrice - EGG_PROD_COST);
+                result = (550 - accidentDays) * 0.7 * netEggPrice;
+                formula = `(550일 – 사고일령(${accidentDays}일)) x 70% x (계란 평균가(${eggPrice}원) – 계란 생산비(${EGG_PROD_COST}원))`;
+            } else { // 71주 이상
+                result = oldHenPrice;
+                formula = `사고 당일 포함 직전 5영업일의 산란성계육 평균가격`;
+            }
+            return { value: Math.round(result), formula };
+        },
+        chartLabels: Array.from({ length: 80 }, (_, i) => `${i + 1}주`),
+        summaryHtml: `
+            <div class="mt-6 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                <h4 class="text-md font-bold text-emerald-700 mb-2">산란계 보험가액 산정 기준 (참고)</h4>
+                <ul class="list-disc list-inside text-sm text-stone-600 space-y-1">
+                    <li><span class="font-semibold">병아리 생후 1주 이하:</span> 사고 당일 포함 직전 5영업일의 산란실용계 병아리 평균가격</li>
+                    <li><span class="font-semibold">병아리 생후 2~9주:</span> 산란실용계병아리가격 + ((산란중추가격 – 산란실용계 병아리가격) / 9) x ( 사고주령 – 1주령 )</li>
+                    <li><span class="font-semibold">중추 생후 10~15주:</span> 사고 당일 포함 직전 5영업일의 산란중추 평균가격</li>
+                    <li><span class="font-semibold">중추 생후 16~19주:</span> 산란중추가격 + ((20주 산란계가격 - 산란중추가격) / 5) x (사고주령 – 15주령 )</li>
+                    <li><span class="font-semibold">산란계 생후 20~70주:</span> (550일 – 사고일령) x 70% x (사고 당일 포함 직전 5영업일의 계란 1개 평균가격 – 계란 1개의 생산비)</li>
+                    <li><span class="font-semibold">산란노계 생후 71주 이상:</span> 사고 당일 포함 직전 5영업일의 산란성계육 평균가격</li>
+                    <li class="mt-2"><span class="font-semibold">※ 계란 1개 평균가격:</span> 중량규격(왕란/특란/대란이하)별 사고 당일 포함 직전 5영업일 평균가격을 중량규격별 비중(왕란 2.0%, 특란 53.5%, 대란 이하 44.5%)으로 가중평균한 가격</li>
+                    <li><span class="font-semibold">※ 계란 1개의 생산비:</span> 77원</li>
+                    <li><span class="font-semibold">※ 참고:</span> 사고 당일 포함 직전 5영업일의 계란 1개 평균가격에서 계란 1개의 생산비를 공제한 결과가 10원 이하인 경우 10원으로 한다.</li>
+                </ul>
+            </div>
+        `
+    },
+    broiler: {
+        name: "육계",
+        intro: "육계의 보험가액을 계산합니다. 육용실용계 병아리 가격과 육계 평균가격을 입력하고, 일령을 선택하여 사고 육계의 보험가액을 확인하세요. 삼계 여부를 선택할 수 있습니다.",
+        inputs: [
+            { id: 'day', label: '사고 일령 (일)', type: 'range', min: 0, max: 45, value: 20 },
+            { id: 'chickPrice', label: '병아리 평균가격 (원)', type: 'number', value: 500 },
+            { id: 'meatPrice', label: '육계 평균가격 (원/kg)', type: 'number', value: 3500 },
+            { id: 'isSamgye', label: '삼계 여부', type: 'checkbox', value: false },
+        ],
+        calculate: (vals) => {
+            const { day, chickPrice, meatPrice, isSamgye } = vals;
+            let result, formula, weight;
+
+            if (day < 1) { // 0일령 (병아리)
+                result = chickPrice;
+                formula = `육용실용계 병아리 평균가격`;
+            } else {
+                weight = broilerWeights[day]; 
+                if (day > 40) { // 40일 초과시 2.3kg (2300g) 인정
+                    weight = 2300;
+                }
+
+                if (isSamgye) {
+                    weight *= 0.7; // 삼계는 육계 중량의 70% 적용
+                }
+                
+                result = (meatPrice / 1000) * weight; // kg당 시세를 g당 시세로 변환하여 계산
+                
+                if (result < chickPrice) { // 보험가액이 병아리 시세보다 낮은 경우 병아리 시세로 보상
+                    result = chickPrice;
+                    formula = `(중량 x kg당 시세) < 병아리 시세이므로 병아리 시세 ${formatCurrency(chickPrice)} 보상`;
+                } else {
+                    formula = `육계 평균가격(원/kg) x 발육표준표상 중량 (${(weight/1000).toFixed(2)}kg) ${isSamgye ? 'x 삼계(70%)' : ''}`;
+                }
+            }
+            return { value: Math.round(result), formula };
+        },
+        chartLabels: Array.from({ length: 46 }, (_, i) => `${i}일`), // 0일부터 45일까지
+        summaryHtml: `
+            <div class="mt-6 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                <h4 class="text-md font-bold text-emerald-700 mb-2">육계 보험가액 산정 기준 (참고)</h4>
+                <ul class="list-disc list-inside text-sm text-stone-600 space-y-1">
+                    <li><span class="font-semibold">보험가액 (중량 x kg당 시세)이 병아리 시세보다 낮은 경우:</span> 병아리 시세로 보상</li>
+                    <li><span class="font-semibold">육계 일령이 40일령을 초과하는 경우:</span> 2.3kg으로 인정</li>
+                    <li><span class="font-semibold">삼계(蔘鷄)의 경우:</span> 육계 중량의 70%를 적용</li>
+                </ul>
+            </div>
+        `
+    },
+    native: {
+        name: "토종닭",
+        intro: "토종닭의 보험가액을 계산합니다. 가격 정보를 입력하고 일령을 선택하세요. 1일령 이상부터는 발육표준표상 중량을 적용합니다. 계산된 금액과 계약서상 매입단가 중 작은 금액이 한도가 됩니다.",
+        inputs: [
+            { id: 'day', label: '사고 일령 (일)', type: 'range', min: 0, max: 90, value: 40 },
+            { id: 'chickPrice', label: '병아리 평균가격 (원)', type: 'number', value: 1200 },
+            { id: 'meatPrice', label: '토종닭 평균가격 (원/kg)', type: 'number', value: 6000 },
+        ],
+        calculate: (vals) => {
+            const { day, chickPrice, meatPrice } = vals;
+            let result, formula, weight;
+
+            if (day < 1) { // 0일령 (병아리)
+                result = chickPrice;
+                formula = `토종닭 병아리 평균가격`;
+            } else {
+                weight = nativeChickenWeights[day]; 
+                if (day > 84) { // 84일 초과시 2.8kg (2800g) 인정
+                    weight = 2800;
+                }
+                result = (meatPrice / 1000) * weight;
+                
+                if (result < chickPrice) { // 보험가액이 병아리 시세보다 낮은 경우 병아리 시세로 보상
+                    result = chickPrice;
+                    formula = `(중량 x kg당 시세) < 병아리 시세이므로 병아리 시세 ${formatCurrency(chickPrice)} 보상`;
+                } else {
+                    formula = `토종닭 평균가격(원/kg) x 발육표준표상 중량 (${(weight/1000).toFixed(2)}kg). (단, 사육계약서상 매입단가와 비교하여 작은 금액)`;
+                }
+            }
+            return { value: Math.round(result), formula: `${formula}` };
+        },
+        chartLabels: Array.from({ length: 91 }, (_, i) => `${i}일`), // 0일부터 90일까지
+        summaryHtml: `
+            <div class="mt-6 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                <h4 class="text-md font-bold text-emerald-700 mb-2">토종닭 보험가액 산정 기준 (참고)</h4>
+                <ul class="list-disc list-inside text-sm text-stone-600 space-y-1">
+                    <li><span class="font-semibold">보험가액 (중량 x kg당 시세)이 병아리 시세보다 낮은 경우:</span> 병아리 시세로 보상</li>
+                    <li><span class="font-semibold">토종닭 일령이 84일령을 초과하는 경우:</span> 2.8kg으로 인정</li>
+                    <li><span class="font-semibold">단, 위 금액과 사육계약서상의 중량별 매입단가 중 작은 금액을 한도로 한다.</span></li>
+                </ul>
+            </div>
+        `
+    },
+    hatchery: {
+        name: "부화장",
+        intro: "부화장의 보험가액 산정 기준입니다. 부화장의 경우 종란과 병아리로 구분되며, 계산이 아닌 정해진 가액 기준을 따릅니다.",
+        inputs: [],
+        calculate: () => ({ value: null, formula: null }),
+        content: `
+            <div class="space-y-4 text-center">
+                <div class="p-4 bg-stone-100 rounded-lg">
+                    <h3 class="font-bold text-lg text-emerald-700">종란</h3>
+                    <p class="mt-1 text-stone-600">회사와 계약 당시 협정한 가액</p>
+                </div>
+                <div class="p-4 bg-stone-100 rounded-lg">
+                    <h3 class="font-bold text-lg text-emerald-700">병아리 (생후 1주 미만)</h3>
+                    <p class="mt-1 text-stone-600">사고당일 포함 직전 5영업일의 육용실용계 병아리 평균가격</p>
+                </div>
+            </div>
+        `
+    },
+    duck: { // 육용 오리 (General Duck)
+        name: "육용 오리",
+        intro: "이 섹션에서는 육용 오리 (새끼오리, 일반 오리)의 일령에 따른 보험가액을 계산합니다. 해당하는 종류의 가격 정보를 입력하고 일령을 선택하여 보험가액을 확인하세요.",
+        inputs: [
+            { id: 'day', label: '사고 일령 (일)', type: 'range', min: 0, max: 45, value: 20 },
+            { id: 'chickPrice', label: '새끼오리 평균가격 (원)', type: 'number', value: 2500 },
+            { id: 'meatPrice', label: '생체오리 평균가격 (원/kg)', type: 'number', value: 4000 },
+        ],
+        calculate: (vals) => {
+            const { day, chickPrice, meatPrice } = vals;
+            let result, formula, type;
+
+            if (day < 7) { // 생후 1주 미만 (0~6일)
+                type = "새끼 오리";
+                result = chickPrice;
+                formula = `새끼오리 평균가격`;
+            } else if (day >= 7 && day <= 45) { // 일반 오리 (7日~45日) - 제공된 중량표 사용
+                type = "일반 오리";
+                let weight = duckMeatWeights[day]; 
+                if (day > 45) { // Should not happen with max range 45, but for safety
+                    weight = 3500; // 45일 초과시 3.5kg 인정
+                }
+
+                result = (meatPrice / 1000) * weight; // kg당 시세를 g당 시세로 변환하여 계산
+                
+                if (result < chickPrice) { // 보험가액이 병아리 시세보다 낮은 경우 병아리 시세로 보상
+                    result = chickPrice;
+                    formula = `(중량 x kg당 시세) < 병아리 시세이므로 병아리 시세 ${formatCurrency(chickPrice)} 보상`;
+                } else {
+                    formula = `생체오리 평균가격(원/kg) x 발육표준표상 중량 (${(weight/1000).toFixed(2)}kg)`;
+                }
+            } else { 
+                result = 0; // Should not be reached given max input range
+                formula = "해당 일령에 대한 육용 오리 정보 없음";
+            }
+            return { value: Math.round(result), formula, type };
+        },
+        chartLabels: Array.from({ length: 46 }, (_, i) => `${i}일`), // 0일부터 45일까지
+        summaryHtml: `
+            <div class="mt-6 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                <h4 class="text-md font-bold text-emerald-700 mb-2">육용 오리 보험가액 산정 기준 (참고)</h4>
+                <ul class="list-disc list-inside text-sm text-stone-600 space-y-1">
+                    <li><span class="font-semibold">보험가액 (중량 x kg당 시세)이 병아리 시세보다 낮은 경우:</span> 병아리 시세로 보상</li>
+                    <li><span class="font-semibold">오리 일령이 45일령을 초과하는 경우:</span> 3.5kg으로 인정</li>
+                </ul>
+            </div>
+        `
+    },
+    duckBreeder: { // 종오리 (Breeding Duck)
+        name: "종오리",
+        intro: "이 섹션에서는 종오리의 주령에 따른 보험가액을 계산합니다. 28주령 가격을 입력하고 주령을 선택하여 예상 보험가액을 확인하세요. 그래프는 주령에 따른 가치 변화를 보여줍니다.",
+        inputs: [
+            { id: 'age', label: '사고 주령 (주)', type: 'range', min: 1, max: 78, value: 30 },
+            { id: 'breederPrice28w', label: '종오리 28주령 가격 (원)', type: 'number', value: 30000 },
+        ],
+        calculate: (vals) => {
+            const { age, breederPrice28w } = vals;
+            let result, formula;
+
+            if (age <= 27) {
+                result = breederPrice28w * (1 - ((28 - age) * 0.029));
+                formula = `28주령 가격 x (1 - ((28주령 - ${age}주령) x 2.9%))`;
+            } else if (age === 28) {
+                result = breederPrice28w;
+                formula = `회사와 계약 당시 협정한 가액 (28주령 가격)`;
+            } else if (age >= 29 && age <= 77) {
+                result = breederPrice28w * (1 - ((age - 28) * 0.019));
+                formula = `28주령 가격 x (1 - ((${age}주령 - 28주령) x 1.9%))`;
+            } else if (age >= 78) {
+                result = breederPrice28w * (1 - ((78 - 28) * 0.019));
+                formula = `28주령 가격 x (1 - ((78주령 - 28주령) x 1.9%))`;
+            } else { 
+                result = 0; // Should not be reached with the min/max range set
+                formula = "계산 불가: 유효한 주령 범위를 벗어났습니다.";
+            }
+            return { value: Math.round(result), formula };
+        },
+        chartLabels: Array.from({ length: 78 }, (_, i) => `${i + 1}주`), // 1주부터 78주까지
+        summaryHtml: `
+            <div class="mt-6 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                <h4 class="text-md font-bold text-emerald-700 mb-2">종오리 보험가액 산정 기준 (참고)</h4>
+                <ul class="list-disc list-inside text-sm text-stone-600 space-y-1">
+                    <li><span class="font-semibold">생후 27주 이하:</span> 28주령 가격 × (1 - ((28주령 – 사고주령) × 2.9%))</li>
+                    <li><span class="font-semibold">생후 28주:</span> 회사와 계약 당시 협정한 가액</li>
+                    <li><span class="font-semibold">생후 29주~ 77주:</span> 28주령 가격 × (1 - ((사고주령-28주령) × 1.9%))</li>
+                    <li><span class="font-semibold">생후 78주 이상:</span> 28주령 가격 × (1 - ((78주령-28주령) × 1.9%))</li>
+                </ul>
+            </div>
+        `
+    }
+};
+
+let currentChart = null;
+
+function formatCurrency(value) {
+    if (value === null || isNaN(value)) return 'N/A';
+    return `${value.toLocaleString('ko-KR')} 원`;
+}
+
+// 화면 요소 캡처 및 다운로드 함수 (main-container div를 캡처)
+function captureElementAsImage(elementId, fileName) {
+    const element = document.getElementById(elementId);
+    if (!element) {
+        console.error("Element not found for ID:", elementId);
+        return;
+    }
+
+    // 로딩 오버레이 표시
+    const loadingOverlay = document.getElementById('loading-overlay');
+    loadingOverlay.classList.remove('hidden');
+
+    html2canvas(element, {
+        useCORS: true,
+        // scrollY, windowWidth, windowHeight, foreignObjectRendering 옵션 제거
+        onclone: (clonedDoc) => {
+            const originalInputs = element.querySelectorAll('input[type="number"], input[type="text"]');
+            originalInputs.forEach(originalInput => {
+                const clonedInput = clonedDoc.getElementById(originalInput.id);
+                if (clonedInput) {
+                    const span = clonedDoc.createElement('span');
+                    span.textContent = originalInput.value;
+                    span.className = clonedInput.className;
+                    span.style.display = 'inline-block';
+                    span.style.padding = window.getComputedStyle(clonedInput).padding;
+                    span.style.border = window.getComputedStyle(clonedInput).border;
+                    span.style.borderRadius = window.getComputedStyle(clonedInput).borderRadius;
+                    span.style.backgroundColor = window.getComputedStyle(clonedInput).backgroundColor;
+                    span.style.color = window.getComputedStyle(clonedInput).color;
+                    span.style.fontFamily = window.getComputedStyle(clonedInput).fontFamily;
+                    span.style.fontSize = window.getComputedStyle(clonedInput).fontSize;
+                    span.style.lineHeight = window.getComputedStyle(clonedInput).lineHeight;
+                    span.style.textAlign = window.getComputedStyle(clonedInput).textAlign;
+                    span.style.verticalAlign = window.getComputedStyle(clonedInput).verticalAlign;
+                    clonedInput.parentNode.replaceChild(span, clonedInput);
+                }
+            });
+        }
+    }).then(canvas => {
+        const image = canvas.toDataURL("image/png");
+        const link = document.createElement('a');
+        link.download = fileName;
+        link.href = image;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }).catch(error => {
+        console.error("Error capturing element:", error);
+    }).finally(() => {
+        // 로딩 오버레이 숨기기
+        loadingOverlay.classList.add('hidden');
+    });
+}
+
+
+function renderContent(tabId) {
+    const data = poultryData[tabId];
+    const contentDiv = document.getElementById('tab-content');
+
+    if (data.content) {
+        contentDiv.innerHTML = `<div class="p-4">${data.content}</div>`;
+        if (currentChart) {
+            currentChart.destroy();
+            currentChart = null;
+        }
+        return;
+    }
+
+    const inputsHTML = data.inputs.map(input => {
+        if (input.type === 'checkbox') {
+            return `
+                <div class="flex items-center">
+                    <input type="checkbox" id="${input.id}-${tabId}" ${input.value ? 'checked' : ''} class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-stone-300 rounded">
+                    <label for="${input.id}-${tabId}" class="ml-2 block text-sm font-medium text-stone-600">${input.label}</label>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="w-full">
+                    <label for="${input.id}-${tabId}" class="block text-sm font-medium text-stone-600 mb-1">${input.label}</label>
+                    ${input.type === 'range' ? `
+                        <div class="flex items-center gap-4">
+                            <input type="${input.type}" id="${input.id}-${tabId}" min="${input.min}" max="${input.max}" value="${input.value}" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer">
+                            <span id="${input.id}-value-${tabId}" class="font-semibold text-emerald-700 w-20 text-center">${input.value} ${input.label.includes('주') ? '주' : (input.label.includes('일') ? '일' : '')}</span>
+                        </div>
+                    ` : `
+                        <input type="${input.type}" id="${input.id}-${tabId}" value="${input.value}" class="w-full p-2 border border-stone-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                    `}
+                </div>
+            `;
+        }
+    }).join('');
+
+    contentDiv.innerHTML = `
+        <div class="p-2 md:p-4">
+             <p class="mb-6 text-stone-600 bg-stone-100 p-4 rounded-lg">${data.intro}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="space-y-4" id="input-section-${tabId}">
+                    <h3 class="text-xl font-bold text-stone-800 border-b-2 border-emerald-500 pb-2">입력 정보</h3>
+                    ${inputsHTML}
+                    ${data.summaryHtml || ''} <!-- Summary HTML insertion -->
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-stone-800 border-b-2 border-emerald-500 pb-2">계산 결과</h3>
+                    <div id="result-card-${tabId}" class="mt-4 p-6 bg-emerald-50 rounded-lg text-center">
+                        <p class="text-sm text-emerald-800">예상 보험가액</p>
+                        <p id="result-value-${tabId}" class="text-3xl font-bold text-emerald-700 my-2">계산중...</p>
+                        <p id="result-formula-${tabId}" class="text-xs text-stone-500 h-8">산출 공식이 여기에 표시됩니다.</p>
+                    </div>
+                     <div class="mt-6">
+                        <div class="chart-container">
+                            <canvas id="poultryChart-${tabId}"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    addEventListeners(tabId);
+    updateCalculations(tabId);
+}
+
+function addEventListeners(tabId) {
+    const data = poultryData[tabId];
+    data.inputs.forEach(input => {
+        const inputEl = document.getElementById(`${input.id}-${tabId}`);
+        if (inputEl) {
+            inputEl.addEventListener('input', () => {
+                if (input.type === 'range') {
+                    document.getElementById(`${input.id}-value-${tabId}`).textContent = `${inputEl.value} ${input.label.includes('주') ? '주' : (input.label.includes('일') ? '일' : '')}`;
+                }
+                updateCalculations(tabId);
+            });
+            if (input.type === 'checkbox') {
+                 inputEl.addEventListener('change', () => {
+                     updateCalculations(tabId);
+                 });
+            }
+        }
+    });
+
+    // Capture button for the entire main content
+    let mainContentCaptureButton = document.getElementById(`capture-full-screen`);
+    if (!mainContentCaptureButton) { // 버튼이 없으면 새로 생성
+        mainContentCaptureButton = document.createElement('button');
+        mainContentCaptureButton.id = `capture-full-screen`;
+        mainContentCaptureButton.className = 'mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-md shadow-sm transition-colors duration-200';
+        mainContentCaptureButton.textContent = '현재 화면 캡처';
+        document.querySelector('.container.mx-auto').appendChild(mainContentCaptureButton);
+    }
+    
+    // 이벤트 리스너는 한 번만 추가
+    mainContentCaptureButton.onclick = () => { // 기존 addEventListener 대신 onclick으로 대체 (이전 리스너 제거 없이 업데이트)
+        const activeTabName = document.querySelector('.tab-button.active')?.textContent || '알 수 없음';
+        const currentInputs = getInputs(tabId);
+        const ageOrDayValue = currentInputs.age || currentInputs.day || '';
+        const unit = data.inputs.some(input => input.id === 'age') ? '주령' : (data.inputs.some(input => input.id === 'day') ? '일령' : '');
+        
+        captureElementAsImage('main-container', `${activeTabName}_보험가액_화면_${ageOrDayValue}${unit}.png`);
+    };
+
+    // 기존 차트 캡처 버튼 제거 (원치 않는 기능이므로)
+    const oldCaptureButton = document.getElementById(`capture-content-${tabId}`);
+    if (oldCaptureButton && oldCaptureButton.parentNode) {
+        oldCaptureButton.parentNode.removeChild(oldCaptureButton);
+    }
+}
+
+function getInputs(tabId) {
+    const data = poultryData[tabId];
+    const values = {};
+    data.inputs.forEach(input => {
+        const inputEl = document.getElementById(`${input.id}-${tabId}`);
+        if (input.type === 'checkbox') {
+            values[input.id] = inputEl.checked;
+        } else {
+            values[input.id] = Number(inputEl.value);
+        }
+    });
+    return values;
+}
+
+function updateCalculations(tabId) {
+    const data = poultryData[tabId];
+    const inputs = getInputs(tabId);
+    const result = data.calculate(inputs);
+
+    document.getElementById(`result-value-${tabId}`).textContent = formatCurrency(result.value);
+    const formulaEl = document.getElementById(`result-formula-${tabId}`);
+    formulaEl.textContent = result.formula || '';
+    if(result.type) {
+        formulaEl.textContent = `[${result.type}] ${formulaEl.textContent}`;
+    }
+
+    updateChart(tabId, inputs);
+}
+
+function updateChart(tabId, currentInputs) {
+    const data = poultryData[tabId];
+    const ctx = document.getElementById(`poultryChart-${tabId}`)?.getContext('2d');
+    if (!ctx) return;
+
+    if (currentChart) {
+        currentChart.destroy();
+    }
+    
+    const chartDataPoints = data.chartLabels.map((label, index) => {
+        let ageOrDay;
+        // Adjust based on label format (e.g., "X주", "X일")
+        if (label.includes('주')) {
+            ageOrDay = parseInt(label.replace('주', ''));
+        } else if (label.includes('일')) {
+            ageOrDay = parseInt(label.replace('일', ''));
+        } else {
+            ageOrDay = index; // Fallback if no specific unit in label
+        }
+
+        const tempInputs = { ...currentInputs };
+        if (data.inputs.some(input => input.id === 'age')) {
+            tempInputs.age = ageOrDay;
+        } else if (data.inputs.some(input => input.id === 'day')) {
+            tempInputs.day = ageOrDay;
+        }
+        
+        return data.calculate(tempInputs).value;
+    });
+
+    const currentInputAgeOrDay = currentInputs.age || currentInputs.day;
+    const pointBackgroundColors = data.chartLabels.map((label) => {
+        let ageOrDay;
+        if (label.includes('주')) {
+            ageOrDay = parseInt(label.replace('주', ''));
+        } else if (label.includes('일')) {
+            ageOrDay = parseInt(label.replace('일', ''));
+        } else {
+            ageOrDay = 0; // Should not happen with proper labels
+        }
+        return ageOrDay === currentInputAgeOrDay ? '#047857' : '#6ee7b7';
+    });
+     const pointRadius = data.chartLabels.map((label) => {
+        let ageOrDay;
+        if (label.includes('주')) {
+            ageOrDay = parseInt(label.replace('주', ''));
+        } else if (label.includes('일')) {
+            ageOrDay = parseInt(label.replace('일', ''));
+        } else {
+            ageOrDay = 0; // Should not happen with proper labels
+        }
+        return ageOrDay === currentInputAgeOrDay ? 6 : 3;
+    });
+
+    currentChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.chartLabels,
+            datasets: [{
+                label: `${data.name} 보험가액 (원)`,
+                data: chartDataPoints,
+                borderColor: '#059669',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: pointBackgroundColors,
+                pointRadius: pointRadius,
+                pointHoverRadius: 8,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false,
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += formatCurrency(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value, index, values) {
+                            return (value / 1000) + 'k';
+                        }
+                    }
+                },
+                x: {
+                   ticks: {
+                       autoSkip: true,
+                       maxTicksLimit: 15,
+                       callback: function(value, index, values) {
+                           const labelText = this.getLabelForValue(value);
+                           const labelValue = parseInt(labelText.replace(/[^0-9]/g, ''));
+                           
+                           // Logic to determine if it's '일' or '주'
+                           if (labelText.includes('일')) {
+                               return `${labelValue}일`;
+                           } else if (labelText.includes('주')) {
+                               return `${labelValue}주`;
+                           }
+                           return labelText; // Fallback
+                       }
+                   }
+                }
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const tabContainer = document.getElementById('tab-container');
+    const tabs = tabContainer.querySelectorAll('.tab-button');
+
+    tabContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('tab-button')) {
+            const tabId = e.target.dataset.tab;
+            tabs.forEach(tab => tab.classList.remove('active'));
+            e.target.classList.add('active');
+            renderContent(tabId);
+        }
+    });
+
+    renderContent('breeder');
+});
+</script>
+
+</body>
+</html>

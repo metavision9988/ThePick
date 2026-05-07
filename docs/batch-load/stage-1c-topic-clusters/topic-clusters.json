@@ -1,0 +1,616 @@
+{
+  "schema_version": "1.0",
+  "stage": "1C",
+  "session_origin": "049",
+  "extracted_at": "2026-05-06",
+  "source": {
+    "file": "docs/manual/2차시험정답지/2차2과목_10년간_기출분석.pdf",
+    "size_bytes": 37175,
+    "pages": 1,
+    "raw_chars": 2383,
+    "title": "2-2과목 10년간 기출문제분석표",
+    "publisher": "손평에듀 + 한종찬교수 제공",
+    "scope_limitation": "2차 2과목 (손해평가 이론과 실무) 한정 — 2-1과목 / 1차 3과목 별도 자료 필요"
+  },
+  "schema_compliance": {
+    "table_target": "topic_clusters",
+    "table_columns": [
+      "id TEXT PK",
+      "name TEXT",
+      "lv1 TEXT",
+      "lv2 TEXT",
+      "lv3 TEXT",
+      "exam_frequency INTEGER",
+      "question_ids TEXT (JSON)",
+      "is_covered INTEGER (0/1)",
+      "source TEXT",
+      "created_at TEXT"
+    ],
+    "id_pattern_pending": "RESOLVED Session 049 — D-S1C-3=α 채택, TC-NNN 패턴 ontology-registry v1.3.0 등록 완료",
+    "ontology_registry_change_required": true,
+    "L3_obligation": "ontology-registry.json node_id_patterns 또는 별도 cluster_id_pattern 신규 등록 → plan + 진산 인간 승인 의무",
+    "id_pattern_finalized": "TC-001 ~ TC-050",
+    "ontology_registry_version": "1.3.0"
+  },
+  "decisions_pending": [],
+  "candidate_clusters_lv1_lv2": [
+    {
+      "id": "TC-001",
+      "name": "적과전종합위험 — 5점 단답/계산",
+      "lv1": "적과전종합위험",
+      "lv2": "5점",
+      "lv3": null,
+      "exam_frequency_estimate": 9,
+      "batch_mapping": ["BATCH-1"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-002",
+      "name": "적과전종합위험 — 15점 풀이형",
+      "lv1": "적과전종합위험",
+      "lv2": "15점",
+      "lv3": null,
+      "exam_frequency_estimate": 9,
+      "batch_mapping": ["BATCH-1"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-003",
+      "name": "종합과수 — 5점 단답/계산",
+      "lv1": "종합과수",
+      "lv2": "5점",
+      "lv3": null,
+      "exam_frequency_estimate": 7,
+      "batch_mapping": ["BATCH-2"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-004",
+      "name": "종합과수 — 15점 풀이형",
+      "lv1": "종합과수",
+      "lv2": "15점",
+      "lv3": null,
+      "exam_frequency_estimate": 3,
+      "batch_mapping": ["BATCH-2"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-005",
+      "name": "과실손해보장 — 5점",
+      "lv1": "과실손해보장",
+      "lv2": "5점",
+      "lv3": null,
+      "exam_frequency_estimate": 3,
+      "batch_mapping": ["BATCH-2", "BATCH-3"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-006",
+      "name": "과실손해보장 — 15점",
+      "lv1": "과실손해보장",
+      "lv2": "15점",
+      "lv3": null,
+      "exam_frequency_estimate": 2,
+      "batch_mapping": ["BATCH-2", "BATCH-3"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-007",
+      "name": "논작물(벼) — 5점",
+      "lv1": "논작물",
+      "lv2": "5점",
+      "lv3": null,
+      "exam_frequency_estimate": 3,
+      "batch_mapping": ["BATCH-3"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-008",
+      "name": "논작물(벼) — 15점",
+      "lv1": "논작물",
+      "lv2": "15점",
+      "lv3": null,
+      "exam_frequency_estimate": 6,
+      "batch_mapping": ["BATCH-3"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-009",
+      "name": "밭작물 — 5점",
+      "lv1": "밭작물",
+      "lv2": "5점",
+      "lv3": null,
+      "exam_frequency_estimate": 12,
+      "batch_mapping": ["BATCH-4"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-010",
+      "name": "밭작물 — 15점",
+      "lv1": "밭작물",
+      "lv2": "15점",
+      "lv3": null,
+      "exam_frequency_estimate": 4,
+      "batch_mapping": ["BATCH-4"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-011",
+      "name": "4대시설 — 5점",
+      "lv1": "4대시설",
+      "lv2": "5점",
+      "lv3": null,
+      "exam_frequency_estimate": 1,
+      "batch_mapping": ["BATCH-4", "BATCH-5"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-012",
+      "name": "4대시설 — 15점",
+      "lv1": "4대시설",
+      "lv2": "15점",
+      "lv3": null,
+      "exam_frequency_estimate": 6,
+      "batch_mapping": ["BATCH-4", "BATCH-5"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-013",
+      "name": "수입감소 — 15점",
+      "lv1": "수입감소",
+      "lv2": "15점",
+      "lv3": null,
+      "exam_frequency_estimate": 4,
+      "batch_mapping": ["BATCH-5", "BATCH-R2"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf",
+      "note": "5점 출제 0회"
+    },
+    {
+      "id": "TC-014",
+      "name": "기타 (보험금 지급/심사/대위) — 5점",
+      "lv1": "기타",
+      "lv2": "5점",
+      "lv3": null,
+      "exam_frequency_estimate": 6,
+      "batch_mapping": ["BATCH-7"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-015",
+      "name": "기타 — 15점",
+      "lv1": "기타",
+      "lv2": "15점",
+      "lv3": null,
+      "exam_frequency_estimate": 2,
+      "batch_mapping": ["BATCH-7"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-016",
+      "name": "생산비보장(노지) — 5점",
+      "lv1": "생산비보장(노지)",
+      "lv2": "5점",
+      "lv3": null,
+      "exam_frequency_estimate": 1,
+      "batch_mapping": ["BATCH-4", "BATCH-R2"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-017",
+      "name": "생산비보장(노지) — 15점",
+      "lv1": "생산비보장(노지)",
+      "lv2": "15점",
+      "lv3": null,
+      "exam_frequency_estimate": 4,
+      "batch_mapping": ["BATCH-4", "BATCH-R2"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-018",
+      "name": "가축 — 5점",
+      "lv1": "가축",
+      "lv2": "5점",
+      "lv3": null,
+      "exam_frequency_estimate": 3,
+      "batch_mapping": ["BATCH-6"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-019",
+      "name": "가축 — 15점",
+      "lv1": "가축",
+      "lv2": "15점",
+      "lv3": null,
+      "exam_frequency_estimate": 5,
+      "batch_mapping": ["BATCH-6", "BATCH-R2"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf"
+    },
+    {
+      "id": "TC-020",
+      "name": "시설작물 — 15점",
+      "lv1": "시설작물",
+      "lv2": "15점",
+      "lv3": null,
+      "exam_frequency_estimate": 3,
+      "batch_mapping": ["BATCH-5"],
+      "is_covered": 1,
+      "source": "stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf",
+      "note": "5점 출제 0회"
+    }
+  ],
+  "candidate_clusters_lv3_examples": [
+    {
+      "id": "TC-021",
+      "name": "적과전 — 손해평가반 구성 결정의 기준",
+      "lv1": "적과전종합위험",
+      "lv2": "5점",
+      "lv3": "손해평가반 구성 (재/생/품)",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [1],
+      "batch_mapping": ["BATCH-1"]
+    },
+    {
+      "id": "TC-022",
+      "name": "적과전 — 사과 나무손해보험금",
+      "lv1": "적과전종합위험",
+      "lv2": "5점",
+      "lv3": "사과 나무손해보험금 산정",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [2],
+      "batch_mapping": ["BATCH-1"]
+    },
+    {
+      "id": "TC-023",
+      "name": "적과전 — 낙엽률조사 + 착과피해조사",
+      "lv1": "적과전종합위험",
+      "lv2": "15점",
+      "lv3": "단감/떫은감 낙엽률 + 낙엽인정피해율 계산",
+      "exam_frequency_estimate": 2,
+      "rounds_examples": [1, 9],
+      "batch_mapping": ["BATCH-1"]
+    },
+    {
+      "id": "TC-024",
+      "name": "적과전 — 누적감수과실수",
+      "lv1": "적과전종합위험",
+      "lv2": "15점",
+      "lv3": "누적감수과실수 산정 + 감수과실수",
+      "exam_frequency_estimate": 2,
+      "rounds_examples": [2, 8],
+      "batch_mapping": ["BATCH-1"]
+    },
+    {
+      "id": "TC-025",
+      "name": "적과전 — 5종한정 보험금",
+      "lv1": "적과전종합위험",
+      "lv2": "15점",
+      "lv3": "5종한정 + 종합위험 5종한정 보험금",
+      "exam_frequency_estimate": 2,
+      "rounds_examples": [4, 5],
+      "batch_mapping": ["BATCH-1"]
+    },
+    {
+      "id": "TC-026",
+      "name": "종합과수 — 복숭아 과중조사",
+      "lv1": "종합과수",
+      "lv2": "5점",
+      "lv3": "복숭아 과중조사",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [1],
+      "batch_mapping": ["BATCH-2"]
+    },
+    {
+      "id": "TC-027",
+      "name": "종합과수 — 비가림과수 과중조사·착과피해조사",
+      "lv1": "종합과수",
+      "lv2": "5점",
+      "lv3": "비가림과수 과중조사 + 착과피해조사",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [10],
+      "batch_mapping": ["BATCH-2"]
+    },
+    {
+      "id": "TC-028",
+      "name": "종합과수 — 자두 수확량조사 서술형",
+      "lv1": "종합과수",
+      "lv2": "15점",
+      "lv3": "자두 수확량조사 서술형",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [2],
+      "batch_mapping": ["BATCH-2"]
+    },
+    {
+      "id": "TC-029",
+      "name": "과실손해 — 복분자 착과피해구성률",
+      "lv1": "과실손해보장",
+      "lv2": "5점",
+      "lv3": "복분자 착과피해구성률",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [1],
+      "batch_mapping": ["BATCH-2"]
+    },
+    {
+      "id": "TC-030",
+      "name": "과실손해 — 무화과 피해율 + 개시전·개시후",
+      "lv1": "과실손해보장",
+      "lv2": "15점",
+      "lv3": "무화과 7/31 이전 + 8/1 이후 피해율 + 개시전·개시후 보험금",
+      "exam_frequency_estimate": 2,
+      "rounds_examples": [5, 8],
+      "batch_mapping": ["BATCH-3"],
+      "needs_drift_overlay": true,
+      "drift_revision_ids": ["REV-2026-MUWHA-RESIDUAL"]
+    },
+    {
+      "id": "TC-031",
+      "name": "논작물 — 재이앙·재직파·재파종·재정식",
+      "lv1": "논작물",
+      "lv2": "15점",
+      "lv3": "재이앙/재직파/재파종/재정식 보험금",
+      "exam_frequency_estimate": 3,
+      "rounds_examples": [3, 5, 9],
+      "batch_mapping": ["BATCH-3"]
+    },
+    {
+      "id": "TC-032",
+      "name": "논작물 — 표본구간 수확량산정",
+      "lv1": "논작물",
+      "lv2": "5점",
+      "lv3": "표본구간 수확량산정 + 수량요소조사",
+      "exam_frequency_estimate": 2,
+      "rounds_examples": [6, 8],
+      "batch_mapping": ["BATCH-3"]
+    },
+    {
+      "id": "TC-033",
+      "name": "밭작물 — 수확량조사 적기 (양파/마늘/고구마/감자/콩/양배추)",
+      "lv1": "밭작물",
+      "lv2": "5점",
+      "lv3": "양파/마늘/고구마/감자/콩/양배추 수확량조사 적기",
+      "exam_frequency_estimate": 3,
+      "rounds_examples": [3, 4, 7],
+      "batch_mapping": ["BATCH-4"],
+      "needs_drift_overlay": true,
+      "drift_revision_ids": ["REV-2026-28-FIELD-HARVEST-TIMING"]
+    },
+    {
+      "id": "TC-034",
+      "name": "밭작물 — 옥수수 보험금산정",
+      "lv1": "밭작물",
+      "lv2": "15점",
+      "lv3": "옥수수 수확감소 보험금산정",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [3],
+      "batch_mapping": ["BATCH-4"]
+    },
+    {
+      "id": "TC-035",
+      "name": "밭작물 — 마늘 재파종 + 양배추 재정식",
+      "lv1": "밭작물",
+      "lv2": "5점",
+      "lv3": "마늘 재파종 + 양배추 재정식",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [9],
+      "batch_mapping": ["BATCH-4"]
+    },
+    {
+      "id": "TC-036",
+      "name": "밭작물 — 감자 병충해 피해율",
+      "lv1": "밭작물",
+      "lv2": "5점",
+      "lv3": "감자 1등급 병충해 + 피해율 산정",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [9],
+      "batch_mapping": ["BATCH-4"]
+    },
+    {
+      "id": "TC-037",
+      "name": "4대시설 — 인삼·해가림시설 손해조사·보험금",
+      "lv1": "4대시설",
+      "lv2": "5점/15점",
+      "lv3": "인삼/해가림 손해조사 + 잔/손/대/잔/기 보험금",
+      "exam_frequency_estimate": 4,
+      "rounds_examples": [2, 4, 8, 9],
+      "batch_mapping": ["BATCH-4", "BATCH-5"],
+      "needs_drift_overlay": true,
+      "drift_revision_ids": ["REV-2026-INSAM-MERGE"]
+    },
+    {
+      "id": "TC-038",
+      "name": "수입감소 — 마늘 보험금산정",
+      "lv1": "수입감소",
+      "lv2": "15점",
+      "lv3": "마늘 농업수입감소 보험금산정",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [10],
+      "batch_mapping": ["BATCH-5"]
+    },
+    {
+      "id": "TC-039",
+      "name": "수입감소 — 옥수수 보험금산정",
+      "lv1": "수입감소",
+      "lv2": "15점",
+      "lv3": "옥수수 농업수입감소 보험금산정 (★ Q-2025-11-2ND-017 정합)",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [3],
+      "batch_mapping": ["BATCH-5", "BATCH-R2"],
+      "needs_drift_overlay": true,
+      "drift_revision_ids": ["REV-2026-37-INCOME-DETAIL"]
+    },
+    {
+      "id": "TC-040",
+      "name": "수입감소 — 콩 보험금산정",
+      "lv1": "수입감소",
+      "lv2": "15점",
+      "lv3": "콩 농업수입감소 보험금산정",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [8],
+      "batch_mapping": ["BATCH-5"]
+    },
+    {
+      "id": "TC-041",
+      "name": "수입감소 — 포도 (이앙직파/재이앙)",
+      "lv1": "수입감소",
+      "lv2": "15점",
+      "lv3": "포도 농업수입감소 + 이앙직파/재이앙·재직파 보험금산정",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [3],
+      "batch_mapping": ["BATCH-5"]
+    },
+    {
+      "id": "TC-042",
+      "name": "기타 — 손해평가반 구성 + 보상하지 않는 손해",
+      "lv1": "기타",
+      "lv2": "5점",
+      "lv3": "손해평가반 구성 + 보상하지 않는 손해 + 보험자대위 + 적립이율표",
+      "exam_frequency_estimate": 4,
+      "rounds_examples": [1, 3, 7, 9],
+      "batch_mapping": ["BATCH-7"]
+    },
+    {
+      "id": "TC-043",
+      "name": "기타 — 보험금 미지급사유 + 지급사유 서술형",
+      "lv1": "기타",
+      "lv2": "15점",
+      "lv3": "보험금 미지급사유 + 지급사유 서술형",
+      "exam_frequency_estimate": 2,
+      "rounds_examples": [1, 6],
+      "batch_mapping": ["BATCH-7"]
+    },
+    {
+      "id": "TC-044",
+      "name": "생산비보장 — 고추(노지) 보험금산정",
+      "lv1": "생산비보장(노지)",
+      "lv2": "15점",
+      "lv3": "고추(노지) 보험금산정",
+      "exam_frequency_estimate": 2,
+      "rounds_examples": [1, 10],
+      "batch_mapping": ["BATCH-4"],
+      "needs_drift_overlay": true,
+      "drift_revision_ids": ["REV-2026-LOSS-DEGREE", "REV-2026-31-CONTRACT-CHANGE"]
+    },
+    {
+      "id": "TC-045",
+      "name": "생산비보장 — 브로콜리 보험금산출",
+      "lv1": "생산비보장(노지)",
+      "lv2": "5점/15점",
+      "lv3": "브로콜리 보험금산출",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [6],
+      "batch_mapping": ["BATCH-4"]
+    },
+    {
+      "id": "TC-046",
+      "name": "생산비보장 — 내용연수·감가율",
+      "lv1": "생산비보장(노지)",
+      "lv2": "15점",
+      "lv3": "내용연수 및 감가율",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [10],
+      "batch_mapping": ["BATCH-4"]
+    },
+    {
+      "id": "TC-047",
+      "name": "가축 — 한우 월령별 보험가액",
+      "lv1": "가축",
+      "lv2": "5점",
+      "lv3": "한우 월령별 보험가액",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [6],
+      "batch_mapping": ["BATCH-6"]
+    },
+    {
+      "id": "TC-048",
+      "name": "가축 — 한우 수컷·암컷 보험금/가액",
+      "lv1": "가축",
+      "lv2": "15점",
+      "lv3": "한우 수컷 보험금 + 한우 암컷 가액",
+      "exam_frequency_estimate": 2,
+      "rounds_examples": [7, 9],
+      "batch_mapping": ["BATCH-6"],
+      "needs_drift_overlay": true,
+      "drift_revision_ids": ["REV-2026-LIVESTOCK-COW-AVAIL"]
+    },
+    {
+      "id": "TC-049",
+      "name": "가축 — 돼지 도살·위탁도살·도태권고·살처분·랜더링",
+      "lv1": "가축",
+      "lv2": "5점",
+      "lv3": "돼지 도살/위탁도살/도태권고/살처분/랜더링/기망",
+      "exam_frequency_estimate": 1,
+      "rounds_examples": [4],
+      "batch_mapping": ["BATCH-6"],
+      "needs_drift_overlay": true,
+      "drift_revision_ids": ["REV-2026-LIVESTOCK-PIG-CESSATION"]
+    },
+    {
+      "id": "TC-050",
+      "name": "시설작물 — 버섯·딸기·쑥갓 보험금",
+      "lv1": "시설작물",
+      "lv2": "15점",
+      "lv3": "버섯(시설) + 딸기(시설) + 쑥갓의 보험금",
+      "exam_frequency_estimate": 2,
+      "rounds_examples": [6, 9],
+      "batch_mapping": ["BATCH-5"]
+    }
+  ],
+  "summary": {
+    "lv1_lv2_count": 20,
+    "lv3_examples_count": 30,
+    "total_candidates": 50,
+    "batch_coverage": "BATCH-1/2/3/4/5/6/7/R2 cross-batch (Layer 1+2+3+4+5)",
+    "scope": "2차 2과목 (손해평가 이론과 실무) 한정 — 1회~10회 (자료 표기)",
+    "★_critical_finding_★": "★ 적과전종합위험 18% + 밭작물 16% + 종합과수 10% + 논작물 9% + 가축 8% = 5개 영역 61% 차지. 학습 우선순위 의무. 26년 drift overlay 영역 = TC-030/033/037/039/044/048/049 (7건) — REV-2026-* 정합",
+    "id_finalization_pending": "RESOLVED Session 049 — TC-001~TC-050 할당 완료",
+    "verdict": "★ 50 candidate clusters 영속 (lv1+lv2 20 + lv3 30). 본 단계 1C 진입 = 도메인 분석 + 후보 영속까지. ID 할당 + D1 INSERT는 차세션 (D-S1C-3 진산 결정 + L3 plan + 인간 승인 후)"
+  },
+  "next_session_obligations": [
+    "D-S1C-1~5 진산 결정 spot check 5건",
+    "D-S1C-3 결정 후 ontology-registry.json topic_cluster_id_pattern 등록 (L3 plan + 진산 인간 승인)",
+    "D-S1C-2 결정 후 cell-level 정확 매핑 정제 (Vision multimodal 또는 인간 검수)",
+    "topic_clusters D1 INSERT (staging+production 적재 + 검증 7쿼리)",
+    "question_ids 매핑 (545 questions ↔ topic_clusters) 영속",
+    "D-S1C-5 β 옵션 (2-1과목 / 1차 3과목 출제 패턴 자료 추가 확보) carry-over"
+  ],
+  "decisions_resolved_session_049": [
+    {
+      "id": "D-S1C-1",
+      "decision": "α (자료 1회=2015 / 10회=2024 절대 동일, 자료 1~4회 미적재)"
+    },
+    {
+      "id": "D-S1C-2",
+      "decision": "γ → β (개략 후 인간 검수 carry-over)"
+    },
+    {
+      "id": "D-S1C-3",
+      "decision": "α (TC-NNN). ontology-registry v1.3.0 topic_cluster_id_pattern 등록 완료"
+    },
+    {
+      "id": "D-S1C-4",
+      "decision": "lv1+lv2+lv3 ~50개. TC-001~TC-050 할당 완료"
+    },
+    {
+      "id": "D-S1C-5",
+      "decision": "α + β carry-over (2-2과목 한정 진행, 2-1과목/1차 자료 carry-over)"
+    }
+  ]
+}

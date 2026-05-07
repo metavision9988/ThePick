@@ -79,14 +79,14 @@ const response = await anthropic.messages.create({
 
 **ThePick 도메인 의미 검증:**
 
-| 도메인          | 검증 규칙                                                             | 구현 위치                                                |
-| :-------------- | :-------------------------------------------------------------------- | :------------------------------------------------------- |
-| 산식 변수 범위  | `보험가액 > 0`, `면적 > 0`, `비율 0 ≤ x ≤ 1`, `손해율 0 ≤ x ≤ 2`      | `packages/formula-engine/src/validators/range.ts` (신설) |
-| 노드 ID 패턴    | `CONCEPT-\d{3}`, `F-\d{2}`, `INS-\d{2}` (ontology-registry.json 기준) | `packages/parser/src/ontology-validator.ts` (이미 존재)  |
-| 페이지 인용     | `1 ≤ page ≤ 835` (교재 총 페이지)                                     | `packages/parser/src/source-validator.ts` (신설)         |
-| 법조문 인용     | 시행규칙·시행령·법률 식별자 일치                                      | `packages/parser/src/law-validator.ts` (신설)            |
-| 정답 vs 변형    | 정답·오답 후보 모두 해설 가능한가                                     | `study-material-generator` (Phase 2)                     |
-| 암기법 두문자어 | 두문자어 → 원래 항목 복원 가능 (역방향 검증)                          | CLAUDE.md "Hard Limit" 명시 — 폐기 의무                  |
+| 도메인          | 검증 규칙                                                                                  | 구현 위치                                                |
+| :-------------- | :----------------------------------------------------------------------------------------- | :------------------------------------------------------- |
+| 산식 변수 범위  | `보험가액 > 0`, `면적 > 0`, `비율 0 ≤ x ≤ 1`, `손해율 0 ≤ x ≤ 2`                           | `packages/formula-engine/src/validators/range.ts` (신설) |
+| 노드 ID 패턴    | `CONCEPT-\d{3}`, `F-\d{2,3}`, `INS-\d{2}`, `TC-\d{3}` (ontology-registry.json v1.3.0 기준) | `packages/parser/src/ontology-validator.ts` (이미 존재)  |
+| 페이지 인용     | `1 ≤ page ≤ 835` (교재 총 페이지)                                                          | `packages/parser/src/source-validator.ts` (신설)         |
+| 법조문 인용     | 시행규칙·시행령·법률 식별자 일치                                                           | `packages/parser/src/law-validator.ts` (신설)            |
+| 정답 vs 변형    | 정답·오답 후보 모두 해설 가능한가                                                          | `study-material-generator` (Phase 2)                     |
+| 암기법 두문자어 | 두문자어 → 원래 항목 복원 가능 (역방향 검증)                                               | CLAUDE.md "Hard Limit" 명시 — 폐기 의무                  |
 
 **ThePick 표준 의미 검증 인터페이스:**
 

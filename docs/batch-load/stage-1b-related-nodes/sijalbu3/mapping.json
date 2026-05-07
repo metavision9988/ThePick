@@ -1,0 +1,342 @@
+{
+  "schema_version": "1.1",
+  "stage": "1B",
+  "source": {
+    "file": "docs/manual/2차시험정답지/시잘부3_과수품목_피해율정리.pdf",
+    "size_bytes": 166098,
+    "pages": 5,
+    "raw_chars": 9593,
+    "title": "과수품목 피해율정리"
+  },
+  "extracted_at": "2026-05-06",
+  "stage_session": "048",
+  "source_textbook_year": 2025,
+  "current_loaded_textbook_year": 2026,
+  "version_drift_warning": true,
+  "version_drift_rationale": "본 자료 = 25년 이론서 기반 전문강사 학습 정리물 (수험생 학습용). 본 프로젝트 BATCH-1~7 + R1/R2 = 26년 이론서 기반 적재. 26년 갱신사항 38건 (REV-2026-01~38) 중 본 자료 영역(과수 22종 손해평가 + 경과비율 + 사고일자) 충돌 후보 3건 식별.",
+  "potential_revision_drift": [
+    {
+      "revision_id": "REV-2026-LOSS-DEGREE",
+      "target_section": "손해정도비율 0.20 → 0.10",
+      "drift_zone": "§4 경과비율 — 생산비보장(노지) 고추/브로콜리",
+      "drift_severity": "low",
+      "concern": "시잘부3 §4 경과비율 자체에 손해정도비율 수치 명시 X (49.5%/55.9% = 경과비율, 손해정도비율 별개). 직접 영향 X. 단 학습자가 §4 → 손해정도비율 산정 단계 연결 시 26년 0.10 적용 의무 명시"
+    },
+    {
+      "revision_id": "REV-2026-PRESEED-LOSS-COEFF",
+      "target_section": "준비기생산비계수 + 손해정도비율 (BATCH-R1)",
+      "drift_zone": "§4 경과비율 + 사고일자 영역",
+      "drift_severity": "medium",
+      "concern": "26년 준비기생산비계수 + 손해정도비율 단계화 — 시잘부3 §4 경과비율 표 보강 필요"
+    },
+    {
+      "revision_id": "REV-2026-FRUIT-LOSS-CROSS-DAY",
+      "target_section": "오디·복분자 조사시기 (BATCH-R2 §4)",
+      "drift_zone": "§1 오디/복분자 조사시기 (수정완료 직후부터 최초수확전)",
+      "drift_severity": "medium",
+      "concern": "BATCH-R2 §4 오디·복분자 조사시기 변경 명시 — 시잘부3 §1 25년 시점 조사시기 vs 26년 차이 검증 의무"
+    }
+  ],
+  "domain_areas": ["BATCH-1", "BATCH-2", "BATCH-3", "BATCH-4", "BATCH-5", "BATCH-7", "BATCH-R2"],
+  "core_concept_nodes": [
+    {
+      "id": "INV-018",
+      "name": "착과수조사",
+      "batch_id": "BATCH-2",
+      "relevance": "primary",
+      "rationale": "§3 종합과수 착과수조사 직접 매핑 (복/자/포/만/밤/호/유/참/매/대/살)"
+    },
+    {
+      "id": "INV-019",
+      "name": "과중조사",
+      "batch_id": "BATCH-2",
+      "relevance": "primary",
+      "rationale": "§3 종합과수 과중조사 직접 매핑"
+    },
+    {
+      "id": "INV-037",
+      "name": "동상해 과실손해조사",
+      "batch_id": "BATCH-2",
+      "relevance": "primary",
+      "rationale": "§1 감귤 동상해과실손해조사 직접 매핑"
+    },
+    {
+      "id": "INV-003",
+      "name": "적과후착과수 조사",
+      "batch_id": "BATCH-1",
+      "relevance": "secondary",
+      "rationale": "적과전 종합위험 영역 인접"
+    },
+    {
+      "id": "INV-011",
+      "name": "가을동상해 조사",
+      "batch_id": "BATCH-1",
+      "relevance": "secondary",
+      "rationale": "적과전 가을동상해 인접"
+    },
+    {
+      "id": "INV-078",
+      "name": "포도 농업수입감소 4단계 조사 (착과수/과중/낙과피해/고사주수)",
+      "batch_id": "BATCH-5",
+      "relevance": "secondary",
+      "rationale": "§3 포도/만감류 = 농업수입감소 4단계 정합"
+    },
+    {
+      "id": "INS-04",
+      "name": "가을동상해 보장 특약",
+      "batch_id": "BATCH-1",
+      "relevance": "secondary",
+      "rationale": "적과전 동상해 보장"
+    },
+    {
+      "id": "INS-13",
+      "name": "수확개시 이후 동상해보장 특별약관",
+      "batch_id": "BATCH-2",
+      "relevance": "primary",
+      "rationale": "§1 감귤 동상해 보장 직접 매핑"
+    },
+    {
+      "id": "F-41",
+      "name": "수확감소환산 고사결과모지수(5/31 이전 사고 있음)",
+      "batch_id": "BATCH-3",
+      "relevance": "primary",
+      "rationale": "§1 복분자 종합위험 결과모지수 산식 직접 매핑"
+    },
+    {
+      "id": "F-42",
+      "name": "수확감소환산 고사결과모지수(5/31 이전 사고 없음)",
+      "batch_id": "BATCH-3",
+      "relevance": "primary",
+      "rationale": "§1 복분자 결과모지수 산식 직접 매핑"
+    },
+    {
+      "id": "F-45",
+      "name": "미보상 고사결과모지수",
+      "batch_id": "BATCH-3",
+      "relevance": "secondary",
+      "rationale": "복분자 인접 산식"
+    },
+    {
+      "id": "F-49",
+      "name": "무화과 결과지피해율",
+      "batch_id": "BATCH-3",
+      "relevance": "primary",
+      "rationale": "§1 무화과 종합위험 결과지피해율 산식 직접 매핑"
+    },
+    {
+      "id": "F-50",
+      "name": "무화과 기준결과지수",
+      "batch_id": "BATCH-3",
+      "relevance": "primary",
+      "rationale": "§1 무화과 결과지수 산식 직접 매핑"
+    },
+    {
+      "id": "F-51",
+      "name": "무화과 고사결과지수",
+      "batch_id": "BATCH-3",
+      "relevance": "primary",
+      "rationale": "§1 무화과 결과지수 산식 직접 매핑"
+    },
+    {
+      "id": "F-90",
+      "name": "경과비율 (생산비보장 — 수확기 이전, 고추/브로콜리)",
+      "batch_id": "BATCH-4",
+      "relevance": "primary",
+      "rationale": "§4 경과비율 49.5%(고추 100일) / 55.9%(브로콜리 130일) 직접 매핑"
+    },
+    {
+      "id": "F-91",
+      "name": "경과비율 (생산비보장 — 수확기 중, 고추/브로콜리)",
+      "batch_id": "BATCH-4",
+      "relevance": "primary",
+      "rationale": "§4 수확기 중 경과비율 10% 미만 시 10% 적용 직접 매핑"
+    },
+    {
+      "id": "LAW-015",
+      "name": "별표 수확일자별 잔여수확량 비율 (복분자/무화과)",
+      "batch_id": "BATCH-3",
+      "relevance": "primary",
+      "rationale": "§2 잔존비율 표 (감귤 동상해/복분자/무화과/블루베리) 직접 매핑"
+    },
+    {
+      "id": "LAW-140",
+      "name": "<별표5> 무화과 사고발생일 잔여수확량 비율 — 8월/9월/10월 3구간 산식",
+      "batch_id": "BATCH-7",
+      "relevance": "primary",
+      "rationale": "§2 무화과 잔존비율 8/9/10월 산식 직접 매핑 — BATCH-7 별표5 정합"
+    }
+  ],
+  "crop_nodes": [
+    { "section": "§1·§2", "label": "오디", "node_ids": ["CROP-018"], "batch_id": "BATCH-2" },
+    {
+      "section": "§1·§2",
+      "label": "감귤(온주밀감)",
+      "node_ids": ["CROP-017"],
+      "batch_id": "BATCH-2"
+    },
+    { "section": "§1·§2", "label": "복분자", "node_ids": ["CROP-021"], "batch_id": "BATCH-2" },
+    { "section": "§1·§2", "label": "무화과", "node_ids": ["CROP-022"], "batch_id": "BATCH-2" },
+    { "section": "§1", "label": "두릅", "node_ids": ["CROP-019"], "batch_id": "BATCH-2" },
+    { "section": "§1·§2", "label": "블루베리", "node_ids": ["CROP-020"], "batch_id": "BATCH-2" },
+    {
+      "section": "§3·§5",
+      "label": "포도",
+      "node_ids": ["CROP-005", "CROP-090"],
+      "batch_id": "BATCH-2",
+      "note": "CROP-090 농업수입감소 영역"
+    },
+    { "section": "§3·§5", "label": "복숭아", "node_ids": ["CROP-006"], "batch_id": "BATCH-2" },
+    { "section": "§3·§5", "label": "자두", "node_ids": ["CROP-007"], "batch_id": "BATCH-2" },
+    {
+      "section": "§3·§5",
+      "label": "감귤(만감류)",
+      "node_ids": ["CROP-008"],
+      "batch_id": "BATCH-2"
+    },
+    { "section": "§3·§5", "label": "밤", "node_ids": ["CROP-009"], "batch_id": "BATCH-2" },
+    { "section": "§3·§5", "label": "호두", "node_ids": ["CROP-010"], "batch_id": "BATCH-2" },
+    { "section": "§3·§5", "label": "유자", "node_ids": ["CROP-016"], "batch_id": "BATCH-2" },
+    { "section": "§3·§5", "label": "참다래", "node_ids": ["CROP-011"], "batch_id": "BATCH-2" },
+    { "section": "§3·§5", "label": "매실", "node_ids": ["CROP-013"], "batch_id": "BATCH-2" },
+    { "section": "§3·§5", "label": "대추", "node_ids": ["CROP-012"], "batch_id": "BATCH-2" },
+    { "section": "§3·§5", "label": "살구", "node_ids": ["CROP-014"], "batch_id": "BATCH-2" },
+    { "section": "§5", "label": "오미자", "node_ids": ["CROP-015"], "batch_id": "BATCH-2" },
+    { "section": "§2", "label": "단감", "node_ids": ["CROP-003"], "batch_id": "BATCH-1" },
+    { "section": "§2", "label": "떫은감", "node_ids": ["CROP-004"], "batch_id": "BATCH-1" },
+    {
+      "section": "§3",
+      "label": "사과대추",
+      "node_ids": ["CROP-001"],
+      "batch_id": "BATCH-1",
+      "note": "본 자료 §3에 '매·대·살(사과대추 제외)' 명시 — CROP-001 사과 영역과 분리 학습"
+    }
+  ],
+  "exam_question_links": [
+    {
+      "question_id": "Q-2025-11-2ND-012",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "2과목 (손해평가)",
+      "relevance": "primary",
+      "rationale": "★ 종합위험 과실손해 시기별 조사 (오디·복분자·무화과 등) — §1 직접 영역 매핑"
+    },
+    {
+      "question_id": "Q-2025-11-2ND-016",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "2과목 (손해평가)",
+      "relevance": "primary",
+      "rationale": "복분자 수확전 종합위험 — §1 복분자 직접 영역 매핑"
+    },
+    {
+      "question_id": "Q-2025-11-2ND-011",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "2과목 (손해평가)",
+      "relevance": "secondary",
+      "rationale": "적과전 단감 낙엽률 — §2 단감 잔존비율 인접"
+    },
+    {
+      "question_id": "Q-2024-10-047",
+      "year": 2024,
+      "round": 10,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "primary",
+      "rationale": "★ 고사결과모지수 ÷ 평년결과모지수 피해율 = 복분자 — §1 복분자 결과모지수 직접 매핑 (F-41/42/45)"
+    },
+    {
+      "question_id": "Q-2023-09-047",
+      "year": 2023,
+      "round": 9,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "primary",
+      "rationale": "★ 종합위험 과실손해보장 피해율 (감귤 등급내+등급외×0.5) — §1 감귤 직접 매핑"
+    },
+    {
+      "question_id": "Q-2023-09-049",
+      "year": 2023,
+      "round": 9,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary",
+      "rationale": "적과전 보험가액 산정 — INV-003 인접"
+    },
+    {
+      "question_id": "Q-2022-08-048",
+      "year": 2022,
+      "round": 8,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "primary",
+      "rationale": "★ 종합위험 착과수조사 해당 품목 — §3 INV-018 착과수조사 직접 매핑"
+    },
+    {
+      "question_id": "Q-2022-08-049",
+      "year": 2022,
+      "round": 8,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary",
+      "rationale": "종합위험방식 손해수량 조사방법 — §1·§3 영역"
+    },
+    {
+      "question_id": "Q-2021-07-049",
+      "year": 2021,
+      "round": 7,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary",
+      "rationale": "적과전 떫은감 손해수량 — §2 떫은감 잔존비율 인접"
+    },
+    {
+      "question_id": "Q-2020-06-048",
+      "year": 2020,
+      "round": 6,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary",
+      "rationale": "농작물 보험가액 (인삼 특정위험) — §3 영역 외이지만 손해평가 절차 일반"
+    }
+  ],
+  "exam_question_search": {
+    "keyword_set": [
+      "잔존비율",
+      "잔여수확량",
+      "결실율",
+      "결과모지",
+      "동상해",
+      "착과수조사",
+      "경과비율",
+      "수정불량",
+      "과실손해조사"
+    ],
+    "1st_exam_matches": 7,
+    "2nd_exam_matches": 3,
+    "total": 10,
+    "1st_match_rationale": "★ 1차 525 첫 매칭 7건 (시잘부2 0건과 대조) — 시잘부3 영역(과수 손해평가)이 1차 농어업재해보험법령 손해평가요령과 직접 정합. 1차 객관식에서도 손해평가 절차/품목별 산식 출제 빈도 高",
+    "implied_mapping_excluded": "D-S1B-2 결정: 키워드 직접 매칭만 채택"
+  },
+  "td_carry_over": [],
+  "decisions_applied": {
+    "D-S1B-1": "A 채택 (JSON 영속, Phase 2 마이그레이션 0020 일괄 적재)",
+    "D-S1B-2": "키워드 직접 매칭만",
+    "D-S1B-3": "현 schema 유지",
+    "D-S1B-4": "8 자료 일괄 보강 (본 자료는 미검색 0건 = 잔여 X)",
+    "D-S1B-5": "primary/secondary 카테고리",
+    "D-S1B-6": "다음 자료 5번_종합과수_기출문제모음 진행"
+  },
+  "summary": {
+    "core_nodes_count": 18,
+    "crop_nodes_count": 21,
+    "crop_id_total_count": 22,
+    "exam_question_links": 10,
+    "potential_drifts": 3,
+    "missing_node_ids": 0,
+    "verdict": "★ 시잘부3 = BATCH-1+2+3+4+5+7 cross-batch 학습 자료. 22 과수 CROP 100% 매칭 + 18 핵심 노드 + 545 questions 10건 매칭 (1차 7 + 2차 3)"
+  }
+}

@@ -1,0 +1,1827 @@
+{
+  "$schema_version": "1",
+  "_meta": {
+    "batchId": "BATCH-1",
+    "status": "draft",
+    "description": "BATCH-1 적과전 종합위험 II Knowledge Graph (교재 본문 p.396~427 / PDF p.403~434, 32p)",
+    "source_pdf": "docs/manual/2026년 「농업재해보험·손해평가의 이론과 실무」 이론서_수정본(26.3.31.).pdf",
+    "extraction_v2": "docs/batch-load/batch-1-v2/batch-1-extract.json",
+    "figures_analysis": "docs/batch-load/batch-1-v2/figures-analysis.md",
+    "ai_generation": {
+      "model": "Claude Opus 4.7 (1M context)",
+      "session": "040",
+      "generated_at": "2026-05-03",
+      "verified_by_human": false,
+      "criterion": "Ontology Lock 자체 준수 + 4 메타 컬럼 100% 채움 + 산식 13개 (F-01~F-13) Golden 정합 + 출처 추적성 (book_page/pdf_page 필수)"
+    },
+    "review_protocol": "진산님 2차 검수 (sample 5 노드 + 산식 1) 통과 후 SQL INSERT → wrangler d1 apply → Level 1+2+3 검증",
+    "stats_target": {
+      "nodes": 60,
+      "edges": 200,
+      "formulas": 13,
+      "constants": "TBD"
+    },
+    "stats_actual": {
+      "nodes": 75,
+      "edges": 133,
+      "formulas": 13,
+      "constants": 5,
+      "stats_diff_note": "노드 75/60 (+15) / 엣지 133/200 (-67). 의미 있는 관계만 도출 (hallucination 회피). LOCAL D1 dry-run 시 고아 노드 3건 (INV-012/INV-013/TERM-004) 발견 → 도메인 명시 5 엣지 추가."
+    },
+    "node_distribution": {
+      "INSURANCE": 6,
+      "CROP": 4,
+      "FORMULA": 13,
+      "INVESTIGATION": 15,
+      "CONCEPT": 20,
+      "TERM": 13,
+      "LAW": 4
+    },
+    "meta_columns_coverage": {
+      "book_page_filled": "75/75 (100%)",
+      "pdf_page_filled": "75/75 (100%)",
+      "chapter_filled": "75/75 (100%)",
+      "section_filled": "74/75 — LAW-004 손해평가요령 제12조 section=NULL 의도적 (절 단위 외 체계)"
+    }
+  },
+  "formulas": [
+    {
+      "id": "F-01",
+      "name": "유과타박률",
+      "equation_template": "damaged_fruits / (damaged_fruits + normal_fruits)",
+      "variables_schema": "{\"damaged_fruits\":\"피해유과수합계 integer\\u003E=0\",\"normal_fruits\":\"정상유과수합계 integer\\u003E=0\"}",
+      "source_page": 414
+    },
+    {
+      "id": "F-02",
+      "name": "낙엽률",
+      "equation_template": "defoliated / (defoliated + attached)",
+      "variables_schema": "{\"defoliated\":\"낙엽수합계 integer\\u003E=0\",\"attached\":\"착엽수합계 integer\\u003E=0\"}",
+      "source_page": 415
+    },
+    {
+      "id": "F-03",
+      "name": "적정표본주수",
+      "equation_template": "ceil(total_sample * (variety_target / total_target))",
+      "variables_schema": "{\"total_sample\":\"전체표본주수 integer\\u003E=1\",\"variety_target\":\"품종별조사대상주수 integer\\u003E=0\",\"total_target\":\"조사대상주수합 integer\\u003E=1\"}",
+      "source_page": 417
+    },
+    {
+      "id": "F-04",
+      "name": "품종별 착과수",
+      "equation_template": "(sample_fruits_sum / sample_trees_sum) * target_trees",
+      "variables_schema": "{\"sample_fruits_sum\":\"표본주착과수합계 integer\\u003E=0\",\"sample_trees_sum\":\"표본주합계 integer\\u003E=1\",\"target_trees\":\"조사대상주수 integer\\u003E=1\"}",
+      "source_page": 418
+    },
+    {
+      "id": "F-05",
+      "name": "침수주수",
+      "equation_template": "flooded_trees * (flooded_fruits / total_fruits)",
+      "variables_schema": "{\"flooded_trees\":\"침수피해나무수 integer\\u003E=0\",\"flooded_fruits\":\"침수착과수 integer\\u003E=0\",\"total_fruits\":\"전체착과수 integer\\u003E=1\"}",
+      "source_page": 413
+    },
+    {
+      "id": "F-06",
+      "name": "단감 인정피해율",
+      "equation_template": "max(1.0115 * defoliation_rate - 0.0014 * elapsed_days, 0)",
+      "variables_schema": "{\"defoliation_rate\":\"낙엽률 ratio[0,1]\",\"elapsed_days\":\"경과일수 integer\\u003E=0\"}",
+      "source_page": 422
+    },
+    {
+      "id": "F-07",
+      "name": "떫은감 인정피해율",
+      "equation_template": "max(0.9662 * defoliation_rate - 0.0703, 0)",
+      "variables_schema": "{\"defoliation_rate\":\"낙엽률 ratio[0,1]\"}",
+      "source_page": 422
+    },
+    {
+      "id": "F-08",
+      "name": "착과감소보험금",
+      "equation_template": "max(fruit_reduction - uncompensated - self_bearing, 0) * price * coverage",
+      "variables_schema": "{\"fruit_reduction\":\"착과감소량 number\\u003E=0\",\"uncompensated\":\"미보상감수량 number\\u003E=0\",\"self_bearing\":\"자기부담감수량 number\\u003E=0\",\"price\":\"가입가격 number\\u003E=0\",\"coverage\":\"보장수준 ratio\"}",
+      "source_page": 426
+    },
+    {
+      "id": "F-09",
+      "name": "과실손해보험금",
+      "equation_template": "max(accumulated_reduction - self_bearing, 0) * price",
+      "variables_schema": "{\"accumulated_reduction\":\"적과후누적감수량 number\\u003E=0\",\"self_bearing\":\"자기부담감수량 number\\u003E=0\",\"price\":\"가입가격 number\\u003E=0\"}",
+      "source_page": 426
+    },
+    {
+      "id": "F-10",
+      "name": "나무손해 피해율",
+      "equation_template": "damaged_trees / actual_bearing_trees",
+      "variables_schema": "{\"damaged_trees\":\"피해주수(고사나무) integer\\u003E=0\",\"actual_bearing_trees\":\"실제결과주수 integer\\u003E=1\"}",
+      "source_page": 427
+    },
+    {
+      "id": "F-11",
+      "name": "나무손해보험금",
+      "equation_template": "insured_amount * max(damage_rate - 0.05, 0)",
+      "variables_schema": "{\"insured_amount\":\"보험가입금액 number\\u003E=0\",\"damage_rate\":\"피해율 ratio[0,1]\"}",
+      "source_page": 434
+    },
+    {
+      "id": "F-12",
+      "name": "가을동상해 피해인정계수",
+      "equation_template": "0.0031 * remaining_days",
+      "variables_schema": "{\"remaining_days\":\"잔여일수 integer\\u003E=0\"}",
+      "source_page": 424
+    },
+    {
+      "id": "F-13",
+      "name": "일소 감수과실수 한도",
+      "equation_template": "max(sunburn_fruits - fruits_after_thinning * 0.06, 0)",
+      "variables_schema": "{\"sunburn_fruits\":\"일소감수과실수 integer\\u003E=0\",\"fruits_after_thinning\":\"적과후착과수 integer\\u003E=0\"}",
+      "source_page": 424
+    }
+  ],
+  "constants": [
+    {
+      "id": "CONST-001",
+      "name": "단감 인정피해율 낙엽률 계수",
+      "value": "1.0115",
+      "category": "coefficient",
+      "source_page": 422
+    },
+    {
+      "id": "CONST-002",
+      "name": "단감 인정피해율 경과일수 계수",
+      "value": "0.0014",
+      "category": "coefficient",
+      "source_page": 422
+    },
+    {
+      "id": "CONST-003",
+      "name": "떫은감 인정피해율 낙엽률 계수",
+      "value": "0.9662",
+      "category": "coefficient",
+      "source_page": 422
+    },
+    {
+      "id": "CONST-004",
+      "name": "나무손해보험 자기부담비율",
+      "value": "0.05",
+      "category": "deductible",
+      "source_page": 434
+    },
+    {
+      "id": "CONST-005",
+      "name": "일소피해 자연낙과 한도 비율",
+      "value": "0.06",
+      "category": "ratio",
+      "source_page": 424
+    }
+  ],
+  "nodes": [
+    {
+      "id": "INS-01",
+      "type": "INSURANCE",
+      "title": "적과전 종합위험 II",
+      "content": "사과·배·단감·떫은감 4개 품목을 대상으로 하는 종합위험 보험상품. 적과 종료 이전 자연재해(태풍·우박·동상해 등) 모든 위험 + 적과 종료 이후 한정된 재해(태풍·우박·일소·가을동상해) 보장. 시기별 조사 종류: 적과 전 손해조사 / 적과후착과수 조사 / 적과 후 손해조사.",
+      "lv1_insurance": "적과전 종합위험 II",
+      "truth_weight": 8,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INS-02",
+      "type": "INSURANCE",
+      "title": "적과종료 이전 특정위험 5종 한정 보장 특별약관",
+      "content": "5종 한정 특약 — 적과종료 이전 사고가 태풍(강풍)·우박·집중호우·화재·지진 5종에 한해 보장. 적과 종료 이후는 적과전 종합위험 II 본 상품 보장 동일 적용.",
+      "lv1_insurance": "적과전 종합위험 II",
+      "truth_weight": 8,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INS-03",
+      "type": "INSURANCE",
+      "title": "나무손해보장 특약",
+      "content": "보험기간 중 보상하는 재해로 인한 나무 고사로 발생한 손해를 보장. 피해율 = 고사주수 / 실제결과주수. 자기부담비율 5% 적용.",
+      "lv1_insurance": "적과전 종합위험 II",
+      "truth_weight": 8,
+      "source_page": 434,
+      "book_page": 427,
+      "pdf_page": 434,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INS-04",
+      "type": "INSURANCE",
+      "title": "가을동상해 보장 특약",
+      "content": "수확기(보통 9월 말 ~ 11월) 적과종료 이후 동상해로 인한 과실 피해 보장. 피해인정계수 = 0.0031 × 잔여일수 (착과피해율 산정 시 적용).",
+      "lv1_insurance": "적과전 종합위험 II",
+      "truth_weight": 8,
+      "source_page": 424,
+      "book_page": 417,
+      "pdf_page": 424,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INS-05",
+      "type": "INSURANCE",
+      "title": "일소피해 보장 특약",
+      "content": "여름철 강한 일사로 인한 과실 피해 보장. 일소 감수과실수 한도 = max(일소감수과실수 - 적과후착과수 × 6%, 0). 자연낙과 한도(6%)를 초과한 부분만 보상.",
+      "lv1_insurance": "적과전 종합위험 II",
+      "truth_weight": 8,
+      "source_page": 424,
+      "book_page": 417,
+      "pdf_page": 424,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INS-06",
+      "type": "INSURANCE",
+      "title": "착과감소·과실손해 보장",
+      "content": "적과전 종합위험 II 의 주계약 보장 영역. 착과감소량(적과 종료 전 자연재해로 인한 평년착과수 대비 감소분) + 과실손해(적과 종료 이후 누적감수량) 보장.",
+      "lv1_insurance": "적과전 종합위험 II",
+      "truth_weight": 8,
+      "source_page": 426,
+      "book_page": 419,
+      "pdf_page": 426,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CROP-001",
+      "type": "CROP",
+      "title": "사과",
+      "content": "적과전 종합위험 II 대상품목. 적과 종료 시점: 통상 6월 초~중순. 유과타박률 조사: 과총당 동일 위치(번호) 유과(꽃)에 대해 우박피해 여부 조사 (그림 #3).",
+      "lv2_crop": "사과",
+      "truth_weight": 7,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CROP-002",
+      "type": "CROP",
+      "title": "배",
+      "content": "적과전 종합위험 II 대상품목. 적과 종료 시점: 통상 6월 중순. 유과타박률 조사: 사과와 동일 (과총당 동일 위치 유과).",
+      "lv2_crop": "배",
+      "truth_weight": 7,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CROP-003",
+      "type": "CROP",
+      "title": "단감",
+      "content": "적과전 종합위험 II 대상품목. 6월 1일부터 해당 재해 발생 시 낙엽률 조사 실시. 인정피해율 산식: 1.0115 × 낙엽률 - 0.0014 × 경과일수 (떫은감과 다른 계수).",
+      "lv2_crop": "단감",
+      "truth_weight": 7,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CROP-004",
+      "type": "CROP",
+      "title": "떫은감",
+      "content": "적과전 종합위험 II 대상품목. 단감과 동일하게 6월 1일부터 낙엽률 조사. 인정피해율 산식: 0.9662 × 낙엽률 - 0.0703 (단감과 다른 계수). 단감 vs 떫은감 혼동 유형 핵심.",
+      "lv2_crop": "떫은감",
+      "truth_weight": 7,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "F-01",
+      "type": "FORMULA",
+      "title": "유과타박률",
+      "content": "F-01 유과타박률 산식 노드. equation_template: damaged_fruits / (damaged_fruits + normal_fruits). 사과·배 적과 전 우박피해 여부 판정. 그림 #3 (book_p407) 시각 가이드.",
+      "lv2_crop": "사과·배",
+      "lv3_investigation": "유과타박률 조사",
+      "truth_weight": 9,
+      "source_page": 414,
+      "book_page": 407,
+      "pdf_page": 414,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "F-02",
+      "type": "FORMULA",
+      "title": "낙엽률",
+      "content": "F-02 낙엽률 산식 노드. equation_template: defoliated / (defoliated + attached). 단감·떫은감 적과 후 태풍 등 재해 발생 시 적용. 그림 #6 (book_p416) 가지별 낙엽 판단 기준.",
+      "lv2_crop": "단감·떫은감",
+      "lv3_investigation": "낙엽률 조사",
+      "truth_weight": 9,
+      "source_page": 415,
+      "book_page": 408,
+      "pdf_page": 415,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "F-03",
+      "type": "FORMULA",
+      "title": "적정표본주수",
+      "content": "F-03 적정표본주수 산식 노드. equation_template: ceil(total_sample × (variety_target / total_target)). 결과는 올림 정수. 교재 p.417 쓰가루 100/550 → 3주 예시.",
+      "lv3_investigation": "표본주 선정",
+      "truth_weight": 9,
+      "source_page": 417,
+      "book_page": 410,
+      "pdf_page": 417,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "F-04",
+      "type": "FORMULA",
+      "title": "품종별 착과수",
+      "content": "F-04 품종별 착과수 산식 노드. equation_template: (sample_fruits_sum / sample_trees_sum) × target_trees. 적과 후 표본주 조사 결과를 전체 조사대상주로 환산.",
+      "lv3_investigation": "적과후 착과수 조사",
+      "truth_weight": 9,
+      "source_page": 418,
+      "book_page": 411,
+      "pdf_page": 418,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "F-05",
+      "type": "FORMULA",
+      "title": "침수주수 환산",
+      "content": "F-05 침수주수 환산 산식 노드. equation_template: flooded_trees × (flooded_fruits / total_fruits). 침수 피해주수를 침수 과실비율로 환산한 주수 기준값.",
+      "lv3_investigation": "침수피해 조사",
+      "truth_weight": 9,
+      "source_page": 413,
+      "book_page": 406,
+      "pdf_page": 413,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "F-06",
+      "type": "FORMULA",
+      "title": "단감 인정피해율",
+      "content": "F-06 단감 인정피해율 산식 노드. equation_template: max(1.0115 × defoliation_rate - 0.0014 × elapsed_days, 0). 떫은감(F-07)과 계수가 다름 — 혼동 유형 핵심.",
+      "lv2_crop": "단감",
+      "lv3_investigation": "낙엽률 조사",
+      "truth_weight": 9,
+      "source_page": 422,
+      "book_page": 415,
+      "pdf_page": 422,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "F-07",
+      "type": "FORMULA",
+      "title": "떫은감 인정피해율",
+      "content": "F-07 떫은감 인정피해율 산식 노드. equation_template: max(0.9662 × defoliation_rate - 0.0703, 0). 단감(F-06)과 달리 경과일수 변수 없음.",
+      "lv2_crop": "떫은감",
+      "lv3_investigation": "낙엽률 조사",
+      "truth_weight": 9,
+      "source_page": 422,
+      "book_page": 415,
+      "pdf_page": 422,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "F-08",
+      "type": "FORMULA",
+      "title": "착과감소보험금",
+      "content": "F-08 착과감소보험금 산식 노드. equation_template: max(fruit_reduction - uncompensated - self_bearing, 0) × price × coverage. 적과 종료 전 자연재해로 인한 평년착과수 대비 감소분에 대한 보험금. 그림 #8 (book_p426) 시각화.",
+      "lv1_insurance": "적과전 종합위험 II",
+      "truth_weight": 9,
+      "source_page": 426,
+      "book_page": 419,
+      "pdf_page": 426,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "F-09",
+      "type": "FORMULA",
+      "title": "과실손해보험금",
+      "content": "F-09 과실손해보험금 산식 노드. equation_template: max(accumulated_reduction - self_bearing, 0) × price. 적과 종료 이후 누적감수량 대비 보험금. 그림 #9 (book_p426) 시각화.",
+      "lv1_insurance": "적과전 종합위험 II",
+      "truth_weight": 9,
+      "source_page": 426,
+      "book_page": 419,
+      "pdf_page": 426,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "F-10",
+      "type": "FORMULA",
+      "title": "나무손해 피해율",
+      "content": "F-10 나무손해 피해율 산식 노드. equation_template: damaged_trees / actual_bearing_trees. 고사나무 / 실제결과주수.",
+      "lv1_insurance": "나무손해보장 특약",
+      "lv3_investigation": "고사나무 조사",
+      "truth_weight": 9,
+      "source_page": 427,
+      "book_page": 420,
+      "pdf_page": 427,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "F-11",
+      "type": "FORMULA",
+      "title": "나무손해보험금",
+      "content": "F-11 나무손해보험금 산식 노드. equation_template: insured_amount × max(damage_rate - 0.05, 0). 자기부담비율 5% 차감.",
+      "lv1_insurance": "나무손해보장 특약",
+      "truth_weight": 9,
+      "source_page": 434,
+      "book_page": 427,
+      "pdf_page": 434,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "F-12",
+      "type": "FORMULA",
+      "title": "가을동상해 피해인정계수",
+      "content": "F-12 가을동상해 피해인정계수 산식 노드. equation_template: 0.0031 × remaining_days. 잔여일수 기준 시간 함수.",
+      "lv1_insurance": "가을동상해 보장 특약",
+      "truth_weight": 9,
+      "source_page": 424,
+      "book_page": 417,
+      "pdf_page": 424,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "F-13",
+      "type": "FORMULA",
+      "title": "일소 감수과실수 한도",
+      "content": "F-13 일소 감수과실수 한도 산식 노드. equation_template: max(sunburn_fruits - fruits_after_thinning × 0.06, 0). 자연낙과 한도(6%)를 초과한 부분만 일소피해로 인정.",
+      "lv1_insurance": "일소피해 보장 특약",
+      "truth_weight": 9,
+      "source_page": 424,
+      "book_page": 417,
+      "pdf_page": 424,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INV-001",
+      "type": "INVESTIGATION",
+      "title": "피해사실확인 조사",
+      "content": "적과 종료 전 자연재해 발생 시 피해 사실을 확인하는 1차 조사. 후속 조사(유과타박률·낙엽률·고사나무 등)의 prerequisite.",
+      "lv3_investigation": "피해사실확인 조사",
+      "truth_weight": 8,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INV-002",
+      "type": "INVESTIGATION",
+      "title": "적과 전 손해조사",
+      "content": "적과 종료 이전 시기에 실시하는 손해조사. 조사 항목: 피해사실확인 + 유과타박률(사과·배) + 낙엽률(단감·떫은감) + 나무피해. 5종한정특약 가입 시 5종(태풍·우박·집중호우·화재·지진) 한해 실시.",
+      "lv3_investigation": "적과 전 손해조사",
+      "truth_weight": 8,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INV-003",
+      "type": "INVESTIGATION",
+      "title": "적과후착과수 조사",
+      "content": "사고 여부와 관계없이 가입 전건에 대해 실시하는 의무 조사. 결과는 기준착과수로 사용 (착과감소량 / 과실손해 산정의 기준점). F-04 품종별 착과수 산식 적용.",
+      "lv3_investigation": "적과후착과수 조사",
+      "truth_weight": 8,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INV-004",
+      "type": "INVESTIGATION",
+      "title": "적과 후 손해조사",
+      "content": "적과 종료 이후부터 수확기 종료까지 실시하는 손해조사. 조사 항목: 낙과수 / 낙엽률(단감·떫은감) / 착과수 / 피해구성률.",
+      "lv3_investigation": "적과 후 손해조사",
+      "truth_weight": 8,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INV-005",
+      "type": "INVESTIGATION",
+      "title": "유과타박률 조사",
+      "content": "사과·배 우박피해 여부 판정 조사. 과총당 동일 위치(번호) 유과(꽃)에 대하여 조사. 단감·떫은감은 선택된 유과(꽃)에 대해 조사. F-01 산식 적용. 그림 #3 (book_p407) 가이드.",
+      "lv2_crop": "사과·배·단감·떫은감",
+      "lv3_investigation": "유과타박률 조사",
+      "truth_weight": 8,
+      "source_page": 414,
+      "book_page": 407,
+      "pdf_page": 414,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INV-006",
+      "type": "INVESTIGATION",
+      "title": "낙엽률 조사",
+      "content": "단감·떫은감 6월 1일 이후 재해 발생 시 실시. 가지별 낙엽수 + 착엽수 산출 → F-02 낙엽률 산식 적용 → F-06/F-07 인정피해율 환산. 그림 #6 (book_p416) 시각 가이드.",
+      "lv2_crop": "단감·떫은감",
+      "lv3_investigation": "낙엽률 조사",
+      "truth_weight": 8,
+      "source_page": 415,
+      "book_page": 408,
+      "pdf_page": 415,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INV-007",
+      "type": "INVESTIGATION",
+      "title": "고사나무 조사",
+      "content": "나무손해보장 특약 가입 건의 고사주수 + 미보상주수 조사. 피해율 = 고사주수 / 실제결과주수. 자기부담비율 5% 적용 후 보험금 산정.",
+      "lv1_insurance": "나무손해보장 특약",
+      "lv3_investigation": "고사나무 조사",
+      "truth_weight": 8,
+      "source_page": 427,
+      "book_page": 420,
+      "pdf_page": 427,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INV-008",
+      "type": "INVESTIGATION",
+      "title": "표본주 선정",
+      "content": "조사대상주수에서 적정표본주수 산정 후 표본주 위치 결정. F-03 적정표본주수 산식 적용. 그림 #4 (book_p411) 표본주 선정 패턴 가이드 (54주 + ★ 표본 위치).",
+      "lv3_investigation": "표본주 선정",
+      "truth_weight": 8,
+      "source_page": 418,
+      "book_page": 411,
+      "pdf_page": 418,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INV-009",
+      "type": "INVESTIGATION",
+      "title": "침수피해 조사",
+      "content": "집중호우·태풍 등으로 인한 침수 피해 조사. 침수피해나무수 + 침수착과수 + 전체착과수 측정. F-05 침수주수 환산 산식 적용.",
+      "lv3_investigation": "침수피해 조사",
+      "truth_weight": 8,
+      "source_page": 413,
+      "book_page": 406,
+      "pdf_page": 413,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INV-010",
+      "type": "INVESTIGATION",
+      "title": "일소피해 조사",
+      "content": "여름철 강한 일사로 인한 과실 피해 조사. 일소 감수과실수 한도 = max(일소감수과실수 - 적과후착과수 × 6%, 0). 자연낙과 6% 한도 초과분만 보상. 사고 시마다 낙과 + 착과피해 조사 동시 실시.",
+      "lv1_insurance": "일소피해 보장 특약",
+      "lv3_investigation": "일소피해 조사",
+      "truth_weight": 8,
+      "source_page": 424,
+      "book_page": 417,
+      "pdf_page": 424,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INV-011",
+      "type": "INVESTIGATION",
+      "title": "가을동상해 조사",
+      "content": "수확기(보통 9월 말 ~ 11월) 적과종료 이후 동상해 발생 시 조사. 잔여일수 기준 피해인정계수 = 0.0031 × 잔여일수 (F-12) 적용.",
+      "lv1_insurance": "가을동상해 보장 특약",
+      "lv3_investigation": "가을동상해 조사",
+      "truth_weight": 8,
+      "source_page": 424,
+      "book_page": 417,
+      "pdf_page": 424,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INV-012",
+      "type": "INVESTIGATION",
+      "title": "우박피해 조사",
+      "content": "우박 발생 시 적과 전(유과타박률) 또는 적과 후(낙과·착과피해) 조사. 5종한정특약 시에도 보장 대상 5종 중 하나로 포함.",
+      "lv3_investigation": "우박피해 조사",
+      "truth_weight": 8,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INV-013",
+      "type": "INVESTIGATION",
+      "title": "태풍피해 조사",
+      "content": "태풍(강풍) 발생 시 낙과수 + 낙엽률(단감·떫은감) + 착과수 + 피해구성률 조사. 5종한정특약 보장 5종에 포함. 태풍피해 입었으나 잎 50% 미만 손상 시 착엽으로 분류 (그림 #6 우측).",
+      "lv3_investigation": "태풍피해 조사",
+      "truth_weight": 8,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INV-014",
+      "type": "INVESTIGATION",
+      "title": "예찰조사",
+      "content": "재해 발생 후 사전 점검 차원의 조사. 적과 전 손해조사 단계의 일부로 실시. 26년 신설 항목.",
+      "lv3_investigation": "예찰조사",
+      "truth_weight": 8,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "INV-015",
+      "type": "INVESTIGATION",
+      "title": "검증조사",
+      "content": "재해보험사업자/사업관리위탁기관이 손해평가반 결과 확인을 위해 일정 수 임의추출하여 실시하는 사후 조사. 차이 발생 시 결과 정정.",
+      "lv3_investigation": "검증조사",
+      "truth_weight": 8,
+      "source_page": 405,
+      "book_page": 398,
+      "pdf_page": 405,
+      "chapter": "제1장 농업재해보험 손해평가 개관",
+      "section": "제3절 현지조사 내용"
+    },
+    {
+      "id": "CONCEPT-001",
+      "type": "CONCEPT",
+      "title": "손해평가 흐름",
+      "content": "계약자 피해 발생 → 지역 농협 사고 접수 → 재해보험사업자 손해보험 사고접수 → 손해평가 업무배정 → 조사기관 배정 → 조사자(손해평가반) 배정. 그림 #1 (book_p401) 시각 가이드.",
+      "truth_weight": 7,
+      "source_page": 408,
+      "book_page": 401,
+      "pdf_page": 408,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제1절 손해평가 기본단계"
+    },
+    {
+      "id": "CONCEPT-002",
+      "type": "CONCEPT",
+      "title": "손해평가 5단계 절차",
+      "content": "(0) 계약자 사고신고 및 전산등록·준비 → (1) 계약 및 기본사항 확인 → (2) 보상하는 재해 여부 심사 → (3) 관련조사 선택 및 실시 → (4) 미보상 비율(양) 확인 → (5) 조사결과 설명 및 서명확인. 그림 #2 (book_p402) 시각 가이드.",
+      "truth_weight": 7,
+      "source_page": 409,
+      "book_page": 402,
+      "pdf_page": 409,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제1절 손해평가 기본단계"
+    },
+    {
+      "id": "CONCEPT-003",
+      "type": "CONCEPT",
+      "title": "수관 면적",
+      "content": "나무의 수관(가지·잎이 분포한 영역)이 지면에 투영된 면적. 적과 후 착과수 환산 시 기준값 중 하나. 그림 #5 (book_p414) 점선 표시 정의.",
+      "truth_weight": 7,
+      "source_page": 421,
+      "book_page": 414,
+      "pdf_page": 421,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-004",
+      "type": "CONCEPT",
+      "title": "평년착과수",
+      "content": "보험가입 시 산출하는 평년 평균 착과량의 주수 환산값. 적과전 종합위험 II 의 보장 기준 중 하나. 적과 종료 시점 적과후착과수와 비교하여 착과감소량 산출.",
+      "truth_weight": 7,
+      "source_page": 428,
+      "book_page": 421,
+      "pdf_page": 428,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-005",
+      "type": "CONCEPT",
+      "title": "적과후착과수",
+      "content": "적과 종료 시점에 실제 남아있는 착과수 (사고 여부와 관계없이 가입 전건 의무 조사). 기준착과수로 사용 — 과실손해 산정 시 분모.",
+      "truth_weight": 7,
+      "source_page": 418,
+      "book_page": 411,
+      "pdf_page": 418,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-006",
+      "type": "CONCEPT",
+      "title": "착과감소량",
+      "content": "평년착과수 - 적과후착과수. 적과 종료 전 자연재해로 인한 감소분. F-08 착과감소보험금의 핵심 변수.",
+      "truth_weight": 7,
+      "source_page": 433,
+      "book_page": 426,
+      "pdf_page": 433,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-007",
+      "type": "CONCEPT",
+      "title": "미보상감수량",
+      "content": "보상하지 않는 사유(병해충·관리부실 등)로 인한 감수량. 보험금 산정 시 차감.",
+      "truth_weight": 7,
+      "source_page": 433,
+      "book_page": 426,
+      "pdf_page": 433,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-008",
+      "type": "CONCEPT",
+      "title": "자기부담감수량",
+      "content": "자기부담비율을 평년착과수에 곱해 산출한 감수량. 보험금 산정 시 차감.",
+      "truth_weight": 7,
+      "source_page": 433,
+      "book_page": 426,
+      "pdf_page": 433,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-009",
+      "type": "CONCEPT",
+      "title": "기준착과수",
+      "content": "보장 산정 기준이 되는 착과수. 적과후착과수 100%를 가입착과수로 한 경우 평년착과수와 동일. 그림 #8 #9 (book_p426) 우측 화살표.",
+      "truth_weight": 7,
+      "source_page": 433,
+      "book_page": 426,
+      "pdf_page": 433,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-010",
+      "type": "CONCEPT",
+      "title": "피해 정도 비율",
+      "content": "적과 후 손해조사 시 사고 과실의 피해 정도 분류 기준. 정상 / 50% / 80% / 100% 4단계 시각 표본 (그림 #7 book_p418).",
+      "truth_weight": 7,
+      "source_page": 425,
+      "book_page": 418,
+      "pdf_page": 425,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-011",
+      "type": "CONCEPT",
+      "title": "인정피해율",
+      "content": "낙엽률을 인정피해율로 환산하는 회귀식 결과. 단감(F-06) vs 떫은감(F-07) 계수가 다름 — 혼동 유형 핵심.",
+      "lv2_crop": "단감·떫은감",
+      "truth_weight": 7,
+      "source_page": 422,
+      "book_page": 415,
+      "pdf_page": 422,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-012",
+      "type": "CONCEPT",
+      "title": "착과감소 있음 vs 없음",
+      "content": "평년착과수 > 적과후착과수 = 착과감소 있음 (그림 #8) → F-08 착과감소보험금. 평년착과수 ≈ 적과후착과수 = 착과감소 없음 (그림 #9) → F-09 과실손해보험금만 산정.",
+      "truth_weight": 7,
+      "source_page": 433,
+      "book_page": 426,
+      "pdf_page": 433,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-013",
+      "type": "CONCEPT",
+      "title": "5종한정특약 보장 재해",
+      "content": "태풍(강풍) / 우박 / 집중호우 / 화재 / 지진. 적과 종료 이전 사고가 5종 중 하나일 때만 보장. 일반 적과전 종합위험 II 가입 시 모든 자연재해 보장 (광범위 vs 한정).",
+      "lv1_insurance": "적과종료 이전 특정위험 5종 한정 보장 특별약관",
+      "truth_weight": 7,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-014",
+      "type": "CONCEPT",
+      "title": "자기부담비율",
+      "content": "보험계약자가 부담하는 손해 비율. 나무손해보장 특약은 5% 고정 (CONST-004). 주계약 보장수준에 따라 다름.",
+      "truth_weight": 7,
+      "source_page": 434,
+      "book_page": 427,
+      "pdf_page": 434,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-015",
+      "type": "CONCEPT",
+      "title": "보장수준",
+      "content": "보험계약자가 선택하는 보장 비율 (예: 70% / 80% / 90%). F-08 착과감소보험금 산정 시 곱셈 인자.",
+      "truth_weight": 7,
+      "source_page": 433,
+      "book_page": 426,
+      "pdf_page": 433,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-016",
+      "type": "CONCEPT",
+      "title": "가입가격",
+      "content": "보험계약 시 농가가 선택하는 단위당 가격 (예: kg당 가격). F-08 / F-09 보험금 산식의 곱셈 인자.",
+      "truth_weight": 7,
+      "source_page": 433,
+      "book_page": 426,
+      "pdf_page": 433,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-017",
+      "type": "CONCEPT",
+      "title": "태풍피해 착엽 판단",
+      "content": "태풍피해를 입었어도 잎 손상 50% 미만이면 착엽으로 분류 (낙엽률 산정 시 분모에 포함). 4 케이스: 잎 일부 찢어짐 / 50% 미만 찢김 (2 케이스) / 여러 곳 찢어졌으나 50% 미만. 그림 #6 (book_p416) 우측 가이드.",
+      "lv2_crop": "단감·떫은감",
+      "truth_weight": 7,
+      "source_page": 423,
+      "book_page": 416,
+      "pdf_page": 423,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-018",
+      "type": "CONCEPT",
+      "title": "단감 vs 떫은감 인정피해율 차이",
+      "content": "동일 낙엽률 0.45에서: 단감 (F-06) = max(1.0115×0.45 - 0.0014×30, 0) = 0.4131 / 떫은감 (F-07) = max(0.9662×0.45 - 0.0703, 0) = 0.3645. 떫은감은 경과일수 변수 없음. 혼동 유형 critical.",
+      "lv2_crop": "단감·떫은감",
+      "truth_weight": 7,
+      "source_page": 422,
+      "book_page": 415,
+      "pdf_page": 422,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-019",
+      "type": "CONCEPT",
+      "title": "유과타박률 vs 낙엽률",
+      "content": "유과타박률 (F-01) = 사과·배 적과 전 우박피해 / 낙엽률 (F-02) = 단감·떫은감 적과 후 (6월 1일 이후) 낙엽 발생. 적용 품목 + 시기 + 분자 분모 모두 다름. 혼동 유형 high.",
+      "truth_weight": 7,
+      "source_page": 414,
+      "book_page": 407,
+      "pdf_page": 414,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "CONCEPT-020",
+      "type": "CONCEPT",
+      "title": "적과 종료 시점",
+      "content": "사과·배·단감·떫은감 각 품목별 적과 종료 시점. 통상 6월 초~중순. 시점 기준으로 적과 전 / 적과 후 손해조사 분기. 단감·떫은감은 6월 1일부터 낙엽률 조사.",
+      "truth_weight": 7,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "TERM-001",
+      "type": "TERM",
+      "title": "유과",
+      "content": "어린 과실. 사과·배의 경우 유과타박률 조사 대상 (적과 전 우박피해 판정).",
+      "truth_weight": 6,
+      "source_page": 414,
+      "book_page": 407,
+      "pdf_page": 414,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "TERM-002",
+      "type": "TERM",
+      "title": "타박률",
+      "content": "유과타박률 = 피해유과수합계 / (피해유과수합계 + 정상유과수합계). 유과의 우박피해 비율.",
+      "truth_weight": 6,
+      "source_page": 414,
+      "book_page": 407,
+      "pdf_page": 414,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "TERM-003",
+      "type": "TERM",
+      "title": "낙엽률",
+      "content": "낙엽률 = 낙엽수합계 / (낙엽수합계 + 착엽수합계). 단감·떫은감 적과 후 잎 손실 비율.",
+      "truth_weight": 6,
+      "source_page": 415,
+      "book_page": 408,
+      "pdf_page": 415,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "TERM-004",
+      "type": "TERM",
+      "title": "적과",
+      "content": "과실 솎아내기. 한 송이에 너무 많이 달린 어린 과실 중 일부를 제거하여 나머지 과실의 품질을 높이는 작업.",
+      "truth_weight": 6,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "TERM-005",
+      "type": "TERM",
+      "title": "적과 전",
+      "content": "계약체결일 24시 ~ 적과 종료 시점. 이 기간의 손해는 적과 전 손해조사 대상.",
+      "truth_weight": 6,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "TERM-006",
+      "type": "TERM",
+      "title": "적과 후",
+      "content": "적과 종료 시점 ~ 수확기 종료. 이 기간의 손해는 적과 후 손해조사 대상.",
+      "truth_weight": 6,
+      "source_page": 410,
+      "book_page": 403,
+      "pdf_page": 410,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "TERM-007",
+      "type": "TERM",
+      "title": "착엽수",
+      "content": "가지에 붙어있는 정상 잎 수. 낙엽률 산식의 분모 일부.",
+      "truth_weight": 6,
+      "source_page": 415,
+      "book_page": 408,
+      "pdf_page": 415,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "TERM-008",
+      "type": "TERM",
+      "title": "낙엽수",
+      "content": "떨어진 잎 수. 낙엽률 산식의 분자 + 분모 일부. 태풍피해로 잎 50% 이상 손상 시 낙엽으로 분류.",
+      "truth_weight": 6,
+      "source_page": 415,
+      "book_page": 408,
+      "pdf_page": 415,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "TERM-009",
+      "type": "TERM",
+      "title": "조사대상주수",
+      "content": "표본주 선정의 기준이 되는 주수 (전체 가입 주수 - 미보상주수 등). 적정표본주수 산식의 분모.",
+      "truth_weight": 6,
+      "source_page": 417,
+      "book_page": 410,
+      "pdf_page": 417,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "TERM-010",
+      "type": "TERM",
+      "title": "표본주수",
+      "content": "조사를 위해 선정된 대표 주수. F-03 적정표본주수 산식으로 산출 (올림 정수). 그림 #4 (book_p411) 표본주 위치 가이드.",
+      "truth_weight": 6,
+      "source_page": 417,
+      "book_page": 410,
+      "pdf_page": 417,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "TERM-011",
+      "type": "TERM",
+      "title": "실제결과주수",
+      "content": "실제로 결실한 주수. 나무손해 피해율(F-10)의 분모.",
+      "truth_weight": 6,
+      "source_page": 427,
+      "book_page": 420,
+      "pdf_page": 427,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "TERM-012",
+      "type": "TERM",
+      "title": "고사주수",
+      "content": "보상하는 재해로 인해 고사한 나무 수. 나무손해 피해율(F-10)의 분자.",
+      "truth_weight": 6,
+      "source_page": 427,
+      "book_page": 420,
+      "pdf_page": 427,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "TERM-013",
+      "type": "TERM",
+      "title": "미보상주수",
+      "content": "보상 대상이 아닌 사유로 손해가 발생한 주수. 조사대상주수 산정 시 차감.",
+      "truth_weight": 6,
+      "source_page": 427,
+      "book_page": 420,
+      "pdf_page": 427,
+      "chapter": "제2장 농작물재해보험 손해평가",
+      "section": "제2절 과수작물 손해평가 및 보험금 산정"
+    },
+    {
+      "id": "LAW-001",
+      "type": "LAW",
+      "title": "농어업재해보험법 제8조 (재해보험사업자)",
+      "content": "농림축산식품부장관과 사업 약정을 체결한 자가 재해보험사업자. 손해평가의 주체로 지정.",
+      "truth_weight": 10,
+      "source_page": 401,
+      "book_page": 394,
+      "pdf_page": 401,
+      "chapter": "제1장 농업재해보험 손해평가 개관",
+      "section": "제2절 손해평가 체계"
+    },
+    {
+      "id": "LAW-002",
+      "type": "LAW",
+      "title": "농어업재해보험법 제11조 (손해평가)",
+      "content": "재해보험사업자는 손해평가인 위촉 또는 손해평가사·손해사정사 위탁으로 손해평가 담당. 손해평가요령에 따른 공정·객관적 손해평가 의무.",
+      "truth_weight": 10,
+      "source_page": 401,
+      "book_page": 394,
+      "pdf_page": 401,
+      "chapter": "제1장 농업재해보험 손해평가 개관",
+      "section": "제2절 손해평가 체계"
+    },
+    {
+      "id": "LAW-003",
+      "type": "LAW",
+      "title": "농업재해보험 손해평가요령 제11조 (손해평가결과 검증)",
+      "content": "재해보험사업자/사업관리위탁기관이 손해평가반의 손해평가결과 확인을 위해 일정 수 임의추출 검증조사 실시. 농림축산식품부장관 명령 시 응할 의무.",
+      "truth_weight": 10,
+      "source_page": 404,
+      "book_page": 397,
+      "pdf_page": 404,
+      "chapter": "제1장 농업재해보험 손해평가 개관",
+      "section": "제2절 손해평가 체계"
+    },
+    {
+      "id": "LAW-004",
+      "type": "LAW",
+      "title": "농업재해보험 손해평가요령 제12조 (손해평가 단위)",
+      "content": "손해평가 단위별로 현지조사 실시. 품목·보장방식·재해종류에 따라 조사 종류가 다름. 품목별 현지조사 종류표 기준.",
+      "truth_weight": 10,
+      "source_page": 403,
+      "book_page": 396,
+      "pdf_page": 403,
+      "chapter": "제1장 농업재해보험 손해평가 개관"
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "INS-01",
+      "target_id": "CROP-001",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-01",
+      "target_id": "CROP-002",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-01",
+      "target_id": "CROP-003",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-01",
+      "target_id": "CROP-004",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-02",
+      "target_id": "INS-01",
+      "edge_type": "EXCEPTION",
+      "condition": "5종한정특약 가입 시 적과종료 이전 사고는 태풍·우박·집중호우·화재·지진 5종에 한해 보장"
+    },
+    {
+      "source_id": "INS-03",
+      "target_id": "INS-01",
+      "edge_type": "DEPENDS_ON",
+      "condition": "주계약 부가 특약"
+    },
+    {
+      "source_id": "INS-03",
+      "target_id": "CROP-001",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-03",
+      "target_id": "CROP-002",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-03",
+      "target_id": "CROP-003",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-03",
+      "target_id": "CROP-004",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-04",
+      "target_id": "INS-01",
+      "edge_type": "DEPENDS_ON",
+      "condition": "주계약 부가 특약"
+    },
+    {
+      "source_id": "INS-05",
+      "target_id": "INS-01",
+      "edge_type": "DEPENDS_ON",
+      "condition": "주계약 부가 특약"
+    },
+    {
+      "source_id": "INS-06",
+      "target_id": "INS-01",
+      "edge_type": "DEFINED_AS",
+      "condition": "주계약 보장 영역 (착과감소+과실손해)"
+    },
+    {
+      "source_id": "INS-01",
+      "target_id": "INV-002",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-01",
+      "target_id": "INV-003",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-01",
+      "target_id": "INV-004",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-01",
+      "target_id": "INV-005",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-03",
+      "target_id": "INV-007",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-04",
+      "target_id": "INV-011",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-05",
+      "target_id": "INV-010",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INV-001",
+      "target_id": "INV-002",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "INV-001",
+      "target_id": "INV-005",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "INV-001",
+      "target_id": "INV-007",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "INV-002",
+      "target_id": "INV-005",
+      "edge_type": "TIME_CONSTRAINT",
+      "condition": "적과 전 시기"
+    },
+    {
+      "source_id": "INV-002",
+      "target_id": "INV-006",
+      "edge_type": "TIME_CONSTRAINT",
+      "condition": "적과 전 시기"
+    },
+    {
+      "source_id": "INV-003",
+      "target_id": "INV-004",
+      "edge_type": "TIME_CONSTRAINT",
+      "condition": "적과 종료 시점 의무 조사"
+    },
+    {
+      "source_id": "INV-004",
+      "target_id": "INV-006",
+      "edge_type": "TIME_CONSTRAINT",
+      "condition": "적과 후 시기"
+    },
+    {
+      "source_id": "INV-005",
+      "target_id": "F-01",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INV-005",
+      "target_id": "INV-006",
+      "edge_type": "DIFFERS_FROM",
+      "condition": "유과타박률(사과·배 적과 전) vs 낙엽률(단감·떫은감 적과 후)"
+    },
+    {
+      "source_id": "INV-006",
+      "target_id": "F-02",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INV-006",
+      "target_id": "F-06",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INV-006",
+      "target_id": "F-07",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INV-008",
+      "target_id": "F-03",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INV-009",
+      "target_id": "F-05",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INV-007",
+      "target_id": "F-10",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INV-007",
+      "target_id": "F-11",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INV-010",
+      "target_id": "F-13",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INV-011",
+      "target_id": "F-12",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INV-003",
+      "target_id": "F-04",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INV-002",
+      "target_id": "F-08",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INV-004",
+      "target_id": "F-09",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "F-01",
+      "target_id": "TERM-001",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "F-01",
+      "target_id": "TERM-002",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "F-02",
+      "target_id": "TERM-003",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "F-02",
+      "target_id": "TERM-007",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-02",
+      "target_id": "TERM-008",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-03",
+      "target_id": "TERM-009",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-03",
+      "target_id": "TERM-010",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-04",
+      "target_id": "TERM-009",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-06",
+      "target_id": "F-02",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-07",
+      "target_id": "F-02",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-06",
+      "target_id": "F-07",
+      "edge_type": "DIFFERS_FROM",
+      "condition": "단감(1.0115×낙엽률 - 0.0014×경과일수) vs 떫은감(0.9662×낙엽률 - 0.0703) 계수 차이"
+    },
+    {
+      "source_id": "F-08",
+      "target_id": "CONCEPT-006",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-08",
+      "target_id": "CONCEPT-007",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-08",
+      "target_id": "CONCEPT-008",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-08",
+      "target_id": "CONCEPT-015",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-08",
+      "target_id": "CONCEPT-016",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-09",
+      "target_id": "CONCEPT-005",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-09",
+      "target_id": "CONCEPT-008",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-09",
+      "target_id": "CONCEPT-016",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-10",
+      "target_id": "TERM-011",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-10",
+      "target_id": "TERM-012",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-11",
+      "target_id": "F-10",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-11",
+      "target_id": "CONCEPT-014",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-12",
+      "target_id": "INS-04",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "F-13",
+      "target_id": "INS-05",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "F-13",
+      "target_id": "CONCEPT-005",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "CROP-003",
+      "target_id": "F-06",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "CROP-004",
+      "target_id": "F-07",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "CROP-001",
+      "target_id": "F-01",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "CROP-002",
+      "target_id": "F-01",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "CROP-003",
+      "target_id": "F-02",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "CROP-004",
+      "target_id": "F-02",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "CROP-001",
+      "target_id": "CROP-002",
+      "edge_type": "SHARED_WITH",
+      "condition": "사과·배 동일 유과타박률 조사 패턴"
+    },
+    {
+      "source_id": "CROP-003",
+      "target_id": "CROP-004",
+      "edge_type": "SHARED_WITH",
+      "condition": "단감·떫은감 동일 낙엽률 조사 패턴"
+    },
+    {
+      "source_id": "CROP-003",
+      "target_id": "CROP-004",
+      "edge_type": "DIFFERS_FROM",
+      "condition": "인정피해율 회귀계수 차이 (혼동 유형 핵심)"
+    },
+    {
+      "source_id": "CONCEPT-001",
+      "target_id": "CONCEPT-002",
+      "edge_type": "PREREQUISITE",
+      "condition": "흐름도 → 5단계 절차"
+    },
+    {
+      "source_id": "CONCEPT-002",
+      "target_id": "INV-001",
+      "edge_type": "PREREQUISITE",
+      "condition": "5단계 (3) 관련조사 = 피해사실확인 등"
+    },
+    {
+      "source_id": "CONCEPT-005",
+      "target_id": "INV-003",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-006",
+      "target_id": "CONCEPT-004",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "CONCEPT-006",
+      "target_id": "CONCEPT-005",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "CONCEPT-009",
+      "target_id": "CONCEPT-005",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "CONCEPT-011",
+      "target_id": "F-06",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "CONCEPT-011",
+      "target_id": "F-07",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "CONCEPT-012",
+      "target_id": "F-08",
+      "edge_type": "USES_FORMULA",
+      "condition": "착과감소 있음 케이스"
+    },
+    {
+      "source_id": "CONCEPT-012",
+      "target_id": "F-09",
+      "edge_type": "USES_FORMULA",
+      "condition": "착과감소 없음 케이스 (그림 #9)"
+    },
+    {
+      "source_id": "CONCEPT-013",
+      "target_id": "INS-02",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-014",
+      "target_id": "INS-03",
+      "edge_type": "APPLIES_TO",
+      "condition": "나무손해 5%"
+    },
+    {
+      "source_id": "CONCEPT-017",
+      "target_id": "INV-006",
+      "edge_type": "DEPENDS_ON",
+      "condition": "낙엽 vs 착엽 분류 기준"
+    },
+    {
+      "source_id": "CONCEPT-018",
+      "target_id": "F-06",
+      "edge_type": "DIFFERS_FROM"
+    },
+    {
+      "source_id": "CONCEPT-018",
+      "target_id": "F-07",
+      "edge_type": "DIFFERS_FROM"
+    },
+    {
+      "source_id": "CONCEPT-019",
+      "target_id": "F-01",
+      "edge_type": "DIFFERS_FROM"
+    },
+    {
+      "source_id": "CONCEPT-019",
+      "target_id": "F-02",
+      "edge_type": "DIFFERS_FROM"
+    },
+    {
+      "source_id": "CONCEPT-020",
+      "target_id": "TERM-005",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-020",
+      "target_id": "TERM-006",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "TERM-005",
+      "target_id": "TERM-006",
+      "edge_type": "DIFFERS_FROM",
+      "condition": "적과 종료 시점 기준 시기 분기"
+    },
+    {
+      "source_id": "TERM-007",
+      "target_id": "TERM-008",
+      "edge_type": "DIFFERS_FROM",
+      "condition": "착엽(붙어있음) vs 낙엽(떨어짐)"
+    },
+    {
+      "source_id": "TERM-009",
+      "target_id": "TERM-013",
+      "edge_type": "DEPENDS_ON",
+      "condition": "조사대상주수 = 가입주수 - 미보상주수 등"
+    },
+    {
+      "source_id": "TERM-011",
+      "target_id": "TERM-012",
+      "edge_type": "DIFFERS_FROM"
+    },
+    {
+      "source_id": "LAW-001",
+      "target_id": "INV-015",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "LAW-002",
+      "target_id": "INV-001",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "LAW-002",
+      "target_id": "INV-002",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "LAW-003",
+      "target_id": "INV-015",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "LAW-004",
+      "target_id": "INS-01",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-014",
+      "target_id": "INV-002",
+      "edge_type": "TIME_CONSTRAINT",
+      "condition": "적과 전 시기 사전 점검"
+    },
+    {
+      "source_id": "INV-014",
+      "target_id": "INV-001",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "INS-01",
+      "target_id": "CONCEPT-001",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "INS-01",
+      "target_id": "CONCEPT-002",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "INS-01",
+      "target_id": "CONCEPT-013",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "INV-005",
+      "target_id": "CONCEPT-019",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "INV-006",
+      "target_id": "CONCEPT-017",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "INV-006",
+      "target_id": "CONCEPT-019",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "INV-008",
+      "target_id": "CONCEPT-003",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "INV-006",
+      "target_id": "CONCEPT-010",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "F-06",
+      "target_id": "CONCEPT-018",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "F-07",
+      "target_id": "CONCEPT-018",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "F-08",
+      "target_id": "CONCEPT-012",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "F-09",
+      "target_id": "CONCEPT-012",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "F-04",
+      "target_id": "CONCEPT-005",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INV-007",
+      "target_id": "TERM-011",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "INV-007",
+      "target_id": "TERM-012",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "INV-007",
+      "target_id": "TERM-013",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "INV-008",
+      "target_id": "TERM-009",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "INV-008",
+      "target_id": "TERM-010",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "INS-01",
+      "target_id": "TERM-005",
+      "edge_type": "TIME_CONSTRAINT"
+    },
+    {
+      "source_id": "INS-01",
+      "target_id": "TERM-006",
+      "edge_type": "TIME_CONSTRAINT"
+    },
+    {
+      "source_id": "CONCEPT-013",
+      "target_id": "INV-002",
+      "edge_type": "TIME_CONSTRAINT",
+      "condition": "5종한정 시 적과 전 5종 한해 조사"
+    },
+    {
+      "source_id": "CONCEPT-009",
+      "target_id": "INS-06",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "INS-01",
+      "target_id": "INV-012",
+      "edge_type": "REQUIRES_INVESTIGATION",
+      "condition": "우박 발생 시 적과 전(유과타박률) 또는 적과 후(낙과·착과피해)"
+    },
+    {
+      "source_id": "INS-01",
+      "target_id": "INV-013",
+      "edge_type": "REQUIRES_INVESTIGATION",
+      "condition": "태풍 발생 시 낙과·낙엽률·착과수·피해구성률 조사"
+    },
+    {
+      "source_id": "INS-02",
+      "target_id": "INV-012",
+      "edge_type": "REQUIRES_INVESTIGATION",
+      "condition": "5종한정특약 보장 5종 중 우박 사고 시"
+    },
+    {
+      "source_id": "INS-02",
+      "target_id": "INV-013",
+      "edge_type": "REQUIRES_INVESTIGATION",
+      "condition": "5종한정특약 보장 5종 중 태풍 사고 시"
+    },
+    {
+      "source_id": "TERM-004",
+      "target_id": "CONCEPT-020",
+      "edge_type": "DEFINED_AS",
+      "condition": "적과 종료 시점 = 적과 작업이 종료된 시점"
+    }
+  ]
+}

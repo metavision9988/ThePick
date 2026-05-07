@@ -1,0 +1,60 @@
+-- Stage 1C topic_clusters INSERT (Session 049)
+-- 50 clusters (TC-001~TC-050)
+-- ontology-registry v1.3.0 topic_cluster_id_pattern ^TC-\d{3}$ 정합
+-- D-S1C-2=γ→β: question_ids = NULL (차세션 인간 검수 후 매핑)
+-- exam_frequency = exam_frequency_estimate (개략 카운트, 차세션 cell-level 정제)
+-- is_covered = 1 (BATCH-1~7 + R2 영역 cluster 모두 커버)
+-- source = 손평에듀 한종찬교수 제공 2-2과목 10년간 기출문제분석표
+
+
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-001', '적과전종합위험 — 5점 단답/계산', '적과전종합위험', '5점', NULL, 9, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-002', '적과전종합위험 — 15점 풀이형', '적과전종합위험', '15점', NULL, 9, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-003', '종합과수 — 5점 단답/계산', '종합과수', '5점', NULL, 7, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-004', '종합과수 — 15점 풀이형', '종합과수', '15점', NULL, 3, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-005', '과실손해보장 — 5점', '과실손해보장', '5점', NULL, 3, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-006', '과실손해보장 — 15점', '과실손해보장', '15점', NULL, 2, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-007', '논작물(벼) — 5점', '논작물', '5점', NULL, 3, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-008', '논작물(벼) — 15점', '논작물', '15점', NULL, 6, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-009', '밭작물 — 5점', '밭작물', '5점', NULL, 12, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-010', '밭작물 — 15점', '밭작물', '15점', NULL, 4, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-011', '4대시설 — 5점', '4대시설', '5점', NULL, 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-012', '4대시설 — 15점', '4대시설', '15점', NULL, 6, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-013', '수입감소 — 15점', '수입감소', '15점', NULL, 4, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-014', '기타 (보험금 지급/심사/대위) — 5점', '기타', '5점', NULL, 6, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-015', '기타 — 15점', '기타', '15점', NULL, 2, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-016', '생산비보장(노지) — 5점', '생산비보장(노지)', '5점', NULL, 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-017', '생산비보장(노지) — 15점', '생산비보장(노지)', '15점', NULL, 4, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-018', '가축 — 5점', '가축', '5점', NULL, 3, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-019', '가축 — 15점', '가축', '15점', NULL, 5, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-020', '시설작물 — 15점', '시설작물', '15점', NULL, 3, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-021', '적과전 — 손해평가반 구성 결정의 기준', '적과전종합위험', '5점', '손해평가반 구성 (재/생/품)', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-022', '적과전 — 사과 나무손해보험금', '적과전종합위험', '5점', '사과 나무손해보험금 산정', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-023', '적과전 — 낙엽률조사 + 착과피해조사', '적과전종합위험', '15점', '단감/떫은감 낙엽률 + 낙엽인정피해율 계산', 2, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-024', '적과전 — 누적감수과실수', '적과전종합위험', '15점', '누적감수과실수 산정 + 감수과실수', 2, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-025', '적과전 — 5종한정 보험금', '적과전종합위험', '15점', '5종한정 + 종합위험 5종한정 보험금', 2, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-026', '종합과수 — 복숭아 과중조사', '종합과수', '5점', '복숭아 과중조사', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-027', '종합과수 — 비가림과수 과중조사·착과피해조사', '종합과수', '5점', '비가림과수 과중조사 + 착과피해조사', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-028', '종합과수 — 자두 수확량조사 서술형', '종합과수', '15점', '자두 수확량조사 서술형', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-029', '과실손해 — 복분자 착과피해구성률', '과실손해보장', '5점', '복분자 착과피해구성률', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-030', '과실손해 — 무화과 피해율 + 개시전·개시후', '과실손해보장', '15점', '무화과 7/31 이전 + 8/1 이후 피해율 + 개시전·개시후 보험금', 2, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-031', '논작물 — 재이앙·재직파·재파종·재정식', '논작물', '15점', '재이앙/재직파/재파종/재정식 보험금', 3, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-032', '논작물 — 표본구간 수확량산정', '논작물', '5점', '표본구간 수확량산정 + 수량요소조사', 2, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-033', '밭작물 — 수확량조사 적기 (양파/마늘/고구마/감자/콩/양배추)', '밭작물', '5점', '양파/마늘/고구마/감자/콩/양배추 수확량조사 적기', 3, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-034', '밭작물 — 옥수수 보험금산정', '밭작물', '15점', '옥수수 수확감소 보험금산정', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-035', '밭작물 — 마늘 재파종 + 양배추 재정식', '밭작물', '5점', '마늘 재파종 + 양배추 재정식', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-036', '밭작물 — 감자 병충해 피해율', '밭작물', '5점', '감자 1등급 병충해 + 피해율 산정', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-037', '4대시설 — 인삼·해가림시설 손해조사·보험금', '4대시설', '5점/15점', '인삼/해가림 손해조사 + 잔/손/대/잔/기 보험금', 4, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-038', '수입감소 — 마늘 보험금산정', '수입감소', '15점', '마늘 농업수입감소 보험금산정', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-039', '수입감소 — 옥수수 보험금산정', '수입감소', '15점', '옥수수 농업수입감소 보험금산정 (★ Q-2025-11-2ND-017 정합)', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-040', '수입감소 — 콩 보험금산정', '수입감소', '15점', '콩 농업수입감소 보험금산정', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-041', '수입감소 — 포도 (이앙직파/재이앙)', '수입감소', '15점', '포도 농업수입감소 + 이앙직파/재이앙·재직파 보험금산정', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-042', '기타 — 손해평가반 구성 + 보상하지 않는 손해', '기타', '5점', '손해평가반 구성 + 보상하지 않는 손해 + 보험자대위 + 적립이율표', 4, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-043', '기타 — 보험금 미지급사유 + 지급사유 서술형', '기타', '15점', '보험금 미지급사유 + 지급사유 서술형', 2, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-044', '생산비보장 — 고추(노지) 보험금산정', '생산비보장(노지)', '15점', '고추(노지) 보험금산정', 2, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-045', '생산비보장 — 브로콜리 보험금산출', '생산비보장(노지)', '5점/15점', '브로콜리 보험금산출', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-046', '생산비보장 — 내용연수·감가율', '생산비보장(노지)', '15점', '내용연수 및 감가율', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-047', '가축 — 한우 월령별 보험가액', '가축', '5점', '한우 월령별 보험가액', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-048', '가축 — 한우 수컷·암컷 보험금/가액', '가축', '15점', '한우 수컷 보험금 + 한우 암컷 가액', 2, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-049', '가축 — 돼지 도살·위탁도살·도태권고·살처분·랜더링', '가축', '5점', '돼지 도살/위탁도살/도태권고/살처분/랜더링/기망', 1, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, question_ids, is_covered, source) VALUES ('TC-050', '시설작물 — 버섯·딸기·쑥갓 보험금', '시설작물', '15점', '버섯(시설) + 딸기(시설) + 쑥갓의 보험금', 2, NULL, 1, 'stage-1c-topic-clusters/2차2과목_10년간_기출분석.pdf');
+

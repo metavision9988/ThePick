@@ -1,0 +1,1516 @@
+{
+  "_meta": {
+    "batch_id": "BATCH-L1",
+    "source_pdf_law": "docs/manual/농어업재해보험법(법률)(제21065호)(20260102).pdf",
+    "source_pdf_enforcement": "docs/manual/농어업재해보험법 시행령(대통령령)(제35947호)(20260102).pdf",
+    "law_pages": [1, 16],
+    "enforcement_pages": [1, 9],
+    "page_count": 25,
+    "domain": "농어업재해보험법 (법률 제21065호, 시행 2026-01-02) 46개 조문 + 시행령 (대통령령 제35947호, 시행 2026-01-02) 25개 핵심 조문 + CONCEPT 12 + INV 3. Layer 3 법령 — 1차 시험 직결 영역.",
+    "chapter": "Layer 3 법령 (농어업재해보험법 + 시행령)",
+    "law_articles_count": 44,
+    "enforcement_articles_count": 25,
+    "status": "draft",
+    "ai_generated_by": "Claude Opus 4.7 (1M context) — Session 044",
+    "extracted_at": "2026-05-06",
+    "ontology_registry_version": "1.2.0",
+    "td_s42_1_compliance": "FORMULA 0 (법령에 산식 X) + CONST 참조 엣지 0건",
+    "td_s42_2_compliance": "FORMULA 0 — N/A",
+    "td_s43_1_compliance": "ontology-registry formula_id_pattern X (FORMULA 미사용)",
+    "cross_batch_refs_intent": "본 BATCH 는 기존 LAW-001 (제8조), LAW-002 (제11조), LAW-003 (손해평가요령 제11조), LAW-004 (손해평가요령 제12조) 재사용. 추가 cross-batch refs 6건. BATCH-L2 (상법 보험편) 진입 시 LAW-016/017/018 (BATCH-6 상법 657/682/680) 와 SUPERSEDES 또는 CROSS_REF 정합 가능."
+  },
+  "nodes": [
+    {
+      "id": "LAW-019",
+      "type": "LAW",
+      "title": "법 제1조 (목적)",
+      "content": "이 법은 농어업재해로 인하여 발생하는 농작물·임산물·가축·양식수산물의 피해를 보전하기 위한 농어업재해보험에 관한 사항을 규정함으로써 농어업 경영의 안정과 생산성 향상에 이바지하고 국민경제의 균형 있는 발전에 기여함을 목적으로 한다.",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-020",
+      "type": "LAW",
+      "title": "법 제2조 (정의)",
+      "content": "이 법에서 사용하는 용어 정의 — 1) 농어업재해 = 자연재해·병해충·조수해·질병·화재 등 농작물·임산물·가축·양식수산물에 발생하는 피해. 2) 농어업재해보험 = 보험에 가입한 자에게 보험금을 지급하기 위한 보험. 3) 보험가입자 = 재해보험에 가입한 자. 4) 보험사업자 = 재해보험사업을 영위하는 자.",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-021",
+      "type": "LAW",
+      "title": "법 제2조의2 (기본계획 및 시행계획의 수립ㆍ시행)",
+      "content": "농림축산식품부장관과 해양수산부장관이 농어업재해보험 발전을 위한 기본계획(5년 단위)과 시행계획(연간)을 수립·시행. 농어업인 단체 등의 의견 수렴 + 심의회 심의 거침. (시행 2026.8.15. 기본계획 → 변경 가능 명시).",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-022",
+      "type": "LAW",
+      "title": "법 제2조의3 (실태조사)",
+      "content": "농림축산식품부장관/해양수산부장관은 재해보험 가입실태·운영현황 등을 파악하기 위해 실태조사를 실시할 수 있다. 결과는 정책 수립의 기초자료로 활용. 관계 행정기관·단체에 자료 요청 가능.",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-023",
+      "type": "LAW",
+      "title": "법 제2조의4 (재해보험 등의 심의)",
+      "content": "재해보험에 관한 주요 사항은 농업재해보험심의회 또는 중앙수산업·어촌정책심의회의 심의를 거친다. 심의 대상 = 기본계획·시행계획 수립, 보험목적물 선정, 보상 범위 결정, 보험료율 산정 기준 등.",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-024",
+      "type": "LAW",
+      "title": "법 제3조 (농업재해보험심의회)",
+      "content": "농업재해보험에 관한 사항을 심의하기 위해 농림축산식품부에 농업재해보험심의회를 둔다. 위원장 1명 포함 20명 이내 위원으로 구성. 위원장 = 농림축산식품부차관. 임기 3년. 분과위원회 설치 가능.",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-025",
+      "type": "LAW",
+      "title": "법 제4조 (재해보험의 종류 등)",
+      "content": "재해보험 종류 = 농작물재해보험 + 임산물재해보험 + 가축재해보험 + 양식수산물재해보험. 농작물·임산물·가축 = 농림축산식품부장관 관장 / 양식수산물 = 해양수산부장관 관장.",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-026",
+      "type": "LAW",
+      "title": "법 제5조 (보험목적물)",
+      "content": "보험목적물 = 농작물·임산물·가축·양식수산물 중 농림축산식품부장관과 해양수산부장관이 관계 부처와 협의하여 정하는 품목·축종·종류로 한다. 결정 시 심의회 심의 거침. (시행 2026.8.15. 신규 품목 추가).",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-027",
+      "type": "LAW",
+      "title": "법 제6조 (보상의 범위 등)",
+      "content": "보상 범위 = 보험목적물에 발생하는 자연재해·병해충·조수해·질병·화재 등으로 발생하는 손해. 구체적 보상 범위 = 보험약관에서 정한다. 약관은 농림축산식품부장관과 협의 + 심의회 심의 + 금융위원회 협의를 거쳐 정한다.",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-028",
+      "type": "LAW",
+      "title": "법 제7조 (보험가입자)",
+      "content": "재해보험에 가입할 수 있는 자 = 농림축산식품부장관과 해양수산부장관이 정하는 자격을 갖춘 자. 농작물재해보험 가입 자격 = 농작물 경작면적이 일정 규모 이상 + 농업경영체 등록 등의 요건.",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-029",
+      "type": "LAW",
+      "title": "법 제9조 (보험료율의 산정)",
+      "content": "보험사업자가 보험료율 산정. 농림축산식품부장관 또는 해양수산부장관이 정하여 고시하는 기준에 따라 농업재해보험심의회 등 심의회 심의 거침. 보험료율 = 손해율·손해평가 결과·기상·재해 통계 등을 고려.",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-030",
+      "type": "LAW",
+      "title": "법 제10조 (보험모집)",
+      "content": "보험사업자가 직접 또는 「보험업법」에 따른 보험회사·보험모집인을 통해 보험을 모집할 수 있다. 농협조합 등 농업인 단체를 통한 모집도 허용.",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-031",
+      "type": "LAW",
+      "title": "법 제10조의2 (사고예방의무 등)",
+      "content": "보험가입자는 보험목적물의 사고를 예방하기 위해 노력해야 하며, 보험사업자도 사고예방을 위한 자료 제공·교육 등을 수행할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-032",
+      "type": "LAW",
+      "title": "법 제11조의2 (손해평가사)",
+      "content": "농림축산식품부장관은 공정하고 객관적인 손해평가를 촉진하기 위하여 손해평가사 제도를 운영한다. (본조신설 2014.6.3.)",
+      "truth_weight": 10,
+      "source_page": 10,
+      "book_page": 10,
+      "pdf_page": 10,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-033",
+      "type": "LAW",
+      "title": "법 제11조의3 (손해평가사의 업무)",
+      "content": "손해평가사는 농작물재해보험 및 가축재해보험에 관하여 다음 업무를 수행한다 — 1) 피해사실의 확인, 2) 보험가액 및 손해액의 평가, 3) 그 밖의 손해평가에 필요한 사항. (본조신설 2014.6.3.)",
+      "truth_weight": 10,
+      "source_page": 10,
+      "book_page": 10,
+      "pdf_page": 10,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-034",
+      "type": "LAW",
+      "title": "법 제11조의4 (손해평가사의 시험 등)",
+      "content": "손해평가사가 되려는 자는 농림축산식품부장관이 실시하는 자격시험에 합격해야 함. 보험목적물 또는 관련 분야에 관한 전문 지식·경험을 갖추었다고 인정되는 자에게는 시험 과목 일부 면제 가능. 부정 응시·부정행위자는 시험 정지·무효 + 처분일로부터 2년 응시 제한. 명의 사용·자격증 대여 금지 (위반 시 자격취소).",
+      "truth_weight": 10,
+      "source_page": 10,
+      "book_page": 10,
+      "pdf_page": 10,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-035",
+      "type": "LAW",
+      "title": "법 제11조의5 (손해평가사의 자격 취소)",
+      "content": "농림축산식품부장관은 다음에 해당하는 사람의 자격을 취소할 수 있다 (1·5호는 의무 취소) — 1) 거짓·부정한 방법으로 자격 취득, 2) 거짓 손해평가, 3) 명의 사용 허용·자격증 대여 (제11조의4제6항 위반), 4) 명의 사용·자격증 대여 알선 (제11조의4제7항 위반), 5) 업무정지 기간 중 손해평가 업무 수행. 세부기준 = 대통령령 (시행령 별표2의3).",
+      "truth_weight": 10,
+      "source_page": 10,
+      "book_page": 10,
+      "pdf_page": 10,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-036",
+      "type": "LAW",
+      "title": "법 제11조의6 (손해평가사의 감독)",
+      "content": "농림축산식품부장관은 손해평가사가 직무를 게을리하거나 부적절한 행위를 한 경우 1년 이내의 기간을 정하여 업무정지를 명할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 10,
+      "book_page": 10,
+      "pdf_page": 10,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-037",
+      "type": "LAW",
+      "title": "법 제11조의7 (보험금수급전용계좌)",
+      "content": "재해보험사업자는 수급권자 신청 시 보험금을 수급권자 명의 지정 계좌(보험금수급전용계좌)로 입금. 정보통신장애 등 불가피한 사유 시 현금 지급 가능. 해당 금융기관은 보험금만 입금되도록 관리. 신청 방법·절차 = 대통령령.",
+      "truth_weight": 10,
+      "source_page": 11,
+      "book_page": 11,
+      "pdf_page": 11,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-038",
+      "type": "LAW",
+      "title": "법 제11조의8 (손해평가에 대한 이의신청)",
+      "content": "보험가입자는 손해평가 결과에 이의 시 재해보험사업자에게 재평가 요청 가능 (특별한 사정이 없으면 따라야 함). 재평가에도 이의 미해결 시 농림축산식품부장관/해양수산부장관이 정하는 기관에 이의신청 가능. (시행 2026.8.15. 손해평가인·손해평가사 교체 요구권 신설).",
+      "truth_weight": 10,
+      "source_page": 11,
+      "book_page": 11,
+      "pdf_page": 11,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-039",
+      "type": "LAW",
+      "title": "법 제12조 (수급권의 보호)",
+      "content": "재해보험 보험금 수급권은 압류할 수 없다 (단, 보험목적물이 담보로 제공된 경우 제외). 보험금수급전용계좌 예금 중 대통령령으로 정하는 액수 이하의 금액은 압류 금지.",
+      "truth_weight": 10,
+      "source_page": 11,
+      "book_page": 11,
+      "pdf_page": 11,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-040",
+      "type": "LAW",
+      "title": "법 제13조 (보험목적물의 양도에 따른 권리 및 의무의 승계)",
+      "content": "재해보험가입자가 보험목적물을 양도할 경우 양수인이 양도인의 보험계약 권리·의무를 승계한 것으로 추정.",
+      "truth_weight": 10,
+      "source_page": 11,
+      "book_page": 11,
+      "pdf_page": 11,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-041",
+      "type": "LAW",
+      "title": "법 제14조 (업무 위탁)",
+      "content": "재해보험사업자는 재해보험사업의 원활한 수행을 위해 보험모집·손해평가 등 업무 일부를 대통령령으로 정하는 자에게 위탁할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 11,
+      "book_page": 11,
+      "pdf_page": 11,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-042",
+      "type": "LAW",
+      "title": "법 제15조 (회계 구분)",
+      "content": "재해보험사업자는 재해보험사업 회계를 다른 회계와 구분하여 처리, 손익관계를 명확히 해야 한다.",
+      "truth_weight": 10,
+      "source_page": 11,
+      "book_page": 11,
+      "pdf_page": 11,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-043",
+      "type": "LAW",
+      "title": "법 제17조 (분쟁조정)",
+      "content": "재해보험에 관한 분쟁의 조정은 「금융소비자 보호에 관한 법률」 제33조부터 제43조까지 규정에 따른다.",
+      "truth_weight": 10,
+      "source_page": 12,
+      "book_page": 12,
+      "pdf_page": 12,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-044",
+      "type": "LAW",
+      "title": "법 제18조 (「보험업법」 등의 적용)",
+      "content": "이 법에 따른 재해보험사업에 「보험업법」 일부 규정이 적용된다 (단, 일부 규정은 적용 제외).",
+      "truth_weight": 10,
+      "source_page": 12,
+      "book_page": 12,
+      "pdf_page": 12,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-045",
+      "type": "LAW",
+      "title": "법 제19조 (재정지원)",
+      "content": "정부는 보험가입자가 부담하는 보험료의 일부와 재해보험사업자의 운영비 일부를 지원할 수 있다. 지원 비율·방법 = 대통령령.",
+      "truth_weight": 10,
+      "source_page": 12,
+      "book_page": 12,
+      "pdf_page": 12,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-046",
+      "type": "LAW",
+      "title": "법 제20조 (재보험사업)",
+      "content": "농림축산식품부장관/해양수산부장관은 재해보험사업의 안정적 운영을 위하여 재보험사업을 운영할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 12,
+      "book_page": 12,
+      "pdf_page": 12,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-047",
+      "type": "LAW",
+      "title": "법 제21조 (기금의 설치)",
+      "content": "재보험사업·재해보험사업의 안정적 운영 및 보험사고로 인한 재정수요에 대응하기 위하여 농어업재해재보험기금을 설치한다.",
+      "truth_weight": 10,
+      "source_page": 12,
+      "book_page": 12,
+      "pdf_page": 12,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-048",
+      "type": "LAW",
+      "title": "법 제22조 (기금의 조성)",
+      "content": "기금 = 1) 재보험료 + 보험료에 의한 수입, 2) 정부·지방자치단체의 출연금, 3) 차입금, 4) 기금운용수익금, 5) 그 밖의 수입금으로 조성.",
+      "truth_weight": 10,
+      "source_page": 12,
+      "book_page": 12,
+      "pdf_page": 12,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-049",
+      "type": "LAW",
+      "title": "법 제23조 (기금의 용도)",
+      "content": "기금 용도 = 1) 재보험금 지급, 2) 차입금·이자 상환, 3) 기금운용을 위한 경비, 4) 보험사업 안정 지원, 5) 그 밖에 대통령령이 정하는 용도.",
+      "truth_weight": 10,
+      "source_page": 13,
+      "book_page": 13,
+      "pdf_page": 13,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-050",
+      "type": "LAW",
+      "title": "법 제24조 (기금의 관리ㆍ운용)",
+      "content": "기금은 농림축산식품부장관/해양수산부장관이 관리·운용. 운용 사무는 대통령령으로 정하는 기관(농업정책보험금융원 등)에 위탁할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 13,
+      "book_page": 13,
+      "pdf_page": 13,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-051",
+      "type": "LAW",
+      "title": "법 제25조 (기금의 회계기관)",
+      "content": "기금 회계 = 농림축산식품부장관/해양수산부장관이 소속 공무원 중 기금수입징수관·기금재무관·기금지출관·기금출납공무원을 임명.",
+      "truth_weight": 10,
+      "source_page": 13,
+      "book_page": 13,
+      "pdf_page": 13,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-052",
+      "type": "LAW",
+      "title": "법 제25조의2 (농어업재해보험사업의 관리)",
+      "content": "농림축산식품부장관/해양수산부장관은 보험사업의 효율적 관리를 위해 1) 통계자료 수집·분석·관리, 2) 손해평가 결과 검증을 위한 조사, 3) 그 밖에 대통령령이 정하는 업무를 수행. (시행 2026.8.15.).",
+      "truth_weight": 10,
+      "source_page": 13,
+      "book_page": 13,
+      "pdf_page": 13,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-053",
+      "type": "LAW",
+      "title": "법 제25조의3 (가격의 공시)",
+      "content": "농림축산식품부장관/해양수산부장관은 농작물재해보험·임산물재해보험에 가입할 수 있는 자가 보험가입 결정에 참고할 수 있도록 가격의 공시 등 필요한 조치를 할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 14,
+      "book_page": 14,
+      "pdf_page": 14,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-054",
+      "type": "LAW",
+      "title": "법 제26조 (통계의 수집ㆍ관리 등)",
+      "content": "농림축산식품부장관/해양수산부장관은 보험사업 운영을 위해 보험가입·보험금 지급·손해평가 결과 등 통계 수집·관리·공표할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 14,
+      "book_page": 14,
+      "pdf_page": 14,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-055",
+      "type": "LAW",
+      "title": "법 제27조 (시범사업)",
+      "content": "재해보험사업자는 신규 보험상품 도입을 위해 시범사업을 할 수 있다. 시범사업 보험목적물·실시 기간·보상 범위 = 농림축산식품부장관/해양수산부장관 협의 + 심의회 심의.",
+      "truth_weight": 10,
+      "source_page": 14,
+      "book_page": 14,
+      "pdf_page": 14,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-056",
+      "type": "LAW",
+      "title": "법 제28조 (보험가입의 촉진 등)",
+      "content": "정부는 농어업인의 재해보험 가입을 촉진하기 위해 보험가입 안내·보험료 일부 지원 등 노력을 해야 한다.",
+      "truth_weight": 10,
+      "source_page": 15,
+      "book_page": 15,
+      "pdf_page": 15,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-057",
+      "type": "LAW",
+      "title": "법 제28조의2 (보험가입촉진계획의 수립)",
+      "content": "재해보험사업자는 보험가입촉진계획을 매년 수립하여 농림축산식품부장관/해양수산부장관에게 제출해야 한다.",
+      "truth_weight": 10,
+      "source_page": 15,
+      "book_page": 15,
+      "pdf_page": 15,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-058",
+      "type": "LAW",
+      "title": "법 제29조 (보고 등)",
+      "content": "농림축산식품부장관/해양수산부장관은 재해보험사업자에게 보험사업 운영에 관한 보고·자료 제출을 요구할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 15,
+      "book_page": 15,
+      "pdf_page": 15,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-059",
+      "type": "LAW",
+      "title": "법 제29조의2 (청문)",
+      "content": "자격취소 처분 시 청문 실시 의무.",
+      "truth_weight": 10,
+      "source_page": 15,
+      "book_page": 15,
+      "pdf_page": 15,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-060",
+      "type": "LAW",
+      "title": "법 제30조 (벌칙)",
+      "content": "1) 거짓·부정한 방법으로 보험금을 받거나 다른 사람에게 받게 한 자 = 3년 이하 징역 또는 3천만원 이하 벌금. 2) 손해평가사 명의 부정 사용·자격증 대여 = 1년 이하 징역 또는 1천만원 이하 벌금.",
+      "truth_weight": 10,
+      "source_page": 15,
+      "book_page": 15,
+      "pdf_page": 15,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-061",
+      "type": "LAW",
+      "title": "법 제31조 (양벌규정)",
+      "content": "법인의 대표자·종업원 등이 위반행위를 한 경우 법인에도 해당 조문의 벌금형을 과한다 (다만 법인이 위반행위 방지를 위해 상당한 주의·감독을 한 경우 제외).",
+      "truth_weight": 10,
+      "source_page": 15,
+      "book_page": 15,
+      "pdf_page": 15,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-062",
+      "type": "LAW",
+      "title": "법 제32조 (과태료)",
+      "content": "1천만원 이하 또는 5백만원 이하 과태료 부과 사유 — 1) 보험가입촉진계획 미제출, 2) 보고·자료 제출 거부, 3) 검사 거부 등.",
+      "truth_weight": 10,
+      "source_page": 16,
+      "book_page": 16,
+      "pdf_page": 16,
+      "chapter": "농어업재해보험법",
+      "section": "법"
+    },
+    {
+      "id": "LAW-063",
+      "type": "LAW",
+      "title": "시행령 제1조 (목적)",
+      "content": "이 영은 「농어업재해보험법」에서 위임된 사항과 그 시행에 필요한 사항을 규정함을 목적으로 한다.",
+      "truth_weight": 10,
+      "source_page": 3,
+      "book_page": 3,
+      "pdf_page": 3,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-064",
+      "type": "LAW",
+      "title": "시행령 제2조의3 (기본계획 및 시행계획의 수립ㆍ시행)",
+      "content": "농림축산식품부장관/해양수산부장관은 농어업재해보험 기본계획을 5년마다 수립하고, 시행계획을 매년 수립한다. 관계 행정기관 협의 + 심의회 심의 거침.",
+      "truth_weight": 10,
+      "source_page": 4,
+      "book_page": 4,
+      "pdf_page": 4,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-065",
+      "type": "LAW",
+      "title": "시행령 제3조 (심의회 회의)",
+      "content": "심의회 회의는 위원장이 소집. 재적위원 과반수 출석으로 개의 + 출석위원 과반수 찬성으로 의결.",
+      "truth_weight": 10,
+      "source_page": 5,
+      "book_page": 5,
+      "pdf_page": 5,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-066",
+      "type": "LAW",
+      "title": "시행령 제8조 (재해보험에서 보상하는 재해의 범위)",
+      "content": "재해 범위 = 1) 자연재해(태풍·우박·동상해·호우·홍수·강풍·풍랑·해일·조수·설해·낙뢰 등), 2) 조수해, 3) 화재, 4) 병충해, 5) 질병, 6) 그 밖에 농림축산식품부장관/해양수산부장관이 정하는 재해.",
+      "truth_weight": 10,
+      "source_page": 6,
+      "book_page": 6,
+      "pdf_page": 6,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-067",
+      "type": "LAW",
+      "title": "시행령 제9조 (보험가입자의 기준)",
+      "content": "보험가입자 자격 = 농작물재해보험은 농업경영체 등록 + 일정 면적 이상 경작 / 가축재해보험은 농업경영체 등록 + 가축 사육 + 일정 두수 이상 등.",
+      "truth_weight": 10,
+      "source_page": 6,
+      "book_page": 6,
+      "pdf_page": 6,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-068",
+      "type": "LAW",
+      "title": "시행령 제10조 (재해보험사업의 약정체결)",
+      "content": "재해보험사업자 = 농림축산식품부장관/해양수산부장관과 약정을 체결한 자. 약정 시 사업자 자격·사업범위·사업기간·약정수수료 등을 명시.",
+      "truth_weight": 10,
+      "source_page": 6,
+      "book_page": 6,
+      "pdf_page": 6,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-069",
+      "type": "LAW",
+      "title": "시행령 제12조 (손해평가인의 자격요건 등)",
+      "content": "손해평가인 자격 = 1) 보험목적물 관련 학과 졸업 또는 일정 경력, 2) 농업·임업·축산업·수산업·기상학 분야 자격증 보유자, 3) 손해사정사 등. 자격유형별 정기교육 의무.",
+      "truth_weight": 10,
+      "source_page": 6,
+      "book_page": 6,
+      "pdf_page": 6,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-070",
+      "type": "LAW",
+      "title": "시행령 제12조의2 (손해평가사 자격시험의 실시 등)",
+      "content": "손해평가사 자격시험 = 매년 실시 (수급상 필요시 횟수 조정 가능). 시험공고 = 시험일 60일 전. 응시수수료 납부.",
+      "truth_weight": 10,
+      "source_page": 4,
+      "book_page": 4,
+      "pdf_page": 4,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-071",
+      "type": "LAW",
+      "title": "시행령 제12조의3 (손해평가사 자격시험의 방법)",
+      "content": "1차 시험 = 객관식 5지선다. 2차 시험 = 단답형·서술형 (계산 포함). 시험시간·문항수 = 농림축산식품부장관 고시.",
+      "truth_weight": 10,
+      "source_page": 4,
+      "book_page": 4,
+      "pdf_page": 4,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-072",
+      "type": "LAW",
+      "title": "시행령 제12조의4 (손해평가사 자격시험의 과목)",
+      "content": "1차 시험 과목 = 1) 「상법」 보험편, 2) 농어업재해보험법령(법·시행령·고시), 3) 농학개론 중 재배학 및 원예작물학. 2차 시험 과목 = 1) 농작물재해보험 및 가축재해보험 이론과 실무, 2) 손해평가 이론과 실무.",
+      "truth_weight": 10,
+      "source_page": 4,
+      "book_page": 4,
+      "pdf_page": 4,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-073",
+      "type": "LAW",
+      "title": "시행령 제12조의5 (손해평가사 자격시험의 일부 면제)",
+      "content": "1차 시험 면제 대상 = 1) 손해사정사, 2) 「보험업법」 손해사정 관련 업무 3년 이상 종사자(금융감독원/농협중앙회/손해보험회사/손해보험협회/손해사정 법인/한국화재보험협회 등). 1차 합격자는 다음 회 1차 면제.",
+      "truth_weight": 10,
+      "source_page": 5,
+      "book_page": 5,
+      "pdf_page": 5,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-074",
+      "type": "LAW",
+      "title": "시행령 제12조의6 (손해평가사 자격시험의 합격기준 등)",
+      "content": "1차 합격 = 매 과목 100점 만점, 매 과목 40점 이상 + 전 과목 평균 60점 이상. 2차 합격 = 매 과목 40점 이상 + 전 과목 평균 60점 이상 (수급상 필요시 선발예정인원 공고 → 매 과목 40점 이상 중 총득점 높은 순으로 선발). 동점자는 모두 합격 (소수점 둘째자리, 셋째자리 이하 버림).",
+      "truth_weight": 10,
+      "source_page": 5,
+      "book_page": 5,
+      "pdf_page": 5,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-075",
+      "type": "LAW",
+      "title": "시행령 제12조의7 (손해평가사 자격증의 발급)",
+      "content": "농림축산식품부장관은 자격시험 합격자에게 자격증을 발급한다. 발급 방식 = 농림축산식품부장관 고시.",
+      "truth_weight": 10,
+      "source_page": 5,
+      "book_page": 5,
+      "pdf_page": 5,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-076",
+      "type": "LAW",
+      "title": "시행령 제12조의8 (손해평가 등의 교육)",
+      "content": "농림축산식품부장관은 손해평가사의 손해평가 능력·자질 향상을 위하여 교육을 실시할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 5,
+      "book_page": 5,
+      "pdf_page": 5,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-077",
+      "type": "LAW",
+      "title": "시행령 제12조의9 (손해평가사 자격 취소 처분의 세부기준)",
+      "content": "법 제11조의5제1항 자격 취소 처분 세부기준 = 별표 2의3. 1차 위반·2차 위반·3차 이상 위반의 처분 단계별 차등 적용 (1차=업무정지/2차 이상=자격취소 등).",
+      "truth_weight": 10,
+      "source_page": 5,
+      "book_page": 5,
+      "pdf_page": 5,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-078",
+      "type": "LAW",
+      "title": "시행령 제12조의10 (손해평가사 업무 정지 처분의 세부기준)",
+      "content": "법 제11조의6 업무정지 처분 세부기준 = 별표. 위반행위 종류별·차수별 정지기간 차등 적용 (최대 1년).",
+      "truth_weight": 10,
+      "source_page": 6,
+      "book_page": 6,
+      "pdf_page": 6,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-079",
+      "type": "LAW",
+      "title": "시행령 제12조의11 (보험금수급전용계좌의 신청 방법ㆍ절차 등)",
+      "content": "수급권자가 보험사업자에게 신청서 제출 + 통장 사본 첨부. 정보통신장애 등 불가피 사유 시 현금 지급. 신청서식·확인 절차 = 농림축산식품부장관 고시.",
+      "truth_weight": 10,
+      "source_page": 6,
+      "book_page": 6,
+      "pdf_page": 6,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-080",
+      "type": "LAW",
+      "title": "시행령 제12조의12 (보험금의 압류 금지)",
+      "content": "보험금수급전용계좌 예금 중 월 150만원 이하 금액에 대한 채권은 압류 금지.",
+      "truth_weight": 10,
+      "source_page": 6,
+      "book_page": 6,
+      "pdf_page": 6,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-081",
+      "type": "LAW",
+      "title": "시행령 제13조 (업무 위탁)",
+      "content": "재해보험사업자는 보험모집·손해평가·전산처리 등 업무를 1) 「농업협동조합법」에 따른 농업협동조합·중앙회, 2) 「수산업협동조합법」 수산업협동조합·중앙회, 3) 「산림조합법」 산림조합·중앙회, 4) 「보험업법」 보험회사 등에 위탁 가능.",
+      "truth_weight": 10,
+      "source_page": 6,
+      "book_page": 6,
+      "pdf_page": 6,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-082",
+      "type": "LAW",
+      "title": "시행령 제15조 (보험료 및 운영비의 지원)",
+      "content": "정부는 농어업인의 보험료 부담을 경감하기 위해 보험료 일부 지원 + 재해보험사업자의 사업운영비 일부 지원. 지원 비율 = 농림축산식품부장관/해양수산부장관이 정함.",
+      "truth_weight": 10,
+      "source_page": 7,
+      "book_page": 7,
+      "pdf_page": 7,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-083",
+      "type": "LAW",
+      "title": "시행령 제16조 (재보험 약정서)",
+      "content": "농림축산식품부장관/해양수산부장관은 재해보험사업자와 재보험 약정을 체결할 때 1) 재보험료, 2) 책임 범위, 3) 재보험금 지급 등을 명시한 약정서를 작성.",
+      "truth_weight": 10,
+      "source_page": 7,
+      "book_page": 7,
+      "pdf_page": 7,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-084",
+      "type": "LAW",
+      "title": "시행령 제19조 (기금의 결산)",
+      "content": "기금 결산보고서를 매 회계연도 종료 후 80일 이내에 농림축산식품부장관/해양수산부장관에게 제출.",
+      "truth_weight": 10,
+      "source_page": 7,
+      "book_page": 7,
+      "pdf_page": 7,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-085",
+      "type": "LAW",
+      "title": "시행령 제22조 (시범사업 실시)",
+      "content": "재해보험사업자가 시범사업 실시 시 농림축산식품부장관/해양수산부장관에게 사업계획서 제출 + 협의. 시범사업 결과 → 본사업 전환 검토.",
+      "truth_weight": 10,
+      "source_page": 8,
+      "book_page": 8,
+      "pdf_page": 8,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-086",
+      "type": "LAW",
+      "title": "시행령 제22조의2 (보험가입촉진계획의 제출 등)",
+      "content": "재해보험사업자는 보험가입촉진계획을 매년 1월 31일까지 농림축산식품부장관/해양수산부장관에게 제출. 계획 = 가입 목표·홍보·인센티브 등.",
+      "truth_weight": 10,
+      "source_page": 8,
+      "book_page": 8,
+      "pdf_page": 8,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "LAW-087",
+      "type": "LAW",
+      "title": "시행령 제23조 (과태료의 부과기준)",
+      "content": "법 제32조 과태료 부과기준 = 별표 3. 위반행위 종류·차수별 차등 적용 (1차/2차/3차 이상).",
+      "truth_weight": 10,
+      "source_page": 9,
+      "book_page": 9,
+      "pdf_page": 9,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령"
+    },
+    {
+      "id": "CONCEPT-130",
+      "type": "CONCEPT",
+      "title": "재해보험의 종류 (4종)",
+      "content": "법 제4조 정합. 농작물재해보험 + 임산물재해보험 + 가축재해보험 + 양식수산물재해보험 = 4종. 농작물·임산물·가축 = 농림축산식품부장관 관장 / 양식수산물 = 해양수산부장관 관장.",
+      "truth_weight": 9,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "농어업재해보험법",
+      "section": "법 제4조"
+    },
+    {
+      "id": "CONCEPT-131",
+      "type": "CONCEPT",
+      "title": "농어업재해의 정의 (5+1종)",
+      "content": "법 제2조 + 시행령 제8조 정합. 자연재해(태풍·우박·동상해·호우·홍수·강풍·풍랑·해일·조수·설해·낙뢰 등) + 조수해 + 병충해 + 질병 + 화재 + 그 밖의 재해. 농작물재해보험 보상 대상 자연재해 종류 명시.",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "농어업재해보험법",
+      "section": "법 제2조"
+    },
+    {
+      "id": "CONCEPT-132",
+      "type": "CONCEPT",
+      "title": "손해평가사 제도",
+      "content": "법 제11조의2~제11조의8 정합. 농림축산식품부장관이 운영하는 자격제도. 농작물·가축재해보험 손해평가 전담. 자격시험 1차(객관식) + 2차(서술형/계산) 합격 → 자격증 발급. 자격취소·업무정지 가능 (최대 1년).",
+      "truth_weight": 10,
+      "source_page": 10,
+      "book_page": 10,
+      "pdf_page": 10,
+      "chapter": "농어업재해보험법",
+      "section": "법 제11조의2"
+    },
+    {
+      "id": "CONCEPT-133",
+      "type": "CONCEPT",
+      "title": "손해평가사 시험 과목 (1차/2차)",
+      "content": "시행령 제12조의4 정합. 1차 = 1) 「상법」 보험편, 2) 농어업재해보험법령, 3) 농학개론 중 재배학 및 원예작물학. 2차 = 1) 농작물재해보험 및 가축재해보험 이론과 실무, 2) 손해평가 이론과 실무.",
+      "truth_weight": 10,
+      "source_page": 4,
+      "book_page": 4,
+      "pdf_page": 4,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령 제12조의4"
+    },
+    {
+      "id": "CONCEPT-134",
+      "type": "CONCEPT",
+      "title": "손해평가사 시험 합격기준",
+      "content": "시행령 제12조의6 정합. 1차/2차 공통 합격기준 = 매 과목 40점 이상(매 과목 100점 만점) + 전 과목 평균 60점 이상. 2차는 수급상 필요시 선발예정인원 공고 (매 과목 40점 이상 + 총득점 높은 순). 동점자 모두 합격 (소수점 둘째자리, 셋째자리 이하 버림).",
+      "truth_weight": 10,
+      "source_page": 5,
+      "book_page": 5,
+      "pdf_page": 5,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령 제12조의6"
+    },
+    {
+      "id": "CONCEPT-135",
+      "type": "CONCEPT",
+      "title": "손해평가사 자격 면제 (1차)",
+      "content": "시행령 제12조의5 정합. 1차 면제 대상 = 1) 손해사정사, 2) 「보험업법」 손해사정 관련 업무 3년 이상 종사자(금융감독원/농협중앙회/손해보험회사/손해보험협회/손해사정 법인/한국화재보험협회). 1차 합격자는 다음 회 1차 면제 (1회 한정).",
+      "truth_weight": 9,
+      "source_page": 5,
+      "book_page": 5,
+      "pdf_page": 5,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령 제12조의5"
+    },
+    {
+      "id": "CONCEPT-136",
+      "type": "CONCEPT",
+      "title": "손해평가사 자격취소 사유 (5종)",
+      "content": "법 제11조의5 정합. 1) 거짓·부정한 방법으로 자격 취득 (의무 취소), 2) 거짓 손해평가, 3) 명의 사용 허용·자격증 대여, 4) 명의 사용·자격증 대여 알선, 5) 업무정지 기간 중 손해평가 업무 수행 (의무 취소). 1·5호는 의무 취소, 그 외는 임의 취소. 세부기준 = 시행령 별표 2의3.",
+      "truth_weight": 10,
+      "source_page": 10,
+      "book_page": 10,
+      "pdf_page": 10,
+      "chapter": "농어업재해보험법",
+      "section": "법 제11조의5"
+    },
+    {
+      "id": "CONCEPT-137",
+      "type": "CONCEPT",
+      "title": "교차손해평가",
+      "content": "법 제11조 제3항 정합. 재해보험사업자가 공정·객관적 손해평가를 위해 동일 시·군·구(자치구) 내에서 손해평가인 상호간 담당지역 교차 평가. 절차·방법 = 농림축산식품부장관/해양수산부장관 정함.",
+      "truth_weight": 9,
+      "source_page": 9,
+      "book_page": 9,
+      "pdf_page": 9,
+      "chapter": "농어업재해보험법",
+      "section": "법 제11조"
+    },
+    {
+      "id": "CONCEPT-138",
+      "type": "CONCEPT",
+      "title": "농어업재해재보험기금",
+      "content": "법 제21~25조 정합. 재보험사업·재해보험사업의 안정적 운영을 위해 설치. 조성 = 재보험료·정부 출연금·차입금·기금운용수익금. 용도 = 재보험금 지급·차입금 상환·기금운용 경비·보험사업 안정 지원. 관리·운용 = 농림축산식품부장관/해양수산부장관 (위탁 가능).",
+      "truth_weight": 9,
+      "source_page": 12,
+      "book_page": 12,
+      "pdf_page": 12,
+      "chapter": "농어업재해보험법",
+      "section": "법 제3장"
+    },
+    {
+      "id": "CONCEPT-139",
+      "type": "CONCEPT",
+      "title": "보험금수급전용계좌",
+      "content": "법 제11조의7 + 시행령 제12조의11~12조의12 정합. 수급권자 신청 시 재해보험사업자가 수급권자 명의 지정 계좌로 보험금 입금. 정보통신장애 등 불가피 사유 시 현금 지급. 해당 계좌 예금 중 월 150만원 이하는 압류 금지.",
+      "truth_weight": 9,
+      "source_page": 11,
+      "book_page": 11,
+      "pdf_page": 11,
+      "chapter": "농어업재해보험법",
+      "section": "법 제11조의7"
+    },
+    {
+      "id": "CONCEPT-140",
+      "type": "CONCEPT",
+      "title": "이의신청 절차 (손해평가)",
+      "content": "법 제11조의8 정합. 보험가입자는 재해보험사업자에 재평가 요청 가능 → 미해결 시 농림축산식품부장관/해양수산부장관 정하는 기관에 이의신청. (시행 2026.8.15. 손해평가인·손해평가사·손해사정사 교체 요구권 추가).",
+      "truth_weight": 9,
+      "source_page": 11,
+      "book_page": 11,
+      "pdf_page": 11,
+      "chapter": "농어업재해보험법",
+      "section": "법 제11조의8"
+    },
+    {
+      "id": "CONCEPT-141",
+      "type": "CONCEPT",
+      "title": "재정지원 (보험료 지원)",
+      "content": "법 제19조 + 시행령 제15조 정합. 정부가 보험가입자 부담 보험료 일부 + 재해보험사업자 운영비 일부 지원. 지원 비율 = 농림축산식품부장관/해양수산부장관 정함. 농어업인 보험료 부담 경감 목적.",
+      "truth_weight": 9,
+      "source_page": 12,
+      "book_page": 12,
+      "pdf_page": 12,
+      "chapter": "농어업재해보험법",
+      "section": "법 제19조"
+    },
+    {
+      "id": "INV-085",
+      "type": "INVESTIGATION",
+      "title": "손해평가사 자격시험 응시 절차",
+      "content": "공고(시험일 60일 전) → 응시원서 제출 + 응시수수료 납부 → 1차 시험 → (1차 합격자/면제 대상자) 2차 시험 → 합격자 결정 → 자격증 발급. 부정행위자는 시험 정지·무효 + 처분일로부터 2년 응시 제한.",
+      "truth_weight": 9,
+      "source_page": 4,
+      "book_page": 4,
+      "pdf_page": 4,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령 제12조의2"
+    },
+    {
+      "id": "INV-086",
+      "type": "INVESTIGATION",
+      "title": "보험가입 절차 (재해보험)",
+      "content": "보험가입자 자격 확인 (시행령 제9조) → 보험모집 (법 제10조, NH농협 등 위탁) → 보험약정 → 보험료 납부 (재정지원 적용) → 보험증권 발급. 보험가입촉진계획에 따라 매년 가입 촉진.",
+      "truth_weight": 8,
+      "source_page": 6,
+      "book_page": 6,
+      "pdf_page": 6,
+      "chapter": "농어업재해보험법 시행령",
+      "section": "시행령 제9조"
+    },
+    {
+      "id": "INV-087",
+      "type": "INVESTIGATION",
+      "title": "손해평가 결과 검증 조사",
+      "content": "법 제11조 제7항 (시행 2026.8.15.) 정합. 농림축산식품부장관/해양수산부장관이 손해평가 요령에 따라 손해평가 결과를 검증하기 위한 조사 실시. 검증 결과 = 손해평가 적정성 확보 + 정책 수립 기초자료.",
+      "truth_weight": 9,
+      "source_page": 9,
+      "book_page": 9,
+      "pdf_page": 9,
+      "chapter": "농어업재해보험법",
+      "section": "법 제11조"
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "LAW-019",
+      "target_id": "LAW-020",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-021",
+      "target_id": "LAW-024",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-023",
+      "target_id": "LAW-024",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-025",
+      "target_id": "LAW-026",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-026",
+      "target_id": "LAW-027",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-028",
+      "target_id": "LAW-001",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-001",
+      "target_id": "LAW-029",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-001",
+      "target_id": "LAW-002",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-002",
+      "target_id": "LAW-032",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-032",
+      "target_id": "LAW-033",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-032",
+      "target_id": "LAW-034",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-034",
+      "target_id": "LAW-035",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-034",
+      "target_id": "LAW-036",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-037",
+      "target_id": "LAW-039",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-002",
+      "target_id": "LAW-038",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-046",
+      "target_id": "LAW-047",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-047",
+      "target_id": "LAW-048",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-048",
+      "target_id": "LAW-049",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-049",
+      "target_id": "LAW-050",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-050",
+      "target_id": "LAW-051",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-052",
+      "target_id": "LAW-054",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-052",
+      "target_id": "LAW-053",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-056",
+      "target_id": "LAW-057",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-058",
+      "target_id": "LAW-059",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-060",
+      "target_id": "LAW-061",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-060",
+      "target_id": "LAW-062",
+      "edge_type": "DIFFERS_FROM"
+    },
+    {
+      "source_id": "LAW-063",
+      "target_id": "LAW-019",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-066",
+      "target_id": "LAW-027",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-067",
+      "target_id": "LAW-028",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-068",
+      "target_id": "LAW-001",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-069",
+      "target_id": "LAW-002",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-070",
+      "target_id": "LAW-034",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-071",
+      "target_id": "LAW-070",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-072",
+      "target_id": "LAW-070",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-073",
+      "target_id": "LAW-070",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-074",
+      "target_id": "LAW-070",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-075",
+      "target_id": "LAW-074",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-076",
+      "target_id": "LAW-075",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-077",
+      "target_id": "LAW-035",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-078",
+      "target_id": "LAW-036",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-079",
+      "target_id": "LAW-037",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-080",
+      "target_id": "LAW-039",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-081",
+      "target_id": "LAW-041",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-082",
+      "target_id": "LAW-045",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-083",
+      "target_id": "LAW-046",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-084",
+      "target_id": "LAW-051",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-085",
+      "target_id": "LAW-055",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-086",
+      "target_id": "LAW-057",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-087",
+      "target_id": "LAW-062",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "CONCEPT-130",
+      "target_id": "LAW-025",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-131",
+      "target_id": "LAW-020",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-131",
+      "target_id": "LAW-066",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-132",
+      "target_id": "LAW-032",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-132",
+      "target_id": "LAW-033",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-133",
+      "target_id": "LAW-072",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-134",
+      "target_id": "LAW-074",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-135",
+      "target_id": "LAW-073",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-136",
+      "target_id": "LAW-035",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-137",
+      "target_id": "LAW-002",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-138",
+      "target_id": "LAW-047",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-139",
+      "target_id": "LAW-037",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-139",
+      "target_id": "LAW-080",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-140",
+      "target_id": "LAW-038",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-141",
+      "target_id": "LAW-045",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-141",
+      "target_id": "LAW-082",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "INV-085",
+      "target_id": "LAW-070",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-085",
+      "target_id": "LAW-034",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-086",
+      "target_id": "LAW-067",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-086",
+      "target_id": "LAW-030",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-087",
+      "target_id": "LAW-002",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "LAW-069",
+      "target_id": "LAW-003",
+      "edge_type": "SHARED_WITH"
+    },
+    {
+      "source_id": "LAW-069",
+      "target_id": "LAW-004",
+      "edge_type": "SHARED_WITH"
+    }
+  ],
+  "formulas": [],
+  "constants": [
+    {
+      "id": "CONST-113",
+      "name": "손해평가사 자격시험 매 과목 만점",
+      "value": "100",
+      "category": "threshold",
+      "source_page": 5
+    },
+    {
+      "id": "CONST-114",
+      "name": "손해평가사 자격시험 매 과목 최저 합격점수",
+      "value": "40",
+      "category": "threshold",
+      "source_page": 5
+    },
+    {
+      "id": "CONST-115",
+      "name": "손해평가사 자격시험 평균 합격점수",
+      "value": "60",
+      "category": "threshold",
+      "source_page": 5
+    },
+    {
+      "id": "CONST-116",
+      "name": "손해평가사 정지·무효 처분 후 응시 제한 (년)",
+      "value": "2",
+      "category": "threshold",
+      "source_page": 10
+    },
+    {
+      "id": "CONST-117",
+      "name": "손해평가사 자격취소 후 응시 제한 (년)",
+      "value": "2",
+      "category": "threshold",
+      "source_page": 10
+    },
+    {
+      "id": "CONST-118",
+      "name": "손해평가사 업무정지 최대 기간 (년)",
+      "value": "1",
+      "category": "threshold",
+      "source_page": 10
+    },
+    {
+      "id": "CONST-119",
+      "name": "손해평가인 정기교육 횟수 (회/년)",
+      "value": "1",
+      "category": "threshold",
+      "source_page": 9
+    },
+    {
+      "id": "CONST-120",
+      "name": "보험금수급전용계좌 압류 금지 한도 (월/원)",
+      "value": "1500000",
+      "category": "threshold",
+      "source_page": 6
+    },
+    {
+      "id": "CONST-121",
+      "name": "재해보험기본계획 수립 주기 (년)",
+      "value": "5",
+      "category": "threshold",
+      "source_page": 1
+    },
+    {
+      "id": "CONST-122",
+      "name": "기금 결산보고서 제출 기한 (회계연도 종료 후 일)",
+      "value": "80",
+      "category": "threshold",
+      "source_page": 7
+    },
+    {
+      "id": "CONST-123",
+      "name": "보험가입촉진계획 제출 기한 (매년 월/일)",
+      "value": "1.31",
+      "category": "date",
+      "source_page": 8
+    },
+    {
+      "id": "CONST-124",
+      "name": "재해보험심의회 위원 임기 (년)",
+      "value": "3",
+      "category": "threshold",
+      "source_page": 1
+    },
+    {
+      "id": "CONST-125",
+      "name": "보험모집 위탁 손해사정 종사 경력 요건 (년)",
+      "value": "3",
+      "category": "threshold",
+      "source_page": 5
+    },
+    {
+      "id": "CONST-126",
+      "name": "1차 합격 후 차회 1차 면제 회수 (회 한정)",
+      "value": "1",
+      "category": "threshold",
+      "source_page": 5
+    },
+    {
+      "id": "CONST-127",
+      "name": "법 제30조 거짓 보험금 수령 벌칙 징역 한도 (년)",
+      "value": "3",
+      "category": "threshold",
+      "source_page": 15
+    },
+    {
+      "id": "CONST-128",
+      "name": "법 제30조 거짓 보험금 수령 벌칙 벌금 한도 (만원)",
+      "value": "3000",
+      "category": "threshold",
+      "source_page": 15
+    },
+    {
+      "id": "CONST-129",
+      "name": "자격시험 시험공고 기한 (시험일 전 일)",
+      "value": "60",
+      "category": "threshold",
+      "source_page": 4
+    }
+  ]
+}

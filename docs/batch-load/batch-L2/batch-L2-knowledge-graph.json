@@ -1,0 +1,1289 @@
+{
+  "_meta": {
+    "batch_id": "BATCH-L2",
+    "source_pdf": "docs/manual/상법(법률)(제21448호)(20260306).pdf",
+    "law_pages": [21, 24],
+    "page_count": 4,
+    "domain": "상법 제4편 보험 — 제1장 통칙(제638조~제664조 30개 조문) + 제2장 손해보험 통칙(제665조~제682조 18개 조문) + 제2장 제5절 책임보험 일부(제719조·제720조). 1차 시험 직결 영역. BATCH-6 LAW-016/017/018 (657/682/680) 와 CROSS_REF 정합.",
+    "chapter": "상법 제4편 보험",
+    "law_articles_count": 50,
+    "concept_count": 12,
+    "investigation_count": 3,
+    "status": "draft",
+    "ai_generated_by": "Claude Opus 4.7 (1M context) — Session 044",
+    "extracted_at": "2026-05-06",
+    "ontology_registry_version": "1.2.0",
+    "td_s42_1_compliance": "FORMULA 0 + CONST 참조 엣지 0건",
+    "td_s42_2_compliance": "FORMULA 0 — N/A",
+    "td_s43_1_compliance": "FORMULA 미사용",
+    "cross_batch_refs_intent": "본 BATCH 는 BATCH-6 LAW-016 (상법 제657조 인용 가축재해보험) / LAW-017 (제682조 인용) / LAW-018 (제680조 인용) 와 CROSS_REF 엣지로 연결. CONCEPT 148 (손해방지의무) ↔ BATCH-6 CONCEPT-116, CONCEPT 149 (보험사고 통지의무) ↔ BATCH-6 CONCEPT-115, CONCEPT 145 (전부·초과·중복·일부 보험) ↔ BATCH-6 CONCEPT-125 / 가축재해보험 부보비율 CONCEPT-123. 상법 제664조 (LAW-117) 는 농어업재해보험법 (LAW-001/019) 와 DEPENDS_ON 정합."
+  },
+  "nodes": [
+    {
+      "id": "LAW-088",
+      "type": "LAW",
+      "title": "상법 제638조 (보험계약의 의의)",
+      "content": "보험계약 = 당사자 일방이 약정한 보험료를 지급하고 재산 또는 생명·신체에 관하여 우연한 사고가 발생할 경우에 상대방이 일정한 보험금이나 그 밖의 급여를 지급할 것을 약정함으로써 효력이 생기는 계약. (보험자·보험계약자 양 당사자 + 우연한 사고 + 보험료·보험금 지급).",
+      "truth_weight": 10,
+      "source_page": 21,
+      "book_page": 21,
+      "pdf_page": 21,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-089",
+      "type": "LAW",
+      "title": "상법 제638조의2 (보험계약의 성립)",
+      "content": "① 보험자가 보험계약자로부터 청약과 함께 보험료 상당액의 전부 또는 일부를 받은 경우 다른 약정이 없는 한 30일 내에 그 청약에 대하여 낙부의 통지를 발송해야 한다 (인보험은 신체검사 받은 날부터 기산). ② 30일 내 통지하지 않으면 청약 승낙 의제. ③ 통지 발송 전 보험사고 발생 시 그 청약을 거절할 사유가 없는 한 보험자는 보장 책임 (단, 인보험 신체검사 미실시는 예외).",
+      "truth_weight": 10,
+      "source_page": 21,
+      "book_page": 21,
+      "pdf_page": 21,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-090",
+      "type": "LAW",
+      "title": "상법 제638조의3 (보험약관의 교부ㆍ설명 의무)",
+      "content": "① 보험자는 보험계약 체결 시 보험계약자에게 보험약관을 교부하고 그 약관의 중요한 내용을 설명해야 한다. ② 보험자가 의무를 위반한 경우 보험계약자는 보험계약 성립 날부터 3개월 내에 그 계약을 취소할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 21,
+      "book_page": 21,
+      "pdf_page": 21,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-091",
+      "type": "LAW",
+      "title": "상법 제639조 (타인을 위한 보험)",
+      "content": "① 보험계약자는 위임을 받거나 받지 아니하고 특정 또는 불특정의 타인을 위하여 보험계약을 체결할 수 있다. 그러나 손해보험계약의 경우에는 그 타인의 위임이 없는 때에는 보험계약자는 이를 보험자에게 고지하여야 한다 (위반 시 그 사실을 알지 못한 보험자에게 대항 X). ② 타인을 위한 보험계약의 효력 + 보험금 청구권 (피보험자 직접 행사 가능). ③ 보험료는 원칙적으로 보험계약자가 지급, 단 일정 사유 발생 시 피보험자에게 청구.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-092",
+      "type": "LAW",
+      "title": "상법 제640조 (보험증권의 교부)",
+      "content": "① 보험자는 보험계약이 성립한 때에는 지체없이 보험증권을 작성하여 보험계약자에게 교부해야 한다. 그러나 보험계약자가 보험료의 전부 또는 최초의 보험료를 지급하지 아니한 때에는 그러하지 아니하다. ② 기존의 보험계약을 연장하거나 변경한 경우에는 보험자는 그 보험증권에 그 사실을 기재함으로써 보험증권의 교부에 갈음할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-093",
+      "type": "LAW",
+      "title": "상법 제641조 (증권에 관한 이의약관의 효력)",
+      "content": "보험계약의 당사자는 보험증권의 교부가 있은 날부터 일정한 기간 내에 한하여 그 증권 내용의 정부에 관한 이의를 할 수 있음을 약정할 수 있다. 이 기간은 1월을 내리지 못한다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-094",
+      "type": "LAW",
+      "title": "상법 제643조 (소급보험)",
+      "content": "보험계약은 그 계약전의 어느 시기를 보험기간의 시기로 할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-095",
+      "type": "LAW",
+      "title": "상법 제644조 (보험사고의 객관적 확정의 효과)",
+      "content": "보험계약 당시에 보험사고가 이미 발생하였거나 또는 발생할 수 없는 것인 때에는 그 계약은 무효로 한다. 그러나 당사자 쌍방과 피보험자가 이를 알지 못한 때에는 그러하지 아니하다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-096",
+      "type": "LAW",
+      "title": "상법 제646조 (대리인이 안 것의 효과)",
+      "content": "대리인에 의하여 보험계약을 체결한 경우에 대리인이 안 사유는 그 본인이 안 것과 동일한 것으로 한다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-097",
+      "type": "LAW",
+      "title": "상법 제646조의2 (보험대리상 등의 권한)",
+      "content": "① 보험대리상 권한 = 1) 보험료 수령권, 2) 보험증권 교부권, 3) 보험계약자로부터의 청약·고지·통지·해지·취소 등 의사표시 수령권, 4) 보험계약자에 대한 의사표시권. ② 보험자는 위 1)~4) 권한 중 일부를 제한할 수 있다 (단, 보험계약자에 대항 불가). ③ 보험대리상 외의 자(보험중개사 제외)는 보험료 수령권·증권 교부권 등 권한 없음.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-098",
+      "type": "LAW",
+      "title": "상법 제647조 (특별위험의 소멸로 인한 보험료의 감액청구)",
+      "content": "보험계약의 당사자가 특별한 위험을 예기하여 보험료의 액을 정한 경우에 보험기간 중 그 예기한 위험이 소멸한 때에는 보험계약자는 그 후의 보험료의 감액을 청구할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-099",
+      "type": "LAW",
+      "title": "상법 제648조 (보험계약의 무효로 인한 보험료반환청구)",
+      "content": "보험계약의 전부 또는 일부가 무효인 경우에 보험계약자와 피보험자가 선의이며 중대한 과실이 없는 때에는 보험자에 대하여 보험료의 전부 또는 일부의 반환을 청구할 수 있다 (보험수익자가 그 보험료의 일부를 지급한 경우에는 그 부분에 대하여 그 반환을 청구할 수 있다).",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-100",
+      "type": "LAW",
+      "title": "상법 제649조 (사고발생전의 임의해지)",
+      "content": "① 보험사고가 발생하기 전에는 보험계약자는 언제든지 계약의 전부 또는 일부를 해지할 수 있다. 그러나 제639조의 보험계약의 경우에는 보험계약자는 그 타인의 동의를 얻지 아니하거나 보험증권을 소지하지 아니하면 그 계약을 해지하지 못한다. ② 타인을 위한 보험계약의 경우 보험계약자는 그 타인의 동의를 얻지 못하거나 보험증권 미소지 시 해지 X. ③ 사고발생전의 해지의 경우 미경과 보험료 반환 청구 가능 (다른 약정이 없는 한).",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-101",
+      "type": "LAW",
+      "title": "상법 제650조 (보험료의 지급과 지체의 효과)",
+      "content": "① 보험계약자는 계약 체결 후 지체 없이 보험료의 전부 또는 제1회 보험료를 지급해야 함 (지급 X 시 다른 약정이 없는 한 계약 성립 후 2개월이 경과하면 계약 해제 의제). ② 계속보험료가 약정한 시기에 지급되지 않는 때에는 보험자는 상당한 기간을 정하여 보험계약자에게 최고하고 그 기간 내에 지급되지 아니한 때에는 그 계약을 해지할 수 있다. ③ 특정 타인을 위한 보험은 그 타인에게도 통지 후 그 타인이 지급할 기회 부여.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-102",
+      "type": "LAW",
+      "title": "상법 제650조의2 (보험계약의 부활)",
+      "content": "제650조 제2항에 따라 보험계약이 해지되고 해지환급금이 지급되지 아니한 경우에 보험계약자는 일정한 기간 내에 연체보험료에 약정이자를 붙여 보험자에게 지급하고 그 계약의 부활을 청구할 수 있다. 제638조의2의 규정은 이 경우에 준용한다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-103",
+      "type": "LAW",
+      "title": "상법 제651조 (고지의무위반으로 인한 계약해지)",
+      "content": "보험계약 당시에 보험계약자 또는 피보험자가 고의 또는 중대한 과실로 인하여 중요한 사항을 고지하지 아니하거나 부실의 고지를 한 때에는 보험자는 그 사실을 안 날부터 1월 내에, 계약을 체결한 날부터 3년 내에 한하여 계약을 해지할 수 있다. 그러나 보험자가 계약 당시에 그 사실을 알았거나 중대한 과실로 인하여 알지 못한 때에는 그러하지 아니하다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-104",
+      "type": "LAW",
+      "title": "상법 제651조의2 (서면에 의한 질문의 효력)",
+      "content": "보험자가 서면으로 질문한 사항은 중요한 사항으로 추정한다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-105",
+      "type": "LAW",
+      "title": "상법 제652조 (위험변경증가의 통지와 계약해지)",
+      "content": "① 보험기간 중에 보험계약자 또는 피보험자가 사고발생의 위험이 현저하게 변경 또는 증가된 사실을 안 때에는 지체 없이 보험자에게 통지해야 한다. 위반 시 보험자는 그 사실을 안 날부터 1월 내에 한하여 계약을 해지할 수 있다. ② 보험자가 통지를 받은 때에는 1월 내에 보험료의 증액을 청구하거나 계약을 해지할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-106",
+      "type": "LAW",
+      "title": "상법 제653조 (보험계약자 등의 고의나 중과실로 인한 위험증가와 계약해지)",
+      "content": "보험기간 중에 보험계약자, 피보험자 또는 보험수익자의 고의 또는 중대한 과실로 인하여 사고발생의 위험이 현저하게 변경 또는 증가된 때에는 보험자는 그 사실을 안 날부터 1월 내에 보험료의 증액을 청구하거나 계약을 해지할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-107",
+      "type": "LAW",
+      "title": "상법 제654조 (보험자의 파산선고와 계약해지)",
+      "content": "① 보험자가 파산 선고를 받은 때에는 보험계약자는 계약을 해지할 수 있다. ② 제1항의 규정에 의하여 해지하지 아니한 보험계약은 파산선고 후 3월을 경과한 때에는 그 효력을 잃는다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-108",
+      "type": "LAW",
+      "title": "상법 제655조 (계약해지와 보험금청구권)",
+      "content": "보험사고가 발생한 후라도 보험자가 제650조, 제651조, 제652조와 제653조에 따라 계약을 해지하였을 때에는 보험금을 지급할 책임이 없고 이미 지급한 보험금의 반환을 청구할 수 있다. 다만, 고지의무를 위반한 사실 또는 위험이 현저하게 변경되거나 증가된 사실이 보험사고의 발생에 영향을 미치지 아니하였음이 증명된 경우에는 그러하지 아니하다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-109",
+      "type": "LAW",
+      "title": "상법 제656조 (보험료의 지급과 보험자의 책임개시)",
+      "content": "보험자의 책임은 당사자간에 다른 약정이 없으면 최초의 보험료의 지급을 받은 때로부터 개시한다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-110",
+      "type": "LAW",
+      "title": "상법 제657조 (보험사고발생의 통지의무)",
+      "content": "① 보험계약자 또는 피보험자나 보험수익자는 보험사고의 발생을 안 때에는 지체없이 보험자에게 그 통지를 발송하여야 한다. ② 보험계약자 또는 피보험자나 보험수익자가 통지의무를 해태함으로 인하여 손해가 증가된 때에는 보험자는 그 증가된 손해를 보상할 책임이 없다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-111",
+      "type": "LAW",
+      "title": "상법 제658조 (보험금액의 지급)",
+      "content": "보험자는 보험금액의 지급에 관하여 약정기간이 있는 경우에는 그 기간 내에, 약정기간이 없는 경우에는 제657조 제1항의 통지를 받은 후 지체 없이 지급할 보험금액을 정하고 그 정하여진 날부터 10일 내에 피보험자 또는 보험수익자에게 보험금액을 지급해야 한다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-112",
+      "type": "LAW",
+      "title": "상법 제659조 (보험자의 면책사유)",
+      "content": "① 보험사고가 보험계약자 또는 피보험자나 보험수익자의 고의 또는 중대한 과실로 인하여 생긴 때에는 보험자는 보험금액을 지급할 책임이 없다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-113",
+      "type": "LAW",
+      "title": "상법 제660조 (전쟁위험 등으로 인한 면책)",
+      "content": "보험사고가 전쟁 기타의 변란으로 인하여 생긴 때에는 당사자간에 다른 약정이 없으면 보험자는 보험금액을 지급할 책임이 없다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-114",
+      "type": "LAW",
+      "title": "상법 제661조 (재보험)",
+      "content": "보험자는 보험사고로 인하여 부담할 책임에 대하여 다른 보험자와 재보험계약을 체결할 수 있다. 이 재보험계약은 원보험계약의 효력에 영향을 미치지 아니한다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-115",
+      "type": "LAW",
+      "title": "상법 제662조 (소멸시효)",
+      "content": "보험금청구권은 3년간, 보험료 또는 적립금의 반환청구권은 3년간, 보험료청구권은 2년간 행사하지 아니하면 시효의 완성으로 소멸한다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-116",
+      "type": "LAW",
+      "title": "상법 제663조 (보험계약자등의 불이익변경금지)",
+      "content": "이 편의 규정은 당사자간의 특약으로 보험계약자 또는 피보험자나 보험수익자의 불이익으로 변경하지 못한다. 그러나 재보험 및 해상보험 기타 이와 유사한 보험의 경우에는 그러하지 아니하다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-117",
+      "type": "LAW",
+      "title": "상법 제664조 (상호보험, 공제 등에의 준용)",
+      "content": "이 편(제4편 보험)의 규정은 그 성질에 반하지 아니하는 범위에서 상호보험, 공제, 그 밖에 이에 준하는 계약에 준용한다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "LAW-118",
+      "type": "LAW",
+      "title": "상법 제665조 (손해보험자의 책임)",
+      "content": "손해보험계약의 보험자는 보험사고로 인하여 생길 피보험자의 재산상의 손해를 보상할 책임이 있다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-119",
+      "type": "LAW",
+      "title": "상법 제666조 (손해보험증권)",
+      "content": "손해보험증권에는 다음의 사항을 기재하고 보험자가 기명날인 또는 서명한다 — 1) 보험의 목적, 2) 보험사고의 성질, 3) 보험금액, 4) 보험료와 그 지급방법, 5) 보험기간을 정한 때에는 그 시기와 종기, 6) 무효와 실권의 사유, 7) 보험계약자의 주소와 성명 또는 상호, 8) 피보험자가 보험계약자와 다른 경우 그 주소와 성명 또는 상호, 9) 보험계약의 연월일, 10) 보험증권의 작성지와 그 작성연월일.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-120",
+      "type": "LAW",
+      "title": "상법 제667조 (상실이익 등의 불산입)",
+      "content": "보험사고로 인하여 상실된 피보험자가 얻을 이익이나 보수는 당사자간에 다른 약정이 없으면 보험자가 보상할 손해액에 산입하지 아니한다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-121",
+      "type": "LAW",
+      "title": "상법 제668조 (보험계약의 목적)",
+      "content": "보험계약은 금전으로 산정할 수 있는 이익에 한하여 보험계약의 목적으로 할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-122",
+      "type": "LAW",
+      "title": "상법 제669조 (초과보험)",
+      "content": "① 보험금액이 보험계약의 목적의 가액(보험가액)을 현저하게 초과한 때에는 보험자 또는 보험계약자는 보험료와 보험금액의 감액을 청구할 수 있다. 그러나 보험료의 감액은 장래에 대하여서만 그 효력이 있다. ② 제1항의 가액은 계약 당시의 가액에 의하여 정한다. ③ 보험가액이 보험기간 중에 현저하게 감소된 때에도 같다. ④ 제1항의 규정에 의한 보험계약은 보험계약자의 사기로 인하여 체결된 때에는 그 계약을 무효로 한다 (보험자가 그 사실을 안 때까지의 보험료를 청구할 수 있다).",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-123",
+      "type": "LAW",
+      "title": "상법 제670조 (기평가보험)",
+      "content": "당사자간에 보험가액을 정한 때에는 그 가액은 사고발생시의 가액으로 정한 것으로 추정한다. 그러나 그 가액이 사고발생시의 가액을 현저하게 초과할 때에는 사고발생시의 가액을 보험가액으로 한다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-124",
+      "type": "LAW",
+      "title": "상법 제671조 (미평가보험)",
+      "content": "당사자간에 보험가액을 정하지 아니한 때에는 사고발생시의 가액을 보험가액으로 한다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-125",
+      "type": "LAW",
+      "title": "상법 제672조 (중복보험)",
+      "content": "① 동일한 보험계약의 목적과 동일한 사고에 관하여 수개의 보험계약이 동시에 또는 순차로 체결된 경우에 그 보험금액의 총액이 보험가액을 초과한 때에는 보험자는 각자의 보험금액의 한도에서 연대책임을 진다. 이 경우에는 각 보험자의 보상책임은 각자의 보험금액의 비율에 따른다. ② 보험자는 보험계약의 목적, 사고의 성질, 보험금액 등 보험계약의 내용을 다른 보험자에게 통지하여야 한다 (제1항 통지의무 위반 시 비례감액 가능). ③ 보험계약자가 사기로 체결한 경우 그 계약은 무효 (제669조 ④ 준용).",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-126",
+      "type": "LAW",
+      "title": "상법 제673조 (중복보험과 보험자 1인에 대한 권리포기)",
+      "content": "제672조의 규정에 의한 수개의 보험계약을 체결한 경우에 보험자 1인에 대한 권리의 포기는 다른 보험자의 권리의무에 영향을 미치지 아니한다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-127",
+      "type": "LAW",
+      "title": "상법 제674조 (일부보험)",
+      "content": "보험가액의 일부를 보험에 붙인 경우에는 보험자는 보험금액의 보험가액에 대한 비율에 따라 보상할 책임을 진다. 그러나 당사자간에 다른 약정이 있는 때에는 보험자는 보험금액의 한도내에서 그 손해를 보상할 책임을 진다 (실손보상특약).",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-128",
+      "type": "LAW",
+      "title": "상법 제675조 (사고발생 후의 목적멸실과 보상책임)",
+      "content": "보험사고가 발생한 경우 그 후에 보험의 목적이 보험자의 보상책임이 없는 사고로 인하여 멸실된 때에도 보험자는 이미 발생한 손해를 보상할 책임이 있다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-129",
+      "type": "LAW",
+      "title": "상법 제676조 (손해액의 산정기준)",
+      "content": "① 보험자가 보상할 손해액은 그 손해가 발생한 때와 곳의 가액에 의하여 산정한다. 그러나 당사자간에 다른 약정이 있는 때에는 그 신품가액에 의하여 손해액을 산정할 수 있다. ② 손해액의 산정에 관한 비용은 보험자의 부담으로 한다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-130",
+      "type": "LAW",
+      "title": "상법 제677조 (보험료체납과 보상액의 공제)",
+      "content": "보험자가 손해를 보상할 경우에 보험료의 지급을 받지 아니한 잔액이 있으면 그 지급기일이 도래하지 아니한 때라도 보상할 금액에서 이를 공제할 수 있다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-131",
+      "type": "LAW",
+      "title": "상법 제678조 (보험자의 면책사유 (손해보험))",
+      "content": "보험의 목적의 성질, 하자 또는 자연소모로 인한 손해는 보험자가 이를 보상할 책임이 없다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-132",
+      "type": "LAW",
+      "title": "상법 제679조 (보험목적의 양도)",
+      "content": "① 피보험자가 보험의 목적을 양도한 때에는 양수인은 보험계약상의 권리와 의무를 승계한 것으로 추정한다. ② 제1항의 경우에 보험의 목적의 양도인 또는 양수인은 보험자에 대하여 지체없이 그 사실을 통지하여야 한다.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-133",
+      "type": "LAW",
+      "title": "상법 제680조 (손해방지의무)",
+      "content": "① 보험계약자와 피보험자는 손해의 방지와 경감을 위하여 노력하여야 한다. 그러나 이를 위하여 필요 또는 유익하였던 비용과 보상액이 보험금액을 초과한 경우라도 보험자가 이를 부담한다.",
+      "truth_weight": 10,
+      "source_page": 23,
+      "book_page": 23,
+      "pdf_page": 23,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-134",
+      "type": "LAW",
+      "title": "상법 제681조 (보험목적에 관한 보험대위)",
+      "content": "보험의 목적의 전부가 멸실한 경우에 보험금액의 전부를 지급한 보험자는 그 목적에 대한 피보험자의 권리를 취득한다. 그러나 보험가액의 일부를 보험에 붙인 경우에는 보험자가 취득할 권리는 보험금액의 보험가액에 대한 비율에 따라 정한다.",
+      "truth_weight": 10,
+      "source_page": 23,
+      "book_page": 23,
+      "pdf_page": 23,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-135",
+      "type": "LAW",
+      "title": "상법 제682조 (제3자에 대한 보험대위)",
+      "content": "① 손해가 제3자의 행위로 인하여 발생한 경우에 보험금을 지급한 보험자는 그 지급한 금액의 한도에서 그 제3자에 대한 보험계약자 또는 피보험자의 권리를 취득한다. 다만, 보험자가 보상할 보험금의 일부를 지급한 경우에는 피보험자의 권리를 침해하지 아니하는 범위에서 그 권리를 행사할 수 있다. ② 보험계약자나 피보험자의 제1항에 따른 권리가 그와 생계를 같이 하는 가족에 대한 것인 경우에는 보험자는 그 권리를 취득하지 못한다 (다만 손해가 그 가족의 고의로 인하여 발생한 경우에는 그러하지 아니하다).",
+      "truth_weight": 10,
+      "source_page": 23,
+      "book_page": 23,
+      "pdf_page": 23,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "LAW-136",
+      "type": "LAW",
+      "title": "상법 제719조 (책임보험자의 책임)",
+      "content": "책임보험계약의 보험자는 피보험자가 보험기간 중의 사고로 인하여 제3자에게 배상할 책임을 진 경우에 이를 보상할 책임이 있다.",
+      "truth_weight": 10,
+      "source_page": 24,
+      "book_page": 24,
+      "pdf_page": 24,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 제5절 책임보험"
+    },
+    {
+      "id": "LAW-137",
+      "type": "LAW",
+      "title": "상법 제720조 (피보험자가 지출한 방어비용의 부담)",
+      "content": "① 피보험자가 제3자의 청구를 방어하기 위하여 지출한 재판상 또는 재판외의 필요비용은 보험의 목적에 포함된 것으로 한다. 피보험자는 보험자에 대하여 그 비용의 선급을 청구할 수 있다. ② 피보험자가 보험자의 지시에 의하여 지출한 제1항의 비용은 그 금액에 손해액을 가산한 금액이 보험금액을 초과하는 경우라도 보험자가 이를 부담하여야 한다.",
+      "truth_weight": 10,
+      "source_page": 24,
+      "book_page": 24,
+      "pdf_page": 24,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 제5절 책임보험"
+    },
+    {
+      "id": "CONCEPT-142",
+      "type": "CONCEPT",
+      "title": "보험계약 당사자 (보험자/보험계약자/피보험자/보험수익자)",
+      "content": "보험자 = 보험사고 발생 시 보험금 지급 의무자 (보험회사). 보험계약자 = 보험자와 계약 체결 + 보험료 지급 의무자. 피보험자 = 손해보험 = 손해 발생 시 보험금 청구권자, 인보험 = 보험사고의 객체. 보험수익자 = 인보험에서 보험금을 받기로 지정된 자. 농어업재해보험 = 손해보험 영역으로 보험계약자=피보험자 동일인이 일반적.",
+      "truth_weight": 10,
+      "source_page": 21,
+      "book_page": 21,
+      "pdf_page": 21,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "CONCEPT-143",
+      "type": "CONCEPT",
+      "title": "고지의무",
+      "content": "법 제651조 정합. 보험계약 당시 보험계약자/피보험자가 중요한 사항을 고지할 의무. 고의·중과실 위반 시 보험자는 안 날부터 1월 / 계약 체결일부터 3년 내 해지 가능. 단 보험자가 알았거나 중과실로 모른 경우 X. 서면 질문 사항 = 중요한 사항 추정 (제651조의2).",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "CONCEPT-144",
+      "type": "CONCEPT",
+      "title": "위험변경증가 통지의무 + 해지",
+      "content": "법 제652조/제653조 정합. 보험기간 중 사고 발생 위험이 현저히 변경/증가된 사실 = 지체없이 보험자에 통지 의무. 위반 시 보험자 안 날부터 1월 내 해지. 통지를 받은 보험자는 1월 내 보험료 증액 청구 또는 해지. 보험계약자/피보험자/보험수익자의 고의·중과실로 위험증가 = 보험자 안 날부터 1월 내 해지·증액.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "CONCEPT-145",
+      "type": "CONCEPT",
+      "title": "보험가액 / 보험금액 / 초과보험 / 일부보험 / 중복보험",
+      "content": "보험가액 = 손해의 객관적 가치 (보험계약 목적의 가액). 보험금액 = 사고 시 지급 약정 한도. 초과보험 = 금액 > 가액 (제669조 — 감액 청구·사기 무효). 일부보험 = 금액 < 가액 (제674조 — 비례보상). 중복보험 = 동일 사고 다수 계약 합계 > 가액 (제672조 — 연대책임·비례부담). 기평가보험 = 당사자 합의 가액 (제670조). 미평가보험 = 사고시 가액 (제671조).",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "CONCEPT-146",
+      "type": "CONCEPT",
+      "title": "보험자 면책사유 (3종)",
+      "content": "1) 보험계약자/피보험자/보험수익자의 고의·중과실 (제659조). 2) 전쟁·기타 변란 (제660조, 다른 약정 가능). 3) 손해보험에서 보험목적의 성질·하자·자연소모 (제678조). 책임 X = 보험금 미지급 + 이미 지급한 보험금 반환 청구 가능 (제655조 단서 — 사고 영향 미치지 않음 증명 시 예외).",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "CONCEPT-147",
+      "type": "CONCEPT",
+      "title": "보험대위 2종",
+      "content": "1) 잔존물 대위 (목적에 관한 보험대위) 제681조 = 보험목적 전부 멸실 + 보험금액 전부 지급 → 보험자가 목적 권리 취득. 일부보험은 비율로 정함. 2) 청구권 대위 (제3자에 대한 보험대위) 제682조 = 손해가 제3자 행위로 발생 + 보험금 지급 → 그 한도에서 제3자에 대한 권리 취득. 보험금 일부 지급 시 피보험자 권리 침해하지 않는 범위에서 행사. 생계 같이 하는 가족 권리는 취득 X (단 가족 고의는 예외).",
+      "truth_weight": 10,
+      "source_page": 23,
+      "book_page": 23,
+      "pdf_page": 23,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "CONCEPT-148",
+      "type": "CONCEPT",
+      "title": "손해방지의무 (상법)",
+      "content": "법 제680조 정합. 보험계약자/피보험자가 손해 방지·경감을 위해 노력할 의무. 필요·유익한 비용 + 보상액이 보험금액 초과해도 보험자가 부담. 가축재해보험 LAW-018 (BATCH-6) 와 동일 조문.",
+      "truth_weight": 10,
+      "source_page": 23,
+      "book_page": 23,
+      "pdf_page": 23,
+      "chapter": "상법 제4편 보험",
+      "section": "제2장 손해보험 통칙"
+    },
+    {
+      "id": "CONCEPT-149",
+      "type": "CONCEPT",
+      "title": "보험사고 통지의무",
+      "content": "법 제657조 정합. 보험계약자/피보험자/보험수익자는 보험사고 발생을 안 때 지체없이 보험자에 통지 발송 의무. 해태로 손해 증가 시 증가분 보상 X. 가축재해보험 LAW-016 (BATCH-6) 와 동일 조문 (BATCH-6 = 1항만 인용, 본 BATCH-L2 = 1항+2항 전문).",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "CONCEPT-150",
+      "type": "CONCEPT",
+      "title": "보험금청구권 소멸시효 (3년)",
+      "content": "법 제662조 정합. 보험금청구권 = 3년. 보험료/적립금 반환청구권 = 3년. 보험료청구권 = 2년. 미행사 시 시효 소멸. 1차 시험 출제 빈도 매우 높음.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "CONCEPT-151",
+      "type": "CONCEPT",
+      "title": "보험약관 교부·설명 의무 (3개월 취소권)",
+      "content": "법 제638조의3 정합. 보험자는 약관 교부 + 중요 내용 설명 의무. 위반 시 보험계약자는 계약 성립 날부터 3개월 내 취소 가능. 1차 시험 출제 단골.",
+      "truth_weight": 10,
+      "source_page": 21,
+      "book_page": 21,
+      "pdf_page": 21,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "CONCEPT-152",
+      "type": "CONCEPT",
+      "title": "보험계약자 등의 불이익변경금지 원칙",
+      "content": "법 제663조 정합. 보험편 규정은 당사자 특약으로 보험계약자/피보험자/보험수익자에게 불이익으로 변경 X (편면적 강행규정). 다만 재보험·해상보험 기타 유사 보험은 적용 제외.",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "CONCEPT-153",
+      "type": "CONCEPT",
+      "title": "보험계약 부활 (제650조의2)",
+      "content": "법 제650조 ② 따라 계약 해지 + 해지환급금 미지급 → 보험계약자는 일정 기간 내 연체보험료 + 약정이자 지급 후 부활 청구 가능. 부활 = 새로운 보험계약 X = 기존 계약의 효력 회복.",
+      "truth_weight": 9,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "INV-088",
+      "type": "INVESTIGATION",
+      "title": "보험계약 체결 절차 (상법)",
+      "content": "1) 청약 + 보험료 일부/전부 지급 → 2) 보험자 30일 내 낙부 통지 (제638조의2) → 3) 약관 교부 + 중요 내용 설명 (제638조의3) → 4) 보험증권 교부 (제640조) → 5) 책임 개시 (최초 보험료 지급 시 — 제656조).",
+      "truth_weight": 9,
+      "source_page": 21,
+      "book_page": 21,
+      "pdf_page": 21,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "INV-089",
+      "type": "INVESTIGATION",
+      "title": "보험사고 발생 시 절차 (상법)",
+      "content": "1) 보험계약자/피보험자/보험수익자 사고 발생 인지 → 2) 지체없이 보험자에 통지 (제657조) → 3) 손해방지 노력 (제680조) → 4) 보험자 손해액 산정 (제676조) → 5) 보험금 지급 (약정기간 또는 통지 후 10일 내 — 제658조). 면책 사유 검토 (제659/660/678조).",
+      "truth_weight": 9,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    },
+    {
+      "id": "INV-090",
+      "type": "INVESTIGATION",
+      "title": "보험계약 해지 사유 종합 (상법)",
+      "content": "1) 사고발생전 임의해지 (제649조) — 미경과 보험료 반환 / 2) 보험료 미지급 (제650조 ②) — 최고 + 해지 / 3) 고지의무 위반 (제651조) — 안 날부터 1월·계약일부터 3년 / 4) 위험변경증가 통지의무 위반 (제652조) — 안 날부터 1월 / 5) 고의·중과실 위험증가 (제653조) — 안 날부터 1월 / 6) 보험자 파산 (제654조) — 미해지 시 3월 후 효력 상실. 사고 후 해지 = 보험금 지급 X + 반환 청구 가능 (제655조 — 인과관계 없음 증명 시 예외).",
+      "truth_weight": 10,
+      "source_page": 22,
+      "book_page": 22,
+      "pdf_page": 22,
+      "chapter": "상법 제4편 보험",
+      "section": "제1장 통칙"
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "LAW-088",
+      "target_id": "LAW-089",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-089",
+      "target_id": "LAW-090",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-091",
+      "target_id": "LAW-100",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-101",
+      "target_id": "LAW-102",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-103",
+      "target_id": "LAW-104",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-105",
+      "target_id": "LAW-106",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-107",
+      "target_id": "LAW-108",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-101",
+      "target_id": "LAW-108",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-103",
+      "target_id": "LAW-108",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-105",
+      "target_id": "LAW-108",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-106",
+      "target_id": "LAW-108",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-110",
+      "target_id": "LAW-111",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-109",
+      "target_id": "LAW-111",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "LAW-112",
+      "target_id": "LAW-113",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-115",
+      "target_id": "LAW-116",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-116",
+      "target_id": "LAW-117",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-118",
+      "target_id": "LAW-119",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-118",
+      "target_id": "LAW-120",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-121",
+      "target_id": "LAW-122",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-122",
+      "target_id": "LAW-123",
+      "edge_type": "DIFFERS_FROM"
+    },
+    {
+      "source_id": "LAW-123",
+      "target_id": "LAW-124",
+      "edge_type": "DIFFERS_FROM"
+    },
+    {
+      "source_id": "LAW-122",
+      "target_id": "LAW-125",
+      "edge_type": "DIFFERS_FROM"
+    },
+    {
+      "source_id": "LAW-122",
+      "target_id": "LAW-127",
+      "edge_type": "DIFFERS_FROM"
+    },
+    {
+      "source_id": "LAW-125",
+      "target_id": "LAW-126",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-127",
+      "target_id": "LAW-129",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-129",
+      "target_id": "LAW-130",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-118",
+      "target_id": "LAW-131",
+      "edge_type": "EXCEPTION"
+    },
+    {
+      "source_id": "LAW-132",
+      "target_id": "LAW-118",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-133",
+      "target_id": "LAW-118",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-134",
+      "target_id": "LAW-127",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-135",
+      "target_id": "LAW-118",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-136",
+      "target_id": "LAW-137",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "CONCEPT-142",
+      "target_id": "LAW-088",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-143",
+      "target_id": "LAW-103",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-143",
+      "target_id": "LAW-104",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-144",
+      "target_id": "LAW-105",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-144",
+      "target_id": "LAW-106",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-145",
+      "target_id": "LAW-122",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-145",
+      "target_id": "LAW-123",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-145",
+      "target_id": "LAW-124",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-145",
+      "target_id": "LAW-125",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-145",
+      "target_id": "LAW-127",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-146",
+      "target_id": "LAW-112",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-146",
+      "target_id": "LAW-113",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-146",
+      "target_id": "LAW-131",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-147",
+      "target_id": "LAW-134",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-147",
+      "target_id": "LAW-135",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-148",
+      "target_id": "LAW-133",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-149",
+      "target_id": "LAW-110",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-150",
+      "target_id": "LAW-115",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-151",
+      "target_id": "LAW-090",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-152",
+      "target_id": "LAW-116",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-153",
+      "target_id": "LAW-102",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "INV-088",
+      "target_id": "LAW-088",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-088",
+      "target_id": "LAW-089",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-088",
+      "target_id": "LAW-090",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-088",
+      "target_id": "LAW-092",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-088",
+      "target_id": "LAW-109",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-089",
+      "target_id": "LAW-110",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-089",
+      "target_id": "LAW-129",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-089",
+      "target_id": "LAW-111",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-090",
+      "target_id": "LAW-100",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-090",
+      "target_id": "LAW-101",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-090",
+      "target_id": "LAW-103",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-090",
+      "target_id": "LAW-105",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-090",
+      "target_id": "LAW-106",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-090",
+      "target_id": "LAW-107",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-090",
+      "target_id": "LAW-108",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "LAW-110",
+      "target_id": "LAW-016",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "LAW-135",
+      "target_id": "LAW-017",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "LAW-133",
+      "target_id": "LAW-018",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "CONCEPT-148",
+      "target_id": "CONCEPT-116",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "CONCEPT-149",
+      "target_id": "CONCEPT-115",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "CONCEPT-145",
+      "target_id": "CONCEPT-125",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "LAW-127",
+      "target_id": "CONCEPT-123",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "LAW-117",
+      "target_id": "LAW-019",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-117",
+      "target_id": "LAW-001",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "LAW-118",
+      "target_id": "INS-33",
+      "edge_type": "APPLIES_TO"
+    }
+  ],
+  "formulas": [],
+  "constants": [
+    {
+      "id": "CONST-130",
+      "name": "보험약관 교부·설명 의무 위반 취소 기간 (개월)",
+      "value": "3",
+      "category": "threshold",
+      "source_page": 21
+    },
+    {
+      "id": "CONST-131",
+      "name": "보험계약 청약 낙부 통지 기간 (일)",
+      "value": "30",
+      "category": "threshold",
+      "source_page": 21
+    },
+    {
+      "id": "CONST-132",
+      "name": "증권 이의 약관 효력 최저 기간 (월)",
+      "value": "1",
+      "category": "threshold",
+      "source_page": 22
+    },
+    {
+      "id": "CONST-133",
+      "name": "보험료 지급 후 계약 해제 의제 기간 (개월)",
+      "value": "2",
+      "category": "threshold",
+      "source_page": 22
+    },
+    {
+      "id": "CONST-134",
+      "name": "고지의무 위반 해지 — 안 날부터 (월)",
+      "value": "1",
+      "category": "threshold",
+      "source_page": 22
+    },
+    {
+      "id": "CONST-135",
+      "name": "고지의무 위반 해지 — 계약일부터 (년)",
+      "value": "3",
+      "category": "threshold",
+      "source_page": 22
+    },
+    {
+      "id": "CONST-136",
+      "name": "위험변경증가 통지의무 위반 해지 — 안 날부터 (월)",
+      "value": "1",
+      "category": "threshold",
+      "source_page": 22
+    },
+    {
+      "id": "CONST-137",
+      "name": "고의/중과실 위험증가 해지 — 안 날부터 (월)",
+      "value": "1",
+      "category": "threshold",
+      "source_page": 22
+    },
+    {
+      "id": "CONST-138",
+      "name": "보험자 파산 후 미해지 효력 상실 기간 (월)",
+      "value": "3",
+      "category": "threshold",
+      "source_page": 22
+    },
+    {
+      "id": "CONST-139",
+      "name": "보험금액 지급 기한 (통지 후 일)",
+      "value": "10",
+      "category": "threshold",
+      "source_page": 22
+    },
+    {
+      "id": "CONST-140",
+      "name": "보험금청구권 소멸시효 (년)",
+      "value": "3",
+      "category": "threshold",
+      "source_page": 22
+    },
+    {
+      "id": "CONST-141",
+      "name": "보험료/적립금 반환청구권 소멸시효 (년)",
+      "value": "3",
+      "category": "threshold",
+      "source_page": 22
+    },
+    {
+      "id": "CONST-142",
+      "name": "보험료청구권 소멸시효 (년)",
+      "value": "2",
+      "category": "threshold",
+      "source_page": 22
+    }
+  ]
+}

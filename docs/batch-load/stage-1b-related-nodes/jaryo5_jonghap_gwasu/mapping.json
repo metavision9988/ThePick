@@ -1,0 +1,206 @@
+{
+  "schema_version": "1.1",
+  "stage": "1B",
+  "source": {
+    "file": "docs/manual/2차시험정답지/5번_종합과수_기출문제모음.pdf",
+    "size_bytes": 332027,
+    "pages": 15,
+    "raw_chars": 12675,
+    "title": "종합과수 11년간 기출문제 모음",
+    "publisher": "손해평가사전문 손평에듀 (부산점/대구점)",
+    "content_type": "exam_explanation_collection",
+    "exam_type_target": "2nd",
+    "rounds_covered": [1, 2, 3, 5, 6, 8, 9, 10, 11],
+    "rounds_missing": [4, 7],
+    "fruits_covered_count": 10
+  },
+  "extracted_at": "2026-05-06",
+  "stage_session": "048",
+  "source_textbook_year": 2025,
+  "current_loaded_textbook_year": 2026,
+  "version_drift_warning": true,
+  "version_drift_rationale": "본 자료 = 25년 이론서 기반 학원(손평에듀) 풀이 자료. 본 프로젝트 BATCH-1~7 + R1/R2 = 26년 이론서. 26년 갱신 시 자료 풀이의 일부 산식·수치 변경 가능 → 학습자 노출 시 26년 정정 의무.",
+  "potential_revision_drift": [
+    {
+      "revision_id": "REV-2026-FRUIT-LOSS-CROSS-DAY",
+      "target_section": "오디·복분자 조사시기 변경 (BATCH-R2 §4)",
+      "drift_zone": "본 자료의 오디/복분자 영역 풀이",
+      "drift_severity": "medium",
+      "concern": "26년 조사시기 변경 시 자료5번 풀이의 시기 명시 갱신 의무"
+    },
+    {
+      "revision_id": "REV-2026-INCOME-DETAIL",
+      "target_section": "농업수입안정 옥수수 손해액 산식 (BATCH-R2 §10)",
+      "drift_zone": "포도 농업수입감소 영역 (시잘부3 정합)",
+      "drift_severity": "low",
+      "concern": "포도 농업수입감소 풀이 시 26년 산식 적용 의무"
+    },
+    {
+      "revision_id": "REV-2026-LOSS-DEGREE",
+      "target_section": "손해정도비율 0.20 → 0.10",
+      "drift_zone": "본 자료 종합과수 영역에 직접 영향 X (생산비보장+시설작물 한정)",
+      "drift_severity": "n/a",
+      "concern": "직접 영향 X"
+    }
+  ],
+  "domain_areas": ["BATCH-2", "BATCH-3", "BATCH-5", "BATCH-7"],
+  "core_concept_nodes": [
+    {
+      "id": "INV-018",
+      "name": "착과수조사",
+      "batch_id": "BATCH-2",
+      "relevance": "primary",
+      "rationale": "종합과수 핵심 조사"
+    },
+    {
+      "id": "INV-019",
+      "name": "과중조사",
+      "batch_id": "BATCH-2",
+      "relevance": "primary",
+      "rationale": "종합과수 핵심 조사"
+    },
+    {
+      "id": "INV-078",
+      "name": "포도 농업수입감소 4단계 조사",
+      "batch_id": "BATCH-5",
+      "relevance": "primary",
+      "rationale": "포도 영역 풀이 정합"
+    },
+    {
+      "id": "F-15",
+      "name": "수확감소 피해율",
+      "batch_id": "BATCH-2",
+      "relevance": "primary",
+      "rationale": "★ Session 049 정제 — 종합과수 핵심 피해율 산식 (자료5 종합과수 11종 풀이 직격)"
+    },
+    {
+      "id": "F-17",
+      "name": "미보상감수량",
+      "batch_id": "BATCH-2",
+      "relevance": "primary",
+      "rationale": "★ Session 049 정제 — 자료5 풀이 빈출 (수확량 계산 시 차감 항목)"
+    },
+    {
+      "id": "F-23",
+      "name": "품종·수령별 주당 착과량",
+      "batch_id": "BATCH-2",
+      "relevance": "secondary",
+      "rationale": "★ Session 049 정제 — TD-S48-2 해소: F-23 실제 명칭 = '품종·수령별 주당 착과량' (적과 정합). 자료5 본문 '수확량의 계산과정' = F-15+F-17 조합이 정확 매핑이며, F-23은 적과 영역 인접 학습 자산"
+    },
+    {
+      "id": "LAW-015",
+      "name": "별표 수확일자별 잔여수확량 비율 (복분자/무화과)",
+      "batch_id": "BATCH-3",
+      "relevance": "secondary",
+      "rationale": "잔여수확량 영역 인접"
+    },
+    {
+      "id": "LAW-140",
+      "name": "<별표5> 무화과 사고발생일 잔여수확량 비율 — 8/9/10월",
+      "batch_id": "BATCH-7",
+      "relevance": "secondary",
+      "rationale": "무화과 영역 인접"
+    }
+  ],
+  "crop_nodes": [
+    {
+      "label": "포도",
+      "node_ids": ["CROP-005", "CROP-090"],
+      "batch_id": "BATCH-2/5",
+      "occurrence_count": 12,
+      "note": "★ 가장 빈번 — 농업수입감소 정합"
+    },
+    { "label": "자두", "node_ids": ["CROP-007"], "batch_id": "BATCH-2", "occurrence_count": 11 },
+    { "label": "참다래", "node_ids": ["CROP-011"], "batch_id": "BATCH-2", "occurrence_count": 11 },
+    { "label": "복숭아", "node_ids": ["CROP-006"], "batch_id": "BATCH-2", "occurrence_count": 11 },
+    { "label": "밤", "node_ids": ["CROP-009"], "batch_id": "BATCH-2", "occurrence_count": 8 },
+    { "label": "매실", "node_ids": ["CROP-013"], "batch_id": "BATCH-2", "occurrence_count": 6 },
+    { "label": "대추", "node_ids": ["CROP-012"], "batch_id": "BATCH-2", "occurrence_count": 6 },
+    { "label": "유자", "node_ids": ["CROP-016"], "batch_id": "BATCH-2", "occurrence_count": 5 },
+    { "label": "만감", "node_ids": ["CROP-008"], "batch_id": "BATCH-2", "occurrence_count": 5 },
+    { "label": "오미자", "node_ids": ["CROP-015"], "batch_id": "BATCH-2", "occurrence_count": 3 }
+  ],
+  "exam_question_links": [
+    {
+      "question_id": "Q-2025-11-2ND-019",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "2과목 (손해평가)",
+      "relevance": "primary",
+      "rationale": "★ 매실 수확감소 — 본 자료 11회 매실 풀이 직접 매핑 (explanation 보강 가능)"
+    },
+    {
+      "question_id": "Q-2024-10-047",
+      "year": 2024,
+      "round": 10,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary",
+      "rationale": "고사결과모지수 (복분자) — 본 자료 종합과수 영역 외이지만 인접 학습"
+    },
+    {
+      "question_id": "Q-2023-09-047",
+      "year": 2023,
+      "round": 9,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary",
+      "rationale": "감귤 등급내+등급외 — 본 자료 영역 외이지만 인접 학습"
+    },
+    {
+      "question_id": "Q-2022-08-048",
+      "year": 2022,
+      "round": 8,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "primary",
+      "rationale": "★ 종합위험 착과수조사 해당 품목 = 본 자료 핵심 영역 (10 과수 모두)"
+    }
+  ],
+  "exam_question_search": {
+    "keyword_set": ["인접: 시잘부3 검색 결과 활용"],
+    "1st_exam_matches": 3,
+    "2nd_exam_matches": 1,
+    "total": 4,
+    "note": "본 자료 풀이 자체가 2차 미적재 회차(1/2/3/5/6/8/9/10회) 종합과수 기출의 raw 풀이 자료. 1차 525 매핑은 시잘부3과 동일 영역(7건) 활용 가능"
+  },
+  "★_critical_finding_★": {
+    "title": "본 자료 = 2차 1~10회 종합과수 기출 풀이 raw 보유",
+    "rationale": "우리 적재: 2차 11회만 (TD-S46-2 carry-over: 2차 5~10회 자료 미보유). 본 자료5번이 2차 1/2/3/5/6/8/9/10회 종합과수 영역 기출 + 풀이 통합 raw 보유 — 신규 INSERT 자산 가능성",
+    "constraints": [
+      "자료5번 = 학원(손평에듀) 풀이 = 큐넷 공식 X → status 영역 검토 의무",
+      "자료5번 = 25년 이론서 기반 → 26년 적용 시 version_drift 명시 의무",
+      "자료5번 본문 raw = 기출 본문 + 학원 풀이 통합 → BATCH-Q-2025-11-2ND-적재 D-Q1-4 패턴(raw 통째 → content) 적용 가능"
+    ],
+    "options": [
+      "Option α: 본 단계 1B 매핑만 (related_nodes만 영속, INSERT 자산 활용 X)",
+      "Option β: 신규 BATCH-Q-2차-MISSING 트리거 + 자료5/6/9/11/15/17 등 학원 자료 통합 → 2차 1~10회 일부 적재 (status='draft' 또는 'flagged' + source='학원자료_손평에듀')",
+      "Option γ: explanation 보강 자산으로 한정 — 기존 545 questions explanation NULL 채우기에만 활용 (TD-S46-3 직격)"
+    ],
+    "recommendation": "★ Option γ 권장 — 본 자료의 강점은 종합과수 영역 풀이의 정확성 (학원 검증 자료). 기존 525+20 questions explanation 보강 = 안전 + 즉시 가치. Option β는 자료 8건 모두 추출 후 종합 판단 필요 (단계 1B 후 별도 plan)"
+  },
+  "td_carry_over": [],
+  "td_resolved_session_049": [
+    {
+      "id": "TD-S48-2",
+      "resolution": "F-23 실제 명칭 = '품종·수령별 주당 착과량' (BATCH-2 적과 영역). 자료5 본문 '수확량의 계산과정' 정확 매핑 = F-15 (수확감소 피해율) + F-17 (미보상감수량). F-23 은 인접 학습 자산으로 secondary 분류 영속."
+    }
+  ],
+  "decisions_applied": {
+    "D-S1B-1": "A 채택 (JSON 영속)",
+    "D-S1B-2": "키워드 직접 매칭만",
+    "D-S1B-3": "현 schema 유지",
+    "D-S1B-4": "8 자료 일괄 보강",
+    "D-S1B-5": "primary/secondary 카테고리",
+    "D-S1B-6": "다음 자료 9번 수확감소밭작물 (444KB) 진행"
+  },
+  "summary": {
+    "core_nodes_count": 8,
+    "crop_nodes_count": 10,
+    "crop_id_total_count": 10,
+    "exam_question_links": 4,
+    "potential_drifts": 3,
+    "verdict": "본 자료 = 2차 종합과수 1~11회 풀이 모음. Session 049 정제 — F-15/F-17/F-23 산식 매핑 명확화 + TD-S48-2 해소. ★ 신규 INSERT 자산 가능성 (Option α/β/γ 결정 의무, 진산 D-S1B-7=γ 채택 후 explanation 보강 자산 활용)"
+  }
+}

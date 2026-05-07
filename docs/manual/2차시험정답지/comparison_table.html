@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4대시설 기본사항 비교정리표</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #f8f9fa 100%);
+            padding: 3rem 2rem;
+            color: #2c3e50;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #1a237e;
+            margin-bottom: 1rem;
+            letter-spacing: -0.5px;
+            position: relative;
+            display: inline-block;
+        }
+
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #1a237e, #3949ab);
+            border-radius: 2px;
+        }
+
+        .author {
+            font-size: 1.2rem;
+            color: #455a64;
+            margin-top: 1.5rem;
+            font-weight: 500;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            min-width: 800px;
+            border-collapse: collapse;
+            border-spacing: 0;
+            margin-bottom: 0;
+            border: 1px solid #BBDEFB;
+        }
+
+        th, td {
+            padding: 1.2rem 1.5rem;
+            text-align: center;
+            border: 1px solid #E3F2FD;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        th {
+            background: #1565C0;
+            color: white;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            padding: 1.2rem 1.5rem;
+            border: 1px solid #BBDEFB;
+            border-bottom: 1px solid #90CAF9;
+        }
+
+        th:first-child {
+            border-top-left-radius: 12px;
+        }
+
+        th:last-child {
+            border-top-right-radius: 12px;
+        }
+
+        td {
+            border-bottom: 1px solid #e8eaf6;
+        }
+
+        tbody tr {
+            border: 1px solid #E3F2FD;
+            transition: background-color 0.2s ease;
+        }
+
+        tbody tr:hover,
+        tbody tr:hover + tr[data-category-continuation="true"] {
+            background-color: #E3F2FD;
+        }
+
+        tbody tr[data-category="비가림"],
+        tbody tr[data-category="원예시설"],
+        tbody tr[data-category="해가림"],
+        tbody tr[data-category="축사"] {
+            position: relative;
+        }
+
+        tbody tr:nth-child(2),
+        tbody tr:nth-child(4),
+        tbody tr:nth-child(6) {
+            border-bottom: 2px solid #BBDEFB;
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        td {
+            position: relative;
+            z-index: 1;
+        }
+
+        .category-cell {
+            font-weight: 600;
+            color: #1565C0;
+            background-color: #F5F9FF;
+            border-right: 1px solid #BBDEFB;
+        }
+
+        tr:hover .category-cell {
+            background-color: #BBDEFB;
+            color: #0D47A1;
+        }
+
+        .value-cell {
+            color: #37474f;
+        }
+
+        .not-applied {
+            color: #c62828;
+            font-weight: 700;
+            background-color: #ffebee;
+        }
+
+        .highlight {
+            color: #3949ab;
+            font-weight: 500;
+        }
+
+        .notes {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .note-item {
+            margin-bottom: 0.8rem;
+            color: #546e7a;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            position: relative;
+            padding-left: 1.5rem;
+            display: flex;
+            align-items: baseline;
+        }
+
+        .note-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .note-item::before {
+            content: "※";
+            position: absolute;
+            left: 0;
+            color: #1a237e;
+        }
+
+        .special-note {
+            font-weight: 500;
+            color: #1a237e;
+        }
+
+        /* 툴팁 스타일 */
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 12px;
+            background-color: rgba(26, 35, 126, 0.95);
+            color: white;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .tooltip:hover::after {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* 모바일 대응을 위한 미디어 쿼리 */
+        @media (max-width: 1024px) {
+            body {
+                padding: 1rem;
+            }
+
+            .container {
+                padding: 0;
+            }
+
+            .table-container {
+                border-radius: 8px;
+                margin: 0 -1rem;
+            }
+
+            th, td {
+                padding: 0.8rem;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            table {
+                min-width: 700px;
+            }
+
+            th, td {
+                padding: 0.6rem;
+                font-size: 0.85rem;
+            }
+
+            .tooltip::after {
+                width: 200px;
+                white-space: normal;
+                text-align: center;
+            }
+        }
+
+        /* 새로운 스타일 추가 */
+        .status-applied {
+            color: #1565C0;
+            font-weight: 500;
+        }
+
+        .status-not-applied {
+            color: #c62828;
+            font-weight: 500;
+        }
+
+        .value-range {
+            font-size: 0.9em;
+            color: #1976D2;
+        }
+
+        .cell-divider {
+            position: relative;
+        }
+
+        .cell-divider::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 20%;
+            height: 60%;
+            width: 1px;
+            background: #e8eaf6;
+        }
+
+        .info-icon {
+            font-size: 0.9em;
+            color: #1a237e;
+            margin-left: 4px;
+            opacity: 0.7;
+        }
+
+        /* 비례보상여부 열 스타일 */
+        .proportion-cell {
+            color: #1565C0;
+            font-weight: 500;
+        }
+
+        .no-proportion {
+            color: #c62828;
+        }
+
+        .yes-proportion {
+            color: #1565C0;
+        }
+
+        .conditional-proportion {
+            color: #F57F17;
+        }
+
+        /* 인쇄 버튼 스타일 */
+        .print-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1565C0;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background-color 0.2s ease;
+        }
+
+        .print-button:hover {
+            background: #0D47A1;
+        }
+
+        .print-button i {
+            font-size: 20px;
+        }
+
+        /* 인쇄용 스타일 */
+        @media print {
+            @page {
+                size: A4;
+                margin: 1cm;
+            }
+
+            body {
+                padding: 0;
+                background: white;
+            }
+
+            .container {
+                width: 100%;
+                max-width: none;
+            }
+
+            .print-button {
+                display: none;
+            }
+
+            .table-container {
+                box-shadow: none;
+                border: 1px solid #ccc;
+            }
+
+            table {
+                font-size: 11pt;
+                width: 100%;
+            }
+
+            th, td {
+                padding: 8px;
+                border: 1px solid #000;
+            }
+
+            th {
+                background-color: #f0f0f0 !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .category-cell {
+                background-color: #f8f8f8 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .notes {
+                margin-top: 1cm;
+                border-top: 1px solid #ccc;
+                padding-top: 0.5cm;
+            }
+
+            .note-item {
+                font-size: 10pt;
+                margin-bottom: 0.3cm;
+            }
+
+            /* 페이지 나눔 방지 */
+            tr {
+                page-break-inside: avoid;
+            }
+
+            /* 색상 최적화 */
+            .value-range,
+            .proportion-cell,
+            .status-applied,
+            .status-not-applied {
+                color: #000 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>4대시설 기본사항 비교정리표</h1>
+            <div class="author">손평에듀 한종찬교수</div>
+        </div>
+        <div class="table-container">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>구분</th>
+                            <th>가입금액</th>
+                            <th colspan="2">보험가액 및 손해액</th>
+                            <th colspan="2">자기부담금액</th>
+                            <th>비례보상여부</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr data-category="비가림">
+                            <td rowspan="2" class="category-cell">비가림</td>
+                            <td rowspan="2" class="value-cell">재조달가액<br><span class="value-range">(80%~130%)</span></td>
+                            <td class="cell-divider">복구</td>
+                            <td>재조달가액</td>
+                            <td>잔존물제거비용</td>
+                            <td>적용</td>
+                            <td rowspan="2" class="proportion-cell no-proportion">없음</td>
+                        </tr>
+                        <tr data-category="비가림" data-category-continuation="true">
+                            <td class="cell-divider">미복구</td>
+                            <td>시가</td>
+                            <td>3대비용손해</td>
+                            <td>적용</td>
+                        </tr>
+                        <tr data-category="원예시설">
+                            <td rowspan="2" class="category-cell">원예시설</td>
+                            <td rowspan="2" class="value-cell tooltip" data-tooltip="특약 가입시 기준보험가입금액은 재조달가액이 되고 미가입시에는 시가로 한다">기준보험가입금액<br><span class="value-range">(90%~130%)</span></td>
+                            <td class="cell-divider">복구</td>
+                            <td>재조달가액</td>
+                            <td>잔존물제거비용</td>
+                            <td>적용</td>
+                            <td rowspan="2" class="proportion-cell no-proportion">없음</td>
+                        </tr>
+                        <tr data-category="원예시설" data-category-continuation="true">
+                            <td class="cell-divider">미복구</td>
+                            <td>시가</td>
+                            <td>3대비용손해</td>
+                            <td class="not-applied">미적용</td>
+                        </tr>
+                        <tr data-category="해가림">
+                            <td rowspan="2" class="category-cell">해가림</td>
+                            <td class="value-cell">특약가입</td>
+                            <td colspan="2">수리복구시 재조달가액<br>미복구시 시가</td>
+                            <td>잔존물제거비용</td>
+                            <td>적용</td>
+                            <td rowspan="2" class="proportion-cell yes-proportion">있음</td>
+                        </tr>
+                        <tr data-category="해가림" data-category-continuation="true">
+                            <td class="value-cell">미가입</td>
+                            <td colspan="2">중간값<br><span class="value-range">(피,감피,가액×20%)</span></td>
+                            <td>3대비용손해</td>
+                            <td>적용</td>
+                        </tr>
+                        <tr data-category="축사">
+                            <td rowspan="2" class="category-cell">축사</td>
+                            <td rowspan="2" class="value-cell">시가</td>
+                            <td rowspan="2" colspan="2" class="value-cell">시가</td>
+                            <td class="value-cell">잔존물제거비용</td>
+                            <td class="value-cell">적용</td>
+                            <td rowspan="2" class="proportion-cell conditional-proportion">조건부비례보상<br>(보험가액의 80% 미만시만)</td>
+                        </tr>
+                        <tr data-category="축사" data-category-continuation="true">
+                            <td class="value-cell">3대비용손해</td>
+                            <td class="not-applied">미적용</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="notes">
+            <p class="note-item">목적물 보험금에 대한 한도 체크 <span class="value-range">(보험가액의 일정비율을 가입하는 목적물은 한도체크 필요)</span></p>
+            <p class="note-item">비가림, 원예시설, 축사, 돼지 질병위험보장특약</p>
+            <p class="note-item special-note">해가림시설의 손해방지비용 한도 20만원은 손해액에 대한 한도가 아닌 지급보험금에 대한 한도로 한다</p>
+            <p class="note-item">총지급보험금 = (목적물보험금 + 잔존물보험금, 보험가입금액) + 3대비용손해 + 기타협력비용</p>
+        </div>
+    </div>
+
+    <!-- 인쇄 버튼 추가 -->
+    <button onclick="handlePrint()" class="print-button">
+        <i class="fas fa-print"></i>
+        인쇄하기
+    </button>
+
+    <script>
+        function handlePrint() {
+            window.print();
+        }
+    </script>
+</body>
+</html> 

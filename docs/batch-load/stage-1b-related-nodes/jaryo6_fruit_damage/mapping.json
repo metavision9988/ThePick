@@ -1,0 +1,183 @@
+{
+  "schema_version": "1.1",
+  "stage": "1B",
+  "source": {
+    "file": "docs/manual/2차시험정답지/자료6번_과실손해보장기출모음.pdf",
+    "size_bytes": 603318,
+    "pages": 20,
+    "raw_chars": 17448,
+    "title": "과실손해보장(오/감/복/무/두릅/블루베리) 기출모음",
+    "publisher": "손해평가사 전문학원 손평에듀 (부산직영점)",
+    "content_type": "exam_explanation_collection",
+    "exam_type_target": "2nd",
+    "rounds_partial_detected": [5, 7, 8, 9, 11]
+  },
+  "extracted_at": "2026-05-06",
+  "stage_session": "048",
+  "source_textbook_year": 2025,
+  "version_drift_warning": true,
+  "version_drift_rationale": "본문 '이론서 103페이지' 명시 = 25년 기준. 26년 변경 (BATCH-R2 §4 오디·복분자 조사시기 + LAW-140 무화과 잔여수확량) 미반영 가능 → 보강 의무",
+  "potential_revision_drift": [
+    {
+      "revision_id": "REV-2026-FRUIT-LOSS-CROSS-DAY",
+      "drift_severity": "high",
+      "concern": "★ BATCH-R2 §4 오디·복분자 조사시기 변경 — 본 자료 직격 영역"
+    },
+    {
+      "revision_id": "REV-2026-MUWHA-RESIDUAL",
+      "drift_severity": "medium",
+      "concern": "무화과 잔여수확량 LAW-140 별표5 26년 신설 — 본 자료 무화과 8건 검증 의무"
+    }
+  ],
+  "domain_areas": ["BATCH-2", "BATCH-3", "BATCH-7", "BATCH-R2"],
+  "core_concept_nodes": [
+    { "id": "INV-018", "name": "착과수조사", "batch_id": "BATCH-2", "relevance": "secondary" },
+    {
+      "id": "INV-037",
+      "name": "동상해 과실손해조사",
+      "batch_id": "BATCH-2",
+      "relevance": "primary",
+      "rationale": "감귤 동상해 영역"
+    },
+    {
+      "id": "INS-13",
+      "name": "수확개시 이후 동상해보장 특별약관",
+      "batch_id": "BATCH-2",
+      "relevance": "primary"
+    },
+    {
+      "id": "F-41",
+      "name": "수확감소환산 고사결과모지수(5/31 이전 사고 있음)",
+      "batch_id": "BATCH-3",
+      "relevance": "primary",
+      "rationale": "복분자 9 빈도 영역"
+    },
+    {
+      "id": "F-42",
+      "name": "수확감소환산 고사결과모지수(5/31 이전 사고 없음)",
+      "batch_id": "BATCH-3",
+      "relevance": "primary"
+    },
+    {
+      "id": "F-49",
+      "name": "무화과 결과지피해율",
+      "batch_id": "BATCH-3",
+      "relevance": "primary",
+      "rationale": "무화과 8 빈도 영역"
+    },
+    { "id": "F-50", "name": "무화과 기준결과지수", "batch_id": "BATCH-3", "relevance": "primary" },
+    { "id": "F-51", "name": "무화과 고사결과지수", "batch_id": "BATCH-3", "relevance": "primary" },
+    {
+      "id": "LAW-015",
+      "name": "별표 수확일자별 잔여수확량 비율 (복분자/무화과)",
+      "batch_id": "BATCH-3",
+      "relevance": "primary"
+    },
+    {
+      "id": "LAW-140",
+      "name": "<별표5> 무화과 사고발생일 잔여수확량 비율 — 8/9/10월 3구간",
+      "batch_id": "BATCH-7",
+      "relevance": "primary"
+    }
+  ],
+  "crop_nodes": [
+    {
+      "label": "복분자",
+      "node_ids": ["CROP-021"],
+      "batch_id": "BATCH-2",
+      "occurrence_count": 9,
+      "note": "★ 최다"
+    },
+    {
+      "label": "감귤(만감류)",
+      "node_ids": ["CROP-008"],
+      "batch_id": "BATCH-2",
+      "occurrence_count": 8
+    },
+    { "label": "무화과", "node_ids": ["CROP-022"], "batch_id": "BATCH-2", "occurrence_count": 8 },
+    { "label": "오디", "node_ids": ["CROP-018"], "batch_id": "BATCH-2", "occurrence_count": 6 },
+    {
+      "label": "감귤(온주밀감)",
+      "node_ids": ["CROP-017"],
+      "batch_id": "BATCH-2",
+      "occurrence_count": 5
+    },
+    { "label": "블루베리", "node_ids": ["CROP-020"], "batch_id": "BATCH-2", "occurrence_count": 2 },
+    { "label": "두릅", "node_ids": ["CROP-019"], "batch_id": "BATCH-2", "occurrence_count": 2 }
+  ],
+  "exam_question_links": [
+    {
+      "question_id": "Q-2025-11-2ND-012",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "2과목 (손해평가)",
+      "relevance": "primary",
+      "rationale": "★ 본 자료 11회 '복수정답' 풀이 = Q-2025-11-2ND-012 시기별 조사 종류 정확히 정합 (★ 자료에 '복수정답' 표기 일치 — 큐넷 공식 인정 패턴)"
+    },
+    {
+      "question_id": "Q-2025-11-2ND-016",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "2과목 (손해평가)",
+      "relevance": "primary",
+      "rationale": "복분자 수확전 종합위험"
+    },
+    {
+      "question_id": "Q-2025-11-2ND-020",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "2과목 (손해평가)",
+      "relevance": "primary",
+      "rationale": "오디 과실손해 — 본 자료 오디 6 빈도"
+    },
+    {
+      "question_id": "Q-2024-10-047",
+      "year": 2024,
+      "round": 10,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "primary",
+      "rationale": "고사결과모지수 ÷ 평년결과모지수 = 복분자"
+    },
+    {
+      "question_id": "Q-2023-09-047",
+      "year": 2023,
+      "round": 9,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "primary",
+      "rationale": "감귤 등급내+등급외×0.5 피해율"
+    }
+  ],
+  "exam_question_search": {
+    "1st_exam_matches": 2,
+    "2nd_exam_matches": 3,
+    "total": 5,
+    "note": "시잘부3 매핑(10건 중 5건) 재활용 — 자료6 영역 한정"
+  },
+  "★_critical_finding_★": {
+    "title": "★ 본 자료 11회 풀이 = Q-2025-11-2ND-012 '복수정답' 정확 매칭",
+    "rationale": "본 자료가 큐넷 공식 복수정답 인정 패턴(handoff-053 정합)을 학원 풀이로 검증. explanation 보강 자산 확실 (TD-S46-3 직격)",
+    "explanation_supplement_priority": "Q-2025-11-2ND-012/016/020 고우선 보강 후보"
+  },
+  "td_carry_over": [],
+  "decisions_applied": {
+    "D-S1B-1": "A",
+    "D-S1B-2": "키워드 매칭만",
+    "D-S1B-3": "현 schema",
+    "D-S1B-4": "8 자료 일괄",
+    "D-S1B-5": "primary/secondary",
+    "D-S1B-6": "다음 자료 17번 가축 (636KB) — 마지막"
+  },
+  "summary": {
+    "core_nodes_count": 10,
+    "crop_nodes_count": 7,
+    "crop_id_total_count": 7,
+    "exam_question_links": 5,
+    "potential_drifts": 2,
+    "verdict": "본 자료 = 시잘부3 §1 영역 정합 + 학원 풀이 11년치. 11회 복수정답 정확 매칭으로 explanation 보강 자산 확실"
+  }
+}

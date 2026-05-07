@@ -1,0 +1,694 @@
+{
+  "_meta": {
+    "batch_id": "BATCH-R1",
+    "source_pdf": "docs/manual/4월8일_26년변경사항정리.pdf",
+    "pages": [1, 12],
+    "page_count": 12,
+    "domain": "2026년 농어업재해보험 개정사항 정리 (한종찬 교수, 2026-03-31 기준) — 19개 변경 항목 (1차+2차 모두 영향). BATCH-1~6 적재 정합 시점에 일부 반영 완료.",
+    "chapter": "26년 개정사항 정리",
+    "concept_count": 24,
+    "status": "draft",
+    "ai_generated_by": "Claude Opus 4.7 (1M context) — Session 044",
+    "extracted_at": "2026-05-06",
+    "ontology_registry_version": "1.2.0",
+    "td_s42_1_compliance": "FORMULA 0 + CONST 참조 엣지 0건",
+    "td_s42_2_compliance": "FORMULA 0 — N/A",
+    "td_s43_1_compliance": "FORMULA 미사용",
+    "supersedes_pattern": "본 BATCH = 26년 개정 학습 객체화. SUPERSEDES 엣지 = BATCH-R1 신규 CONCEPT 노드 → BATCH-1~5/6 기존 노드 (개정 학습 추적). BATCH-1~5/6은 이미 26년 정합으로 적재되어 있어 superseded_by 컬럼 직접 UPDATE는 불필요 (Hard Limit knowledge_nodes UPDATE 금지).",
+    "cross_batch_refs_intent": "본 BATCH 는 BATCH-1~5 + BATCH-6 의 26년 개정 영역 노드와 SUPERSEDES 엣지 연결. revision_changes 테이블 INSERT 별도 SQL 필요 (json-to-sql-batch.py 미지원)."
+  },
+  "nodes": [
+    {
+      "id": "CONCEPT-154",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 농작물재해보험 가입기준 (보험가입금액)",
+      "content": "26년 개정 정합. 2025년 기준 ① 200만원 이상: 사과·배·단감·떫은감·감귤·포도·복숭아·자두·살구·매실·참다래·대추·유자·무화과·밤·호두·마늘·양파·감자·고구마·고추·양배추·브로콜리·오미자·복분자·오디·인삼·수박(노지)·두릅·블루베리. ② 100만원 이상: 옥수수·콩·팥·배추·무·파·단호박·당근·시금치(노지)·양상추. ③ 50만원 이상: 벼·밀·보리·메밀·귀리. ④ 비가림시설 200㎡ 이상 (포도·대추·참다래). ⑤ 농업용 시설물·시설작물·버섯재배사 단지 면적 300㎡ 이상. ⑥ 1,000㎡ 이상: 차·조사료용 벼·사료용 옥수수. + 신규 종합위험: 녹두·생강·참깨·종합위험 사과배단감떫은감.",
+      "lv1_insurance": "농작물재해보험 공통",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "26년 개정사항 정리",
+      "section": "1. 가입기준 (구교재 P25)"
+    },
+    {
+      "id": "CONCEPT-155",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 보장 재해 추가 (사과 탄저병/가을배추 무름병/원예시설 일조량 부족)",
+      "content": "26년 개정. 사과 = 자연재해성 탄저병 추가 (피해율 = 평수미/평 산정, 피해인정계수 1.0/0.5는 최종수정본 3.31에서 삭제). 가을배추 = 자연재해성 무름병 추가 (단 수입안정보장 제외). 원예시설작물 (버섯 제외) = 농작물재해보험 사업시행지침에 따라 인정된 일조량 부족 추가. 구교재 P89.",
+      "lv1_insurance": "농작물재해보험 공통",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "26년 개정사항 정리",
+      "section": "2. 보장하는 재해 (구교재 P89)"
+    },
+    {
+      "id": "CONCEPT-156",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 자기부담비율 최소 20%형 / 15%형 추가",
+      "content": "26년 개정. 최소 20%형 추가 = 유자·호두·귀리·두릅·블루베리·수박·녹두·생강·참깨·고랭지당근·간척농지(벼/조사료용벼)·가을배추·가을무·양상추·쪽파·봄배추·농업수입안정보장(포도/복숭아/만감류/단감/고구마/양배추/봄감자/가을감자). 최소 15%형 추가 = 농업수입안정보장 (1) 복수농지가입(벼 7개+/콩 4개+) (2) 채소가격안정제(마늘/양파/가을배추/가을무/고랭지배추/고랭지무/고랭지감자) (3) 벼재배면적감축(콩/보리/옥수수). 구교재 P91.",
+      "lv1_insurance": "농작물재해보험 공통",
+      "truth_weight": 10,
+      "source_page": 2,
+      "book_page": 2,
+      "pdf_page": 2,
+      "chapter": "26년 개정사항 정리",
+      "section": "3. 자기부담비율 (구교재 P91)"
+    },
+    {
+      "id": "CONCEPT-157",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 정부지원비율 (보장수준별 %) 최종공지 변경",
+      "content": "26년 개정 (3.31 최종 공지, 2.25 1차 공지와 다름). 사과·배·단감·떫은감·벼: 60%(65) / 70%(60) / 80%(50) / 85%(38) / 90%(33). 콩·감자·고구마·보리·옥수수·마늘·양파·양배추·포도·배추·무·복숭아·만감류: 60%(60) / 70%(55) / 80%(50) / 85%(48) / 90%(47). 농업수입안정보장 — 복수농지/전략작물직불금/채소가격안정제 65/60/50/48/-. 단감·포도·만감류·복숭아·고구마·양배추(가을월동)·감자(봄가을): 60/55/50/-/-. 배추·무 = 계절 구분 없음. 구교재 P105.",
+      "lv1_insurance": "농작물재해보험 공통",
+      "truth_weight": 10,
+      "source_page": 2,
+      "book_page": 2,
+      "pdf_page": 2,
+      "chapter": "26년 개정사항 정리",
+      "section": "4. 정부지원비율 (구교재 P105)"
+    },
+    {
+      "id": "CONCEPT-158",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 손해율 따른 할인할증률 (5년 손해율 20% 미만 -30%)",
+      "content": "26년 개정. 평가기간 5년·손해율 20% 미만 = -30% 할인 (기존 -25% → -30%). 5년 가입자에 최대 할인 적용. 보험료 산식 변경 (구교재 P133): 변경전 = (1+방재시설할인율) × ... / 변경후 = (1-방재시설할인율) × ... — 부호 반전. 5단계 평가기간 × 손해율 12구간 매트릭스. 구교재 P97.",
+      "lv1_insurance": "농작물재해보험 공통",
+      "truth_weight": 10,
+      "source_page": 3,
+      "book_page": 3,
+      "pdf_page": 3,
+      "chapter": "26년 개정사항 정리",
+      "section": "5. 손해율에 따른 할인 할증율 (구교재 P97)"
+    },
+    {
+      "id": "CONCEPT-159",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 종합위험 수확감소보장 과수4종 보험기간 통일",
+      "content": "26년 개정. 사과·배·단감·떫은감 4종 모두 — 종합위험 수확감소보장 보험기간 = 계약체결일 24시 ~ 수확기 종료 시점 (이듬해 11월 20일 초과 X). 종합위험 나무손해보장 = 이듬해 2월 1일 ~ 이듬해의 다음해 1월 31일. 즉 과실 = 11/1~이듬 11/20 / 나무 = 이듬 2/1~이듬다음해 1/31.",
+      "lv1_insurance": "전기간 종합위험 과수4종",
+      "truth_weight": 10,
+      "source_page": 3,
+      "book_page": 3,
+      "pdf_page": 3,
+      "chapter": "26년 개정사항 정리",
+      "section": "6. 전기간 종합위험 수확감소보장 과수4종"
+    },
+    {
+      "id": "CONCEPT-160",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 감귤(온주밀감) 수확기 잔존비율 산식 변경",
+      "content": "26년 개정. 새 산식: 12월 = (100-39) - (0.935 × 사고일자) / 1월 = (100-68) - (0.774 × 사고일자) / 2월 = (100-92) - (0.286 × 사고일자). 사고 발생일자 = 해당 월의 사고 발생일자. 구교재 P144 수정.",
+      "lv1_insurance": "종합위험 감귤(온주밀감) 과실손해",
+      "truth_weight": 10,
+      "source_page": 4,
+      "book_page": 4,
+      "pdf_page": 4,
+      "chapter": "26년 개정사항 정리",
+      "section": "7. 감귤(온주밀감) 수확기 잔존비율"
+    },
+    {
+      "id": "CONCEPT-161",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 블루베리 과실손해피해율 산출식 수정 (괄호 오류 정정)",
+      "content": "26년 개정 (이론서 괄호 오류 수정). ① 꽃 피해조사 미실시 시 = 과실손해피해율 × (1 - 미보상비율). ② 꽃 피해조사 실시 시 = 최종 꽃 피해율 + {(1 - 최종 꽃 피해율) × 과실손해피해율 × (1 - 미보상비율)}. ③ 과실손해피해율 = (∑재배종별·수령별 고사주수÷실제결과주수 × 재배종별 잔여수확량비율) + {(재배종별·수령별 조사대상주수÷실제결과주수) × (∑재배종별·수령별 표본가지 피해과실수 × 재배종별잔여수확량비율) ÷ ∑재배종별·수령별 표본가지 전체 과실수}. 구교재 P145 수정.",
+      "lv1_insurance": "종합위험 과실손해 블루베리",
+      "truth_weight": 10,
+      "source_page": 4,
+      "book_page": 4,
+      "pdf_page": 4,
+      "chapter": "26년 개정사항 정리",
+      "section": "8. 블루베리 과실손해피해율"
+    },
+    {
+      "id": "CONCEPT-162",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 적과전 종합위험 — 상한 적용 5년 중 3년 가입 이력",
+      "content": "26년 개정 (구교재 P120). 적과전 종합위험 상한 적용 = 가입 당해 포함 과거 5개년 중 3년 이상 가입 이력 과수원에 한하여 적용. 적용 가능 예시: 2022(O)·2024(O)·2026(O) → 3년 가입 완료 (상한 적용 대상). 적용 불가 예시: 2025(O)·2026(O) → 2년 가입 (상한 적용 제외).",
+      "lv1_insurance": "적과전 종합위험 II",
+      "truth_weight": 10,
+      "source_page": 4,
+      "book_page": 4,
+      "pdf_page": 4,
+      "chapter": "26년 개정사항 정리",
+      "section": "9. 25년 논란부분 정리"
+    },
+    {
+      "id": "CONCEPT-163",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 온주밀감 방재시설 — 동상해 특약 산출에만 적용",
+      "content": "26년 개정 (구교재 P99). 온주밀감 방상팬·서리방지 미세살수장치 할인율 = 동상해 특약 가입 시 동상해특약보험료 산출에만 적용. 과실손해보장·과실손해추가보장에는 적용 X.",
+      "lv1_insurance": "종합위험 감귤(온주밀감) 과실손해",
+      "truth_weight": 9,
+      "source_page": 4,
+      "book_page": 4,
+      "pdf_page": 4,
+      "chapter": "26년 개정사항 정리",
+      "section": "9. 25년 논란부분 정리"
+    },
+    {
+      "id": "CONCEPT-164",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 단기요율 — 화재·화재대물배상책임 특약 가산 X",
+      "content": "26년 개정 (구교재 P207). 단기요율 = 1·2·3·6·7·8·9·11·12월이 포함될 때 각 월마다 10% 가산. 단 화재 및 화재대물배상책임특약은 가산 X.",
+      "lv1_insurance": "농작물재해보험 공통",
+      "truth_weight": 9,
+      "source_page": 4,
+      "book_page": 4,
+      "pdf_page": 4,
+      "chapter": "26년 개정사항 정리",
+      "section": "9. 25년 논란부분 정리"
+    },
+    {
+      "id": "CONCEPT-165",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 평년수확량 산정 변경사항 (품목별)",
+      "content": "26년 개정. 1) 유자(7년 중 4년 이상) = min{max(산출 평년수확량, 7년 과거수확량 올림픽평균값), 표준수확량 130%}. 2) 포도·복숭아 평년수확량 = 표준수확량 130% 한도 미적용 (밤·블루베리·무화과 삭제). 3) 과수4종 = 적과전종합위험 평년착과량 산정 준용 (수확전 착과수조사값을 적과후 착과수로 대체). 4) 오디 = B값 = 평균 X = 품종별 표준결실수. 5) 복분자 = 평년결과모지수 = 표준결과모지수 130% 한도 (기존 50~130%에서 130%만). 6) 팥·살구 = 신규가입 시 표준수확량 70% (유자 삭제). 7) 밀 = 벼 산식 동일 적용.",
+      "lv1_insurance": "농작물재해보험 공통",
+      "truth_weight": 10,
+      "source_page": 5,
+      "book_page": 5,
+      "pdf_page": 5,
+      "chapter": "26년 개정사항 정리",
+      "section": "10. 평년수확량"
+    },
+    {
+      "id": "CONCEPT-166",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 벼·밀 평년수확량 산식 + 가입수확량",
+      "content": "26년 개정. 평년수확량 = [A + (B×D - A) × (1 - Y/5)] × C / D. A = 과거 5년 수확량 합 ÷ Y. B = 가입연도 지역별 기준수확량. C = 가입연도 보정계수 (가입년도 품종·이앙일자·친환경재배 보정계수 곱). D = 과거 5년 보정계수 합 ÷ Y. Y = 과거수확량 산출연도 횟수 (가입횟수). 평년수확량 ≤ 표준수확량의 130%. 조사료용 벼 제외. 가입수확량 = 평년수확량의 50~100% (5% 단위 리·동별 선정 가능). 구교재 P163.",
+      "lv1_insurance": "종합위험 수확감소보장 벼·밀",
+      "truth_weight": 10,
+      "source_page": 5,
+      "book_page": 5,
+      "pdf_page": 5,
+      "chapter": "26년 개정사항 정리",
+      "section": "10. 평년수확량"
+    },
+    {
+      "id": "CONCEPT-167",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 밭작물 신규 품목 + 보장방식 변경",
+      "content": "26년 개정 (구교재 P164). 신규 종합위험 수확감소보장 = 녹두·생강·참깨. 보장방식 변경 (생산비 → 수확감소): 가을배추(일반·병충해보장형)·가을무(일반)·단호박·당근(고랭지·가을·월동). 계절 구분 = 양배추(가을·월동)·당근(고랭지·가을·월동) — 계절별 분리.",
+      "lv1_insurance": "종합위험 수확감소 밭작물",
+      "truth_weight": 10,
+      "source_page": 6,
+      "book_page": 6,
+      "pdf_page": 6,
+      "chapter": "26년 개정사항 정리",
+      "section": "11. 밭작물 품목 추가 및 보장방식"
+    },
+    {
+      "id": "CONCEPT-168",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 재파종·재정식 보장 품목 + 보험금 산식",
+      "content": "26년 개정 (구교재 P187). 재파종 보장 = 당근(고·가·월) 15% / 가을감자·가을무 20% / 마늘(난지형만) 35% × 표준피해율. 재정식 보장 = 단호박·가을배추(일반·병충해)·양파·양배추(가을·월동) 20% × 면적피해율. 한지형 마늘 = 재파종 X (난지형만). 종기파종 보험금 (제주 남도종 마늘) = 보험가입금액 × 25% × 표준 피해율 (10a 기준 = (30,000-식물체주수) ÷ 30,000). 지급사유 = 면적피해율 자기부담 초과 또는 식물체주수 30,000 미만 → 30,000 이상 재파종.",
+      "lv1_insurance": "종합위험 수확감소 밭작물",
+      "truth_weight": 10,
+      "source_page": 6,
+      "book_page": 6,
+      "pdf_page": 6,
+      "chapter": "26년 개정사항 정리",
+      "section": "12. 재정식·재파종"
+    },
+    {
+      "id": "CONCEPT-169",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 수확감소 밭작물 보험기간 — 개시일·종료일·재파종/재정식 한계일",
+      "content": "26년 개정 (구교재 P171). 1) 계약24시 개시: 녹두·차·고랭지감자·옥수수·콩·팥·마늘·양파·고구마·생강. 2) 정식·파종완료일24시 (한계일 초과 X): 단호박(5/29)·수박(5/31)·고랭지당근(5/31)·참깨(6/20)·가을월동당근(8/31)·가을배추(9/10)·가을무(9/15)·양배추가을월동(9/30). 3) 정식·파종완료일24시 (경과 시 계약24시): 봄감자·가을감자. 재파종 한계일: 고랭지당근 5/31, 가을월동당근 8/31, 가을감자 9/15, 가을무 9/25, 마늘 10/31. 재정식 한계일: 단호박 5/31, 가을배추 9/20, 가을월동양배추 10/15, 양파 11/21. 경작불능 종료일 = 수확개시 시점 (콩·팥 변경). 수확감소 종료일: 봄감자 7월·수박 8/10·단호박 8/27·옥수수 9월·참깨 10/20·고당 10/20·고구마 10·고랭지감자 10·생강 11/10·팥 11/13·녹두 11/15·콩·가을양배추·가을감자 11·제주 가을감자 12/31·가을배추 12/15·가을무 12/15·이듬해 가월당 2·극조생/조생 월동양배추 2·중생 월동양배추 3/15·만생 월동양배추 3·차 5(전북 외 10일/전북 20일)·마늘·양파 6.",
+      "lv1_insurance": "종합위험 수확감소 밭작물",
+      "truth_weight": 10,
+      "source_page": 7,
+      "book_page": 7,
+      "pdf_page": 7,
+      "chapter": "26년 개정사항 정리",
+      "section": "13. 수확감소 밭작물 보험기간"
+    },
+    {
+      "id": "CONCEPT-170",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 인삼·해가림시설 — 1·2형 통합 + 보험료 할인",
+      "content": "26년 개정 (구교재 P177-180). 인삼 보험기간 = 1형·2형 구분 X (통합 운영). 청약 승낙 + 1회 보험료 납입 시점 (5/1 이전 가입 시 5/1). 보험증권 기재 보장종료일 (6년근 = 판매개시연도 10/31 초과 X). 연근별 보상가액 = 인삼 보험가입금액 = 재배면적 × 단위면적당 연근별보상가액. 단위면적당 연근별보상가액 = 계약체결시점 직파(만나이+1년)·이식(만나이+2년). 인삼 보험료 = 가×요×손×방 (관수시설 5% 할인). 해가림시설 보험료 = 가×요×종별요율×6년근재배 해가림시설 10% 할인. 종별요율: 2종 0.9 / 3종 1.0 / 4종 1.1 / 5종 1.2.",
+      "lv1_insurance": "작물특정 인삼·해가림시설",
+      "truth_weight": 10,
+      "source_page": 8,
+      "book_page": 8,
+      "pdf_page": 8,
+      "chapter": "26년 개정사항 정리",
+      "section": "14. 인삼·해가림시설"
+    },
+    {
+      "id": "CONCEPT-171",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 준비기생산비계수 + 손해정도비율 20→10% 변경",
+      "content": "26년 개정 (구교재 P189-212). 고추 준비기생산비계수 54.2% / 표준생장일수 풋고추 70일·홍고추 100일 / 수확종료일 정식일+150일 초과 X. 브로콜리 67.1%. 백합·국화·카네이션 재절화 시 20%. 버섯: 표고(톱밥배지) 81.4% / 느타리(균상재배) 69.7% / 양송이(균상재배) 70.3%. 느타리(병재배) 경과비율 = 88.7% (일자 무관). 새송이(병재배) 경과비율 = 91.7% (일자 무관). 손해정도비율 = 생산비보장(노지) + 시설작물 = 20% 구간 → 10% 구간 변경 (단 2-1 버섯 제외). 브로콜리 = 정상·50%·80%·100% 4단계.",
+      "lv1_insurance": "종합위험 시설작물·생산비보장",
+      "truth_weight": 10,
+      "source_page": 9,
+      "book_page": 9,
+      "pdf_page": 9,
+      "chapter": "26년 개정사항 정리",
+      "section": "15. 준비기생산비계수"
+    },
+    {
+      "id": "CONCEPT-172",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 농업수입안정보장 가격조항 — 품목 추가 + 산식",
+      "content": "26년 개정 (구교재 P228-235). 추가 품목 = 고랭지(배추·무) + 가을(배추 일반/병충해보장 제외, 무 일반) + 단감·만감류·복숭아·벼. 백태/서리태: 기준가격 = 과거 5년 연도별 『상품』 평균가격 올림픽평균 - 가장 최근 연도 유통비용. 수확기가격 = 수확연도 『상품』 평균가격 - 최근 유통비용. 흑/벼/마/나/보/고감: 기준가격 = 과거 5년 평균 매입(수매)가격 올림픽평균. 수확기가격 = 수확연도 평균 매입가격. 나머지: 기준가격 = 과거 5년 연도별 중품·상품 올림픽평균 - 최근 유통비용. 수확기가격 = 수확연도 중품·상품 - 최근 유통비용. 가중평균: 1농지에 기준가격 2개+ 시 수확량/면적 비율로 가중평균.",
+      "lv1_insurance": "농업수입안정보장",
+      "truth_weight": 10,
+      "source_page": 9,
+      "book_page": 9,
+      "pdf_page": 9,
+      "chapter": "26년 개정사항 정리",
+      "section": "16. 농업수입안정보장 가격조항"
+    },
+    {
+      "id": "CONCEPT-173",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 농업수입안정보장 보험금 — 과거수입형/기대수입형 (옥수수 별도)",
+      "content": "26년 개정 (구교재 P226). 옥수수 외 — 과거수입형: 보험금 = 보험가입금액 × (피해율 - 자기부담비율) / 피해율 = (기준수입 - 실제수입) ÷ 기준수입 / 기준수입 = 평년수확량 × 기준가격 / 실제수입 = (수확량 + 미보상감수량 - 병충해감수량 복숭아·감자만) × 수확기가격. 기대수입형: 보험금 = 기준수입 × (피해율 - 자기부담비율) / 기준수입 = 평년수확량 × max[기준가격, 수확기가격] (수확기가격은 기준가격의 150% 초과 X). 옥수수: 과거수입형 보험금 = 보험가입금액 × (피해율 - 자기부담비율). 옥수수 손해액 (이론서) — 기준≥수확기: (기준-수확기) × (평년-피해) + (기준×피해), 기준<수확기: 기준×피해. 약관과 이론서 산식 차이 주의.",
+      "lv1_insurance": "농업수입안정보장",
+      "truth_weight": 10,
+      "source_page": 10,
+      "book_page": 10,
+      "pdf_page": 10,
+      "chapter": "26년 개정사항 정리",
+      "section": "17. 농업수입안정보장 보험금"
+    },
+    {
+      "id": "CONCEPT-174",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 인수제한 — 과수4종 나무수령 + 비가림 + 호두 + 보리·밀·귀리 + 마늘 피복 + 출현율 80%",
+      "content": "26년 개정. 적과전종합위험 과수4종 나무수령: 다축재배 = 밀식과 동일 3년 미만 인수제한. 전기간 종합위험 과수4종: 사과 — 밀식 2년/반밀식 3년/일반 4년/다축재배 2년 미만 / 배 — 2년 미만 / 단감 — 4년 미만. ※ 가입년도 기준이라 적과전종합위험보다 1년 적음. 다축재배 인수제한: 지지대+관수시설 모두 설치 필수 (미설치 = 밀식으로 가입). 비가림시설 = 폭 2.5m±20% / 동고 2.75m±15% 범위 벗어나면 제한. 호두 = 실생묘 8년 미만 또는 신령 접목묘 6년 미만 (왜성호두 등 신령 외 품종 제한). 보리 파종 = 11/27 이후 / 밀·귀리 = 11/20 이후 인수제한. 마늘 = 대서종 무멀칭 시범사업 지역 內 12/15~1월말 피복 필수 (남부 23개 지역 제외). 출현율 80% 미만 인수제한 품목: 마늘·당근(고가월)·감자·고구마·옥수수·콩·팥·수박·생강·녹두·참깨·가을무·단호박·메밀·시금치(노지)·무·쪽파. 차 = 전남·경남 외 + 전북지역 (5/20 이후 가능).",
+      "lv1_insurance": "농작물재해보험 공통",
+      "truth_weight": 10,
+      "source_page": 11,
+      "book_page": 11,
+      "pdf_page": 11,
+      "chapter": "26년 개정사항 정리",
+      "section": "18. 인수제한"
+    },
+    {
+      "id": "CONCEPT-175",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 인수제한 — 녹두·참깨·생강 (신규 품목 상세 조건)",
+      "content": "26년 개정. 녹두 인수제한: 일시(기계)수확 X / 보험가입면적 300㎡ 미만 / 출현율 80% 미만 / 보험계약 시 피해 확인 / 재식밀도 16,000주/10a 미만. 참깨 인수제한: 보험가입면적 300㎡ 미만 / 재식밀도 7,000주/10a 미만 / 다른작물 혼식 / 4/16 이전 또는 6/20 이후 파종 / 출현율 80% 미만 / 전작 들깨·참깨 재배 / 피해 확인 / 시험연구·도시계획 편입. 생강 인수제한: 보험가입면적 300㎡ 미만 / 출현율 80% 미만 / 4/15~5/20 외 파종 / 전년 동일 농지 생강 재배 (연작) / 직전 4년 병충해 피해 / 재식밀도 5,550주/10a 미만 / 관수시설 미설치 (물호스는 인정 X) / 다른 작물 혼식 / 시험연구·도시계획 편입.",
+      "lv1_insurance": "종합위험 수확감소 밭작물",
+      "truth_weight": 10,
+      "source_page": 12,
+      "book_page": 12,
+      "pdf_page": 12,
+      "chapter": "26년 개정사항 정리",
+      "section": "18. 인수제한"
+    },
+    {
+      "id": "CONCEPT-176",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 가축재해보험 — 소 1년 이내 출하 가입조건 + 국고지원율",
+      "content": "26년 개정 (구교재 P286). 소 = 1년 이내 출하예정인 경우 일부 가입 가능 — 신규가입자·손해율 130% 초과자 = 소이력제 현황의 전부 가입 / 손해율 130% 이하자 = 80% 이상 가입. 총 보험료의 50% 국고지원 — 손해율 500% 초과 '소' 농가의 경우 국고지원 비율 차등화 50% → 40%.",
+      "lv1_insurance": "가축재해보험",
+      "truth_weight": 10,
+      "source_page": 12,
+      "book_page": 12,
+      "pdf_page": 12,
+      "chapter": "26년 개정사항 정리",
+      "section": "19. 가축"
+    },
+    {
+      "id": "CONCEPT-177",
+      "type": "CONCEPT",
+      "title": "[26년 개정] 농어업재해보험 26년 개정사항 정리 — 전체 19개 항목",
+      "content": "2026년 시행 농작물재해보험 + 가축재해보험 개정사항 통합. 한종찬 교수 정리본 (2026-03-31 기준). 19개 변경 항목: 1) 가입기준 + 신규 종합위험 (녹두·생강·참깨·과수4종) / 2) 보장재해 추가 (사과 탄저병, 가을배추 무름병, 원예시설 일조량) / 3) 자기부담비율 / 4) 정부지원비율 (3.31 최종) / 5) 손해율 할인 -25→-30% / 6) 과수4종 보험기간 통일 / 7) 감귤 잔존비율 / 8) 블루베리 산식 / 9) 25년 논란부분 / 10-11) 평년수확량 + 밭작물 추가 / 12-13) 재정식·재파종 + 보험기간 / 14) 인삼·해가림시설 통합 / 15) 준비기생산비계수 + 손해정도비율 20→10% / 16-17) 농업수입안정 가격조항 + 보험금 / 18) 인수제한 / 19) 가축. BATCH-1~5 + BATCH-6 적재 시점에 일부 정합 반영됨 (손해정도비율 / 가을무·감자 재파종 / 신규품목 / 인삼·해가림시설). 본 BATCH-R1 = 19개 항목 명시 학습 객체화.",
+      "lv1_insurance": "농작물재해보험 + 가축재해보험 공통",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "26년 개정사항 정리",
+      "section": "전체"
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-154",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-155",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-156",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-157",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-158",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-159",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-160",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-161",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-162",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-163",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-164",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-165",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-166",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-167",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-168",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-169",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-170",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-171",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-172",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-173",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-174",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-175",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-177",
+      "target_id": "CONCEPT-176",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "CONCEPT-171",
+      "target_id": "CONCEPT-081",
+      "edge_type": "SUPERSEDES"
+    },
+    {
+      "source_id": "CONCEPT-168",
+      "target_id": "F-71",
+      "edge_type": "SUPERSEDES"
+    },
+    {
+      "source_id": "CONCEPT-167",
+      "target_id": "CROP-045",
+      "edge_type": "SUPERSEDES"
+    },
+    {
+      "source_id": "CONCEPT-167",
+      "target_id": "CROP-046",
+      "edge_type": "SUPERSEDES"
+    },
+    {
+      "source_id": "CONCEPT-167",
+      "target_id": "CROP-042",
+      "edge_type": "SUPERSEDES"
+    },
+    {
+      "source_id": "CONCEPT-170",
+      "target_id": "CROP-058",
+      "edge_type": "SUPERSEDES"
+    },
+    {
+      "source_id": "CONCEPT-170",
+      "target_id": "CROP-059",
+      "edge_type": "SUPERSEDES"
+    },
+    {
+      "source_id": "CONCEPT-176",
+      "target_id": "INS-33",
+      "edge_type": "SUPERSEDES"
+    },
+    {
+      "source_id": "CONCEPT-160",
+      "target_id": "INS-09",
+      "edge_type": "SUPERSEDES"
+    },
+    {
+      "source_id": "CONCEPT-161",
+      "target_id": "INS-12",
+      "edge_type": "SUPERSEDES"
+    },
+    {
+      "source_id": "CONCEPT-159",
+      "target_id": "INS-01",
+      "edge_type": "SUPERSEDES"
+    },
+    {
+      "source_id": "CONCEPT-156",
+      "target_id": "CONCEPT-154",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "CONCEPT-157",
+      "target_id": "CONCEPT-154",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "CONCEPT-158",
+      "target_id": "CONCEPT-157",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "CONCEPT-167",
+      "target_id": "CONCEPT-154",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "CONCEPT-168",
+      "target_id": "CONCEPT-167",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "CONCEPT-169",
+      "target_id": "CONCEPT-168",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "CONCEPT-173",
+      "target_id": "CONCEPT-172",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "CONCEPT-174",
+      "target_id": "CONCEPT-167",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "CONCEPT-175",
+      "target_id": "CONCEPT-174",
+      "edge_type": "DEPENDS_ON"
+    }
+  ],
+  "formulas": [],
+  "constants": [
+    {
+      "id": "CONST-143",
+      "name": "26년 손해율 5년 20%미만 최대 할인율 (-)",
+      "value": "0.30",
+      "category": "ratio",
+      "source_page": 3
+    },
+    {
+      "id": "CONST-144",
+      "name": "26년 정부지원 사과배단감떫은감벼 60% 보장수준",
+      "value": "0.65",
+      "category": "ratio",
+      "source_page": 2
+    },
+    {
+      "id": "CONST-145",
+      "name": "26년 정부지원 사과배단감떫은감벼 90% 보장수준",
+      "value": "0.33",
+      "category": "ratio",
+      "source_page": 2
+    },
+    {
+      "id": "CONST-146",
+      "name": "26년 종기파종 보험금율 (제주 남도종 마늘)",
+      "value": "0.25",
+      "category": "ratio",
+      "source_page": 6
+    },
+    {
+      "id": "CONST-147",
+      "name": "26년 마늘(난지형) 재파종 보험금율",
+      "value": "0.35",
+      "category": "ratio",
+      "source_page": 6
+    },
+    {
+      "id": "CONST-148",
+      "name": "26년 당근 재파종 보험금율",
+      "value": "0.15",
+      "category": "ratio",
+      "source_page": 6
+    },
+    {
+      "id": "CONST-149",
+      "name": "26년 종기파종 표준피해율 분모 (10a 30,000주)",
+      "value": "30000",
+      "category": "threshold",
+      "source_page": 6
+    },
+    {
+      "id": "CONST-150",
+      "name": "26년 인삼 관수시설 보험료 할인율",
+      "value": "0.05",
+      "category": "ratio",
+      "source_page": 8
+    },
+    {
+      "id": "CONST-151",
+      "name": "26년 해가림시설 6년근재배 보험료 할인율",
+      "value": "0.10",
+      "category": "ratio",
+      "source_page": 8
+    },
+    {
+      "id": "CONST-152",
+      "name": "26년 고추 준비기생산비계수",
+      "value": "0.542",
+      "category": "coefficient",
+      "source_page": 9
+    },
+    {
+      "id": "CONST-153",
+      "name": "26년 브로콜리 준비기생산비계수",
+      "value": "0.671",
+      "category": "coefficient",
+      "source_page": 9
+    },
+    {
+      "id": "CONST-154",
+      "name": "26년 표고버섯 톱밥배지 준비기생산비계수",
+      "value": "0.814",
+      "category": "coefficient",
+      "source_page": 9
+    },
+    {
+      "id": "CONST-155",
+      "name": "26년 느타리(균상재배) 준비기생산비계수",
+      "value": "0.697",
+      "category": "coefficient",
+      "source_page": 9
+    },
+    {
+      "id": "CONST-156",
+      "name": "26년 양송이(균상재배) 준비기생산비계수",
+      "value": "0.703",
+      "category": "coefficient",
+      "source_page": 9
+    },
+    {
+      "id": "CONST-157",
+      "name": "26년 느타리(병재배) 경과비율 고정",
+      "value": "0.887",
+      "category": "ratio",
+      "source_page": 9
+    },
+    {
+      "id": "CONST-158",
+      "name": "26년 새송이(병재배) 경과비율 고정",
+      "value": "0.917",
+      "category": "ratio",
+      "source_page": 9
+    },
+    {
+      "id": "CONST-159",
+      "name": "26년 농업수입안정 기대수입형 수확기가격 한도 (기준가격 배수)",
+      "value": "1.50",
+      "category": "ratio",
+      "source_page": 10
+    },
+    {
+      "id": "CONST-160",
+      "name": "26년 가축재해보험 소 손해율 130% 초과 가입 비율",
+      "value": "1.00",
+      "category": "ratio",
+      "source_page": 12
+    },
+    {
+      "id": "CONST-161",
+      "name": "26년 가축재해보험 소 손해율 130% 이하 가입 비율 최저",
+      "value": "0.80",
+      "category": "ratio",
+      "source_page": 12
+    },
+    {
+      "id": "CONST-162",
+      "name": "26년 가축재해보험 소 손해율 500% 초과 국고지원율",
+      "value": "0.40",
+      "category": "ratio",
+      "source_page": 12
+    }
+  ]
+}

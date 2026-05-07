@@ -1,0 +1,160 @@
+{
+  "schema_version": "1.1",
+  "stage": "1B",
+  "source": {
+    "file": "docs/manual/2차시험정답지/자료9번_수확감소밭작물_보험금기출.pdf",
+    "size_bytes": 444432,
+    "pages": 20,
+    "raw_chars": 17231,
+    "title": "밭작물(수확감소) 11년간 기출문제",
+    "publisher": "손해평가사전문학원 손평에듀",
+    "content_type": "exam_explanation_collection",
+    "exam_type_target": "2nd",
+    "rounds_partial_detected": [1, 2, 7, 9, 10, 11],
+    "fruits_covered_count": 9
+  },
+  "extracted_at": "2026-05-06",
+  "stage_session": "048",
+  "source_textbook_year": 2025,
+  "current_loaded_textbook_year": 2026,
+  "version_drift_warning": true,
+  "version_drift_rationale": "본 자료 = 25년 이론서 기반 학원(손평에듀) 풀이 자료. 26년 갱신 (REV-2026-28/29/30/33 — 밭작물 수확량조사 적기·표본구간 방법·함수율 환산·손해정도비율 조사방법) 직격 영역 → version_drift 高",
+  "potential_revision_drift": [
+    {
+      "revision_id": "REV-2026-28-FIELD-HARVEST-TIMING",
+      "drift_severity": "high",
+      "concern": "단호박/가을배추/가을무/참깨/당근/생강/녹두 수확량조사 적기 26년 신설 — 자료9번 풀이 보강 의무"
+    },
+    {
+      "revision_id": "REV-2026-29-SAMPLE-METHOD",
+      "drift_severity": "high",
+      "concern": "표본구간 수확 후 조사 방법 26년 명세화 — 자료9번 영역 직격"
+    },
+    {
+      "revision_id": "REV-2026-30-SAMPLE-CONVERT",
+      "drift_severity": "high",
+      "concern": "참깨/녹두 함수율 환산 산식 26년 신설 — 자료9번 미커버"
+    },
+    {
+      "revision_id": "REV-2026-33-DAMAGE-RATIO-METHOD",
+      "drift_severity": "medium",
+      "concern": "26년 손해정도비율 조사방법 명세화 — 메밀/밭작물 일부 영역"
+    }
+  ],
+  "domain_areas": ["BATCH-3", "BATCH-4", "BATCH-7", "BATCH-R2"],
+  "core_concept_nodes": [
+    { "id": "TERM-030", "name": "표본구간", "batch_id": "BATCH-3", "relevance": "primary" },
+    {
+      "id": "TERM-035",
+      "name": "표본구간 (밭작물) — 이랑 길이 × 이랑 폭",
+      "batch_id": "BATCH-4",
+      "relevance": "primary"
+    },
+    { "id": "TERM-032", "name": "점파 / 산파", "batch_id": "BATCH-3", "relevance": "primary" },
+    {
+      "id": "LAW-138",
+      "name": "<별표1> 품목별 표본주(구간)수 표",
+      "batch_id": "BATCH-7",
+      "relevance": "primary"
+    }
+  ],
+  "crop_nodes": [
+    {
+      "label": "감자",
+      "node_ids": ["CROP-036", "CROP-037", "CROP-038"],
+      "batch_id": "BATCH-4",
+      "occurrence_count": 47,
+      "note": "★ 본 자료 최다 출제 영역 (3 변종)"
+    },
+    {
+      "label": "마늘",
+      "node_ids": ["CROP-034"],
+      "batch_id": "BATCH-4",
+      "occurrence_count": 40,
+      "note": "★ 본 자료 빈도 2위"
+    },
+    { "label": "옥수수", "node_ids": ["CROP-029"], "batch_id": "BATCH-4", "occurrence_count": 18 },
+    {
+      "label": "고구마",
+      "node_ids": ["CROP-028"],
+      "batch_id": "BATCH-4",
+      "occurrence_count": 18,
+      "note": "★ Session 049 정제 — TD-S48-1-residual 해소 (CROP-028 BATCH-4)"
+    },
+    { "label": "양배추", "node_ids": ["CROP-032"], "batch_id": "BATCH-4", "occurrence_count": 12 },
+    { "label": "양파", "node_ids": ["CROP-033"], "batch_id": "BATCH-4", "occurrence_count": 11 },
+    {
+      "label": "차",
+      "node_ids": ["CROP-035"],
+      "batch_id": "BATCH-4",
+      "occurrence_count": 10,
+      "note": "차(茶) — 수확감소 영역"
+    },
+    { "label": "콩", "node_ids": ["CROP-031"], "batch_id": "BATCH-4", "occurrence_count": 7 },
+    { "label": "팥", "node_ids": ["CROP-039"], "batch_id": "BATCH-4", "occurrence_count": 3 }
+  ],
+  "exam_question_links": [
+    {
+      "question_id": "Q-2025-11-2ND-007",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "1과목 (이론)",
+      "relevance": "primary",
+      "rationale": "★ 종합위험 수확감소보장 마늘 — 본 자료 마늘 40 빈도 직접 매핑"
+    },
+    {
+      "question_id": "Q-2025-11-2ND-004",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "1과목 (이론)",
+      "relevance": "primary",
+      "rationale": "★ 종합위험 수확감소 감자 + 생산비보장 고추 병충해 — 자료9번 감자 47 빈도 직접 매핑"
+    },
+    {
+      "question_id": "Q-2025-11-2ND-014",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "2과목 (손해평가)",
+      "relevance": "primary",
+      "rationale": "★ 종합위험 수확감소 밭작물 품목별 수확량조사 적기 — 자료9번 영역 직접 (REV-2026-28 drift 영역)"
+    }
+  ],
+  "exam_question_search": {
+    "keyword_set": ["수확감소", "마늘/양파/감자/고구마/옥수수/양배추"],
+    "1st_exam_matches": 0,
+    "2nd_exam_matches": 3,
+    "total": 3,
+    "note": "1차 525에 키워드 직접 매칭 0건 — 자료9번 영역(2차 손해평가 풀이) 한정"
+  },
+  "★_critical_finding_★": {
+    "title": "본 자료 = 2차 1~11회 수확감소 밭작물 풀이 raw 보유 (자료5번과 동일 INSERT 자산 가능성)",
+    "rationale": "자료5번과 동일 패턴 (손평에듀 학원 풀이 모음). TD-S46-2 carry-over 해결 자산 후보 — 옵션 α/β/γ 일괄 결정 의무 (자료5/9/11/15/17 종합 검토)",
+    "deferred_to": "8 자료 추출 완료 후 일괄 plan 작성 → 진산 결정"
+  },
+  "td_carry_over": [],
+  "td_resolved_session_049": [
+    {
+      "id": "TD-S48-1-residual",
+      "resolution": "CROP-028 (BATCH-4 고구마) wrangler d1 production 검증 영속 (2026-05-06 Session 049 entry 정제 단계)"
+    }
+  ],
+  "decisions_applied": {
+    "D-S1B-1": "A",
+    "D-S1B-2": "키워드 매칭만",
+    "D-S1B-3": "현 schema",
+    "D-S1B-4": "8 자료 일괄",
+    "D-S1B-5": "primary/secondary",
+    "D-S1B-6": "다음 자료 15번 수입안정"
+  },
+  "summary": {
+    "core_nodes_count": 4,
+    "crop_nodes_count": 9,
+    "crop_id_total_count": 8,
+    "exam_question_links": 3,
+    "potential_drifts": 4,
+    "verdict": "본 자료 = 2차 수확감소 밭작물 11년 풀이. 시잘부2 §2 영역 정합 + 자료5번과 동일 INSERT 자산 가능성. 26년 drift 高 (REV-2026-28/29/30/33 직격)"
+  }
+}

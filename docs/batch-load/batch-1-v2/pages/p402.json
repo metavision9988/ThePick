@@ -1,0 +1,21 @@
+{
+  "book_page": 402,
+  "pdf_page": 409,
+  "chapter": "제2장 농작물재해보험 손해평가",
+  "section": "제1절 손해평가 기본단계",
+  "chapter_source": "forward_fill",
+  "section_source": "forward_fill",
+  "text": "농작물재해보험 및 가축재해보험 손해평가의 이론과 실무 - 2권\n<그림 2-2> 현지조사 절차(5단계)\n손해평가는 조사품목, 재해의 종류, 조사 시기 등에 따라 조사방법 등이 달라\n지기에 상황에 맞는 손해평가를 하는 것이 중요하다.\n- 402 -",
+  "text_lines": 5,
+  "tables": [],
+  "images": [
+    {
+      "idx": 0,
+      "bbox": [129.65, 135.812, 468.22799999999995, 274.62],
+      "width": 339,
+      "height": 139,
+      "png_path": "images/p402-im00.png"
+    }
+  ],
+  "fractions": []
+}

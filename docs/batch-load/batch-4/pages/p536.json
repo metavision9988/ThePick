@@ -1,0 +1,42 @@
+{
+  "book_page": 536,
+  "pdf_page": 543,
+  "chapter": null,
+  "section": "제4절 밭작물 손해평가 및 보험금 산정",
+  "chapter_source": "missing",
+  "section_source": "forward_fill",
+  "text": "농작물재해보험 및 가축재해보험 손해평가의 이론과 실무 - 2권\n<그림 2-25> 이랑 길이, 이랑폭 측정\n<그림 2-26> 작물별 표본 조사\n- 536 -",
+  "text_lines": 4,
+  "tables": [],
+  "images": [
+    {
+      "idx": 0,
+      "bbox": [64.525, 103.56600000000003, 291.563, 272.102],
+      "width": 227,
+      "height": 169,
+      "png_path": "images/p536-im00.png"
+    },
+    {
+      "idx": 1,
+      "bbox": [301.758, 112.91599999999994, 528.796, 262.87199999999996],
+      "width": 227,
+      "height": 150,
+      "png_path": "images/p536-im01.png"
+    },
+    {
+      "idx": 2,
+      "bbox": [64.525, 305.18600000000004, 532.034, 503.329],
+      "width": 468,
+      "height": 198,
+      "png_path": "images/p536-im02.png"
+    },
+    {
+      "idx": 3,
+      "bbox": [64.525, 506.206, 532.034, 704.3489999999999],
+      "width": 468,
+      "height": 198,
+      "png_path": "images/p536-im03.png"
+    }
+  ],
+  "fractions": []
+}

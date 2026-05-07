@@ -1,0 +1,2772 @@
+{
+  "$schema_version": "v1.1",
+  "_meta": {
+    "batch_id": "BATCH-2",
+    "source_pdf": "docs/manual/2026년 「농업재해보험·손해평가의 이론과 실무」 이론서_수정본(26.3.31.).pdf",
+    "book_pages": [428, 493],
+    "pdf_pages": [435, 500],
+    "page_count": 66,
+    "domain": "종합위험 수확감소 / 과실손해 / 수확전 종합위험",
+    "crops_count": 22,
+    "insurance_methods_count": 3,
+    "specials_count": 5,
+    "status": "draft",
+    "ai_generated_by": "Claude Opus 4.7 (1M context) — Session 042",
+    "extracted_at": "2026-05-05",
+    "ontology_registry_version": "1.1.0",
+    "formula_nodes_dual_registered": true,
+    "const_node_refs_removed": 11
+  },
+  "formulas": [
+    {
+      "id": "F-14",
+      "name": "종합위험 수확감소보험금",
+      "equation_template": "max(insurance_amount * (damage_rate - deductible_rate), 0)",
+      "variables_schema": "{\"insurance_amount\":\"보험가입금액 number>=0\",\"damage_rate\":\"피해율 number 0..1\",\"deductible_rate\":\"자기부담비율 number 0..1\"}",
+      "source_page": 464
+    },
+    {
+      "id": "F-15",
+      "name": "수확감소 피해율",
+      "equation_template": "(expected_yield - actual_yield - uncovered_loss) / expected_yield",
+      "variables_schema": "{\"expected_yield\":\"평년수확량 number>0\",\"actual_yield\":\"수확량 number>=0\",\"uncovered_loss\":\"미보상감수량 number>=0\"}",
+      "source_page": 464
+    },
+    {
+      "id": "F-16",
+      "name": "복숭아 피해율",
+      "equation_template": "(expected_yield - actual_yield - uncovered_loss - pest_loss) / expected_yield",
+      "variables_schema": "{\"expected_yield\":\"평년수확량 number>0\",\"actual_yield\":\"수확량 number>=0\",\"uncovered_loss\":\"미보상감수량 number>=0\",\"pest_loss\":\"병충해감수량(세균구멍병 무게×0.5) number>=0\"}",
+      "source_page": 464
+    },
+    {
+      "id": "F-17",
+      "name": "미보상감수량",
+      "equation_template": "(expected_yield - actual_yield) * uncovered_rate",
+      "variables_schema": "{\"expected_yield\":\"평년수확량 number>0\",\"actual_yield\":\"수확량 number>=0\",\"uncovered_rate\":\"미보상비율 number 0..1\"}",
+      "source_page": 464
+    },
+    {
+      "id": "F-18",
+      "name": "수확량감소 추가보장 특약 보험금",
+      "equation_template": "insurance_amount * damage_rate * 0.10",
+      "variables_schema": "{\"insurance_amount\":\"보험가입금액 number>=0\",\"damage_rate\":\"피해율 number 0..1\"}",
+      "source_page": 465
+    },
+    {
+      "id": "F-19",
+      "name": "나무손해보장특약 보험금",
+      "equation_template": "max(insurance_amount * (damage_rate - deductible_rate), 0)",
+      "variables_schema": "{\"insurance_amount\":\"보험가입금액 number>=0\",\"damage_rate\":\"피해율(피해주수÷실제결과주수) number 0..1\",\"deductible_rate\":\"자기부담비율 number 0..1\"}",
+      "source_page": 465
+    },
+    {
+      "id": "F-20",
+      "name": "나무손해 피해율",
+      "equation_template": "dead_trees / actual_trees",
+      "variables_schema": "{\"dead_trees\":\"피해주수(고사된 나무, 미보상고사주수 제외) number>=0\",\"actual_trees\":\"실제결과주수 number>0\"}",
+      "source_page": 465
+    },
+    {
+      "id": "F-21",
+      "name": "종합위험 비가림시설보험금",
+      "equation_template": "min(loss_amount - deductible, insurance_amount)",
+      "variables_schema": "{\"loss_amount\":\"손해액(재조달가액 기준) number>=0\",\"deductible\":\"자기부담금(손해액×10%, 최소30만/최대100만, 피복재단독 최소10만/최대30만) number>=0\",\"insurance_amount\":\"보험가입금액 number>=0\"}",
+      "source_page": 465
+    },
+    {
+      "id": "F-22",
+      "name": "품종별 개당 과중",
+      "equation_template": "(normal_weight + small_weight * 0.8) / sample_count",
+      "variables_schema": "{\"normal_weight\":\"품종별 정상표본과실무게합 number>=0\",\"small_weight\":\"소과(밤 30mm 미만)표본과실무게합 number>=0\",\"sample_count\":\"표본과실수 number>0\"}",
+      "source_page": 440
+    },
+    {
+      "id": "F-23",
+      "name": "품종·수령별 주당 착과량",
+      "equation_template": "sample_fruit_weight / sample_tree_count",
+      "variables_schema": "{\"sample_fruit_weight\":\"품종·수령별 표본주의 착과 무게 number>=0\",\"sample_tree_count\":\"표본주수 number>0\"}",
+      "source_page": 451
+    },
+    {
+      "id": "F-24",
+      "name": "표본주 착과 무게(매실 비대추정)",
+      "equation_template": "raw_weight * inflation_index * half_factor",
+      "variables_schema": "{\"raw_weight\":\"조사 착과량 number>=0\",\"inflation_index\":\"품종별 비대추정지수(매실, 별표4) number>0\",\"half_factor\":\"절반조사시 2 / 전체조사시 1 number\"}",
+      "source_page": 451
+    },
+    {
+      "id": "F-25",
+      "name": "과실손해보험금(오디)",
+      "equation_template": "max(insurance_amount * (damage_rate - deductible_rate), 0)",
+      "variables_schema": "{\"insurance_amount\":\"보험가입금액 number>=0\",\"damage_rate\":\"피해율((평년결실수-조사결실수-미보상감수결실수)÷평년결실수) number 0..1\",\"deductible_rate\":\"자기부담비율 number 0..1\"}",
+      "source_page": 480
+    },
+    {
+      "id": "F-26",
+      "name": "오디 피해율",
+      "equation_template": "(expected_fruits - surveyed_fruits - uncovered_fruits) / expected_fruits",
+      "variables_schema": "{\"expected_fruits\":\"평년결실수 number>0\",\"surveyed_fruits\":\"조사결실수 number>=0\",\"uncovered_fruits\":\"미보상감수결실수((평년결실수-조사결실수)×미보상비율, 0 미만 시 0) number>=0\"}",
+      "source_page": 480
+    },
+    {
+      "id": "F-27",
+      "name": "과실손해보험금(감귤 온주밀감)",
+      "equation_template": "max(loss_amount - deductible, 0)",
+      "variables_schema": "{\"loss_amount\":\"손해액(보험가입금액×피해율) number>=0\",\"deductible\":\"자기부담금(보험가입금액×자기부담비율) number>=0\"}",
+      "source_page": 481
+    },
+    {
+      "id": "F-28",
+      "name": "감귤 온주밀감 피해율",
+      "equation_template": "(damaged_fruits / standard_fruits) * (1 - uncovered_rate)",
+      "variables_schema": "{\"damaged_fruits\":\"피해과실수(등급내+등급외×0.5; 등급내=30%형×0.3+50%형×0.5+80%형×0.8+100%형×1) number>=0\",\"standard_fruits\":\"기준과실수(표본주 과실수 총합계) number>0\",\"uncovered_rate\":\"미보상비율 number 0..1\"}",
+      "source_page": 481
+    },
+    {
+      "id": "F-29",
+      "name": "두릅 피해율",
+      "equation_template": "(damaged_buds / total_buds) * (1 - uncovered_rate)",
+      "variables_schema": "{\"damaged_buds\":\"피해 정아지수 number>=0\",\"total_buds\":\"총 정아지수 number>0\",\"uncovered_rate\":\"미보상비율 number 0..1\"}",
+      "source_page": 482
+    },
+    {
+      "id": "F-30",
+      "name": "블루베리 과실손해피해율",
+      "equation_template": "(dead_trees_ratio * residual_yield_ratio) + (survey_trees_ratio * (sample_damaged_fruits * residual_yield_ratio) / sample_total_fruits)",
+      "variables_schema": "{\"dead_trees_ratio\":\"∑재배종별·수령별 고사주수÷실제결과주수 number 0..1\",\"residual_yield_ratio\":\"재배종별 잔여수확량비율(수확개시이전=1, 수확개시이후=1-(사고일자-수확개시일자)÷30, 음수 시 0) number 0..1\",\"survey_trees_ratio\":\"재배종별·수령별 조사대상주수÷실제결과주수 number 0..1\",\"sample_damaged_fruits\":\"∑재배종별·수령별 표본가지 피해과실수 number>=0\",\"sample_total_fruits\":\"∑재배종별·수령별 표본가지 전체 과실수 number>0\"}",
+      "source_page": 482
+    },
+    {
+      "id": "F-31",
+      "name": "블루베리 꽃 피해 시 종합 피해율",
+      "equation_template": "final_flower_damage + (1 - final_flower_damage) * fruit_damage_rate * (1 - uncovered_rate)",
+      "variables_schema": "{\"final_flower_damage\":\"최종 꽃 피해율(=최종 꽃 고사율×가중치; 가중치는 최종꽃고사율 구간별 0~1.0 별표) number 0..1\",\"fruit_damage_rate\":\"과실손해피해율(F-30) number 0..1\",\"uncovered_rate\":\"미보상비율 number 0..1\"}",
+      "source_page": 482
+    },
+    {
+      "id": "F-32",
+      "name": "동상해 과실손해보험금(감귤 온주밀감)",
+      "equation_template": "max(loss_amount - deductible, 0)",
+      "variables_schema": "{\"loss_amount\":\"손해액({보험가입금액-(보험가입금액×기사고피해율)}×수확기잔존비율×동상해피해율×(1-미보상비율)) number>=0\",\"deductible\":\"자기부담금(|보험가입금액×min(주계약피해율-자기부담비율, 0)|) number>=0\"}",
+      "source_page": 484
+    },
+    {
+      "id": "F-33",
+      "name": "과실손해 추가보장 특약 보험금(감귤 온주밀감)",
+      "equation_template": "insurance_amount * primary_damage_rate * 0.10",
+      "variables_schema": "{\"insurance_amount\":\"보험가입금액 number>=0\",\"primary_damage_rate\":\"주계약 피해율(과실손해보장 보통약관 산출값) number 0..1\"}",
+      "source_page": 485
+    }
+  ],
+  "constants": [
+    {
+      "id": "CONST-006",
+      "name": "복숭아 세균구멍병 피해 인정 계수",
+      "value": "0.5",
+      "category": "coefficient",
+      "source_page": 464
+    },
+    {
+      "id": "CONST-007",
+      "name": "수확량감소 추가보장 특약 보험금 비율",
+      "value": "0.10",
+      "category": "ratio",
+      "source_page": 465
+    },
+    {
+      "id": "CONST-008",
+      "name": "비가림시설 자기부담금 손해액 비율",
+      "value": "0.10",
+      "category": "ratio",
+      "source_page": 466
+    },
+    {
+      "id": "CONST-009",
+      "name": "비가림시설 본체 최소 자기부담금",
+      "value": "300000",
+      "category": "deductible",
+      "source_page": 466
+    },
+    {
+      "id": "CONST-010",
+      "name": "비가림시설 본체 최대 자기부담금",
+      "value": "1000000",
+      "category": "deductible",
+      "source_page": 466
+    },
+    {
+      "id": "CONST-011",
+      "name": "비가림시설 피복재 최소 자기부담금",
+      "value": "100000",
+      "category": "deductible",
+      "source_page": 466
+    },
+    {
+      "id": "CONST-012",
+      "name": "비가림시설 피복재 최대 자기부담금",
+      "value": "300000",
+      "category": "deductible",
+      "source_page": 466
+    },
+    {
+      "id": "CONST-013",
+      "name": "밤 소과 분류 기준 (지름)",
+      "value": "30",
+      "category": "threshold",
+      "source_page": 440
+    },
+    {
+      "id": "CONST-014",
+      "name": "밤 소과 무게 적용 비율",
+      "value": "0.8",
+      "category": "ratio",
+      "source_page": 440
+    },
+    {
+      "id": "CONST-015",
+      "name": "블루베리 표준수확일수",
+      "value": "30",
+      "category": "threshold",
+      "source_page": 483
+    },
+    {
+      "id": "CONST-016",
+      "name": "감귤 온주밀감 등급 외 피해과실 가중치",
+      "value": "0.5",
+      "category": "coefficient",
+      "source_page": 481
+    },
+    {
+      "id": "CONST-017",
+      "name": "과실손해 추가보장 특약 보험금 비율",
+      "value": "0.10",
+      "category": "ratio",
+      "source_page": 485
+    },
+    {
+      "id": "CONST-018",
+      "name": "감귤 나무손해 자기부담비율",
+      "value": "0.05",
+      "category": "ratio",
+      "source_page": 484
+    },
+    {
+      "id": "CONST-019",
+      "name": "비가림시설 수리·복구 통지 기한 (일)",
+      "value": "180",
+      "category": "threshold",
+      "source_page": 466
+    },
+    {
+      "id": "CONST-020",
+      "name": "비가림시설 손해방지비용 한도",
+      "value": "200000",
+      "category": "deductible",
+      "source_page": 465
+    }
+  ],
+  "nodes": [
+    {
+      "id": "INS-07",
+      "type": "INSURANCE",
+      "title": "종합위험 수확감소보장방식",
+      "content": "16종 작물(포도·복숭아·자두·감귤만감류·밤·호두·참다래·대추·매실·살구·오미자·유자·사과·배·단감·떫은감)을 대상. 보험기간 동안 보장하는 재해로 인한 수확량 감소를 보장. 시기별 조사: 예찰조사 / 피해사실 확인조사 / (작물별) 수확량조사 / 비가림시설 손해조사. 보험금 = 보험가입금액 × (피해율 - 자기부담비율). 피해율 = (평년수확량-수확량-미보상감수량)÷평년수확량.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 8,
+      "source_page": 428,
+      "book_page": 428,
+      "pdf_page": 435,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INS-08",
+      "type": "INSURANCE",
+      "title": "종합위험 과실손해보장방식",
+      "content": "4종 작물(감귤(온주밀감류)·오디·두릅·블루베리)을 대상. 보험기간 동안 보장하는 재해로 과실손해가 발생하여 이로 인한 수확량감소를 보장하는 방식. 작물별 보험금 산정 별도(오디=수확량 기반 피해율 / 감귤 온주밀감=손해액 기반 / 두릅=정아지수 / 블루베리=재배종별 가중 + 꽃 피해 보정).",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 8,
+      "source_page": 468,
+      "book_page": 468,
+      "pdf_page": 475,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "INS-09",
+      "type": "INSURANCE",
+      "title": "수확전 종합위험 과실손해보장방식",
+      "content": "2종 작물(복분자·무화과)을 대상. 보험기간 개시일~수확개시 이전: 자연재해·조수해·화재 종합위험 / 수확개시 이후~수확종료: 태풍(강풍)·우박 특정위험. 복분자 식물체 피해율 65% 이상 시 경작불능보험금 지급 가능 분기. 시기별 조사: 피해사실 확인조사 / 경작불능조사(복분자) / (종합위험)과실손해조사 / (특정위험)과실손해조사 / 고사나무조사.",
+      "lv1_insurance": "수확전 종합위험 과실손해보장",
+      "truth_weight": 8,
+      "source_page": 486,
+      "book_page": 486,
+      "pdf_page": 493,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "4. 수확전 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "INS-10",
+      "type": "INSURANCE",
+      "title": "수확량감소 추가보장 특약",
+      "content": "포도·복숭아·감귤(만감류) 대상 특약. 보장재해로 피해율이 자기부담비율을 초과하는 경우 적용. 보험금 = 보험가입금액 × (피해율 × 10%). 주계약(F-14)과 별도 산정 후 합산 지급.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 8,
+      "source_page": 465,
+      "book_page": 465,
+      "pdf_page": 472,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INS-11",
+      "type": "INSURANCE",
+      "title": "나무손해보장 특별약관",
+      "content": "수확감소·과실손해 보장 작물에 부가하는 나무 단위 보장 특약. 보험금 = 보험가입금액 × (피해율 - 자기부담비율). 피해율 = 피해주수(수확전+수확완료 후 고사주수 합, 미보상고사주수 제외) ÷ 실제결과주수. 감귤 온주밀감의 자기부담비율은 5% 고정.",
+      "lv1_insurance": "나무손해보장",
+      "truth_weight": 8,
+      "source_page": 465,
+      "book_page": 465,
+      "pdf_page": 472,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INS-12",
+      "type": "INSURANCE",
+      "title": "종합위험 비가림시설 손해보장방식",
+      "content": "포도·참다래·대추 대상 비가림시설 단위 보장. 보험금 = MIN(손해액 - 자기부담금, 보험가입금액). 자기부담금 = 손해액의 10%(본체 30만~100만 한도 / 피복재 단독 10만~30만 한도). 화재 손해는 자기부담금 미적용. 손해 발생 후 180일 이내 수리·복구 의사 서면 통지 의무.",
+      "lv1_insurance": "비가림시설 손해보장",
+      "truth_weight": 8,
+      "source_page": 465,
+      "book_page": 465,
+      "pdf_page": 472,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INS-13",
+      "type": "INSURANCE",
+      "title": "수확개시 이후 동상해보장 특별약관",
+      "content": "감귤(온주밀감류) 대상. 보험기간 내 동상해로 인한 손해액이 자기부담금을 초과하는 경우 동상해 손해보험금 지급. 손해액 = {보험가입금액 - (보험가입금액×기사고피해율)} × 수확기잔존비율 × 동상해피해율 × (1 - 미보상비율). 수확기잔존비율은 12월/1월/2월별 사고발생일자 함수.",
+      "lv1_insurance": "수확개시 이후 동상해보장",
+      "truth_weight": 8,
+      "source_page": 483,
+      "book_page": 483,
+      "pdf_page": 490,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "INS-14",
+      "type": "INSURANCE",
+      "title": "과실손해 추가보장 특별약관",
+      "content": "감귤(온주밀감류) 대상. 보장재해로 손해액이 자기부담금을 초과하는 손해 발생 시 적용. 보험금 = 보험가입금액 × 주계약 피해율 × 10%. 주계약 피해율은 과실손해보장(보통약관)에서 산출한 피해율.",
+      "lv1_insurance": "과실손해 추가보장",
+      "truth_weight": 8,
+      "source_page": 485,
+      "book_page": 485,
+      "pdf_page": 492,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CROP-005",
+      "type": "CROP",
+      "title": "포도",
+      "content": "종합위험 수확감소보장방식 16종 중 1. 비가림시설 손해보장 적용 작물 (참다래·대추와 함께). 수확량감소 추가보장 특약 적용 가능. 수확량조사 = 착과수조사 → 과중조사 → 수확량 산정.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 6,
+      "source_page": 428,
+      "book_page": 428,
+      "pdf_page": 435,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CROP-006",
+      "type": "CROP",
+      "title": "복숭아",
+      "content": "종합위험 수확감소보장방식 16종 중 1. 병충해(세균구멍병) 보장 — 50%형 피해과실로 인정 (피해무게×0.5 = 병충해감수량). 수확량감소 추가보장 특약 적용. 피해율 산식 별도 (F-16).",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 6,
+      "source_page": 428,
+      "book_page": 428,
+      "pdf_page": 435,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CROP-007",
+      "type": "CROP",
+      "title": "자두",
+      "content": "종합위험 수확감소보장방식 16종 중 1. 착과수조사 적용 (포도·복숭아·자두·감귤만감류는 적과 종료 시점 착과수 조사 의무).",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 6,
+      "source_page": 428,
+      "book_page": 428,
+      "pdf_page": 435,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CROP-008",
+      "type": "CROP",
+      "title": "감귤(만감류)",
+      "content": "종합위험 수확감소보장방식 16종 중 1. 착과수조사 적용. 수확량감소 추가보장 특약 적용. 감귤(온주밀감류, INS-08)와 별도 — 만감류는 수확감소 / 온주밀감류는 과실손해 보장방식.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 6,
+      "source_page": 428,
+      "book_page": 428,
+      "pdf_page": 435,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CROP-009",
+      "type": "CROP",
+      "title": "밤",
+      "content": "종합위험 수확감소보장방식 16종 중 1. 소과(지름 30mm 미만) 분류 의무 — 무게의 80% 적용 (F-22 / CONST-013, CONST-014).",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 6,
+      "source_page": 440,
+      "book_page": 440,
+      "pdf_page": 447,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CROP-010",
+      "type": "CROP",
+      "title": "호두",
+      "content": "종합위험 수확감소보장방식 16종 중 1. 청피 단위 개수 + 무게 조사 (밤과 다른 표본 처리).",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 6,
+      "source_page": 440,
+      "book_page": 440,
+      "pdf_page": 447,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CROP-011",
+      "type": "CROP",
+      "title": "참다래",
+      "content": "종합위험 수확감소보장방식 16종 중 1. 비가림시설 손해보장 적용 작물 (포도·대추와 함께).",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 6,
+      "source_page": 428,
+      "book_page": 428,
+      "pdf_page": 435,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CROP-012",
+      "type": "CROP",
+      "title": "대추",
+      "content": "종합위험 수확감소보장방식 16종 중 1. 비가림시설 손해보장 적용 작물 (포도·참다래와 함께). 피해인정계수 별표3 적용 (대추·매실·살구 동일).",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 6,
+      "source_page": 451,
+      "book_page": 451,
+      "pdf_page": 458,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CROP-013",
+      "type": "CROP",
+      "title": "매실",
+      "content": "종합위험 수확감소보장방식 16종 중 1. 비대추정지수(별표4) 조사 의무 — 표본주 착과 무게 = 조사 착과량 × 비대추정지수 × 2(절반조사 시) (F-24).",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 6,
+      "source_page": 451,
+      "book_page": 451,
+      "pdf_page": 458,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CROP-014",
+      "type": "CROP",
+      "title": "살구",
+      "content": "종합위험 수확감소보장방식 16종 중 1. 피해인정계수 별표3 적용 (대추·매실·살구 동일).",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 6,
+      "source_page": 451,
+      "book_page": 451,
+      "pdf_page": 458,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CROP-015",
+      "type": "CROP",
+      "title": "오미자",
+      "content": "종합위험 수확감소보장방식 16종 중 1. 형태별·수령별 표본구간(유인틀 길이 1m 단위) 조사 — 다른 과수와 다른 표본 단위.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 6,
+      "source_page": 455,
+      "book_page": 455,
+      "pdf_page": 462,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CROP-016",
+      "type": "CROP",
+      "title": "유자",
+      "content": "종합위험 수확감소보장방식 16종 중 1. 평년수확량 적용 시 산출값과 최근 7년간 과거 수확량 올림픽 평균값 중 더 큰 값 적용 (예외 규칙).",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 6,
+      "source_page": 464,
+      "book_page": 464,
+      "pdf_page": 471,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CROP-017",
+      "type": "CROP",
+      "title": "감귤(온주밀감류)",
+      "content": "종합위험 과실손해보장방식 4종 중 1. 손해액 기반 산정(F-27) + 등급 내/외 피해과실 분류(30%/50%/80%/100%형). 동상해 보장 특약(INS-13) + 나무손해보장 특약(자기부담비율 5% 고정) + 과실손해 추가보장 특약(INS-14) 적용 가능. 감귤(만감류, CROP-008)와 별도.",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 6,
+      "source_page": 468,
+      "book_page": 468,
+      "pdf_page": 475,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CROP-018",
+      "type": "CROP",
+      "title": "오디",
+      "content": "종합위험 과실손해보장방식 4종 중 1. 결실수 기반 피해율(F-26) — 평년결실수 / 조사결실수 / 미보상감수결실수 / 환산결실수(표본가지 결실수합÷표본가지 길이합) / 주당 평년결실수.",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 6,
+      "source_page": 480,
+      "book_page": 480,
+      "pdf_page": 487,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CROP-019",
+      "type": "CROP",
+      "title": "두릅",
+      "content": "종합위험 과실손해보장방식 4종 중 1. 정아지수 기반 피해율(F-29) = (피해 정아지수 ÷ 총 정아지수) × (1 - 미보상비율).",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 6,
+      "source_page": 473,
+      "book_page": 473,
+      "pdf_page": 480,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CROP-020",
+      "type": "CROP",
+      "title": "블루베리",
+      "content": "종합위험 과실손해보장방식 4종 중 1. 가장 복잡한 산식 — 꽃 피해조사 유무에 따라 분기. 꽃 피해 미실시 시 F-30 × (1-미보상비율). 꽃 피해 실시 시 F-31 (최종 꽃 피해율 + (1-최종꽃피해율)×F-30×(1-미보상비율)). 잔여수확량비율 = 수확개시 이전 1 / 이후 1-(사고일자-수확개시일자)/30.",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 6,
+      "source_page": 474,
+      "book_page": 474,
+      "pdf_page": 481,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CROP-021",
+      "type": "CROP",
+      "title": "복분자",
+      "content": "수확전 종합위험 과실손해보장방식 2종 중 1. 보험기간 분기 — 종합위험(계약일~가입 이듬해 5월 31일) / 특정위험(가입 이듬해 6월 1일~6월 20일). 식물체 피해율 65% 이상 시 경작불능보험금 지급 가능. 살아있는 결과모지수 + 수정불량(송이) 피해율 조사 (별표1 표본구간수표).",
+      "lv1_insurance": "수확전 종합위험 과실손해보장",
+      "truth_weight": 6,
+      "source_page": 486,
+      "book_page": 486,
+      "pdf_page": 493,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "4. 수확전 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CROP-022",
+      "type": "CROP",
+      "title": "무화과",
+      "content": "수확전 종합위험 과실손해보장방식 2종 중 1. 보험기간 = 계약일~가입 이듬해 7월 31일. 수확직전 과실피해조사 + 수확시작 후 표본주의 고사·정상 결과지수 조사.",
+      "lv1_insurance": "수확전 종합위험 과실손해보장",
+      "truth_weight": 6,
+      "source_page": 491,
+      "book_page": 491,
+      "pdf_page": 498,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "4. 수확전 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "INV-016",
+      "type": "INVESTIGATION",
+      "title": "종합위험 예찰조사",
+      "content": "재해발생 전부터 보험 품목에 대한 평가를 위한 생육조사. 농업재해보험 손해평가요령 제13조제4항 근거. 사고 여부와 관계없이 가입한 모든 과수원이 대상. 2026년 신설 조사 (BATCH-R1 정합).",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 7,
+      "source_page": 429,
+      "book_page": 429,
+      "pdf_page": 436,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-017",
+      "type": "INVESTIGATION",
+      "title": "피해사실 확인조사 (종합위험)",
+      "content": "대상 재해로 사고 접수 농지 및 조사 필요 농지. 자연재해, 조수해, 화재, 병충해(복숭아 세균구멍병/사과 자연재해성 탄저병). 사고 접수 직후 실시. 피해사실 명백 시 생략 가능.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 7,
+      "source_page": 429,
+      "book_page": 429,
+      "pdf_page": 436,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-018",
+      "type": "INVESTIGATION",
+      "title": "착과수조사",
+      "content": "통상적인 적과 종료 시점 총 착과 수 조사. 대상: 포도·복숭아·자두·감귤만감류·사과·배·단감·떫은감 (수확 직전). 조사방법: 표본조사. 피해와 관계없이 전 과수원 조사.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 7,
+      "source_page": 428,
+      "book_page": 428,
+      "pdf_page": 435,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-019",
+      "type": "INVESTIGATION",
+      "title": "과중조사",
+      "content": "품종별 수확시기에 각각 실시. 표본주에서 평균적 착과량 3주 이상 + 품종별 20개 이상(농지당 60개 이상) 추출. 밤은 30mm 소과 분류 후 무게 80% 적용. 호두는 청피 개수 + 무게.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 7,
+      "source_page": 432,
+      "book_page": 432,
+      "pdf_page": 439,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-020",
+      "type": "INVESTIGATION",
+      "title": "착과피해 구성 조사",
+      "content": "착과피해를 유발하는 재해가 있을 경우 시행. 품종별 3개 이상 표본주에서 임의의 과실 20개 이상(품종별 20개, 농지당 60개 이상) 추출. 별표3 피해인정계수 적용 — 정상/30%형/50%형/80%형/100%형 분류.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 7,
+      "source_page": 441,
+      "book_page": 441,
+      "pdf_page": 448,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-021",
+      "type": "INVESTIGATION",
+      "title": "낙과피해조사",
+      "content": "착과수조사 이후 낙과피해 발생 농지. 사고 접수 직후 실시. 표본주별 수관면적 내 낙과수 조사. 표본주의 수관면적 내 낙과는 표본주와 품종이 다르더라도 해당 표본주 낙과로 본다.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 7,
+      "source_page": 435,
+      "book_page": 435,
+      "pdf_page": 442,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-022",
+      "type": "INVESTIGATION",
+      "title": "낙과수 전수조사",
+      "content": "표본조사가 불가할 경우 실시. 전체 낙과에 대한 품종 구분 가능 시 전체 낙과수를 품종별 산정. 품종 구분 어려울 시 100개 이상 표본 추출 후 비율 적용.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 7,
+      "source_page": 436,
+      "book_page": 436,
+      "pdf_page": 443,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-023",
+      "type": "INVESTIGATION",
+      "title": "수확 개시 전 수확량조사",
+      "content": "조사일 기준 농지 수확이 시작되기 전. 조기 수확 및 수확해태로 분쟁 시 지역 농업기술센터 등 농업 전문기관 판단. 표본주 선정 → 면적 → 착과수 → 과중 → 미보상비율 순.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 7,
+      "source_page": 438,
+      "book_page": 438,
+      "pdf_page": 445,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-024",
+      "type": "INVESTIGATION",
+      "title": "수확 개시 후 수확량조사",
+      "content": "조사일 기준 농지 수확이 시작된 후. 기수확량 조사 추가 — 사고 발생 전 수확된 수량. 수확 개시 후는 기수확량 + 잔여수확량 보정 산정.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 7,
+      "source_page": 447,
+      "book_page": 447,
+      "pdf_page": 454,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-025",
+      "type": "INVESTIGATION",
+      "title": "비대추정지수 조사 (매실)",
+      "content": "품종별 적정 수확 일자 및 조사 일자, 과실 비대추정지수 별표4 참조하여 조사. 조사 시점이 수확 시점보다 빠를 경우 표본주 착과 무게에 비대추정지수 곱하여 보정. 절반조사 시 추가 ×2.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 7,
+      "source_page": 451,
+      "book_page": 451,
+      "pdf_page": 458,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-026",
+      "type": "INVESTIGATION",
+      "title": "미보상비율 확인",
+      "content": "품목별 미보상비율 적용표 별표2에 따라 미보상비율 조사. 모든 수확량조사·과실손해조사·동상해조사의 마지막 단계 의무.",
+      "lv1_insurance": "공통",
+      "truth_weight": 7,
+      "source_page": 444,
+      "book_page": 444,
+      "pdf_page": 451,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-027",
+      "type": "INVESTIGATION",
+      "title": "표본주 선정",
+      "content": "산정한 품종·수령별 표본주수 바탕으로 조사 대상주수 특성이 골고루 반영되도록 표본주 선정. 동일품종·동일수령이 아닌 경우 비례 분배. 표시리본 부착 의무.",
+      "lv1_insurance": "공통",
+      "truth_weight": 6,
+      "source_page": 439,
+      "book_page": 439,
+      "pdf_page": 446,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-028",
+      "type": "INVESTIGATION",
+      "title": "표본주수 산정",
+      "content": "농지별 가입면적 또는 조사 대상주수 기준으로 별표1 품목별 표본주수표에 따라 산정. 적정 표본주수는 품종·수령별 조사 대상주수에 비례. 품종·수령별 적정표본주수 합 ≥ 전체 표본주수.",
+      "lv1_insurance": "공통",
+      "truth_weight": 6,
+      "source_page": 445,
+      "book_page": 445,
+      "pdf_page": 452,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-029",
+      "type": "INVESTIGATION",
+      "title": "면적·재식간격 조사",
+      "content": "GPS 면적측정기 또는 지형도 등 이용 보험 가입 면적과 실제 경작면적 비교. 재식면적 확인 (주간 길이 + 이랑 폭). 가입면적 대비 10% 이상 차이(혹은 1,000㎡ 초과) 시 계약 변경.",
+      "lv1_insurance": "공통",
+      "truth_weight": 6,
+      "source_page": 488,
+      "book_page": 488,
+      "pdf_page": 495,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "4. 수확전 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "INV-030",
+      "type": "INVESTIGATION",
+      "title": "수확량조사 (밤·호두 변형)",
+      "content": "밤: 30mm 지름 규격대로 소과 분류 — 통과 과립은 80% 무게 적용. 호두: 품종별 청피 개수 + 무게 별도. 표본주별 수관면적 + 착과+낙과수 조사.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 7,
+      "source_page": 440,
+      "book_page": 440,
+      "pdf_page": 447,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-031",
+      "type": "INVESTIGATION",
+      "title": "수확량조사 (오미자)",
+      "content": "형태별·수령별 표본구간수 산정 → 유인틀 길이 방향 1m 단위 표본구간 선정. 표본구간 착과량 + 과중 조사. 다른 과수와 표본 단위가 본질 차이.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 7,
+      "source_page": 456,
+      "book_page": 456,
+      "pdf_page": 463,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-032",
+      "type": "INVESTIGATION",
+      "title": "비가림시설 손해조사",
+      "content": "포도·참다래·대추 적용. 피복재: 피해 면적 조사. 구조체: 손상된 골조 재사용 불가 시 교체 수량 + 비용 산정 / 재사용 가능 시 보수비 산정. 단지단위·1사고 단위 자기부담금 적용.",
+      "lv1_insurance": "비가림시설 손해보장",
+      "truth_weight": 7,
+      "source_page": 461,
+      "book_page": 461,
+      "pdf_page": 468,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-033",
+      "type": "INVESTIGATION",
+      "title": "나무피해 확인",
+      "content": "품종·수령별 고사주수 (사과·배·단감·떫은감은 품종·재배방식·수령별). 보상하지 않는 손해로 고사한 나무 = 미보상주수. 미보상주수 + 수확불능나무 (사과·배·단감·떫은감) 별도. 나무에 표시 가능.",
+      "lv1_insurance": "공통",
+      "truth_weight": 7,
+      "source_page": 429,
+      "book_page": 429,
+      "pdf_page": 436,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "INV-034",
+      "type": "INVESTIGATION",
+      "title": "고사나무조사 (특약)",
+      "content": "나무손해보장 특약 가입 농지. 보장재해로 고사되거나 회생 불가능한 나무 수 조사. 수확완료 후 추가 고사나무 없으면 생략 가능. 전수조사 방법.",
+      "lv1_insurance": "나무손해보장",
+      "truth_weight": 7,
+      "source_page": 479,
+      "book_page": 479,
+      "pdf_page": 486,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "INV-035",
+      "type": "INVESTIGATION",
+      "title": "과실손해조사 (감귤 온주밀감)",
+      "content": "피해사실확인조사 시 과실손해조사가 필요하다고 판단된 과수원. 표본주 선정 (별표1) → 표본주별 전체 과실수 → 등급 내/외 분류 (30%/50%/80%/100%형) → 미보상비율.",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 7,
+      "source_page": 476,
+      "book_page": 476,
+      "pdf_page": 483,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "INV-036",
+      "type": "INVESTIGATION",
+      "title": "등급 내/외 피해과실 분류",
+      "content": "수확한 과실을 정상과실, 등급 내 피해과실, 등급 외 피해과실로 구분. 등급 내 = 30%형/50%형/80%형/100%형 (별표3 피해인정계수). 등급 외는 50% 가중치.",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 7,
+      "source_page": 477,
+      "book_page": 477,
+      "pdf_page": 484,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "INV-037",
+      "type": "INVESTIGATION",
+      "title": "동상해 과실손해조사",
+      "content": "감귤(온주밀감류) 수확기 동상해 피해 발생 시. 보장재해 여부 심사 → 표본조사. 동상해 80%형/100%형 과실수 별도 산정. 수확기잔존비율 = 사고발생 월(12월/1월/2월)별 사고발생일자 함수.",
+      "lv1_insurance": "수확개시 이후 동상해보장",
+      "truth_weight": 7,
+      "source_page": 478,
+      "book_page": 478,
+      "pdf_page": 485,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "INV-038",
+      "type": "INVESTIGATION",
+      "title": "꽃(눈) 피해조사 (블루베리)",
+      "content": "사고접수 농지 대상. 피해사실 확인조사 직후 또는 사고접수 직후. 꽃눈 고사율 + 꽃 고사율 → 최종 꽃 고사율 → 가중치 적용 → 최종 꽃 피해율 산출.",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 7,
+      "source_page": 474,
+      "book_page": 474,
+      "pdf_page": 481,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "INV-039",
+      "type": "INVESTIGATION",
+      "title": "경작불능조사 (복분자)",
+      "content": "피해사실 확인조사 시 경작불능조사 필요 판단 농지. 보험기간 = 계약체결일 24시~수확개시 시점(가입 이듬해 5월 31일 한도). 식물체 피해율 65% 이상 + 계약자 신청 시 경작불능보험금 지급 / 미만 또는 미신청 시 종합위험 과실손해조사.",
+      "lv1_insurance": "수확전 종합위험 과실손해보장",
+      "truth_weight": 7,
+      "source_page": 487,
+      "book_page": 487,
+      "pdf_page": 494,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "4. 수확전 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "INV-040",
+      "type": "INVESTIGATION",
+      "title": "식물체 피해율 65% 조사",
+      "content": "복분자 경작불능조사의 핵심 임계치. 식물체 피해율 ≥ 65% AND 계약자 신청 시 경작불능보험금 분기. 산지폐기 여부 확인 후 지급.",
+      "lv1_insurance": "수확전 종합위험 과실손해보장",
+      "truth_weight": 7,
+      "source_page": 488,
+      "book_page": 488,
+      "pdf_page": 495,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "4. 수확전 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CONCEPT-021",
+      "type": "CONCEPT",
+      "title": "피해율",
+      "content": "수확감소 보장 피해율 = (평년수확량-수확량-미보상감수량)÷평년수확량. 작물별 보정 (복숭아 병충해감수량 추가). 자기부담비율 초과 시 보험금 발생 조건.",
+      "lv1_insurance": "공통",
+      "truth_weight": 7,
+      "source_page": 464,
+      "book_page": 464,
+      "pdf_page": 471,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-022",
+      "type": "CONCEPT",
+      "title": "자기부담비율",
+      "content": "보험 가입 시 선택한 비율. 피해율이 본 비율을 초과해야 보험금 발생. 감귤 온주밀감 나무손해 = 5% 고정.",
+      "lv1_insurance": "공통",
+      "truth_weight": 7,
+      "source_page": 464,
+      "book_page": 464,
+      "pdf_page": 471,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-023",
+      "type": "CONCEPT",
+      "title": "자기부담금",
+      "content": "손해액 또는 보험가입금액 기반 산정. 비가림시설 = 손해액 10% (본체 30만~100만 / 피복재 10만~30만 한도). 감귤 온주밀감 = 보험가입금액 × 자기부담비율. 동상해 = |보험가입금액 × min(주계약피해율-자기부담비율, 0)|.",
+      "lv1_insurance": "공통",
+      "truth_weight": 7,
+      "source_page": 466,
+      "book_page": 466,
+      "pdf_page": 473,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-024",
+      "type": "CONCEPT",
+      "title": "평년수확량",
+      "content": "보험 가입 직전 일정 기간 평균 수확량. 유자는 산출값 vs 최근 7년간 과거 수확량 올림픽 평균값 중 더 큰 값 적용. 피해율 분모.",
+      "lv1_insurance": "공통",
+      "truth_weight": 7,
+      "source_page": 464,
+      "book_page": 464,
+      "pdf_page": 471,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-025",
+      "type": "CONCEPT",
+      "title": "수확량",
+      "content": "실제 조사된 수확량. 표본주 착과량 × 조사대상주수 + 미보상주수 × 주당 평년수확량 + 기수확량(수확 개시 후).",
+      "lv1_insurance": "공통",
+      "truth_weight": 7,
+      "source_page": 464,
+      "book_page": 464,
+      "pdf_page": 471,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-026",
+      "type": "CONCEPT",
+      "title": "미보상감수량",
+      "content": "미보상감수량 = (평년수확량 - 수확량) × 미보상비율. 보장재해 외 감소량 차감 목적.",
+      "lv1_insurance": "공통",
+      "truth_weight": 7,
+      "source_page": 464,
+      "book_page": 464,
+      "pdf_page": 471,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-027",
+      "type": "CONCEPT",
+      "title": "미보상비율",
+      "content": "품목별 미보상비율 적용표 별표2 기준. 보상하지 않는 손해 비율. 모든 피해율·감수량 산식에 곱연산 적용.",
+      "lv1_insurance": "공통",
+      "truth_weight": 7,
+      "source_page": 444,
+      "book_page": 444,
+      "pdf_page": 451,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-028",
+      "type": "CONCEPT",
+      "title": "보험가입금액",
+      "content": "보험금 산정 기준 금액. 비가림시설 = 보험증권 기재 금액 한도. 손해액 산식 곱연산 인자.",
+      "lv1_insurance": "공통",
+      "truth_weight": 7,
+      "source_page": 464,
+      "book_page": 464,
+      "pdf_page": 471,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-029",
+      "type": "CONCEPT",
+      "title": "손해액",
+      "content": "비가림시설: 재조달가액 기준 (수리·복구 미실시 시 시가 = 감가상각). 감귤 온주밀감: 보험가입금액 × 피해율. 동상해: {보험가입금액 - (보험가입금액×기사고피해율)} × 수확기잔존비율 × 동상해피해율 × (1-미보상비율).",
+      "lv1_insurance": "공통",
+      "truth_weight": 7,
+      "source_page": 465,
+      "book_page": 465,
+      "pdf_page": 472,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-030",
+      "type": "CONCEPT",
+      "title": "재조달가액",
+      "content": "보험 목적과 동형·동질 신품 조달 비용. 비가림시설 손해액 산정 기준. 수리·복구 미실시 시 시가(감가상각) 적용 — 180일 이내 의사 통지 의무.",
+      "lv1_insurance": "비가림시설 손해보장",
+      "truth_weight": 6,
+      "source_page": 466,
+      "book_page": 466,
+      "pdf_page": 473,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-031",
+      "type": "CONCEPT",
+      "title": "조사대상주수",
+      "content": "실제결과주수 - 수확완료주수 - 미보상주수 - 고사나무주수. 표본주 선정 + 표본주수 산정의 분모.",
+      "lv1_insurance": "공통",
+      "truth_weight": 7,
+      "source_page": 434,
+      "book_page": 434,
+      "pdf_page": 441,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-032",
+      "type": "CONCEPT",
+      "title": "실제결과주수",
+      "content": "농지 내 품종·수령별 실제 식재된 결실 가능 나무 수. 사과·배·단감·떫은감은 품종·재배방식·수령별. 모든 주수 비율의 분모.",
+      "lv1_insurance": "공통",
+      "truth_weight": 7,
+      "source_page": 431,
+      "book_page": 431,
+      "pdf_page": 438,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-033",
+      "type": "CONCEPT",
+      "title": "고사나무주수",
+      "content": "보장재해로 고사된 나무 + 회생 불가능 나무. 미보상고사주수와 분리. 나무손해보장특약 피해주수 분자.",
+      "lv1_insurance": "공통",
+      "truth_weight": 7,
+      "source_page": 429,
+      "book_page": 429,
+      "pdf_page": 436,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-034",
+      "type": "CONCEPT",
+      "title": "미보상주수",
+      "content": "보상하지 않는 손해로 고사·피해를 입은 나무 + 보상하지 않는 재해로 수확불능 상태인 나무. 조사대상주수에서 제외.",
+      "lv1_insurance": "공통",
+      "truth_weight": 7,
+      "source_page": 429,
+      "book_page": 429,
+      "pdf_page": 436,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-035",
+      "type": "CONCEPT",
+      "title": "수확불능주수",
+      "content": "사과·배·단감·떫은감 적용. 품종·재배방식·수령별 수확불능 상태 나무. 보상하지 않는 손해로 수확불능은 미보상주수로 분류.",
+      "lv1_insurance": "공통",
+      "truth_weight": 6,
+      "source_page": 430,
+      "book_page": 430,
+      "pdf_page": 437,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-036",
+      "type": "CONCEPT",
+      "title": "표본주수",
+      "content": "품목별 표본주수표 별표1 기준 산정. 적정 표본주수 = 품종·수령별 조사 대상주수에 비례. 합 ≥ 전체 표본주수 의무.",
+      "lv1_insurance": "공통",
+      "truth_weight": 6,
+      "source_page": 445,
+      "book_page": 445,
+      "pdf_page": 452,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-037",
+      "type": "CONCEPT",
+      "title": "표본구간",
+      "content": "오미자: 유인틀 길이 방향 1m. 복분자: 표본포기 전후 2포기씩 추가 5포기. 다른 과수 표본주와 다른 단위.",
+      "lv1_insurance": "공통",
+      "truth_weight": 6,
+      "source_page": 456,
+      "book_page": 456,
+      "pdf_page": 463,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "CONCEPT-038",
+      "type": "CONCEPT",
+      "title": "표본가지",
+      "content": "오디·블루베리 적용. 표본가지 결실수 합계 ÷ 표본가지 길이 합계 = 환산결실수. 블루베리 과실손해피해율 분모/분자에 사용.",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 6,
+      "source_page": 480,
+      "book_page": 480,
+      "pdf_page": 487,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CONCEPT-039",
+      "type": "CONCEPT",
+      "title": "잔여수확량비율 (블루베리)",
+      "content": "수확개시 이전 = 1. 수확개시 이후 = 1 - {(사고일자 - 수확개시일자) ÷ 표준수확일수}. 표준수확일수 = 30일. 0보다 작을 수 없음.",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 7,
+      "source_page": 483,
+      "book_page": 483,
+      "pdf_page": 490,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CONCEPT-040",
+      "type": "CONCEPT",
+      "title": "수확기잔존비율 (감귤 온주밀감)",
+      "content": "동상해 손해액 산식 인자. 12월=(100-39)-(0.935×사고발생일자), 1월=(100-68)-(0.774×사고발생일자), 2월=(100-92)-(0.286×사고발생일자). 단위는 %.",
+      "lv1_insurance": "수확개시 이후 동상해보장",
+      "truth_weight": 7,
+      "source_page": 484,
+      "book_page": 484,
+      "pdf_page": 491,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CONCEPT-041",
+      "type": "CONCEPT",
+      "title": "기준과실수",
+      "content": "감귤 온주밀감 피해율 분모. 표본주의 과실수 총 합계. 동상해는 정상과실수 + 동상해피해 80%형 + 100%형 합.",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 7,
+      "source_page": 481,
+      "book_page": 481,
+      "pdf_page": 488,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CONCEPT-042",
+      "type": "CONCEPT",
+      "title": "피해과실수",
+      "content": "등급 내 피해과실수 + (등급 외 피해과실수 × 50%). 등급 내 = 30%형×0.3 + 50%형×0.5 + 80%형×0.8 + 100%형×1.",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 7,
+      "source_page": 481,
+      "book_page": 481,
+      "pdf_page": 488,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CONCEPT-043",
+      "type": "CONCEPT",
+      "title": "동상해피해율",
+      "content": "감귤 온주밀감 동상해 보장 특약 적용. 동상해 80%형 피해과실수 + 100%형 피해과실수 합 ÷ 기준과실수 (가중치 적용).",
+      "lv1_insurance": "수확개시 이후 동상해보장",
+      "truth_weight": 7,
+      "source_page": 484,
+      "book_page": 484,
+      "pdf_page": 491,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CONCEPT-044",
+      "type": "CONCEPT",
+      "title": "기사고피해율",
+      "content": "동상해 손해액 산식 인자. 주계약피해율의 미보상비율을 반영하지 않은 값 + 이전 사고의 동상해 과실손해피해율 합산.",
+      "lv1_insurance": "수확개시 이후 동상해보장",
+      "truth_weight": 7,
+      "source_page": 484,
+      "book_page": 484,
+      "pdf_page": 491,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CONCEPT-045",
+      "type": "CONCEPT",
+      "title": "주계약피해율",
+      "content": "감귤 온주밀감 과실손해보장 보통약관에서 산출한 피해율. 과실손해 추가보장 특약 보험금 분자.",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 7,
+      "source_page": 485,
+      "book_page": 485,
+      "pdf_page": 492,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CONCEPT-046",
+      "type": "CONCEPT",
+      "title": "식물체 피해율 (복분자)",
+      "content": "복분자 경작불능 분기 임계치. ≥65% AND 계약자 신청 시 경작불능보험금. 미만 또는 미신청 시 종합위험 과실손해조사 진행.",
+      "lv1_insurance": "수확전 종합위험 과실손해보장",
+      "truth_weight": 7,
+      "source_page": 488,
+      "book_page": 488,
+      "pdf_page": 495,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "4. 수확전 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CONCEPT-047",
+      "type": "CONCEPT",
+      "title": "경작불능",
+      "content": "식물체 피해율 65% 이상 + 계약자 신청 시 분기. 산지폐기 여부 확인 후 경작불능보험금 지급. 종합위험 과실손해조사 대신 적용.",
+      "lv1_insurance": "수확전 종합위험 과실손해보장",
+      "truth_weight": 7,
+      "source_page": 488,
+      "book_page": 488,
+      "pdf_page": 495,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "4. 수확전 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CONCEPT-048",
+      "type": "CONCEPT",
+      "title": "환산결실수",
+      "content": "품종·수령별 표본가지 결실수 합계 ÷ 표본가지 길이 합계. 오디 조사결실수 산출의 단위 변환 핵심.",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 7,
+      "source_page": 480,
+      "book_page": 480,
+      "pdf_page": 487,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CONCEPT-049",
+      "type": "CONCEPT",
+      "title": "조사결실수",
+      "content": "오디 피해율 산식 인자. 품종·수령별 환산결실수 × 조사대상주수 + 주당 평년결실수 × 미보상주수 ÷ 전체 실제결과주수.",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 7,
+      "source_page": 480,
+      "book_page": 480,
+      "pdf_page": 487,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CONCEPT-050",
+      "type": "CONCEPT",
+      "title": "평년결실수",
+      "content": "오디 피해율 분모. 품종별 평년결실수를 실제결과주수로 나눈 값 = 주당 평년결실수.",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 7,
+      "source_page": 480,
+      "book_page": 480,
+      "pdf_page": 487,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "CONCEPT-051",
+      "type": "CONCEPT",
+      "title": "미보상감수결실수",
+      "content": "평년결실수 - 조사결실수 값에 미보상비율 곱하여 산출. 0보다 작을 때는 0으로 처리.",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 7,
+      "source_page": 480,
+      "book_page": 480,
+      "pdf_page": 487,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "TERM-014",
+      "type": "TERM",
+      "title": "정상과실",
+      "content": "피해인정계수 = 0. 별표3 등급 분류 시 기준 (피해 없음).",
+      "lv1_insurance": "공통",
+      "truth_weight": 5,
+      "source_page": 482,
+      "book_page": 482,
+      "pdf_page": 489,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "TERM-015",
+      "type": "TERM",
+      "title": "30%형 피해과실",
+      "content": "피해인정계수 = 0.3. 별표3 적용. 피해과실수 산정 시 0.3 가중치 곱연산.",
+      "lv1_insurance": "공통",
+      "truth_weight": 5,
+      "source_page": 482,
+      "book_page": 482,
+      "pdf_page": 489,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "TERM-016",
+      "type": "TERM",
+      "title": "50%형 피해과실",
+      "content": "피해인정계수 = 0.5. 복숭아 세균구멍병 피해 = 50%형으로 인정 (CONST-006).",
+      "lv1_insurance": "공통",
+      "truth_weight": 5,
+      "source_page": 482,
+      "book_page": 482,
+      "pdf_page": 489,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "TERM-017",
+      "type": "TERM",
+      "title": "80%형 피해과실",
+      "content": "피해인정계수 = 0.8. 동상해 기준과실수 산정 시 정상과실 + 동상해 80%형 + 100%형 합 (감귤 온주밀감).",
+      "lv1_insurance": "공통",
+      "truth_weight": 5,
+      "source_page": 482,
+      "book_page": 482,
+      "pdf_page": 489,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "TERM-018",
+      "type": "TERM",
+      "title": "100%형 피해과실",
+      "content": "피해인정계수 = 1.0. 별표3 등급 분류 최상위.",
+      "lv1_insurance": "공통",
+      "truth_weight": 5,
+      "source_page": 482,
+      "book_page": 482,
+      "pdf_page": 489,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "TERM-019",
+      "type": "TERM",
+      "title": "결과지",
+      "content": "결실 가능한 가지. 무화과 수확시작 후 표본주의 고사·정상 결과지수 조사 단위.",
+      "lv1_insurance": "수확전 종합위험 과실손해보장",
+      "truth_weight": 5,
+      "source_page": 486,
+      "book_page": 486,
+      "pdf_page": 493,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "4. 수확전 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "TERM-020",
+      "type": "TERM",
+      "title": "결과모지",
+      "content": "결과지보다 1년 더 묵은 가지 (raw text 정의 정합 — p.490). 복분자 살아있는 결과모지수 조사 단위.",
+      "lv1_insurance": "수확전 종합위험 과실손해보장",
+      "truth_weight": 5,
+      "source_page": 490,
+      "book_page": 490,
+      "pdf_page": 497,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "4. 수확전 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "TERM-021",
+      "type": "TERM",
+      "title": "정아지수",
+      "content": "두릅 피해율 산정 단위. 피해 정아지수 ÷ 총 정아지수 = 피해 비율.",
+      "lv1_insurance": "종합위험 과실손해보장",
+      "truth_weight": 5,
+      "source_page": 482,
+      "book_page": 482,
+      "pdf_page": 489,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "3. 종합위험 과실손해보장방식"
+    },
+    {
+      "id": "TERM-022",
+      "type": "TERM",
+      "title": "청피 (호두)",
+      "content": "호두 표본 단위 — 품종별 과실(청피) 개수 + 무게 별도 조사.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 5,
+      "source_page": 440,
+      "book_page": 440,
+      "pdf_page": 447,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "TERM-023",
+      "type": "TERM",
+      "title": "소과 (밤 30mm 미만)",
+      "content": "30mm 지름 규격대 통과 과립. 무게 80% 적용 (실제 무게 × 0.8) — F-22 / CONST-013, CONST-014.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 5,
+      "source_page": 440,
+      "book_page": 440,
+      "pdf_page": 447,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "TERM-024",
+      "type": "TERM",
+      "title": "비대추정지수 (매실)",
+      "content": "별표4 매실 비대추정지수표. 표본주 착과 무게 = 조사 착과량 × 비대추정지수 × 2(절반조사). 수확 시점 보정 인자.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 6,
+      "source_page": 451,
+      "book_page": 451,
+      "pdf_page": 458,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2. 종합위험 수확감소보장방식 및 비가림과수 손해보장방식"
+    },
+    {
+      "id": "LAW-005",
+      "type": "LAW",
+      "title": "별표1 품목별 표본주수표",
+      "content": "표본주수 산정 기준. 가입면적 또는 조사대상주수 → 농지별 전체 표본주수. 복분자는 표본구간수표(별표1) 적용.",
+      "lv1_insurance": "공통",
+      "truth_weight": 8,
+      "source_page": 445,
+      "book_page": 445,
+      "pdf_page": 452,
+      "chapter": "별표",
+      "section": "별표1 품목별 표본주수표"
+    },
+    {
+      "id": "LAW-006",
+      "type": "LAW",
+      "title": "별표2 품목별 미보상비율 적용표",
+      "content": "미보상비율 산정 표. 품목별·재해유형별 차등. 모든 피해율 산식의 (1-미보상비율) 인자 결정.",
+      "lv1_insurance": "공통",
+      "truth_weight": 8,
+      "source_page": 444,
+      "book_page": 444,
+      "pdf_page": 451,
+      "chapter": "별표",
+      "section": "별표2 품목별 미보상비율 적용표"
+    },
+    {
+      "id": "LAW-007",
+      "type": "LAW",
+      "title": "별표3 과실 분류에 따른 피해인정계수",
+      "content": "정상 0 / 30%형 0.3 / 50%형 0.5 / 80%형 0.8 / 100%형 1.0. 모든 착과·낙과 피해 구성 조사 + 등급 분류 의무 기준.",
+      "lv1_insurance": "공통",
+      "truth_weight": 8,
+      "source_page": 482,
+      "book_page": 482,
+      "pdf_page": 489,
+      "chapter": "별표",
+      "section": "별표3 과실 분류에 따른 피해인정계수"
+    },
+    {
+      "id": "LAW-008",
+      "type": "LAW",
+      "title": "별표4 매실 비대추정지수",
+      "content": "매실 품종별 적정 수확 일자 + 조사 일자 + 비대추정지수. F-24 표본주 착과 무게 보정 인자.",
+      "lv1_insurance": "종합위험 수확감소보장",
+      "truth_weight": 8,
+      "source_page": 451,
+      "book_page": 451,
+      "pdf_page": 458,
+      "chapter": "별표",
+      "section": "별표4 매실 비대추정지수"
+    },
+    {
+      "id": "LAW-009",
+      "type": "LAW",
+      "title": "별표8 다른 보험 비례배분",
+      "content": "비가림시설 여러 보험 동시 가입 시 비례배분 산정. 보험가입금액 합계가 보험가액 초과 시 적용. 보험자 1인 청구 포기 영향 X.",
+      "lv1_insurance": "비가림시설 손해보장",
+      "truth_weight": 7,
+      "source_page": 466,
+      "book_page": 466,
+      "pdf_page": 473,
+      "chapter": "별표",
+      "section": "별표8 다른 보험 비례배분"
+    },
+    {
+      "id": "F-14",
+      "type": "FORMULA",
+      "title": "종합위험 수확감소보험금",
+      "content": "F-14 종합위험 수확감소보험금 산식 노드. 16종 작물 수확감소 주계약. 보험금 = 보험가입금액 × (피해율 - 자기부담비율).",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 464,
+      "book_page": 464,
+      "pdf_page": 471,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-15",
+      "type": "FORMULA",
+      "title": "수확감소 피해율",
+      "content": "F-15 수확감소 피해율 산식 노드. 피해율 = (평년수확량 - 수확량 - 미보상감수량) ÷ 평년수확량. 자기부담비율 초과 시 지급.",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 464,
+      "book_page": 464,
+      "pdf_page": 471,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-16",
+      "type": "FORMULA",
+      "title": "복숭아 피해율",
+      "content": "F-16 복숭아 피해율 산식 노드. 복숭아 전용. 분자에 병충해감수량(세균구멍병 무게×0.5) 추가 반영.",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 464,
+      "book_page": 464,
+      "pdf_page": 471,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-17",
+      "type": "FORMULA",
+      "title": "미보상감수량",
+      "content": "F-17 미보상감수량 산식 노드. 미보상감수량 = (평년수확량 - 수확량) × 미보상비율.",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 464,
+      "book_page": 464,
+      "pdf_page": 471,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-18",
+      "type": "FORMULA",
+      "title": "수확량감소 추가보장 특약 보험금",
+      "content": "F-18 수확량감소 추가보장 특약 보험금 산식 노드. 포도·복숭아·감귤(만감류) 특약. 보험금 = 보험가입금액 × (피해율 × 10%).",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 465,
+      "book_page": 465,
+      "pdf_page": 472,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-19",
+      "type": "FORMULA",
+      "title": "나무손해보장 특약 보험금",
+      "content": "F-19 나무손해보장 특약 보험금 산식 노드. 보험금 = 보험가입금액 × (피해율 - 자기부담비율). 감귤 온주밀감 자기부담비율 5% 고정.",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 465,
+      "book_page": 465,
+      "pdf_page": 472,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-20",
+      "type": "FORMULA",
+      "title": "나무손해 피해율",
+      "content": "F-20 나무손해 피해율 산식 노드. 피해율 = 피해주수(고사된 나무, 미보상고사주수 제외) ÷ 실제결과주수.",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 465,
+      "book_page": 465,
+      "pdf_page": 472,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-21",
+      "type": "FORMULA",
+      "title": "종합위험 비가림시설 보험금",
+      "content": "F-21 종합위험 비가림시설 보험금 산식 노드. 포도·참다래·대추. 보험금 = MIN(손해액 - 자기부담금, 보험가입금액).",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 465,
+      "book_page": 465,
+      "pdf_page": 472,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-22",
+      "type": "FORMULA",
+      "title": "품종별 개당 과중",
+      "content": "F-22 품종별 개당 과중 산식 노드. 밤·호두 등 표본 보정. 분자에 정상표본무게합 + 소과(밤 30mm 미만) 무게×0.8.",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 440,
+      "book_page": 440,
+      "pdf_page": 447,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-23",
+      "type": "FORMULA",
+      "title": "품종·수령별 주당 착과량",
+      "content": "F-23 품종·수령별 주당 착과량 산식 노드. 주당 착과량 = 표본주의 착과 무게 ÷ 표본주수.",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 451,
+      "book_page": 451,
+      "pdf_page": 458,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-24",
+      "type": "FORMULA",
+      "title": "표본주 착과 무게(매실 비대추정)",
+      "content": "F-24 표본주 착과 무게(매실 비대추정) 산식 노드. 매실 적정 수확 일자 보정. 착과 무게 = 조사 착과량 × 비대추정지수 × 2(절반조사).",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 451,
+      "book_page": 451,
+      "pdf_page": 458,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-25",
+      "type": "FORMULA",
+      "title": "과실손해보험금(오디)",
+      "content": "F-25 과실손해보험금(오디) 산식 노드. 오디. 보험금 = 보험가입금액 × (피해율 - 자기부담비율). 결실수 기반 산식.",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 480,
+      "book_page": 480,
+      "pdf_page": 487,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-26",
+      "type": "FORMULA",
+      "title": "오디 피해율",
+      "content": "F-26 오디 피해율 산식 노드. 피해율 = (평년결실수 - 조사결실수 - 미보상감수결실수) ÷ 평년결실수.",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 480,
+      "book_page": 480,
+      "pdf_page": 487,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-27",
+      "type": "FORMULA",
+      "title": "과실손해보험금(감귤 온주밀감)",
+      "content": "F-27 과실손해보험금(감귤 온주밀감) 산식 노드. 감귤 온주밀감 손해액 기반. 보험금 = MAX(손해액 - 자기부담금, 0).",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 481,
+      "book_page": 481,
+      "pdf_page": 488,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-28",
+      "type": "FORMULA",
+      "title": "감귤 온주밀감 피해율",
+      "content": "F-28 감귤 온주밀감 피해율 산식 노드. 피해율 = (피해과실수 ÷ 기준과실수) × (1 - 미보상비율). 등급내+등급외×0.5.",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 481,
+      "book_page": 481,
+      "pdf_page": 488,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-29",
+      "type": "FORMULA",
+      "title": "두릅 피해율",
+      "content": "F-29 두릅 피해율 산식 노드. 피해율 = (피해 정아지수 ÷ 총 정아지수) × (1 - 미보상비율).",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 482,
+      "book_page": 482,
+      "pdf_page": 489,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-30",
+      "type": "FORMULA",
+      "title": "블루베리 과실손해피해율",
+      "content": "F-30 블루베리 과실손해피해율 산식 노드. 재배종별 가중. 고사주수 비율 + 표본가지 피해 비율 조합.",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 482,
+      "book_page": 482,
+      "pdf_page": 489,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-31",
+      "type": "FORMULA",
+      "title": "블루베리 꽃 피해 시 종합 피해율",
+      "content": "F-31 블루베리 꽃 피해 시 종합 피해율 산식 노드. 꽃 피해조사 + 과실손해 결합. 최종 꽃 피해율 + (1-최종꽃피해율)×F-30×(1-미보상비율).",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 482,
+      "book_page": 482,
+      "pdf_page": 489,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-32",
+      "type": "FORMULA",
+      "title": "동상해 과실손해보험금(감귤 온주밀감)",
+      "content": "F-32 동상해 과실손해보험금(감귤 온주밀감) 산식 노드. 동상해 손해액 = {보험가입금액-(보험가입금액×기사고피해율)}×수확기잔존비율×동상해피해율×(1-미보상비율).",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 484,
+      "book_page": 484,
+      "pdf_page": 491,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    },
+    {
+      "id": "F-33",
+      "type": "FORMULA",
+      "title": "과실손해 추가보장 특약 보험금(감귤 온주밀감)",
+      "content": "F-33 과실손해 추가보장 특약 보험금(감귤 온주밀감) 산식 노드. 보험금 = 보험가입금액 × 주계약 피해율 × 10%.",
+      "lv1_insurance": "종합위험",
+      "truth_weight": 9,
+      "source_page": 485,
+      "book_page": 485,
+      "pdf_page": 492,
+      "chapter": "제2편 농작물재해보험 손해평가",
+      "section": "2~4. 종합위험 보장방식"
+    }
+  ],
+  "edges": [
+    {
+      "source_id": "INS-07",
+      "target_id": "CROP-005",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "CROP-006",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "CROP-007",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "CROP-008",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "CROP-009",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "CROP-010",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "CROP-011",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "CROP-012",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "CROP-013",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "CROP-014",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "CROP-015",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "CROP-016",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "CROP-001",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "CROP-002",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "CROP-003",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "CROP-004",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-08",
+      "target_id": "CROP-017",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-08",
+      "target_id": "CROP-018",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-08",
+      "target_id": "CROP-019",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-08",
+      "target_id": "CROP-020",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-09",
+      "target_id": "CROP-021",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-09",
+      "target_id": "CROP-022",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-10",
+      "target_id": "CROP-005",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-10",
+      "target_id": "CROP-006",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-10",
+      "target_id": "CROP-008",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-11",
+      "target_id": "CROP-001",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-11",
+      "target_id": "CROP-002",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-11",
+      "target_id": "CROP-003",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-11",
+      "target_id": "CROP-004",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-11",
+      "target_id": "CROP-005",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-11",
+      "target_id": "CROP-017",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-11",
+      "target_id": "CROP-022",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-12",
+      "target_id": "CROP-005",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-12",
+      "target_id": "CROP-011",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-12",
+      "target_id": "CROP-012",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-13",
+      "target_id": "CROP-017",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-14",
+      "target_id": "CROP-017",
+      "edge_type": "APPLIES_TO"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "F-14",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "F-15",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "F-16",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "F-17",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INS-08",
+      "target_id": "F-25",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INS-08",
+      "target_id": "F-26",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INS-08",
+      "target_id": "F-27",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INS-08",
+      "target_id": "F-28",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INS-08",
+      "target_id": "F-29",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INS-08",
+      "target_id": "F-30",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INS-08",
+      "target_id": "F-31",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INS-10",
+      "target_id": "F-18",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INS-11",
+      "target_id": "F-19",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INS-11",
+      "target_id": "F-20",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INS-12",
+      "target_id": "F-21",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INS-13",
+      "target_id": "F-32",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "INS-14",
+      "target_id": "F-33",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "CROP-006",
+      "target_id": "F-16",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "CROP-009",
+      "target_id": "F-22",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "CROP-013",
+      "target_id": "F-23",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "CROP-013",
+      "target_id": "F-24",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "CROP-018",
+      "target_id": "F-26",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "CROP-019",
+      "target_id": "F-29",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "CROP-020",
+      "target_id": "F-30",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "CROP-020",
+      "target_id": "F-31",
+      "edge_type": "USES_FORMULA"
+    },
+    {
+      "source_id": "F-14",
+      "target_id": "F-15",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-14",
+      "target_id": "CONCEPT-022",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-14",
+      "target_id": "CONCEPT-028",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-15",
+      "target_id": "F-17",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-15",
+      "target_id": "CONCEPT-024",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-15",
+      "target_id": "CONCEPT-025",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-16",
+      "target_id": "F-15",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-17",
+      "target_id": "CONCEPT-027",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-18",
+      "target_id": "CONCEPT-021",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-19",
+      "target_id": "F-20",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-20",
+      "target_id": "CONCEPT-033",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-20",
+      "target_id": "CONCEPT-032",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-21",
+      "target_id": "CONCEPT-029",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-21",
+      "target_id": "CONCEPT-023",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-23",
+      "target_id": "CONCEPT-036",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-24",
+      "target_id": "TERM-024",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-25",
+      "target_id": "F-26",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-26",
+      "target_id": "CONCEPT-049",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-26",
+      "target_id": "CONCEPT-050",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-26",
+      "target_id": "CONCEPT-051",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-27",
+      "target_id": "F-28",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-27",
+      "target_id": "CONCEPT-029",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-28",
+      "target_id": "CONCEPT-041",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-28",
+      "target_id": "CONCEPT-042",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-28",
+      "target_id": "CONCEPT-027",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-29",
+      "target_id": "TERM-021",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-29",
+      "target_id": "CONCEPT-027",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-30",
+      "target_id": "CONCEPT-039",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-30",
+      "target_id": "CONCEPT-038",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-30",
+      "target_id": "CONCEPT-033",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-31",
+      "target_id": "F-30",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-32",
+      "target_id": "CONCEPT-040",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-32",
+      "target_id": "CONCEPT-043",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-32",
+      "target_id": "CONCEPT-044",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-32",
+      "target_id": "CONCEPT-045",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "F-33",
+      "target_id": "CONCEPT-045",
+      "edge_type": "DEPENDS_ON"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "INV-016",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "INV-017",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "INV-018",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "INV-019",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "INV-020",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "INV-021",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "INV-023",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "INV-024",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "INV-026",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "INV-027",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "INV-028",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "INV-029",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "INV-033",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "CROP-009",
+      "target_id": "INV-030",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "CROP-010",
+      "target_id": "INV-030",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "CROP-013",
+      "target_id": "INV-025",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "CROP-015",
+      "target_id": "INV-031",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-08",
+      "target_id": "INV-017",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-08",
+      "target_id": "INV-026",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-08",
+      "target_id": "INV-035",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-08",
+      "target_id": "INV-036",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "CROP-020",
+      "target_id": "INV-038",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-13",
+      "target_id": "INV-037",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-09",
+      "target_id": "INV-017",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-09",
+      "target_id": "INV-026",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-09",
+      "target_id": "INV-039",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-09",
+      "target_id": "INV-040",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-12",
+      "target_id": "INV-032",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-11",
+      "target_id": "INV-033",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "INS-11",
+      "target_id": "INV-034",
+      "edge_type": "REQUIRES_INVESTIGATION"
+    },
+    {
+      "source_id": "CONCEPT-021",
+      "target_id": "CONCEPT-024",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-021",
+      "target_id": "CONCEPT-025",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-021",
+      "target_id": "CONCEPT-026",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-026",
+      "target_id": "CONCEPT-027",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-029",
+      "target_id": "CONCEPT-028",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-031",
+      "target_id": "CONCEPT-032",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-031",
+      "target_id": "CONCEPT-033",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-031",
+      "target_id": "CONCEPT-034",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-031",
+      "target_id": "CONCEPT-035",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-042",
+      "target_id": "TERM-014",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-042",
+      "target_id": "TERM-015",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-042",
+      "target_id": "TERM-016",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-042",
+      "target_id": "TERM-017",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-042",
+      "target_id": "TERM-018",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-048",
+      "target_id": "CONCEPT-038",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-049",
+      "target_id": "CONCEPT-048",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-051",
+      "target_id": "CONCEPT-050",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-051",
+      "target_id": "CONCEPT-049",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-046",
+      "target_id": "CONCEPT-047",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "CONCEPT-040",
+      "target_id": "INS-13",
+      "edge_type": "DEFINED_AS"
+    },
+    {
+      "source_id": "INV-027",
+      "target_id": "LAW-005",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-028",
+      "target_id": "LAW-005",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-026",
+      "target_id": "LAW-006",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-020",
+      "target_id": "LAW-007",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-021",
+      "target_id": "LAW-007",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-036",
+      "target_id": "LAW-007",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-025",
+      "target_id": "LAW-008",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INS-12",
+      "target_id": "LAW-009",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "TERM-024",
+      "target_id": "LAW-008",
+      "edge_type": "GOVERNED_BY"
+    },
+    {
+      "source_id": "INV-018",
+      "target_id": "INV-017",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "INV-019",
+      "target_id": "INV-018",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "INV-020",
+      "target_id": "INV-019",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "INV-021",
+      "target_id": "INV-018",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "INV-024",
+      "target_id": "INV-023",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "INV-027",
+      "target_id": "INV-028",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "INV-026",
+      "target_id": "INV-024",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "INV-035",
+      "target_id": "INV-017",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "INV-039",
+      "target_id": "INV-040",
+      "edge_type": "PREREQUISITE"
+    },
+    {
+      "source_id": "INV-016",
+      "target_id": "INV-017",
+      "edge_type": "TIME_CONSTRAINT"
+    },
+    {
+      "source_id": "INV-017",
+      "target_id": "INV-018",
+      "edge_type": "TIME_CONSTRAINT"
+    },
+    {
+      "source_id": "INV-018",
+      "target_id": "INV-019",
+      "edge_type": "TIME_CONSTRAINT"
+    },
+    {
+      "source_id": "INV-023",
+      "target_id": "INV-027",
+      "edge_type": "TIME_CONSTRAINT"
+    },
+    {
+      "source_id": "INV-024",
+      "target_id": "INV-027",
+      "edge_type": "TIME_CONSTRAINT"
+    },
+    {
+      "source_id": "INV-038",
+      "target_id": "INV-017",
+      "edge_type": "TIME_CONSTRAINT"
+    },
+    {
+      "source_id": "INV-037",
+      "target_id": "INV-017",
+      "edge_type": "TIME_CONSTRAINT"
+    },
+    {
+      "source_id": "INV-034",
+      "target_id": "INV-033",
+      "edge_type": "TIME_CONSTRAINT"
+    },
+    {
+      "source_id": "INV-022",
+      "target_id": "INV-021",
+      "edge_type": "TIME_CONSTRAINT"
+    },
+    {
+      "source_id": "CROP-008",
+      "target_id": "CROP-017",
+      "edge_type": "DIFFERS_FROM"
+    },
+    {
+      "source_id": "INS-07",
+      "target_id": "INS-08",
+      "edge_type": "DIFFERS_FROM"
+    },
+    {
+      "source_id": "CROP-006",
+      "target_id": "CROP-005",
+      "edge_type": "DIFFERS_FROM"
+    },
+    {
+      "source_id": "INS-13",
+      "target_id": "INS-14",
+      "edge_type": "DIFFERS_FROM"
+    },
+    {
+      "source_id": "CROP-015",
+      "target_id": "CROP-005",
+      "edge_type": "DIFFERS_FROM"
+    },
+    {
+      "source_id": "CROP-001",
+      "target_id": "INS-07",
+      "edge_type": "SHARED_WITH"
+    },
+    {
+      "source_id": "CROP-002",
+      "target_id": "INS-07",
+      "edge_type": "SHARED_WITH"
+    },
+    {
+      "source_id": "CROP-003",
+      "target_id": "INS-07",
+      "edge_type": "SHARED_WITH"
+    },
+    {
+      "source_id": "CROP-004",
+      "target_id": "INS-07",
+      "edge_type": "SHARED_WITH"
+    },
+    {
+      "source_id": "INS-12",
+      "target_id": "INS-07",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "INS-13",
+      "target_id": "INS-08",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "INS-14",
+      "target_id": "INS-08",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "INS-10",
+      "target_id": "INS-07",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "INS-11",
+      "target_id": "INS-07",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "INS-11",
+      "target_id": "INS-08",
+      "edge_type": "CROSS_REF"
+    },
+    {
+      "source_id": "INS-12",
+      "target_id": "CONCEPT-023",
+      "edge_type": "EXCEPTION"
+    },
+    {
+      "source_id": "CROP-016",
+      "target_id": "CONCEPT-024",
+      "edge_type": "EXCEPTION"
+    },
+    {
+      "source_id": "INS-09",
+      "target_id": "CONCEPT-047",
+      "edge_type": "EXCEPTION"
+    }
+  ]
+}

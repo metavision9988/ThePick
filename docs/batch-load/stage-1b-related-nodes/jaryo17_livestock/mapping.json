@@ -1,0 +1,341 @@
+{
+  "schema_version": "1.1",
+  "stage": "1B",
+  "source": {
+    "file": "docs/manual/2차시험정답지/자료번호17번_가축_11년간기출(배포용).pdf",
+    "size_bytes": 636500,
+    "pages": 22,
+    "raw_chars": 26250,
+    "title": "가축 및 축사 11년간 기출문제 (2-1과목)",
+    "publisher": "손해평가사 전문학원 (부산점/대구점)",
+    "content_type": "exam_explanation_collection",
+    "exam_type_target": "2nd",
+    "rounds_partial_detected": [6, 7, 8, 9, 10, 11]
+  },
+  "extracted_at": "2026-05-06",
+  "stage_session": "048",
+  "source_textbook_year": 2025,
+  "version_drift_warning": true,
+  "version_drift_rationale": "가축재해보험 영역 — 26년 변경 일부 (REV-2026-LIVESTOCK-COW-AVAIL 소 출하예정 가입조건 + 돼지축산휴지 산식 정정 BATCH-R2 §11) 미반영 가능 → 보강 의무",
+  "potential_revision_drift": [
+    {
+      "revision_id": "REV-2026-LIVESTOCK-COW-AVAIL",
+      "drift_severity": "medium",
+      "concern": "소 출하예정 가입조건 26년 변경 — 본 자료 한우 31 빈도 영역 검증"
+    },
+    {
+      "revision_id": "REV-2026-LIVESTOCK-PIG-CESSATION",
+      "drift_severity": "medium",
+      "concern": "돼지축산휴지 산식 정정 (BATCH-R2 §11) — 본 자료 돼지 21 빈도 영역"
+    },
+    {
+      "revision_id": "REV-2026-LIVESTOCK-SPEC-COVERAGE",
+      "drift_severity": "low",
+      "concern": "가축 특별약관 부문별 정리 26년 명세화 — INS-39/40/41 영역"
+    }
+  ],
+  "domain_areas": ["BATCH-6", "BATCH-R2"],
+  "core_concept_nodes": [
+    {
+      "id": "INS-33",
+      "name": "가축재해보험 (총칙)",
+      "batch_id": "BATCH-6",
+      "relevance": "primary"
+    },
+    {
+      "id": "INS-34",
+      "name": "가축재해보험 소(牛) 부문",
+      "batch_id": "BATCH-6",
+      "relevance": "primary",
+      "rationale": "★ 한우 31 + 젖소 10 빈도 영역"
+    },
+    {
+      "id": "INS-35",
+      "name": "가축재해보험 돼지 부문",
+      "batch_id": "BATCH-6",
+      "relevance": "primary",
+      "rationale": "★ 돼지 21 + 종빈돈 17 + 비육돈 10 빈도 영역"
+    },
+    {
+      "id": "INS-36",
+      "name": "가축재해보험 가금 부문",
+      "batch_id": "BATCH-6",
+      "relevance": "secondary"
+    },
+    {
+      "id": "INS-37",
+      "name": "가축재해보험 말·종모우·기타 가축 부문",
+      "batch_id": "BATCH-6",
+      "relevance": "secondary",
+      "rationale": "말 12 빈도"
+    },
+    {
+      "id": "INS-38",
+      "name": "가축재해보험 축사 부문",
+      "batch_id": "BATCH-6",
+      "relevance": "primary",
+      "rationale": "★ 축사 52 빈도 (소 52와 동순위 최다)"
+    },
+    {
+      "id": "INS-39",
+      "name": "소(牛) 도체결함보장 특약",
+      "batch_id": "BATCH-6",
+      "relevance": "primary"
+    },
+    {
+      "id": "INS-40",
+      "name": "돼지 질병위험보장 특약 (종빈돈)",
+      "batch_id": "BATCH-6",
+      "relevance": "primary"
+    },
+    {
+      "id": "F-147",
+      "name": "가축재해보험 지급보험금 (일부보험)",
+      "batch_id": "BATCH-6",
+      "relevance": "primary"
+    },
+    {
+      "id": "F-149",
+      "name": "축사부문 부보비율 80% 미달 지급보험금",
+      "batch_id": "BATCH-6",
+      "relevance": "primary"
+    },
+    {
+      "id": "F-150",
+      "name": "축사부문 자기부담금 (풍수설지진)",
+      "batch_id": "BATCH-6",
+      "relevance": "primary"
+    },
+    {
+      "id": "F-151",
+      "name": "돼지 질병위험보장 특약 자기부담금",
+      "batch_id": "BATCH-6",
+      "relevance": "primary"
+    }
+  ],
+  "crop_nodes_n_a": "본 자료는 가축 영역으로 CROP_nodes 매핑 X (livestock 별도)",
+  "livestock_keyword_frequency": {
+    "소": 52,
+    "축사": 52,
+    "한우": 31,
+    "폐사": 30,
+    "돼지": 21,
+    "질병": 18,
+    "종빈돈": 17,
+    "말": 12,
+    "돈": 12,
+    "비육돈": 10,
+    "젖소": 10,
+    "화재": 7,
+    "육우": 2,
+    "사슴": 1
+  },
+  "exam_question_links": [
+    {
+      "question_id": "Q-2025-11-2ND-002",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "1과목 (이론)",
+      "relevance": "primary",
+      "rationale": "★ Session 049 정제 — 가축/축사 키워드 매칭 (자료17 가축 영역 직격, INS-33~38)"
+    },
+    {
+      "question_id": "Q-2025-11-2ND-010",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "1과목 (이론)",
+      "relevance": "primary",
+      "rationale": "★ Session 049 정제 — 가축/축사 키워드"
+    },
+    {
+      "question_id": "Q-2025-11-2ND-011",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "2과목 (손해평가)",
+      "relevance": "primary",
+      "rationale": "★ Session 049 정제 — 가축 손해평가 영역"
+    },
+    {
+      "question_id": "Q-2025-11-2ND-018",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "2과목 (손해평가)",
+      "relevance": "primary",
+      "rationale": "★ Session 049 정제 — 가축 손해평가 영역"
+    },
+    {
+      "question_id": "Q-2025-11-039",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary",
+      "rationale": "1차 가축재해보험 법령 매칭"
+    },
+    {
+      "question_id": "Q-2025-11-050",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary"
+    },
+    {
+      "question_id": "Q-2024-10-027",
+      "year": 2024,
+      "round": 10,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary"
+    },
+    {
+      "question_id": "Q-2024-10-049",
+      "year": 2024,
+      "round": 10,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary"
+    },
+    {
+      "question_id": "Q-2023-09-026",
+      "year": 2023,
+      "round": 9,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary"
+    },
+    {
+      "question_id": "Q-2023-09-040",
+      "year": 2023,
+      "round": 9,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary"
+    },
+    {
+      "question_id": "Q-2023-09-045",
+      "year": 2023,
+      "round": 9,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary"
+    },
+    {
+      "question_id": "Q-2023-09-048",
+      "year": 2023,
+      "round": 9,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary"
+    },
+    {
+      "question_id": "Q-2022-08-031",
+      "year": 2022,
+      "round": 8,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary"
+    },
+    {
+      "question_id": "Q-2021-07-026",
+      "year": 2021,
+      "round": 7,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary"
+    },
+    {
+      "question_id": "Q-2021-07-045",
+      "year": 2021,
+      "round": 7,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary"
+    },
+    {
+      "question_id": "Q-2021-07-050",
+      "year": 2021,
+      "round": 7,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary"
+    },
+    {
+      "question_id": "Q-2020-06-027",
+      "year": 2020,
+      "round": 6,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary"
+    },
+    {
+      "question_id": "Q-2020-06-031",
+      "year": 2020,
+      "round": 6,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary"
+    },
+    {
+      "question_id": "Q-2019-05-029",
+      "year": 2019,
+      "round": 5,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary"
+    },
+    {
+      "question_id": "Q-2019-05-037",
+      "year": 2019,
+      "round": 5,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary"
+    },
+    {
+      "question_id": "Q-2019-05-045",
+      "year": 2019,
+      "round": 5,
+      "exam_type": "1st",
+      "subject": "농어업재해보험법령",
+      "relevance": "secondary"
+    }
+  ],
+  "exam_question_search": {
+    "keyword_set": ["가축", "축사", "한우", "젖소", "돼지", "종빈돈", "산란계", "폐사", "씨수말"],
+    "1st_exam_matches": 17,
+    "2nd_exam_matches": 4,
+    "total": 21,
+    "note": "★ Session 049 정제 완료 — 1차 525 + 2차 20 = 545 questions 키워드 검색 (wrangler d1 production). 2차 11회 4건 = 자료17 영역 직격 (Q1과목 002/010 + Q2과목 011/018), 1차 17건 = 농어업재해보험법령 가축재해보험 법령 영역 (secondary 분류)"
+  },
+  "★_critical_finding_★": {
+    "title": "본 자료 = BATCH-6 가축재해보험 영역 100% 정합 + 11년 풀이",
+    "rationale": "BATCH-6 적재 12개 핵심 노드와 정확히 매핑 + 자료5/9/11/15/6 학원 풀이와 동일 INSERT 자산 가능성 (2차 1~10회 가축 영역 풀이 raw)",
+    "deferred_to": "8 자료 일괄 plan"
+  },
+  "td_carry_over": [],
+  "td_resolved_session_049": [
+    {
+      "id": "TD-S48-5",
+      "resolution": "가축/축사/한우/젖소/돼지/종빈돈/산란계/폐사/씨수말 9 키워드로 545 questions wrangler d1 production 검색 → 21건 매칭 (1차 17 + 2차 4). 2차 11회 4건(Q-002/010/011/018) = 자료17 영역 직격 primary, 1차 17건 = secondary (법령 영역 인접)"
+    }
+  ],
+  "decisions_applied": {
+    "D-S1B-1": "A",
+    "D-S1B-2": "키워드 매칭만",
+    "D-S1B-3": "현 schema",
+    "D-S1B-4": "8 자료 일괄",
+    "D-S1B-5": "primary/secondary",
+    "D-S1B-6": "8 자료 추출 완료 — Stage 1B 종합 보고 진산 spot check"
+  },
+  "summary": {
+    "core_nodes_count": 12,
+    "exam_question_links": 21,
+    "potential_drifts": 3,
+    "verdict": "★ Session 049 정제 완료 — BATCH-6 가축재해보험 11년 풀이 raw (2-1과목). 핵심 노드 12건 + exam_question 21건 (1차 17 secondary + 2차 4 primary) 매핑 영속. TD-S48-5 해소"
+  }
+}

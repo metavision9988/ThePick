@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>농업시설 보험금 산정 방식 인포그래픽</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #EBF4FF; 
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+        .flowchart-node {
+            border: 2px solid #54A6FF;
+            background-color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            font-weight: 500;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: all 0.3s ease;
+        }
+        .flowchart-node:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .flowchart-connector {
+            position: relative;
+            width: 2px;
+            background-color: #54A6FF;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .flowchart-connector::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid #54A6FF;
+        }
+        .summary-table th, .summary-table td {
+            border: 1px solid #99C7FF;
+            padding: 0.75rem;
+            text-align: center;
+        }
+        .summary-table th {
+            background-color: #54A6FF;
+            color: white;
+            font-weight: 700;
+        }
+        .summary-table td {
+             background-color: #ffffff;
+        }
+        .bg-primary { background-color: #004AAD; }
+        .text-primary { color: #004AAD; }
+        .bg-secondary { background-color: #0072E3; }
+        .text-secondary { color: #0072E3; }
+        .bg-accent { background-color: #54A6FF; }
+        .text-accent { color: #54A6FF; }
+        .bg-light { background-color: #EBF4FF; }
+    </style>
+</head>
+<body class="bg-light">
+    
+    <!-- 
+    Infographic Plan Summary:
+    Narrative: Guide users from basic concepts to complex comparisons of agricultural facility insurance valuation.
+    1. Header: Title and introduction.
+    2. Key Terms: Define 'Replacement Cost' vs. 'Market Value' using simple cards.
+    3. Initial Insured Amount: Use a structured HTML diagram to compare how the initial value is set for each facility.
+    4. Insurance Value Comparison (Core Chart): A grouped bar chart comparing valuation based on repair status. This is the central data visualization piece.
+    5. Decision Flowchart: A purely HTML/CSS flowchart to guide users through the decision process to determine the final valuation.
+    6. Summary Table: A final, clear table summarizing all rules for quick reference.
+    
+    Visualization Choices:
+    - Key Terms: HTML Cards. Goal: Inform. Justification: Simple, clear for definitions. Method: HTML/CSS. NO SVG.
+    - Insured Amount: HTML Diagram. Goal: Compare. Justification: Data is categorical, a diagram is clearer than a chart. Method: HTML/CSS. NO SVG.
+    - Insurance Value Comparison: Grouped Bar Chart. Goal: Compare. Justification: Ideal for comparing groups (facilities) across sub-categories (repair status). Method: Chart.js/Canvas. NO SVG.
+    - Flowchart: HTML Diagram. Goal: Organize. Justification: Best for process flow, implemented with HTML/CSS as required. Method: HTML/CSS. NO SVG/NO MERMAID JS.
+    - Summary Table: HTML Table. Goal: Organize. Justification: Best for dense, final summary. Method: HTML. NO SVG.
+    
+    Color Palette Used: 'Brilliant Blues' (#004AAD, #0072E3, #54A6FF, #99C7FF, #EBF4FF).
+    
+    Confirmation: NEITHER Mermaid JS NOR SVG were used in this output. All visualizations are rendered using Chart.js/Canvas or structured HTML/CSS with Tailwind.
+    -->
+
+    <div class="container mx-auto max-w-6xl p-4 sm:p-6 lg:p-8 bg-white rounded-xl shadow-lg mt-8 mb-8">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-primary mb-3">4대시설, 헷갈리지 말자</h1>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto">시설 종류, 수리 여부, 특약 가입에 따라 복잡하게 달라지는 보험가액 산정 기준을 한눈에 비교하고 완벽하게 이해해 보세요.</p>
+        </header>
+
+        <section id="definitions" class="mb-12">
+            <h2 class="text-3xl font-bold text-primary text-center mb-8">핵심 용어 바로 알기</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white rounded-xl shadow-lg p-6 flex items-center">
+                    <div class="text-5xl mr-5">🏢</div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-secondary">재조달가액</h3>
+                        <p class="text-gray-600">사고가 난 시설을 새로 짓거나 구입하는 데 필요한 금액입니다. 감가상각을 적용하지 않은 새것의 가치입니다.</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-lg p-6 flex items-center">
+                    <div class="text-5xl mr-5">📉</div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-secondary">시가 (현재가치)</h3>
+                        <p class="text-gray-600">재조달가액에서 사용 기간에 따른 가치 하락분(감가상각)을 뺀 금액입니다. 현재 시점의 실질적인 가치를 의미합니다.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="insured-amount" class="mb-12 bg-white rounded-xl shadow-lg p-8">
+            <h2 class="text-3xl font-bold text-primary text-center mb-2">보험가입금액: 시작부터 다른 기준</h2>
+            <p class="text-center text-gray-600 mb-8">보험에 처음 가입할 때, 시설별 보험가입금액은 아래와 같이 다른 기준으로 산정됩니다.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="text-center border-2 border-dashed border-accent rounded-lg p-4">
+                    <h4 class="text-xl font-bold text-secondary mb-2">비가림시설</h4>
+                    <p class="text-2xl font-black text-accent">재조달가액</p>
+                </div>
+                <div class="text-center border-2 border-dashed border-gray-400 rounded-lg p-4">
+                    <h4 class="text-xl font-bold text-secondary mb-2">원예시설</h4>
+                    <p class="text-lg font-semibold text-gray-700">특약 가입 시: <span class="text-2xl font-black text-accent block">재조달가액</span></p>
+                    <hr class="my-2">
+                    <p class="text-lg font-semibold text-gray-700">특약 미가입 시: <span class="text-xl font-bold text-gray-500 block">시가</span></p>
+                </div>
+                <div class="text-center border-2 border-dashed border-gray-400 rounded-lg p-4">
+                    <h4 class="text-xl font-bold text-secondary mb-2">해가림시설</h4>
+                    <p class="text-xl font-bold text-gray-500">무조건</p>
+                    <p class="text-2xl font-black text-gray-500">시가</p>
+                </div>
+                <div class="text-center border-2 border-dashed border-gray-400 rounded-lg p-4">
+                    <h4 class="text-xl font-bold text-secondary mb-2">축사</h4>
+                     <p class="text-xl font-bold text-gray-500">신축가액 - 감가액</p>
+                     <p class="text-2xl font-black text-gray-500">시가</p>
+                </div>
+            </div>
+        </section>
+        
+        <section id="flowchart" class="mb-12">
+            <h2 class="text-3xl font-bold text-primary text-center mb-8">나의 보험가액은? 결정 흐름도</h2>
+            <div class="flex flex-col items-center">
+                <div class="flowchart-node w-64 mb-20">어떤 시설인가요?</div>
+                
+                <div class="w-full grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- 비가림시설 branch -->
+                    <div class="flex flex-col items-center relative">
+                        <div class="flowchart-connector h-16 absolute -top-16"></div>
+                        <div class="flowchart-node w-full text-center font-bold text-secondary">비가림시설</div>
+                        <div class="flowchart-connector h-8"></div>
+                        <div class="flowchart-node w-full">수리했나요?</div>
+                        <div class="w-full flex justify-around mt-2">
+                            <span class="text-accent font-semibold text-sm">Yes</span>
+                            <span class="text-gray-500 font-semibold text-sm">No</span>
+                        </div>
+                        <div class="w-full h-16 flex justify-around">
+                            <div class="w-1/2 h-full border-r-2 border-b-2 border-accent rounded-br-lg"></div>
+                            <div class="w-1/2 h-full border-l-2 border-b-2 border-accent rounded-bl-lg"></div>
+                        </div>
+                        <div class="w-full grid grid-cols-2 gap-2">
+                             <div class="flowchart-node bg-blue-100 border-blue-500">재조달가액</div>
+                             <div class="flowchart-node bg-gray-100 border-gray-400">시가<span class="text-green-500">(년)</span></div>
+                        </div>
+                    </div>
+
+                    <!-- 원예시설 branch -->
+                    <div class="flex flex-col items-center relative">
+                         <div class="flowchart-connector h-16 absolute -top-16"></div>
+                        <div class="flowchart-node w-full text-center font-bold text-secondary">원예시설</div>
+                        <div class="flowchart-connector h-8"></div>
+                        <div class="flowchart-node w-full">특약 가입?</div>
+                         <div class="w-full flex justify-around mt-2">
+                            <span class="text-accent font-semibold text-sm">Yes</span>
+                            <span class="text-gray-500 font-semibold text-sm">No</span>
+                        </div>
+                         <div class="w-full h-16 flex justify-around">
+                            <div class="w-1/2 h-full border-r-2 border-b-2 border-accent rounded-br-lg"></div>
+                            <div class="w-1/2 h-full border-l-2 border-b-2 border-accent rounded-bl-lg"></div>
+                        </div>
+                        <div class="w-full grid grid-cols-2 gap-2">
+                            <div class="flex flex-col items-center">
+                                <div class="flowchart-connector h-4"></div>
+                                <div class="flowchart-node w-full">수리했나요?</div>
+                                <div class="w-full flex justify-around mt-2">
+                                    <span class="text-accent font-semibold text-sm">Yes</span>
+                                    <span class="text-gray-500 font-semibold text-sm">No</span>
+                                </div>
+                                <div class="w-full h-12 flex justify-around">
+                                    <div class="w-1/2 h-full border-r-2 border-b-2 border-accent rounded-br-lg"></div>
+                                    <div class="w-1/2 h-full border-l-2 border-b-2 border-accent rounded-bl-lg"></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-1 w-full">
+                                    <div class="flowchart-node bg-blue-100 border-blue-500 text-sm p-2">재조달가액</div>
+                                    <div class="flowchart-node bg-gray-100 border-gray-400 text-sm p-2">시가<span class="text-orange-500">(월)</span></div>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <div class="flowchart-connector h-4"></div>
+                                <div class="flowchart-node bg-gray-100 border-gray-400 w-full">시가<span class="text-orange-500">(월)</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 해가림시설 branch -->
+                    <div class="flex flex-col items-center relative">
+                         <div class="flowchart-connector h-16 absolute -top-16"></div>
+                         <div class="flowchart-node w-full text-center font-bold text-secondary">해가림시설</div>
+                         <div class="flowchart-connector h-8"></div>
+                         <div class="flowchart-node w-full">수리했나요?</div>
+                         <div class="w-full flex justify-around mt-2">
+                            <span class="text-accent font-semibold text-sm">Yes</span>
+                            <span class="text-gray-500 font-semibold text-sm">No</span>
+                        </div>
+                         <div class="w-full h-16 flex justify-around">
+                            <div class="w-1/2 h-full border-r-2 border-b-2 border-accent rounded-br-lg"></div>
+                            <div class="w-1/2 h-full border-l-2 border-b-2 border-accent rounded-bl-lg"></div>
+                        </div>
+                        <div class="w-full grid grid-cols-2 gap-2">
+                             <div class="flowchart-node bg-blue-100 border-blue-500">재조달가액</div>
+                             <div class="flowchart-node bg-gray-100 border-gray-400">시가<span class="text-orange-500">(월)</span></div>
+                        </div>
+                    </div>
+                    
+                    <!-- 축사 branch -->
+                    <div class="flex flex-col items-center relative">
+                        <div class="flowchart-connector h-16 absolute -top-16"></div>
+                        <div class="flowchart-node w-full text-center font-bold text-secondary">축사</div>
+                        <div class="flowchart-connector h-8"></div>
+                        <div class="flowchart-node bg-gray-100 border-gray-400 w-full">언제나 시가 <span class="text-green-500">(년)</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="summary-table" class="bg-white rounded-xl shadow-lg p-8">
+            <h2 class="text-3xl font-bold text-primary text-center mb-8">최종 요약 비교표</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full summary-table">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" class="align-middle">시설명</th>
+                            <th rowspan="2" class="align-middle">보험가입금액</th>
+                            <th colspan="2">보험가액 (사고 시)</th>
+                        </tr>
+                        <tr>
+                            <th>수리복구 한 경우</th>
+                            <th>수리복구 하지 않은 경우</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="font-bold">비가림시설</td>
+                            <td>재조달가액</td>
+                            <td>재조달가액</td>
+                            <td>년단위 감가 적용, 시가<span class="text-green-500">(년단위)</span></td>
+                        </tr>
+                        <tr>
+                            <td class="font-bold">원예시설</td>
+                            <td>특약 가입: 재조달가액<br>특약 미가입: 시가<span class="text-orange-500">(월단위)</span></td>
+                            <td>특약 가입 시: 재조달가액</td>
+                            <td>특약 미가입 또는 미수리: 시가<span class="text-orange-500">(월단위)</span></td>
+                        </tr>
+                        <tr>
+                            <td class="font-bold">해가림시설</td>
+                            <td>무조건 시가<span class="text-green-500">(년단위)</span></td>
+                            <td>재조달가액</td>
+                            <td>시가<span class="text-orange-500">(월단위)</span></td>
+                        </tr>
+                        <tr>
+                            <td class="font-bold">축사</td>
+                            <td>시가 <span class="text-green-500">(년단위 추정)</span></td>
+                            <td colspan="2">시가 <span class="text-green-500">(년단위 추정)</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+
+    <footer class="text-center py-6">
+        <p class="text-sm text-gray-500">&copy; 2025 농업시설 보험 정보. 본 정보는 이해를 돕기 위한 자료이며 법적 효력을 갖지 않습니다.</p>
+    </footer>
+
+    <!-- Removed the Chart.js related script block as the canvas element was removed -->
+</body>
+</html>

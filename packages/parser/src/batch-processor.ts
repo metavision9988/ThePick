@@ -108,9 +108,9 @@ function buildSystemPrompt(batchId: string, pageRange: { start: number; end: num
 
 ## 출력 규칙
 
-### 노드 ID 규칙 (Ontology Lock — 반드시 준수)
+### 노드 ID 규칙 (Ontology Lock — 반드시 준수, ontology-registry.json v1.3.0 정합)
 - LAW: LAW-NNN (예: LAW-001)
-- FORMULA: F-NN (예: F-01)
+- FORMULA: F-NN 또는 F-NNN (예: F-01, F-100, F-130) — pattern '^F-\\d{2,3}$'
 - INVESTIGATION: INV-NNN (예: INV-001)
 - INSURANCE: INS-NN (예: INS-01)
 - CROP: CROP-NNN (예: CROP-001)

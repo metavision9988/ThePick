@@ -1,0 +1,43 @@
+{
+  "_meta": {
+    "batch_id": "BATCH-Q-META",
+    "source_pdf": "docs/manual/2019~2025년도 제5~11회 손해평가사 1차+2차 시험 문제지 (7회분)",
+    "pages": [1, 1],
+    "page_count": 0,
+    "domain": "손해평가사 자격시험 1차+2차 기출 7회분 (제5~11회, 2019~2025) 카탈로그 메타. **본격 문항 적재는 정답지 자료 확보 후 차세션 분할 진행 의무**. 1차 525문항 (75/회) + 2차 168문항 (24/회 추정) = 약 693문항. 본 BATCH = 회차·과목·문항수·페이지 통계 카탈로그 + 출제 패턴 분석 자산 메타.",
+    "chapter": "기출 카탈로그 메타",
+    "concept_count": 1,
+    "status": "draft",
+    "ai_generated_by": "Claude Opus 4.7 (1M context) — Session 045",
+    "extracted_at": "2026-05-06",
+    "ontology_registry_version": "1.2.0",
+    "td_s42_1_compliance": "CONST 참조 엣지 0건",
+    "td_s42_2_compliance": "FORMULA 0 — N/A",
+    "td_s43_1_compliance": "FORMULA 미사용",
+    "td_s44_6_compliance": "revision_changes 영역 X (메타 자료)",
+    "td_s45_1_compliance": "constants 0건 — N/A",
+    "td_s45_2_compliance": "formulas 0건 — N/A",
+    "td_s45_3_compliance": "FORMULA 노드 0건 — N/A",
+    "supersedes_pattern": "본 BATCH = 기출 카탈로그 메타. SUPERSEDES 0. CROSS_REF X (자체 메타).",
+    "cross_batch_refs_intent": "BATCH-S1 출제영역 메타와 DEPENDS_ON 정합 (출제 패턴 분석 자산).",
+    "deferred_reason": "정답지 자료 미보유 → 본격 문항 INSERT(exam_questions) 차세션 분할 진행. 회차당 1세션 권장 (1차 75문항 + 2차 24문항)."
+  },
+  "nodes": [
+    {
+      "id": "CONCEPT-218",
+      "type": "CONCEPT",
+      "title": "[BATCH-Q-META] 손해평가사 기출 7회분 카탈로그 + 본격 적재 차세션 이월 메타",
+      "content": "손해평가사 자격시험 1차+2차 기출 7회분 (제5~11회, 2019~2025) 통계 카탈로그. **자료 위치 (docs/manual/)**: ① 1차 시험 — 2019(5회 A형/B형 분리) / 2021(7회 zip) / 2022(8회 1교시 A형) / 2023(9회) / 2024(10회) / 2025(11회). ② 2차 시험 — 2019(5회 공개용) / 2020(6회 zip 원본) / 2021(7회) / 2022(8회) / 2023(9회) / 2024(10회) / 2025(11회). **분량 추정**: 1차 7회분 × 75문항 = 525문항 / 2차 7회분 × ~24문항 = ~168문항 / 합계 ~693문항. **본격 적재 이월 사유**: ① 정답지 자료 미보유 (큐넷 공식 발표 별도 확보 필요) ② 단일 세션 내 693문항 구조화 비현실 ③ Level 3 역검증 자료로서 정답 매핑이 핵심. **차세션 권장 분할**: 회차당 1세션 (1차 75 + 2차 24 = 99문항/세션). exam_questions 테이블 INSERT (BATCH-Q-N차-회차 단위 batch_id). BATCH-S1 출제영역(CONCEPT-212) DEPENDS_ON.",
+      "lv1_insurance": "농작물재해보험·가축재해보험 공통",
+      "truth_weight": 10,
+      "source_page": 1,
+      "book_page": 1,
+      "pdf_page": 1,
+      "chapter": "기출 카탈로그 메타",
+      "section": "BATCH-Q 7회분 카탈로그 + 본격 적재 차세션 이월"
+    }
+  ],
+  "edges": [{ "source_id": "CONCEPT-218", "target_id": "CONCEPT-212", "edge_type": "DEPENDS_ON" }],
+  "constants": [],
+  "formulas": []
+}

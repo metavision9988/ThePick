@@ -1,0 +1,2517 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>가축재해보험 수험용</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="가축재해보험">
+    <link rel="apple-touch-icon" href="icons/icon-152x152.png">
+    <meta name="description" content="가축재해보험 수험생을 위한 학습 도구">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .tabs-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab {
+            flex: 1;
+            min-width: 120px;
+            padding: 20px 15px;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            position: relative;
+            white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            min-height: 44px;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .tab.active {
+            background: white;
+            color: #007bff;
+            box-shadow: 0 -2px 10px rgba(0,123,255,0.1);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #007bff, #0056b3);
+        }
+
+        .tab-icon {
+            display: block;
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 40px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .livestock-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .info-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 25px;
+            border-radius: 15px;
+            border-left: 5px solid #007bff;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .info-card h3 {
+            color: #007bff;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .info-card ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .info-card li {
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .info-card li:before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .info-card li:last-child {
+            border-bottom: none;
+        }
+
+        .insurance-details {
+            background: #fff;
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid #dee2e6;
+            margin-top: 20px;
+        }
+
+        .insurance-details h3 {
+            color: #343a40;
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .detail-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .detail-item .number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #007bff;
+            display: block;
+        }
+
+        .detail-item .label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .cta-section {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .cta-section h3 {
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .cta-section p {
+            margin-bottom: 25px;
+            opacity: 0.9;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: white;
+            color: #007bff;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 2px solid white;
+        }
+
+        .btn:hover {
+            background: transparent;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .header p {
+                font-size: 1rem;
+            }
+
+            .tab {
+                padding: 15px 10px;
+                font-size: 0.9rem;
+                min-width: 100px;
+            }
+
+            .tab-icon {
+                font-size: 1.5rem;
+                margin-bottom: 5px;
+            }
+
+            .tab-content {
+                padding: 20px;
+            }
+
+            .livestock-info {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .info-card {
+                padding: 20px;
+            }
+
+            .insurance-details {
+                padding: 20px;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .cta-section {
+                padding: 30px 20px;
+            }
+
+            .btn {
+                padding: 12px 25px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .tab {
+                padding: 12px 8px;
+                font-size: 0.8rem;
+            }
+
+            .tab-content {
+                padding: 15px;
+            }
+
+            .info-card {
+                padding: 15px;
+            }
+
+            .info-card h3 {
+                font-size: 1.1rem;
+            }
+        }
+
+        /* 소 종류 선택 카드 스타일 */
+        .cattle-selection {
+            margin-bottom: 40px;
+        }
+
+        .cattle-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .cattle-card, .pig-card, .chicken-card, .duck-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid #dee2e6;
+            border-radius: 15px;
+            padding: 25px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            min-height: 44px;
+        }
+
+        .cattle-card:hover, .pig-card:hover, .chicken-card:hover, .duck-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,123,255,0.15);
+            border-color: #007bff;
+        }
+
+        .cattle-card.active, .pig-card.active, .chicken-card.active, .duck-card.active {
+            border-color: #007bff;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            box-shadow: 0 8px 20px rgba(0,123,255,0.2);
+        }
+
+        .cattle-card.active::before, .pig-card.active::before, .chicken-card.active::before, .duck-card.active::before {
+            content: '✓';
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: #007bff;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .cattle-card h3, .pig-card h3, .chicken-card h3, .duck-card h3 {
+            color: #343a40;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .cattle-card.active h3, .pig-card.active h3, .chicken-card.active h3, .duck-card.active h3 {
+            color: #007bff;
+        }
+
+        .cattle-card p, .pig-card p, .chicken-card p, .duck-card p {
+            color: #6c757d;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .cattle-card.active p, .pig-card.active p, .chicken-card.active p, .duck-card.active p {
+            color: #0056b3;
+        }
+
+        /* 소 종류별 컨텐츠 */
+        .cattle-type-content, .pig-type-content, .chicken-type-content, .duck-type-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .cattle-type-content.active, .pig-type-content.active, .chicken-type-content.active, .duck-type-content.active {
+            display: block;
+        }
+
+        /* 모바일에서 카드 레이아웃 */
+        @media (max-width: 768px) {
+            .cattle-cards, .pig-cards, .chicken-cards, .duck-cards {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .cattle-card, .pig-card, .chicken-card, .duck-card {
+                padding: 20px 15px;
+            }
+
+            .card-icon {
+                font-size: 2.5rem;
+                margin-bottom: 10px;
+            }
+
+            .cattle-card h3, .pig-card h3, .chicken-card h3, .duck-card h3 {
+                font-size: 1.2rem;
+            }
+
+            .cattle-card p, .pig-card p, .chicken-card p, .duck-card p {
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .cattle-card, .pig-card, .chicken-card, .duck-card {
+                padding: 15px 10px;
+            }
+
+            .card-icon {
+                font-size: 2rem;
+                margin-bottom: 8px;
+            }
+
+            .cattle-card h3, .pig-card h3, .chicken-card h3, .duck-card h3 {
+                font-size: 1.1rem;
+            }
+        }
+
+        /* 돼지 종류 선택 카드 스타일 */
+        .pig-selection {
+            margin-bottom: 40px;
+        }
+
+        .pig-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .pig-card {
+            background: linear-gradient(135deg, #fff5f3 0%, #ffe5df 100%);
+            border: 2px solid #ffb3a0;
+            border-radius: 15px;
+            padding: 20px 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pig-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(255,107,53,0.15);
+            border-color: #ff6b35;
+        }
+
+        .pig-card.active {
+            border-color: #ff6b35;
+            background: linear-gradient(135deg, #ff6b35 0%, #e55a2b 100%);
+            color: white;
+            box-shadow: 0 8px 20px rgba(255,107,53,0.3);
+        }
+
+        .pig-card.active::before {
+            content: '✓';
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: rgba(255,255,255,0.9);
+            color: #ff6b35;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .pig-card h3 {
+            color: #ff6b35;
+            margin-bottom: 8px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .pig-card.active h3 {
+            color: white;
+        }
+
+        .pig-card p {
+            color: #d65a31;
+            font-size: 0.85rem;
+            line-height: 1.3;
+            margin: 0;
+        }
+
+        .pig-card.active p {
+            color: rgba(255,255,255,0.9);
+        }
+
+        .pig-type-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .pig-type-content.active {
+            display: block;
+        }
+
+        /* 닭 종류 선택 카드 스타일 */
+        .chicken-selection {
+            margin-bottom: 40px;
+        }
+
+        .chicken-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chicken-card {
+            background: linear-gradient(135deg, #fffbf0 0%, #fff3cd 100%);
+            border: 2px solid #ffeaa7;
+            border-radius: 15px;
+            padding: 20px 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chicken-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(255,193,7,0.15);
+            border-color: #ffc107;
+        }
+
+        .chicken-card.active {
+            border-color: #ffc107;
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: white;
+            box-shadow: 0 8px 20px rgba(255,193,7,0.3);
+        }
+
+        .chicken-card.active::before {
+            content: '✓';
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: rgba(255,255,255,0.9);
+            color: #ffc107;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .chicken-card h3 {
+            color: #ffc107;
+            margin-bottom: 8px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .chicken-card.active h3 {
+            color: white;
+        }
+
+        .chicken-card p {
+            color: #cc9a06;
+            font-size: 0.85rem;
+            line-height: 1.3;
+            margin: 0;
+        }
+
+        .chicken-card.active p {
+            color: rgba(255,255,255,0.9);
+        }
+
+        .chicken-type-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .chicken-type-content.active {
+            display: block;
+        }
+
+        /* 오리 종류 선택 카드 스타일 */
+        .duck-selection {
+            margin-bottom: 40px;
+        }
+
+        .duck-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .duck-card {
+            background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+            border: 2px solid #99f6e4;
+            border-radius: 15px;
+            padding: 25px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .duck-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(32,201,151,0.15);
+            border-color: #20c997;
+        }
+
+        .duck-card.active {
+            border-color: #20c997;
+            background: linear-gradient(135deg, #20c997 0%, #17a085 100%);
+            color: white;
+            box-shadow: 0 8px 20px rgba(32,201,151,0.3);
+        }
+
+        .duck-card.active::before {
+            content: '✓';
+            position: absolute;
+            top: 12px;
+            right: 15px;
+            background: rgba(255,255,255,0.9);
+            color: #20c997;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .duck-card h3 {
+            color: #20c997;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .duck-card.active h3 {
+            color: white;
+        }
+
+        .duck-card p {
+            color: #17a085;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .duck-card.active p {
+            color: rgba(255,255,255,0.9);
+        }
+
+        .duck-type-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .duck-type-content.active {
+            display: block;
+        }
+
+        /* 모바일에서 돼지/닭 카드 레이아웃 */
+        @media (max-width: 768px) {
+            .pig-cards, .chicken-cards {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+
+            .duck-cards {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .pig-card, .chicken-card, .duck-card {
+                padding: 15px 10px;
+            }
+
+            .pig-card h3, .chicken-card h3, .duck-card h3 {
+                font-size: 1.1rem;
+            }
+
+            .pig-card p, .chicken-card p, .duck-card p {
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .pig-cards, .chicken-cards {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+        }
+
+        /* 아코디언 스타일 수정 */
+        .accordion {
+            margin-bottom: 20px;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .accordion-header {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            padding: 20px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .accordion-header:hover {
+            background: linear-gradient(135deg, #0056b3 0%, #004494 100%);
+        }
+
+        .accordion-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .accordion-header.active .accordion-icon {
+            transform: rotate(180deg);
+        }
+
+        .accordion-content {
+            background: white;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .accordion-content.active {
+            max-height: 2000px; /* 충분히 큰 값으로 설정 */
+        }
+
+        .accordion-content .insurance-details {
+            padding: 20px;
+        }
+
+        /* 소 종류별 아코디언 */
+        .cattle-accordion {
+            margin-top: 30px;
+        }
+
+        .cattle-accordion .accordion-header {
+            background: linear-gradient(135deg, #28a745 0%, #20692b 100%);
+        }
+
+        .cattle-accordion .accordion-header:hover {
+            background: linear-gradient(135deg, #20692b 0%, #1a5a24 100%);
+        }
+
+        /* 중첩 아코디언 스타일 */
+        .nested-accordion {
+            margin: 20px 0 10px 0;
+        }
+
+        .nested-accordion .accordion-header {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .nested-accordion .accordion-header:hover {
+            background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+        }
+
+        .nested-accordion .accordion-content {
+            background: #f8f9fa;
+            border-radius: 0 0 10px 10px;
+            transition: max-height 0.4s ease-out;
+            max-height: 0;
+        }
+
+        .nested-accordion .accordion-content.active {
+            max-height: 400px !important; /* 중첩 아코디언 최대 높이 강제 적용 */
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .nested-accordion .info-card {
+            background: white;
+            margin-bottom: 15px;
+        }
+
+        .nested-accordion .info-card:last-child {
+            margin-bottom: 0;
+        }
+
+        /* 모바일에서 아코디언 높이 조절 */
+        @media (max-width: 768px) {
+            .accordion-content.active {
+                max-height: 2000px !important;
+            }
+            
+            .nested-accordion .accordion-content.active {
+                max-height: 1500px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .accordion-content.active {
+                max-height: 2000px !important;
+            }
+            
+            .nested-accordion .accordion-content.active {
+                max-height: 1500px !important;
+            }
+        }
+
+        .accordion-container {
+            margin: 20px 0;
+        }
+        
+        .accordion-item {
+            margin-bottom: 15px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: white;
+        }
+        
+        .accordion-header {
+            background: white;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .accordion-header:hover {
+            background: #f8f9fa;
+        }
+        
+        .accordion-content {
+            background: white;
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .accordion-content.active {
+            max-height: none;
+            padding: 20px;
+        }
+        
+        .accordion-icon {
+            font-size: 0.8em;
+            transition: transform 0.3s ease;
+            margin-left: auto;
+        }
+        
+        .accordion-header.active .accordion-icon {
+            transform: rotate(180deg);
+        }
+
+        .selectable-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .selectable-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .selectable-card.active {
+            border: 2px solid #007bff;
+        }
+        
+        .content-detail {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+    <script>
+        function toggleAccordion(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.accordion-icon');
+            
+            // 현재 아코디언의 상태 확인
+            const isActive = header.classList.contains('active');
+            
+            // 모든 아코디언을 닫음
+            document.querySelectorAll('.accordion-header').forEach(h => {
+                h.classList.remove('active');
+                h.nextElementSibling.classList.remove('active');
+            });
+            
+            // 클릭된 아코디언이 닫혀있었다면 엶
+            if (!isActive) {
+                header.classList.add('active');
+                content.classList.add('active');
+            }
+        }
+
+        // 페이지 로드 시 첫 번째 아코디언을 자동으로 엶
+        window.addEventListener('DOMContentLoaded', () => {
+            const firstAccordion = document.querySelector('.accordion-header');
+            if (firstAccordion) {
+                toggleAccordion(firstAccordion);
+            }
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐄 가축재해보험 수험용</h1>
+            <p>손평에듀 한종찬교수 제작 ver20250608 -특약추가 </p>
+        </div>
+
+        <div class="tabs-container">
+            <div class="tabs">
+                <button class="tab active" onclick="openTab(event, 'cattle')">
+                    <span class="tab-icon">🐄</span>
+                    소
+                </button>
+                <button class="tab" onclick="openTab(event, 'pig')">
+                    <span class="tab-icon">🐷</span>
+                    돼지
+                </button>
+                <button class="tab" onclick="openTab(event, 'chicken')">
+                    <span class="tab-icon">🐔</span>
+                    닭
+                </button>
+                <button class="tab" onclick="openTab(event, 'duck')">
+                    <span class="tab-icon">🦆</span>
+                    오리
+                </button>
+                <button class="tab" onclick="openTab(event, 'special')">
+                    <span class="tab-icon">📋</span>
+                    특약
+                </button>
+                <button class="tab" onclick="openTab(event, 'overview')">
+                    <span class="tab-icon">📚</span>
+                    손해평가개요
+                </button>
+            </div>
+
+            <!-- 소 탭 컨텐츠 -->
+            <div id="cattle" class="tab-content active">
+                <div class="cattle-selection">
+                    <h2 style="text-align: center; margin-bottom: 30px; color: #343a40;">소 종류를 선택해주세요</h2>
+                    
+                    <div class="cattle-cards">
+                        <div class="cattle-card active" onclick="selectCattleType('hanwoo')">
+                            <div class="card-icon">🐂</div>
+                            <h3>한우</h3>
+                            <p>한국 고유 품종<br>육질이 우수한 소</p>
+                        </div>
+                        
+                        <div class="cattle-card" onclick="selectCattleType('beef')">
+                            <div class="card-icon">🐄</div>
+                            <h3>육우</h3>
+                            <p>육용으로 사육되는<br>외국 품종 소</p>
+                        </div>
+                        
+                        <div class="cattle-card" onclick="selectCattleType('dairy')">
+                            <div class="card-icon">🥛</div>
+                            <h3>젖소</h3>
+                            <p>유제품 생산을 위한<br>젖을 내는 소</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cattle-content">
+                    <!-- 한우 내용 -->
+                    <div id="hanwoo-content" class="cattle-type-content active">
+                        <div class="cattle-accordion">
+                            <div class="accordion">
+                                <button class="accordion-header">
+                                    <span>🐂 한우 손해액 산정 방법</span>
+                                    <span class="accordion-icon">▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <div class="insurance-details">
+                                        <div class="livestock-info">
+                                            <div class="info-card">
+                                                <h3>폐사 시 손해액</h3>
+                                                <ul>
+                                                    <li><strong>보험가액 = 손해액</strong> (전부손해)
+                                                        <ul style="list-style-type: disc; margin-left: 20px;">
+                                                            <li>월령 기준으로 보험가액 산정</li>
+                                                            <li>폐사 시점의 월령을 만(滿)으로 계산</li>
+                                                            <li>월 미만의 일수는 무시</li>
+                                                            <li>1개월 이하인 경우는 1개월로 적용</li>
+                                                        </ul>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                            <div class="info-card">
+                                                <h3>긴급도축 시 손해액</h3>
+                                                <ul>
+                                                    <li><strong>손해액 = 보험가액 - 이용물처분액</strong>
+                                                        <ul style="list-style-type: disc; margin-left: 20px;">
+                                                            <li>도축장 정산서 있는 경우: 도축장 발행 정산자료의 지육금액 × 75%</li>
+                                                            <li>도축장 정산서 없는 경우: 도축장 발행 정산자료의 중량 × 지육가격 × 75%</li>
+                                                            <li>중량: 도축장발행 사고소의 도체(지육)중량 </li>
+                                                            <li>지육가격: 축산물품질평가원에서 고시하는 사고일 기준 사고소의 등급에 해당 하는 전국평균가격(원/kg)</li>
+                                                            <li>이용물 처리비용은 피보험자 부담</li>
+                                                        </ul>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="accordion">
+                                <button class="accordion-header">
+                                    <span>🐂 한우 보험가액 산정 기준</span>
+                                    <span class="accordion-icon">▼</span>
+                                </button>
+                                <div class="accordion-content">
+                                    <div class="insurance-details">
+                                        <div class="livestock-info" style="grid-template-columns: 1fr;">
+                                            <div class="info-card">
+                                                <h3>📅 1~6개월령 보험가액</h3>
+                                                <ul>
+                                                    <li><strong>기본원칙:</strong> 농협축산정보센터 사고전전월 전국산지평균 송아지 가격</li>
+                                                    <li><strong>2개월 미만:</strong> 50% 적용 (질병사고는 3개월 미만 : 1월령,2월령)</li>
+                                                    <li><strong>1~3개월령이 없는 경우:</strong> 4~5월령 송아지 가격 적용 하되 4-5월령이 없는 경우는 아래 적용</li>
+                                                    <li><strong>4~5개월령이 없는 경우:</strong> 6~7월령 송아지 가격의 암송아지 85%, 수송아지 80%</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div class="livestock-info">
+                                            <div class="info-card">
+                                                <h3>📊 7개월령 이상 보험가액</h3>
+                                                <ul>
+                                                    <li><strong>산정공식:</strong> 체중 × kg당 금액
+                                                        <ul style="list-style-type: disc; margin-left: 20px;">
+                                                            <li><strong>체중:</strong> 약관 월령별 발육표준표 적용</li>
+                                                            <li><strong>한우 수컷:</strong> 25개월 초과 시 655kg 인정</li>
+                                                            <li><strong>한우 암컷:</strong> 40개월 초과 시 470kg 인정</li>
+                                                            <li><strong>kg당 금액:</strong> 산지가격 적용범위표 기준</li>
+                                                            <li> <strong> MAX(성별 350kg 해당 전국 산지평균가격, 성별 600kg 해당 전국 산지평균 가격 )</strong></li>
+                                                            
+                                                            
+                                                        </ul>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                            <div class="info-card">
+                                                <h3>🏷️ 산지가격 적용범위</h3>
+                                                <ul>
+                                                    <li><strong>한우 수컷:</strong> 350kg, 600kg 해당 가격 중 kg당 높은 금액</li>
+                                                    <li><strong>한우 암컷:</strong> 생후 7개월 이상 적용</li>
+                                                    <li><strong>육우:</strong> 생후 3개월 이상 적용</li>
+                                                    <li><strong>젖소 수컷:</strong> 500kg 해당 전국 산지평균 가격</li>
+                                                    <li><strong>참고:</strong> 월령별 보험가액이 송아지 가격보다 낮으면 송아지 가격 적용</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 육우 내용 -->
+                    <div id="beef-content" class="cattle-type-content">
+                        <div class="insurance-details">
+                            <div class="livestock-info" style="grid-template-columns: 1fr;">
+                                <div class="info-card">
+                                    <h3>📊 육우 보험가액 산정</h3>
+                                    <p style="margin-bottom: 15px;">육우의 보험가액 산정은 연령(월령)을 기준으로 2개월령 이하와 3개월령 이상으로 구분하여 다음과 같이 산정한다.</p>
+                                    <div style="overflow-x: auto;">
+                                        <table style="width: 100%; border-collapse: collapse; margin: 15px 0; text-align: center;">
+                                            <tr style="background-color: #f8f9fa;">
+                                                <th style="border: 1px solid #ddd; padding: 8px;">월령</th>
+                                                <th style="border: 1px solid #ddd; padding: 8px;">보험가액</th>
+                                            </tr>
+                                            <tr>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">2개월 이하</td>
+                                                <td style="border: 1px solid #ddd; padding: 8px; text-align: left;">「농협축산정보센터」에 등재된 전전월 전국산지평균 분유떼기 젖소 수컷 가격 (단, 연령(월령)이 2개월 미만(질병사고는 3개월 미만)일때는 50% 적용)</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">3개월 이상</td>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">체중 × kg당 금액</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <ul style="list-style-type: decimal; padding-left: 20px; margin-top: 20px;">
+                                        <li style="margin-bottom: 10px;">사고 시점에서 산정한 월령별 보험가액이 위와 같이 산정한 분유떼기 젖소 수컷 가격보다 낮은 경우는 분유떼기 젖소 수컷 가격을 적용한다.</li>
+                                        <li style="margin-bottom: 10px;">체중은 약관에서 확정하여 정하고 있는 월령별 "발육표준표"에서 정한 사고소(牛)의 월령에 해당 되는 체중을 적용한다. 다만 육우 월령이 25개월을 초과한 경우에는 600kg으로 인정한다.</li>
+                                        <li style="margin-bottom: 10px;">kg당 금액은 보험사고 「농협축산정보센터」에 등재된 전전월 젖소 수컷 500kg 해당 전국 산지평균가격을 그 체중으로 나누어 구한다. 단, 전국산지평균가격이 없는 경우에는 「농협축산정보센터」에 등재된 전전월 전국도매시장 지육평균 가격에 지육율 58%를 곱한 가액을 kg당 금액으로 한다.</li>
+                                    </ul>
+                                    <p style="font-size: 0.9em; color: #666; margin-top: 15px;">* 지육율은 도체율이라고도 하며 도체중의 생체중에 대한 비율이며, 생체중은 살아있는 생물의 무게이고 도체중은 생체에서 두부,내장축 및 가죽 등 부분을 제외한 무게를 의미한다.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 젖소 내용 -->
+                    <div id="dairy-content" class="cattle-type-content">
+                        <div class="insurance-details">
+                            <div class="livestock-info" style="grid-template-columns: 1fr;">
+                                <div class="info-card">
+                                    <h3>🥛 젖소 보험가액 산정</h3>
+                                    <p style="margin-bottom: 15px;">젖소의 보험가액 산정은 연령(월령)을 기준으로 보험사고 「농협축산정보보센터」에 등재된 전전월 전국산지평균가격을 기준으로 9단계로 구분하여 다음과 같이 산정한다.</p>
+                                    <div style="overflow-x: auto;">
+                                        <table style="width: 100%; border-collapse: collapse; margin: 15px 0; text-align: center;">
+                                            <tr style="background-color: #f8f9fa;">
+                                                <th style="border: 1px solid #ddd; padding: 8px;">월령</th>
+                                                <th style="border: 1px solid #ddd; padding: 8px;">보험가액</th>
+                                            </tr>
+                                            <tr>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">1개월~7개월</td>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">분유떼기 암컷 가격(연령(월령)이 2개월미만(질병사고는 3개월 미만) 일때는 50% 적용)</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">8개월~12개월</td>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">분유떼기 암컷가격 + ((수정단계가격 - 분유떼기 암컷가격) / 6) × (사고월령 -7개월)</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">13개월~18개월</td>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">수정단계가격</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">19개월~23개월</td>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">수정단계가격 + ((초산우가격 - 수정단계가격) / 6) × (사고월령 - 18개월)</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">24개월~31개월</td>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">초산우가격</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">32개월~39개월</td>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">초산우가격 + ((다산우가격 - 초산우가격) / 9) × (사고월령 - 31개월)</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">40개월~55개월</td>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">다산우가격</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">56개월~66개월</td>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">다산우가격 + ((노산우가격 - 다산우가격) / 12) × (사고월령 - 55개월)</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">67개월 이상</td>
+                                                <td style="border: 1px solid #ddd; padding: 8px;">노산우가격</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 돼지 탭 컨텐츠 -->
+            <div id="pig" class="tab-content">
+                <div class="pig-selection">
+                    <h2 style="text-align: center; margin-bottom: 30px; color: #343a40;">돼지 종류를 선택해주세요</h2>
+                    
+                    <div class="pig-cards" style="grid-template-columns: repeat(4, 1fr);">
+                        <div class="pig-card active" onclick="selectPigType('breeding-male')">
+                            <div class="card-icon">🐗</div>
+                            <h3>종모돈<br>(아빠돼지)</h3>
+                            <p>번식용 수컷<br>씨돼지</p>
+                        </div>
+                        
+                        <div class="pig-card" onclick="selectPigType('breeding-female')">
+                            <div class="card-icon">🐷</div>
+                            <h3>종빈돈<br>(엄마돼지)</h3>
+                            <p>번식용 암컷<br>씨돼지</p>
+                        </div>
+                        
+                        <div class="pig-card" onclick="selectPigType('piglet')">
+                            <div class="card-icon">🐽</div>
+                            <h3>자돈<br>(포유자돈,이유자돈)</h3>
+                            <p>최대 30kg<br>새끼돼지</p>
+                        </div>
+
+                        <div class="pig-card" onclick="selectPigType('fattening')">
+                            <div class="card-icon">🐖</div>
+                            <h3>비육돈/육성돈</h3>
+                            <p>31kg~110kg<br>출하용 돼지</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pig-content">
+                    <!-- 종모돈 내용 -->
+                    <div id="breeding-male-content" class="pig-type-content active">
+                        <div class="livestock-info" style="grid-template-columns: 1fr;">
+                            <div class="info-card">
+                                <h3>종모돈 특징</h3>
+                                <ul>
+                                    <li><strong>정의:</strong> 웅돈, 씨 수컷돼지</li>
+                                    <li><strong>가치:</strong> 암컷가액의 120% 적용</li>
+                                    <li>번식용으로 사육되는 우수한 혈통의 돼지</li>
+                                    <li>높은 생산성과 유전적 우수성 보유</li>
+                                    <li>씨돼지로서의 가치 인정</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 종빈돈 내용 -->
+                    <div id="breeding-female-content" class="pig-type-content">
+                        <div class="livestock-info" style="grid-template-columns: 1fr;">
+                            <div class="info-card">
+                                <h3>종빈돈 보험가액산정</h3>
+                                <div style="margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
+                                    <p style="margin-bottom: 10px; font-weight: bold;">종빈돈의 보험가액 산정 기준</p>
+                                    <p style="line-height: 1.6;">
+                                        종빈돈의 보험가액은 재해보험사업자가 정하는 전국 도매시장 비육돈 평균지육단가(탕박)에 의하여 아래 표의 비육돈 지육단가 범위에 해당하는 종빈돈 가격으로 한다. <strong>다만, 임신, 분만 및 포유 등 종빈돈으로서 기능을 하지 않는 경우에는 비육돈의 산출방식과 같이 계산한다.</strong>
+                                    </p>
+                                </div>
+                                <p style="margin-bottom: 15px; font-weight: bold; text-align: center;">종빈돈 보험가액(비육돈 지육단가의 범위에 해당하는 종빈돈 가격)</p>
+                                <div style="overflow-x: auto;">
+                                    <table style="width: 100%; border-collapse: collapse; margin: 15px 0; text-align: center;">
+                                        <tr style="background-color: #f8f9fa;">
+                                            <th style="border: 1px solid #ddd; padding: 8px;">비육돈 지육단가<br>(원/kg)</th>
+                                            <th style="border: 1px solid #ddd; padding: 8px;">종빈돈 가격<br>(원/두당)</th>
+                                            <th style="border: 1px solid #ddd; padding: 8px;">비육돈 지육단가<br>(원/kg)</th>
+                                            <th style="border: 1px solid #ddd; padding: 8px;">종빈돈 가격<br>(원/두당)</th>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">1,949 이하</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">350,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">3,650 ~ 3,749</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">530,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">1,950 ~ 2,049</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">360,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">3,750 ~ 3,849</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">540,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">2,050 ~ 2,149</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">370,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">3,850 ~ 3,949</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">550,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">2,150 ~ 2,249</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">380,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">3,950 ~ 4,049</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">560,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">2,250 ~ 2,349</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">390,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">4,050 ~ 4,149</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">570,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">2,350 ~ 2,449</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">400,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">4,150 ~ 4,249</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">580,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">2,450 ~ 2,549</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">410,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">4,250 ~ 4,349</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">590,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">2,550 ~ 2,649</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">420,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">4,350 ~ 4,449</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">600,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">2,650 ~ 2,749</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">430,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">4,450 ~ 4,549</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">610,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">2,750 ~ 2,849</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">440,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">4,550 ~ 4,649</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">620,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">2,850 ~ 2,949</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">450,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">4,650 ~ 4,749</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">630,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">2,950 ~ 3,049</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">460,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">4,750 ~ 4,849</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">640,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">3,050 ~ 3,149</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">470,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">4,850 ~ 4,949</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">650,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">3,150 ~ 3,249</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">480,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">4,950 ~ 5,049</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">660,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">3,250 ~ 3,349</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">490,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">5,050 ~ 5,149</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">670,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">3,350 ~ 3,449</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">500,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">5,150 ~ 5,249</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">680,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">3,450 ~ 3,549</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">510,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">5,250 ~ 5,349</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">690,000</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">3,550 ~ 3,649</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">520,000</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">5,350 이상</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">700,000</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 자돈 내용 -->
+                    <div id="piglet-content" class="pig-type-content">
+                        <div class="livestock-info" style="grid-template-columns: 1fr;">
+                            <div class="info-card">
+                                <h3>자돈 세부 분류</h3>
+                                <ul>
+                                    <li><strong>포유자돈:</strong> 출산후 4주차까지</li>
+                                    <li><strong>이유자돈:</strong> 약 4주차 ~ 8주차</li>
+                                    <li>협정가액적용</li>
+                                    <li>최대 30kg</li>
+                                    
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 비육돈/육성돈 내용 -->
+                    <div id="fattening-content" class="pig-type-content">
+                        <div class="livestock-info" style="grid-template-columns: 1fr;">
+                            <div class="info-card">
+                                <h3>비육돈, 육성돈 및 후보돈의 보험가액</h3>
+                                <div style="margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
+                                    <p style="margin-bottom: 15px;">보험가액은 다음과 같이 산출한다.</p>
+                                    <ul style="list-style-type: none; padding-left: 0;">
+                                        <li style="margin-bottom: 10px;">
+                                            <strong>대상범위(적용체중)</strong>: 육성돈(31kg초과~110kg 미만(출하 대기 규격돈 포함)까지 10kg 단위구간의 중간 생체중량)
+                                        </li>
+                                        <li style="margin-bottom: 10px;">
+                                            <strong>110kg 비육돈 수취가격</strong> = 사고 당일 포함 직전 5영업일 평균돈육대표가격(전체, 탕박) × 110kg × 지급(육)율(76.8%)
+                                        </li>
+                                        <li style="margin-bottom: 10px;">
+                                            <strong>보험가액</strong> = 자돈가격(30kg 기준) + (적용체중 - 30kg) × [110kg 비육돈 수취가격 - 자돈가격(30kg 기준)] / 80
+                                        </li>
+                                        <li>
+                                            위의 돈육대표가격은 축산물품질평가원에서 고시하는 가격(원/kg) 적용
+                                        </li>
+                                    </ul>
+                                </div>
+                                
+                                <p style="margin-bottom: 15px; font-weight: bold; text-align: center;">단위구간별 적용체중</p>
+                                <div style="overflow-x: auto;">
+                                    <table style="width: 100%; border-collapse: collapse; margin: 15px 0; text-align: center;">
+                                        <tr style="background-color: #f8f9fa;">
+                                            <th style="border: 1px solid #ddd; padding: 8px;">단위구간<br>(kg)</th>
+                                            <th style="border: 1px solid #ddd; padding: 8px;">31~40</th>
+                                            <th style="border: 1px solid #ddd; padding: 8px;">41~50</th>
+                                            <th style="border: 1px solid #ddd; padding: 8px;">51~60</th>
+                                            <th style="border: 1px solid #ddd; padding: 8px;">61~70</th>
+                                            <th style="border: 1px solid #ddd; padding: 8px;">71~80</th>
+                                            <th style="border: 1px solid #ddd; padding: 8px;">81~90</th>
+                                            <th style="border: 1px solid #ddd; padding: 8px;">91~100</th>
+                                            <th style="border: 1px solid #ddd; padding: 8px;">101~110</th>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">적용체중<br>(kg)</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">35</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">45</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">55</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">65</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">75</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">85</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">95</td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">105</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div style="margin-top: 15px; font-size: 0.9em; color: #666;">
+                                    <p>주1) 1. 단위구간은 사고돼지의 실측중량(kg/1두) 임</p>
+                                    <p></p>주2) 2. 110kg 이상은 110kg으로 한다.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 닭 탭 컨텐츠 -->
+            <div id="chicken" class="tab-content">
+                <div class="chicken-selection">
+                    <h2 style="text-align: center; margin-bottom: 30px; color: #343a40;">닭 종류를 선택해주세요</h2>
+                    
+                    <div class="chicken-cards">
+                        <div class="chicken-card active" onclick="selectChickenType('breeding')">
+                            <div class="card-icon">🐓</div>
+                            <h3>종계</h3>
+                            <p>번식용 닭<br>병아리, 성계, 노계</p>
+                        </div>
+                        
+                        <div class="chicken-card" onclick="selectChickenType('laying')">
+                            <div class="card-icon">🥚</div>
+                            <h3>산란계</h3>
+                            <p>알을 낳는 닭<br>산란계, 산란도계</p>
+                        </div>
+                        
+                        <div class="chicken-card" onclick="selectChickenType('broiler')">
+                            <div class="card-icon">🐔</div>
+                            <h3>육계</h3>
+                            <p>고기용 닭<br>병아리, 육계</p>
+                        </div>
+
+                        <div class="chicken-card" onclick="selectChickenType('native')">
+                            <div class="card-icon">🐤</div>
+                            <h3>토종닭</h3>
+                            <p>토종 품종<br>병아리, 토종닭</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chicken-content">
+                    <!-- 종계 내용 -->
+                    <div id="breeding-chicken-content" class="chicken-type-content active">
+                        <div class="livestock-info" style="grid-template-columns: 1fr;">
+                            <div class="info-card">
+                                <h3>종계 보험가액산정</h3>
+                                <ul>
+                                    <li><strong>병아리:</strong> 생후 2주 이하 - 사고 당일 포함 직전 5영업일의 육용 종계 병아리 평균가격</li>
+                                    <li><strong>성계:</strong>
+                                        <ul>
+                                            <li>생후 3~6주: 31주령 가격 × 30%</li>
+                                            <li>생후 7~30주: 31주령 가격 × (100%-((31주령-사고주령) × 2.8%))</li>
+                                            <li>생후 31주: 회사와 계약당시 협정한 가액</li>
+                                            <li>생후 32~61주: 31주령 가격 × (100%-((사고주령-31주령) ×2.6%))</li>
+                                            <li>생후 62주~64주: 31주령 가격 × 20%</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>노계:</strong> 생후 65주 이상 - 사고 당일 포함 직전 5영업일의 종계 성계육 평균가격</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 산란계 내용 -->
+                    <div id="laying-chicken-content" class="chicken-type-content">
+                        <div class="livestock-info" style="grid-template-columns: 1fr;">
+                            <div class="info-card">
+                                <h3>산란계 보험가액산정</h3>
+                                <ul>
+                                    <li><strong>병아리:</strong>
+                                        <ul>
+                                            <li>생후 1주 이하: 사고 당일 포함 직전 5영업일의 산란실용계 병아리 평균가격</li>
+                                            <li>생후 2~9주: 산란실용계병아리가격 + ((산란중추가격 - 산란실용계병아리가격) / 9) × (사고주령 - 1주령)</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>중추:</strong>
+                                        <ul>
+                                            <li>생후 10~15주: 사고 당일 포함 직전 5영업일의 산란중추 평균가격</li>
+                                            <li>생후 16~19주: 산란중추가격 + ((20주 산란계가격-산란중추가격) / 5) × (사고주령 - 15주령)</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>산란계:</strong> 생후 20~70주: (550일 - 사고일령) × 70% × (사고 당일 포함 직전 5영업일의 계란 1개 평균가격 - 계란 1개의 생산비)</li>
+                                    <li><strong>산란노계:</strong> 생후 71주 이상: 사고 당일 포함 직전 5영업일의 산란성계육 평균가격</li>
+                                </ul>
+                                <p style="font-size: 0.9em; color: #666; margin-top: 15px;">
+                                    ※ 계란 1개 평균가격은 중량규격(왕란/특란/대란)이하별 사고 당일 포함 직전 5영업일 평균가격을 중량규격별 비중으로 가중평균한 가격을 말한다.<br>
+                                    ※ 중량규격별 비중: 왕란(2.0%), 특란(53.5%), 대란 이하(44.5%)<br>
+                                    ※ 산란계의 계란 1개의 생산비는 77원으로 한다.<br>
+                                    ※ 사고 당일 포함 직전 5영업일의 계란 1개 평균가격에서 계란 1개의 생산비를 공제한 결과가 10원 이하인 경우 10원으로 한다.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 육계 내용 -->
+                    <div id="broiler-chicken-content" class="chicken-type-content">
+                        <div class="livestock-info" style="grid-template-columns: 1fr;">
+                            <div class="info-card">
+                                <h3>육계 보험가액산정</h3>
+                                <ul>
+                                    <li><strong>병아리:</strong> 생후 1주 미만 - 사고 당일 포함 직전 5영업일의 육용실용계 병아리 평균가격</li>
+                                    <li><strong>육계:</strong> 생후 1주 이상 - 사고 당일 포함 직전 5영업일의 육용실용계 평균가격(원/kg)에 발육표준표 해당 일령 사고 육계의 중량을 곱한 금액</li>
+                                </ul>
+                                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                                    <p style="font-size: 0.9em; color: #333; margin-bottom: 8px;">※ 주요 참고사항</p>
+                                    <ul style="list-style-type: disc; padding-left: 20px; margin: 0;">
+                                        <li>보험가액(중량 ✕ kg당 시세)이 병아리 시세보다 낮은 경우는 병아리 시세로 보상한다.</li>
+                                        <li style="color: #007bff; font-weight: bold;">육계 일령이 40일령을 초과한 경우에는 2.3kg으로 인정한다.</li>
+                                        <li>토종닭 일령이 84일령을 초과한 경우에는 2.8kg으로 인정한다.</li>
+                                        <li>오리 일령이 45일령을 초과한 경우에는 3.5kg으로 인정한다.</li>
+                                        <li>삼계(蔘鷄)의 경우는 육계 중량의 70%를 적용한다.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 토종닭 내용 -->
+                    <div id="native-chicken-content" class="chicken-type-content">
+                        <div class="livestock-info" style="grid-template-columns: 1fr;">
+                            <div class="info-card">
+                                <h3>토종닭 보험가액산정</h3>
+                                <ul>
+                                    <li><strong>병아리:</strong> 생후 1주 미만 - 사고 당일 포함 직전 5영업일의 토종닭 병아리 평균가격</li>
+                                    <li><strong>토종닭:</strong> 생후 1주 이상 - 사고 당일 포함 직전 5영업일의 토종닭 평균가격(원/kg)에 발육표준표 해당 일령 사고 토종닭의 중량을 곱한 금액</li>
+                                </ul>
+                                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                                    <p style="font-size: 0.9em; color: #333; margin-bottom: 8px;">※ 주요 참고사항</p>
+                                    <ul style="list-style-type: disc; padding-left: 20px; margin: 0;">
+                                        <li>보험가액(중량 ✕ kg당 시세)이 병아리 시세보다 낮은 경우는 병아리 시세로 보상한다.</li>
+                                        <li>육계 일령이 40일령을 초과한 경우에는 2.3kg으로 인정한다.</li>
+                                        <li style="color: #007bff; font-weight: bold;">토종닭 일령이 84일령을 초과한 경우에는 2.8kg으로 인정한다.</li>
+                                        <li>오리 일령이 45일령을 초과한 경우에는 3.5kg으로 인정한다.</li>
+                                        <li>삼계(蔘鷄)의 경우는 육계 중량의 70%를 적용한다.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 오리 탭 컨텐츠 -->
+            <div id="duck" class="tab-content">
+                <div class="duck-selection">
+                    <h2 style="text-align: center; margin-bottom: 30px; color: #343a40;">오리 종류를 선택해주세요</h2>
+                    
+                    <div class="duck-cards">
+                        <div class="duck-card active" onclick="selectDuckType('regular')">
+                            <div class="card-icon">🦆</div>
+                            <h3>오리</h3>
+                            <p>일반 오리<br>(새끼오리 포함)</p>
+                        </div>
+
+                        <div class="duck-card" onclick="selectDuckType('breeding-duck')">
+                            <div class="card-icon">🦆</div>
+                            <h3>종오리</h3>
+                            <p>번식용 오리<br>연령별 차등 적용</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="duck-content">
+                    <!-- 일반오리 내용 -->
+                    <div id="regular-content" class="duck-type-content active">
+                        <div class="livestock-info" style="grid-template-columns: 1fr;">
+                            <div class="info-card">
+                                <h3>오리 보험가액산정</h3>
+                                <ul>
+                                    <li><strong>새끼오리:</strong> 생후 1주 미만 - 사고 당일 포함 직전 5영업일의 새끼오리 평균가격</li>
+                                    <li><strong>성체오리:</strong> 생후 1주 이상 - 사고 당일 포함 직전 5영업일의 생체오리 평균가격(원/kg)에 발육표준표 해당 일령 사고 오리의 중량을 곱한 금액</li>
+                                </ul>
+                                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                                    <p style="font-size: 0.9em; color: #333; margin-bottom: 8px;">※ 주요 참고사항</p>
+                                    <ul style="list-style-type: disc; padding-left: 20px; margin: 0;">
+                                        <li>보험가액(중량 ✕ kg당 시세)이 병아리 시세보다 낮은 경우는 병아리 시세로 보상한다.</li>
+                                        <li>육계 일령이 40일령을 초과한 경우에는 2.3kg으로 인정한다.</li>
+                                        <li>토종닭 일령이 84일령을 초과한 경우에는 2.8kg으로 인정한다.</li>
+                                        <li style="color: #007bff; font-weight: bold;">오리 일령이 45일령을 초과한 경우에는 3.5kg으로 인정한다.</li>
+                                        <li>삼계(蔘鷄)의 경우는 육계 중량의 70%를 적용한다.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 종오리 내용 -->
+                    <div id="breeding-duck-content" class="duck-type-content">
+                        <div class="livestock-info" style="grid-template-columns: 1fr;">
+                            <div class="info-card">
+                                <h3>종오리 보험가액산정</h3>
+                                <ul>
+                                    <li><strong>생후 27주 이하:</strong> 28주령 가격 × (1 - ((28주령 - 사고주령) × 2.9%))</li>
+                                    <li><strong>생후 28주:</strong> 회사와 계약 당시 협정한 가액</li>
+                                    <li><strong>생후 29주~77주:</strong> 28주령 가격 × (1 - ((사고주령-28주령) × 1.9%))</li>
+                                    <li><strong>생후 78주 이상:</strong> 28주령 가격 × (1 - ((78주령-28주령) × 1.9%))</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 특약 탭 컨텐츠 -->
+            <div id="special" class="tab-content">
+                <div class="insurance-details">
+                    <div class="livestock-info" style="grid-template-columns: 1fr;">
+                        <div class="info-card">
+                            <h3>📋 특약 종류</h3>
+                            <div class="special-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+                                <!-- 소 도체결함보장특약 카드 -->
+                                <div class="special-card" style="background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                                    <h4 style="color: #333; margin-bottom: 15px; display: flex; align-items: center;">
+                                        <span style="margin-right: 10px;">🥩</span>
+                                        소 도체결함보장특약
+                                    </h4>
+                                    <div class="card-content">
+                                        <div style="margin-bottom: 15px;">
+                                            <strong>도체결함의 정의:</strong>
+                                            <ul style="list-style-type: none; padding-left: 15px;">
+                                                <li>- 근출혈(ㅎ)</li>
+                                                <li>- 수종(ㅈ)</li>
+                                                <li>- 근염(ㅇ)</li>
+                                                <li>- 외상(ㅅ)</li>
+                                                <li>- 근육제거(ㄱ)</li>
+                                                <li>- 기타(ㅌ)</li>
+                                            </ul>
+                                        </div>
+                                        <div style="margin-bottom: 15px;">
+                                            <strong>손해액 산정:</strong>
+                                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                                                <p style="font-weight: bold; color: #2c3e50; margin-bottom: 10px;">보험가액 = 정상도체의 해당등급(사고소 등급)의 1두가격</p>
+                                                <p style="font-weight: bold; color: #2c3e50;">손해액 = 정상도체의 해당등급(사고소 등급) - 사고소의 1두 경락가격</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <strong>자기부담금:</strong>
+                                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                                                <p style="font-weight: bold; color: #2c3e50;">계산된 금액의 20%</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 돼지질병위험보장특약 카드 -->
+                                <div class="special-card" style="background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                                    <h4 style="color: #333; margin-bottom: 15px; display: flex; align-items: center;">
+                                        <span style="margin-right: 10px;">🌡️</span>
+                                        돼지질병위험보장특약
+                                    </h4>
+                                    <div class="card-content">
+                                        <div style="margin-bottom: 15px;">
+                                            <strong>보상하는 질병:</strong>
+                                            <ul style="list-style-type: none; padding-left: 15px;">
+                                                <li>- 전염성위장염(TGE)</li>
+                                                <li>- 돼지유행성설사병(PED)</li>
+                                                <li>- 로타바이러스감염증</li>
+                                            </ul>
+                                        </div>
+                                        <div style="margin-bottom: 15px;">
+                                            <strong>손해액 산정:</strong>
+                                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                                                <p style="color: #2c3e50; margin-bottom: 10px;">보상할 손해액은 보통약관 돼지 부문의 손해액 산정 방법에 따라 산정하며 이 특약의 보험가액은 아래와 같이 산정한다.</p>
+                                                <p style="font-weight: bold; color: #2c3e50;">보험가액 = 모돈두수 x 2.5 x 자돈가격</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <strong>자기부담금:</strong>
+                                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                                                <p style="font-weight: bold; color: #2c3e50;">MAX( 계산된금액× 자기부담비율,  200만)</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 돼지 축산휴지위험보장특약 카드 -->
+                                <div class="special-card" style="background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                                    <h4 style="color: #333; margin-bottom: 15px; display: flex; align-items: center;">
+                                        <span style="margin-right: 10px;">⏸️</span>
+                                        돼지 축산휴지위험보장특약
+                                    </h4>
+                                    <div class="card-content">
+                                        <div style="margin-bottom: 15px;">
+                                            <strong>축산휴지 손해:</strong>
+                                            <p style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0; line-height: 1.6;"> 보상위험에 의해 손해를 입은 결과 축산업이 전부 또는 일부 중단되어 발생한 사업이익과 보상위험에 의한 손해가 발생하지 않았을 경우 예상되는 사업이익의 차감금액을 말한다</p>
+                                        </div>
+                                        <div style="margin-bottom: 15px;">
+                                            <strong>손해액 산정:</strong>
+                                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                                                <p style="font-weight: bold; color: #2c3e50;">종빈돈 × 10 × 1두당 비육돈 평균가격 × 이익률</p>
+                                                <p style="font-size: 0.9em; color: #666; margin-top: 10px; border-top: 1px solid #ddd; padding-top: 10px;">※ 1두당 평균가격: 돼지의 보통계약 비육돈, 육성돈 및 후보돈의 보험가액 해당페이지에서 정한 비육돈 생체중량 100kg의 가격을 말한다.</p>
+                                                <div style="background: #f0f0f0; padding: 15px; margin-top: 10px; border-radius: 5px;">
+                                                    <p style="font-size: 0.9em; color: #333; margin-bottom: 10px;"><strong>이익률 산출방식:</strong></p>
+                                                    <div style="border: 1px solid #ddd; padding: 10px; text-align: center; background: white; margin: 10px 0;">
+                                                        <p style="margin: 0;">이익률 = <span style="display: inline-block; text-align: center;">
+                                                            <span style="border-bottom: 1px solid #000; padding: 0 5px;">1두당 비육돈(100kg 기준)의 평균가격 - 경영비</span><br>
+                                                            <span style="padding: 0 5px;">1두당 비육돈(100kg 기준)의 평균가격</span>
+                                                        </span></p>
+                                                    </div>
+                                                    <p style="font-size: 0.8em; color: #666; margin-top: 10px;">※ 단, 이 기간 중에 이익률이 16.5% 미만일 경우 이익률은 16.5%로 한다.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <strong>특이사항:</strong>
+                                            <p>자기부담금 미적용</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 손해평가개요 탭 컨텐츠 -->
+            <div id="overview" class="tab-content">
+                <div class="grid-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; padding: 20px;">
+                    <!-- 보험계약자 등의 의무 카드 -->
+                    <div class="selectable-card" onclick="toggleContent('duty-content')" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 15px; padding: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s ease; border-left: 5px solid #007bff;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <span style="font-size: 24px;">📚</span>
+                            <div>
+                                <h3 style="margin: 0; color: #007bff;">보험계약자 등의 의무</h3>
+                                <p style="color: #666; margin-top: 10px;">계약 전/후 알릴 의무, 통지의무, 손해방지의무 등</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 보험사기 카드 -->
+                    <div class="selectable-card" onclick="toggleContent('fraud-content')" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 15px; padding: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s ease; border-left: 5px solid #dc3545;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <span style="font-size: 24px;">🚫</span>
+                            <div>
+                                <h3 style="margin: 0; color: #dc3545;">보험사기</h3>
+                                <p style="color: #666; margin-top: 10px;">보험사기의 정의, 성립요건, 조치사항 등</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 보험계약자 등의 의무 상세 내용 -->
+                <div id="duty-content" class="content-detail" style="display: none; margin-top: 20px; background: white; border-radius: 15px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div class="insurance-details">
+                        <div class="livestock-info" style="grid-template-columns: 1fr;">
+                            <div class="info-card">
+                                <h3>📚 보험계약자 등의 의무</h3>
+                                
+                                <!-- 계약 전 알릴 의무 -->
+                                <div style="margin-bottom: 25px;">
+                                    <h4 style="color: #007bff; margin-bottom: 15px;">가. 계약 전 알릴 의무</h4>
+                                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                        <p style="margin-bottom: 10px;">(계약자), (피보험자) 또는 (이들의 대리인)은 보험계약을 청약할 때 청약서에서 질문한 사항에 대하여 알고 있는 사실을 반드시 사실대로 알려야 할 의무이다.</p>
+                                        <p><strong style="color: #dc3545;">보험계약자 또는 피보험자가 고의 또는 중대한 과실로 계약 전 알릴 의무를 이행하지 않은 경우</strong>에 보험자는 그 사실을 안 날로부터 1월 내에, 계약을 체결한 날로부터 3년 내에 한하여 계약을 해지할 수 있다. 그러나 보험자가 계약 당시에 그 사실을 알았거나 중대한 과실로 인하여 알지 못한 때에는 그러하지 아니하다.</p>
+                                        
+                                        <div style="border: 2px solid #007bff; padding: 15px; border-radius: 8px; margin-top: 15px; background-color: #f8f9fa;">
+                                            <h4 style="color: #007bff; margin-bottom: 10px; font-weight: bold;">고지의무위반(계약전 알릴의무 위반) - 1,3,해</h4>
+                                            <ol style="margin-bottom: 10px; padding-left: 20px;">
+                                                <li>그 사실을 안날로 부터 1개월 이내</li>
+                                                <li>계약 체결일로 부터 3년 이내</li>
+                                            </ol>
+                                            <p style="margin: 0; font-weight: bold; color: #dc3545;">1과 2를 모두 만족하는 경우 해지가능</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 계약 후 알릴 의무 -->
+                                <div style="margin-bottom: 25px;">
+                                    <h4 style="color: #007bff; margin-bottom: 15px;">나. 계약 후 알릴 의무</h4>
+                                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                        <p style="margin-bottom: 15px;">가축재해보험에서는 계약을 맺은 후 보험의 목적에 다음과 같은 사실이 생긴 경우에 계약자나 피보험자는 지체 없이 서면으로 보험자에게 알려야 할 의무로 재해보험사업자는 <u style="text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: #007bff;"><strong style="color: #495057;">계약 후 알릴 의무의 통지를 받은 때에 위험이 감소된 경우에는 그 차액보험료를 돌려주고, 위험이 증가된 경우에는 통지를 받은 날부터 1개월 이내에 보험료의 증액을 청구하거나 계약을 해지할 수 있으며 보험계약자 또는 피보험자가 보험기간 중에 계약 후 알릴 의무를 위반한 경우에 보험자는 <strong style="color: #dc3545;">(그 사실을 안 날로부터 1월 내에 계약을 해지)</strong>할 수 있다.</strong></u></p>
+                                        
+                                        <p style="margin-bottom: 10px;">가축재해보험에서는 모든 부문 축종에 적용되는 계약 후 알릴 의무와 특정 부분의 가축에게만 추가로 적용되는 계약 후 알릴 의무가 있다.</p>
+
+                                        <div style="border: 2px solid #007bff; padding: 20px; border-radius: 12px; margin: 20px 0; background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                            <table style="width: 100%; border-collapse: separate; border-spacing: 0; border: none;">
+                                                <tr>
+                                                    <td style="width: 30%; padding: 15px; text-align: center; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px 0 0 0;">
+                                                        <span style="color: #0056b3; font-weight: 600; font-size: 1.1em;">(위험의감소 ↓)</span>
+                                                    </td>
+                                                    <td style="padding: 15px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-left: none; border-radius: 0 8px 0 0;">
+                                                        <span style="color: #495057; font-weight: 500;">차액보험료의 환급</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="width: 30%; padding: 15px; text-align: center; background-color: #f8f9fa; border: 1px solid #e9ecef; border-top: none; border-radius: 0 0 0 8px;">
+                                                        <span style="color: #dc3545; font-weight: 600; font-size: 1.1em;">(위험의증가 ↑)</span>
+                                                    </td>
+                                                    <td style="padding: 15px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-left: none; border-top: none; border-radius: 0 0 8px 0;">
+                                                        <div style="color: #495057; font-weight: 500;">
+                                                            <div style="margin-bottom: 8px;">보험료의 증액</div>
+                                                            <div>계약을 해지(1개월내)</div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        
+                                        <div style="margin-left: 15px;">
+                                            <h5 style="color: #28a745; margin: 15px 0;">1) 계약 후 알릴 의무</h5>
+                                            <ul style="list-style-type: none; padding-left: 15px;">
+                                                <li>가) 이 계약에서 보장하는 위험과 동일한 위험을 보장하는 계약을 다른 보험자와 체결하고자 할 때 또는 이와 같은 계약이 있음을 알았을 때</li>
+                                                <li><u style="text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: #dc3545;"><strong style="color: #495057;">나) 양도할 때</strong></u></li>
+                                                <li>다) 보험목적 또는 보험목적 수용장소로부터 반경 <strong style="color: #dc3545;">(10km)</strong> 이내 지역에서 가축전염병 발생(전염병으로 의심되는 질환 포함) 또는 원인 모를 질병으로 집단폐사가 이루어진 경우</li>
+                                                <li>라) 보험의 목적 또는 보험의 목적을 수용하는 건물의 구조를 변경, 개축, 증축하거나 계속하여 <strong style="color: #dc3545;">(15일)</strong> 이상 수선할 때</li>
+                                                <li>마) 보험의 목적 또는 보험의 목적을 수용하는 건물의 용도를 변경함으로써 위험이 변경되는 경우</li>
+                                                <li>바) 보험의 목적 또는 보험의 목적이 들어있는 건물을 계속하여 <strong style="color: #dc3545;">(30일)</strong> 이상 비워두거나 휴업하는 경우</li>
+                                                <li><u style="text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: #dc3545;"><strong style="color: #495057;">사) 다른 곳으로 옮길 때</strong></u></li>
+                                                <li><u style="text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: #dc3545;"><strong style="color: #495057;">아) 도난 또는 행방불명 되었을 때</strong></u></li>
+                                                <li>자) 의외의 재난이나 위험에 의해 구할 수 없는 상태에 빠졌을 때</li>
+                                                <li><u style="text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: #dc3545;"><strong style="color: #495057;">차) 개체 수가 증가되거나 감소되었을 때</strong></u></li>
+                                                <li><u style="text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: #dc3545;"><strong style="color: #495057;">카) 위험이 뚜렷이 변경되거나 변경되었음을 알았을 때</strong></u></li>
+                                            </ul>
+
+                                            <div style="margin: 20px 0; padding: 20px; background: #fff; border-radius: 12px; border: 2px solid #28a745; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                                <div style="display: flex; align-items: start; gap: 15px;">
+                                                    <div style="flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                                        <span style="font-size: 24px;">📝</span>
+                                                        <span style="font-size: 24px;">⭐</span>
+                                                        <span style="font-size: 24px;">✨</span>
+                                                    </div>
+                                                    <div>
+                                                        <h6 style="color: #28a745; margin-bottom: 10px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                                                            <span>시험 준비 TIP</span>
+                                                            <span style="color: #dc3545; font-size: 0.9em;">[기출문제]</span>
+                                                        </h6>
+                                                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 12px;">
+                                                            <p style="color: #495057; margin-bottom: 10px; font-weight: 500;">계약후 알릴의무는 <strong style="color: #dc3545;">기출문제</strong> 입니다.</p>
+                                                            <p style="color: #495057; line-height: 1.6;">다음에 시험에 나온다면 "<strong style="color: #28a745;">가)~카) 중 5개 이상 쓰시오</strong>" 라는 문제가 나올수 있으므로 가장 짧은것 5개는 암기하는것이 좋을 듯 합니다.</p>
+                                                        </div>
+                                                        <div style="background: #fff3cd; padding: 12px; border-radius: 6px; border-left: 4px solid #ffc107;">
+                                                            <p style="color: #856404; margin: 0; font-size: 0.9em;">
+                                                                <span style="font-weight: bold;">💡 암기 팁:</span> 
+                                                                짧은 항목 위주로 암기하면 시험에서 시간을 절약할 수 있습니다!
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <h5 style="color: #28a745; margin: 15px 0;">2) 부문별 계약 후 알릴 의무</h5>
+                                            <div style="margin-left: 15px;">
+                                                <h6 style="margin: 10px 0;">가) 소 부문</h6>
+                                                <ul style="list-style-type: none; padding-left: 15px;">
+                                                    <li>(1) 개체 표시가 떨어지거나 오손, 훼손, 멸실되어 새로운 개체 표시를 부착하는 경우</li>
+                                                    <li>(2) 거세, 제각, 단미 등 외과적 수술을 할 경우</li>
+                                                    <li>(3) 품평회, 경진회, 박람회, 소싸움대회, 소등 타기 대회 등에 출전할 경우</li>
+                                                </ul>
+
+                                                <h6 style="margin: 10px 0;">나) 말 부문</h6>
+                                                <ul style="list-style-type: none; padding-left: 15px;">
+                                                    <li>(1) 외과적 수술을 하여야 할 경우</li>
+                                                    <li>(2) 5일 이내에 폐사가 예상되는 큰 부상을 입을 경우</li>
+                                                    <li>(3) 거세, 단미(斷尾) 등 외과적 수술을 할 경우</li>
+                                                    <li>(4) 품평회, 경진회, 박람회 등에 출전할 경우</li>
+                                                </ul>
+
+                                                <h6 style="margin: 10px 0;">다) 종모우 부문</h6>
+                                                <ul style="list-style-type: none; padding-left: 15px;">
+                                                    <li>(1) 개체 표시가 떨어지거나 오손, 훼손, 멸실된 경우</li>
+                                                    <li>(2) 거세, 제각, 단미 등 외과적 수술을 할 경우</li>
+                                                    <li>(3) 품평회, 경진회, 박람회, 소싸움대회, 소등 타기 대회 등에 출전할 경우</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 보험사기 상세 내용 -->
+                <div id="fraud-content" class="content-detail" style="display: none; margin-top: 20px; background: white; border-radius: 15px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div class="insurance-details">
+                        <div class="livestock-info" style="grid-template-columns: 1fr;">
+                            <div class="info-card">
+                                <h3>🚫 보험사기</h3>
+                                
+                                <!-- 보험사기 정의 -->
+                                <div style="margin-bottom: 25px;">
+                                    <h4 style="color: #dc3545; margin-bottom: 15px;">가. 보험사기의 정의</h4>
+                                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                        <p>보험사기란 보험계약자, 피보험자, 보험금을 취득할 자 또는 이들의 대리인이 보험금을 부정하게 취득할 목적으로 보험사고를 가장하거나 보험사고를 발생시키는 행위를 말한다.</p>
+                                    </div>
+                                </div>
+
+                                <!-- 보험사기의 성립요건 -->
+                                <div style="margin-bottom: 25px;">
+                                    <h4 style="color: #dc3545; margin-bottom: 15px;">나. 성립요건</h4>
+                                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                                        <ol style="list-style-type: decimal; padding-left: 20px;">
+                                            <li style="margin-bottom: 20px;">
+                                                <strong style="color: #495057;">계약자 또는 보험 대상자에게 고의가 있을 것</strong>
+                                                <p style="margin-top: 8px; color: #666; padding-left: 10px; border-left: 3px solid #dee2e6;">계약자 또는 보험 대상자의 고의에 보험자를 기망하여 착오에 빠뜨리는 고의와 그 착오로 인해 승낙의 의사표시를 하게 하는 것 등</p>
+                                            </li>
+                                            <li style="margin-bottom: 20px;">
+                                                <strong style="color: #495057;">기망행위가 있을 것</strong>
+                                                <p style="margin-top: 8px; color: #666; padding-left: 10px; border-left: 3px solid #dee2e6;">기망이란 허위진술을 하거나 진실을 은폐하는 것, 통상 진실이 아닌 사실을 진실이라 표시하는 행위를 말하거나 알려야 할 경우에 침묵, 진실을 은폐하는 것도 기망행위에 해당</p>
+                                            </li>
+                                            <li style="margin-bottom: 20px;">
+                                                <strong style="color: #495057;">상대방인 보험자가 착오에 빠지는 것</strong>
+                                                <p style="margin-top: 8px; color: #666; padding-left: 10px; border-left: 3px solid #dee2e6;">상대방인 보험자가 착오에 빠지는 것에 대하여 보험자의 과실 유무는 문제되지 않음</p>
+                                            </li>
+                                            <li style="margin-bottom: 20px;">
+                                                <strong style="color: #495057;">상대방인 보험자가 착오에 빠져 그 결과 승낙의 의사표시를 한 것</strong>
+                                                <p style="margin-top: 8px; color: #666; padding-left: 10px; border-left: 3px solid #dee2e6;">착오에 빠진 것과 그로 인해 승낙 의사표시 한 것과 인과관계 필요</p>
+                                            </li>
+                                            <li style="margin-bottom: 0;">
+                                                <strong style="color: #495057;">사기가 위법일 것</strong>
+                                                <p style="margin-top: 8px; color: #666; padding-left: 10px; border-left: 3px solid #dee2e6;">사회생활상 신의성실의 원칙에 반하지 않는 정도의 기망 행위는 보통 위법성이 없다고 해석</p>
+                                            </li>
+                                        </ol>
+                                    </div>
+                                </div>
+
+                                <!-- 보험사기 행위자 -->
+                                <div style="margin-bottom: 25px;">
+                                    <h4 style="color: #dc3545; margin-bottom: 15px;">다. 보험사기 행위자</h4>
+                                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                        <ul style="list-style-type: none; padding-left: 0;">
+                                            <li>1) 보험계약자</li>
+                                            <li>2) 피보험자</li>
+                                            <li>3) 보험금을 취득할 자</li>
+                                            <li>4) 이들의 대리인</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- 보험사기의 증명 -->
+                                <div style="margin-bottom: 25px;">
+                                    <h4 style="color: #dc3545; margin-bottom: 15px;">라. 보험사기의 증명</h4>
+                                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                        <p>보험사기의 증명은 보험자가 하여야 하며, 보험자가 보험사기를 증명하지 못한 경우에는 보험금을 지급하여야 한다.</p>
+                                    </div>
+                                </div>
+
+                                <!-- 보험사기에 대한 조치 -->
+                                <div style="margin-bottom: 25px;">
+                                    <h4 style="color: #dc3545; margin-bottom: 15px;">마. 보험사기에 대한 조치</h4>
+                                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                        <p style="margin-bottom: 15px;">보험사기가 있는 경우에는 다음과 같은 조치를 할 수 있다.</p>
+                                        <ol style="padding-left: 20px;">
+                                            <li style="margin-bottom: 10px;">보험금 지급 거절</li>
+                                                                                   
+                                            <li style="margin-bottom: 10px;">보험계약 취소</li>
+                                           
+                                            <li>형사고발 (10년 이하의 징역 또는 5천만원 이하의 벌금)</li>
+                                        </ol>
+                                        <div style="margin-top: 15px; padding: 15px; background-color: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                                            <p style="margin: 0; color: #856404;">
+                                                <strong>중요:</strong> 보험사기로 인한 계약 취소는 보장개시일로부터 5년 이내에 가능합니다.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 보험계약자 등의 의무 상세 내용 -->
+                <div id="duty-content" class="content-detail" style="display: none; margin-top: 20px; background: white; border-radius: 15px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div class="insurance-details">
+                        <div class="livestock-info" style="grid-template-columns: 1fr;">
+                            <div class="info-card">
+                                <h3>📚 보험계약자 등의 의무</h3>
+                                
+                                <!-- 계약 전 알릴 의무 -->
+                                <div style="margin-bottom: 25px;">
+                                    <h4 style="color: #007bff; margin-bottom: 15px;">가. 계약 전 알릴 의무</h4>
+                                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                        <p style="margin-bottom: 10px;">(계약자), (피보험자) 또는 (이들의 대리인)은 보험계약을 청약할 때 청약서에서 질문한 사항에 대하여 알고 있는 사실을 반드시 사실대로 알려야 할 의무이다.</p>
+                                        <p><strong style="color: #dc3545;">보험계약자 또는 피보험자가 고의 또는 중대한 과실로 계약 전 알릴 의무를 이행하지 않은 경우</strong>에 보험자는 그 사실을 안 날로부터 1월 내에, 계약을 체결한 날로부터 3년 내에 한하여 계약을 해지할 수 있다. 그러나 보험자가 계약 당시에 그 사실을 알았거나 중대한 과실로 인하여 알지 못한 때에는 그러하지 아니하다.</p>
+                                        
+                                        <div style="border: 2px solid #007bff; padding: 15px; border-radius: 8px; margin-top: 15px; background-color: #f8f9fa;">
+                                            <h4 style="color: #007bff; margin-bottom: 10px; font-weight: bold;">고지의무위반(계약전 알릴의무 위반) - 1,3,해</h4>
+                                            <ol style="margin-bottom: 10px; padding-left: 20px;">
+                                                <li>그 사실을 안날로 부터 1개월 이내</li>
+                                                <li>계약 체결일로 부터 3년 이내</li>
+                                            </ol>
+                                            <p style="margin: 0; font-weight: bold; color: #dc3545;">1과 2를 모두 만족하는 경우 해지가능</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 계약 후 알릴 의무 -->
+                                <div style="margin-bottom: 25px;">
+                                    <h4 style="color: #007bff; margin-bottom: 15px;">나. 계약 후 알릴 의무</h4>
+                                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                        <p style="margin-bottom: 15px;">가축재해보험에서는 계약을 맺은 후 보험의 목적에 다음과 같은 사실이 생긴 경우에 계약자나 피보험자는 지체 없이 서면으로 보험자에게 알려야 할 의무로 재해보험사업자는 <u style="text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: #007bff;"><strong style="color: #495057;">계약 후 알릴 의무의 통지를 받은 때에 위험이 감소된 경우에는 그 차액보험료를 돌려주고, 위험이 증가된 경우에는 통지를 받은 날부터 1개월 이내에 보험료의 증액을 청구하거나 계약을 해지할 수 있으며 보험계약자 또는 피보험자가 보험기간 중에 계약 후 알릴 의무를 위반한 경우에 보험자는 <strong style="color: #dc3545;">(그 사실을 안 날로부터 1월 내에 계약을 해지)</strong>할 수 있다.</strong></u></p>
+                                        
+                                        <p style="margin-bottom: 10px;">가축재해보험에서는 모든 부문 축종에 적용되는 계약 후 알릴 의무와 특정 부분의 가축에게만 추가로 적용되는 계약 후 알릴 의무가 있다.</p>
+
+                                        <div style="border: 2px solid #007bff; padding: 20px; border-radius: 12px; margin: 20px 0; background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                            <table style="width: 100%; border-collapse: separate; border-spacing: 0; border: none;">
+                                                <tr>
+                                                    <td style="width: 30%; padding: 15px; text-align: center; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px 0 0 0;">
+                                                        <span style="color: #0056b3; font-weight: 600; font-size: 1.1em;">(위험의감소 ↓)</span>
+                                                    </td>
+                                                    <td style="padding: 15px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-left: none; border-radius: 0 8px 0 0;">
+                                                        <span style="color: #495057; font-weight: 500;">차액보험료의 환급</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="width: 30%; padding: 15px; text-align: center; background-color: #f8f9fa; border: 1px solid #e9ecef; border-top: none; border-radius: 0 0 0 8px;">
+                                                        <span style="color: #dc3545; font-weight: 600; font-size: 1.1em;">(위험의증가 ↑)</span>
+                                                    </td>
+                                                    <td style="padding: 15px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-left: none; border-top: none; border-radius: 0 0 8px 0;">
+                                                        <div style="color: #495057; font-weight: 500;">
+                                                            <div style="margin-bottom: 8px;">보험료의 증액</div>
+                                                            <div>계약을 해지(1개월내)</div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        
+                                        <div style="margin-left: 15px;">
+                                            <h5 style="color: #28a745; margin: 15px 0;">1) 계약 후 알릴 의무</h5>
+                                            <ul style="list-style-type: none; padding-left: 15px;">
+                                                <li>가) 이 계약에서 보장하는 위험과 동일한 위험을 보장하는 계약을 다른 보험자와 체결하고자 할 때 또는 이와 같은 계약이 있음을 알았을 때</li>
+                                                <li><u style="text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: #dc3545;"><strong style="color: #495057;">나) 양도할 때</strong></u></li>
+                                                <li>다) 보험목적 또는 보험목적 수용장소로부터 반경 <strong style="color: #dc3545;">(10km)</strong> 이내 지역에서 가축전염병 발생(전염병으로 의심되는 질환 포함) 또는 원인 모를 질병으로 집단폐사가 이루어진 경우</li>
+                                                <li>라) 보험의 목적 또는 보험의 목적을 수용하는 건물의 구조를 변경, 개축, 증축하거나 계속하여 <strong style="color: #dc3545;">(15일)</strong> 이상 수선할 때</li>
+                                                <li>마) 보험의 목적 또는 보험의 목적을 수용하는 건물의 용도를 변경함으로써 위험이 변경되는 경우</li>
+                                                <li>바) 보험의 목적 또는 보험의 목적이 들어있는 건물을 계속하여 <strong style="color: #dc3545;">(30일)</strong> 이상 비워두거나 휴업하는 경우</li>
+                                                <li><u style="text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: #dc3545;"><strong style="color: #495057;">사) 다른 곳으로 옮길 때</strong></u></li>
+                                                <li><u style="text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: #dc3545;"><strong style="color: #495057;">아) 도난 또는 행방불명 되었을 때</strong></u></li>
+                                                <li>자) 의외의 재난이나 위험에 의해 구할 수 없는 상태에 빠졌을 때</li>
+                                                <li><u style="text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: #dc3545;"><strong style="color: #495057;">차) 개체 수가 증가되거나 감소되었을 때</strong></u></li>
+                                                <li><u style="text-decoration: underline; text-decoration-thickness: 2px; text-decoration-color: #dc3545;"><strong style="color: #495057;">카) 위험이 뚜렷이 변경되거나 변경되었음을 알았을 때</strong></u></li>
+                                            </ul>
+
+                                            <div style="margin: 20px 0; padding: 20px; background: #fff; border-radius: 12px; border: 2px solid #28a745; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                                <div style="display: flex; align-items: start; gap: 15px;">
+                                                    <div style="flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                                        <span style="font-size: 24px;">📝</span>
+                                                        <span style="font-size: 24px;">⭐</span>
+                                                        <span style="font-size: 24px;">✨</span>
+                                                    </div>
+                                                    <div>
+                                                        <h6 style="color: #28a745; margin-bottom: 10px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                                                            <span>시험 준비 TIP</span>
+                                                            <span style="color: #dc3545; font-size: 0.9em;">[기출문제]</span>
+                                                        </h6>
+                                                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 12px;">
+                                                            <p style="color: #495057; margin-bottom: 10px; font-weight: 500;">계약후 알릴의무는 <strong style="color: #dc3545;">기출문제</strong> 입니다.</p>
+                                                            <p style="color: #495057; line-height: 1.6;">다음에 시험에 나온다면 "<strong style="color: #28a745;">가)~카) 중 5개 이상 쓰시오</strong>" 라는 문제가 나올수 있으므로 가장 짧은것 5개는 암기하는것이 좋을 듯 합니다.</p>
+                                                        </div>
+                                                        <div style="background: #fff3cd; padding: 12px; border-radius: 6px; border-left: 4px solid #ffc107;">
+                                                            <p style="color: #856404; margin: 0; font-size: 0.9em;">
+                                                                <span style="font-weight: bold;">💡 암기 팁:</span> 
+                                                                짧은 항목 위주로 암기하면 시험에서 시간을 절약할 수 있습니다!
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <h5 style="color: #28a745; margin: 15px 0;">2) 부문별 계약 후 알릴 의무</h5>
+                                            <div style="margin-left: 15px;">
+                                                <h6 style="margin: 10px 0;">가) 소 부문</h6>
+                                                <ul style="list-style-type: none; padding-left: 15px;">
+                                                    <li>(1) 개체 표시가 떨어지거나 오손, 훼손, 멸실되어 새로운 개체 표시를 부착하는 경우</li>
+                                                    <li>(2) 거세, 제각, 단미 등 외과적 수술을 할 경우</li>
+                                                    <li>(3) 품평회, 경진회, 박람회, 소싸움대회, 소등 타기 대회 등에 출전할 경우</li>
+                                                </ul>
+
+                                                <h6 style="margin: 10px 0;">나) 말 부문</h6>
+                                                <ul style="list-style-type: none; padding-left: 15px;">
+                                                    <li>(1) 외과적 수술을 하여야 할 경우</li>
+                                                    <li>(2) 5일 이내에 폐사가 예상되는 큰 부상을 입을 경우</li>
+                                                    <li>(3) 거세, 단미(斷尾) 등 외과적 수술을 할 경우</li>
+                                                    <li>(4) 품평회, 경진회, 박람회 등에 출전할 경우</li>
+                                                </ul>
+
+                                                <h6 style="margin: 10px 0;">다) 종모우 부문</h6>
+                                                <ul style="list-style-type: none; padding-left: 15px;">
+                                                    <li>(1) 개체 표시가 떨어지거나 오손, 훼손, 멸실된 경우</li>
+                                                    <li>(2) 거세, 제각, 단미 등 외과적 수술을 할 경우</li>
+                                                    <li>(3) 품평회, 경진회, 박람회, 소싸움대회, 소등 타기 대회 등에 출전할 경우</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 보험사기 상세 내용 -->
+                    <div id="fraud-content" class="content-detail" style="display: none; margin-top: 20px; background: white; border-radius: 15px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <div class="insurance-details">
+                            <div class="livestock-info" style="grid-template-columns: 1fr;">
+                                <div class="info-card">
+                                    <h3>🚫 보험사기</h3>
+                                    
+                                    <!-- 보험사기 정의 -->
+                                    <div style="margin-bottom: 25px;">
+                                        <h4 style="color: #dc3545; margin-bottom: 15px;">가. 보험사기의 정의</h4>
+                                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                            <p>보험사기란 보험계약자, 피보험자, 보험금을 취득할 자 또는 이들의 대리인이 보험금을 부정하게 취득할 목적으로 보험사고를 가장하거나 보험사고를 발생시키는 행위를 말한다.</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- 보험사기의 성립요건 -->
+                                    <div style="margin-bottom: 25px;">
+                                        <h4 style="color: #dc3545; margin-bottom: 15px;">나. 보험사기의 성립요건</h4>
+                                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                            <ol style="padding-left: 20px;">
+                                                <li>보험계약자, 피보험자, 보험금을 취득할 자 또는 이들의 대리인이 행위자일 것</li>
+                                                <li>보험금을 부정하게 취득할 목적이 있을 것</li>
+                                                <li>보험사고를 가장하거나 보험사고를 발생시키는 행위일 것</li>
+                                                <li>보험금을 부정하게 취득할 목적으로 보험사고를 가장하거나 보험사고를 발생시키는 행위일 것</li>
+                                                <li>보험금을 부정하게 취득할 목적으로 보험사고를 가장하거나 보험사고를 발생시키는 행위가 보험계약자, 피보험자, 보험금을 취득할 자 또는 이들의 대리인에 의하여 이루어질 것</li>
+                                            </ol>
+                                        </div>
+                                    </div>
+
+                                    <!-- 보험사기 행위자 -->
+                                    <div style="margin-bottom: 25px;">
+                                        <h4 style="color: #dc3545; margin-bottom: 15px;">다. 보험사기 행위자</h4>
+                                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                            <ul style="list-style-type: none; padding-left: 0;">
+                                                <li>1) 보험계약자</li>
+                                                <li>2) 피보험자</li>
+                                                <li>3) 보험금을 취득할 자</li>
+                                                <li>4) 이들의 대리인</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    <!-- 보험사기의 증명 -->
+                                    <div style="margin-bottom: 25px;">
+                                        <h4 style="color: #dc3545; margin-bottom: 15px;">라. 보험사기의 증명</h4>
+                                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                            <p>보험사기의 증명은 보험자가 하여야 하며, 보험자가 보험사기를 증명하지 못한 경우에는 보험금을 지급하여야 한다.</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- 보험사기에 대한 조치 -->
+                                    <div style="margin-bottom: 25px;">
+                                        <h4 style="color: #dc3545; margin-bottom: 15px;">마. 보험사기에 대한 조치</h4>
+                                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                            <p style="margin-bottom: 15px;">보험사기가 있는 경우에는 다음과 같은 조치를 할 수 있다.</p>
+                                            <ol style="padding-left: 20px;">
+                                                <li style="margin-bottom: 10px;">보험금 지급을 거절</li>
+                                                <li style="margin-bottom: 10px;"> 약관에 의거하여해당계약 취소</li>
+                                                <li>형사고발 (10년 이하의 징역 또는 5천만원 이하의 벌금)</li>
+                                            </ol>
+                                            <div style="margin-top: 15px; padding: 15px; background-color: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                                                <p style="margin: 0; color: #856404;">
+                                                    <strong>중요:</strong> 보험사기로 인한 계약 취소는 보장개시일로부터 5년 이내에 가능합니다.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수 선언
+        let currentTabIndex = 0;
+        const tabNames = ['cattle', 'pig', 'chicken', 'duck', 'special', 'overview'];
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        function openTab(evt, tabName) {
+            // 터치나 스크롤 중에는 이벤트 처리 건너뛰기
+            if (evt.type === 'touchend' && !evt.cancelable) {
+                return;
+            }
+            
+            // 모든 탭 컨텐츠 숨기기
+            const tabcontents = document.getElementsByClassName("tab-content");
+            Array.from(tabcontents).forEach(content => content.classList.remove("active"));
+
+            // 모든 탭 버튼에서 active 클래스 제거
+            const tabs = document.getElementsByClassName("tab");
+            Array.from(tabs).forEach(tab => tab.classList.remove("active"));
+
+            // 선택된 탭 컨텐츠 보이기 및 탭 버튼 활성화
+            document.getElementById(tabName).classList.add("active");
+            if (evt.currentTarget) {
+                evt.currentTarget.classList.add("active");
+            }
+        }
+
+        // 터치 이벤트 핸들러
+        function handleTouchStart(e) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }
+
+        function handleTouchEnd(e) {
+            // 스크롤 중이거나 취소 불가능한 이벤트는 무시
+            if (!e.cancelable) {
+                return;
+            }
+
+            if (!touchStartX || !touchStartY) return;
+
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            
+            const diffX = touchStartX - touchEndX;
+            const diffY = touchStartY - touchEndY;
+            
+            // 수평 스와이프가 수직 스와이프보다 큰 경우에만 처리
+            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                e.preventDefault(); // 여기서만 preventDefault 호출
+                
+                if (diffX > 0 && currentTabIndex < tabNames.length - 1) {
+                    // 왼쪽으로 스와이프 - 다음 탭
+                    currentTabIndex++;
+                } else if (diffX < 0 && currentTabIndex > 0) {
+                    // 오른쪽으로 스와이프 - 이전 탭
+                    currentTabIndex--;
+                }
+                
+                // 해당 탭 클릭 이벤트 발생
+                const tabButtons = document.getElementsByClassName('tab');
+                if (tabButtons[currentTabIndex]) {
+                    const event = new Event('click');
+                    tabButtons[currentTabIndex].dispatchEvent(event);
+                }
+            }
+
+            // 터치 좌표 초기화
+            touchStartX = 0;
+            touchStartY = 0;
+        }
+
+        function addClickHandler(element, handler) {
+            // 클릭 이벤트
+            element.addEventListener('click', handler);
+            
+            // 터치 이벤트
+            element.addEventListener('touchend', (e) => {
+                // 스크롤 중이거나 취소 불가능한 이벤트는 무시
+                if (!e.cancelable) {
+                    return;
+                }
+                e.preventDefault();
+                handler.call(element, e);
+            });
+        }
+
+        // DOM이 로드된 후 이벤트 핸들러 설정
+        document.addEventListener('DOMContentLoaded', function() {
+            // 터치 이벤트 리스너 추가
+            document.addEventListener('touchstart', handleTouchStart, { passive: true });
+            document.addEventListener('touchend', handleTouchEnd);
+
+            // 탭 버튼에 이벤트 핸들러 추가
+            const tabButtons = document.getElementsByClassName('tab');
+            Array.from(tabButtons).forEach((button, index) => {
+                addClickHandler(button, function(e) {
+                    currentTabIndex = index;
+                    openTab(e, tabNames[index]);
+                });
+            });
+
+            // 카드 버튼들에 이벤트 핸들러 추가
+            const cardTypes = ['cattle', 'pig', 'chicken', 'duck'];
+            cardTypes.forEach(type => {
+                const cards = document.getElementsByClassName(`${type}-card`);
+                Array.from(cards).forEach(card => {
+                    const onclick = card.getAttribute('onclick');
+                    if (onclick) {
+                        const match = onclick.match(/'([^']+)'/);
+                        if (match) {
+                            const cardType = match[1];
+                            addClickHandler(card, function() {
+                                switch(type) {
+                                    case 'cattle': selectCattleType(cardType); break;
+                                    case 'pig': selectPigType(cardType); break;
+                                    case 'chicken': selectChickenType(cardType); break;
+                                    case 'duck': selectDuckType(cardType); break;
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+
+            // 아코디언 헤더에 이벤트 핸들러 추가
+            const accordionHeaders = document.getElementsByClassName('accordion-header');
+            Array.from(accordionHeaders).forEach(header => {
+                addClickHandler(header, function() {
+                    toggleAccordion(this);
+                });
+            });
+        });
+
+        // 동물 종류 선택 함수들
+        function selectCattleType(type) {
+            const cards = document.getElementsByClassName('cattle-card');
+            Array.from(cards).forEach(card => card.classList.remove('active'));
+            
+            const contents = document.getElementsByClassName('cattle-type-content');
+            Array.from(contents).forEach(content => content.classList.remove('active'));
+            
+            const selectedCard = document.querySelector(`.cattle-card[onclick*="${type}"]`);
+            if (selectedCard) selectedCard.classList.add('active');
+            
+            const selectedContent = document.getElementById(type + '-content');
+            if (selectedContent) selectedContent.classList.add('active');
+        }
+
+        function selectPigType(type) {
+            const cards = document.getElementsByClassName('pig-card');
+            Array.from(cards).forEach(card => card.classList.remove('active'));
+            
+            const contents = document.getElementsByClassName('pig-type-content');
+            Array.from(contents).forEach(content => content.classList.remove('active'));
+            
+            const selectedCard = document.querySelector(`.pig-card[onclick*="${type}"]`);
+            if (selectedCard) selectedCard.classList.add('active');
+            
+            const selectedContent = document.getElementById(type + '-content');
+            if (selectedContent) selectedContent.classList.add('active');
+        }
+
+        function selectChickenType(type) {
+            const cards = document.getElementsByClassName('chicken-card');
+            Array.from(cards).forEach(card => card.classList.remove('active'));
+            
+            const contents = document.getElementsByClassName('chicken-type-content');
+            Array.from(contents).forEach(content => content.classList.remove('active'));
+            
+            const selectedCard = document.querySelector(`.chicken-card[onclick*="${type}"]`);
+            if (selectedCard) selectedCard.classList.add('active');
+            
+            const selectedContent = document.getElementById(type + '-chicken-content');
+            if (selectedContent) selectedContent.classList.add('active');
+        }
+
+        function selectDuckType(type) {
+            const cards = document.getElementsByClassName('duck-card');
+            Array.from(cards).forEach(card => card.classList.remove('active'));
+            
+            const contents = document.getElementsByClassName('duck-type-content');
+            Array.from(contents).forEach(content => content.classList.remove('active'));
+            
+            const selectedCard = document.querySelector(`.duck-card[onclick*="${type}"]`);
+            if (selectedCard) selectedCard.classList.add('active');
+            
+            const selectedContent = document.getElementById(type + '-content');
+            if (selectedContent) selectedContent.classList.add('active');
+        }
+
+        // 아코디언 토글 함수
+        function toggleAccordion(element) {
+            // 현재 아코디언의 상태를 토글
+            const content = element.nextElementSibling;
+            const isActive = element.classList.contains('active');
+            
+            // 현재 섹션의 모든 아코디언을 찾음
+            const currentSection = element.closest('.tab-content');
+            const allHeaders = currentSection.querySelectorAll('.accordion-header');
+            const allContents = currentSection.querySelectorAll('.accordion-content');
+            
+            // 모든 아코디언을 닫음
+            allHeaders.forEach(header => header.classList.remove('active'));
+            allContents.forEach(content => {
+                content.classList.remove('active');
+                content.style.maxHeight = '0';
+                content.style.padding = '0';
+            });
+            
+            // 클릭된 아코디언이 이미 열려있지 않았다면 엶
+            if (!isActive) {
+                element.classList.add('active');
+                content.classList.add('active');
+                content.style.maxHeight = content.scrollHeight + 40 + 'px'; // padding 고려
+                content.style.padding = '20px';
+            }
+        }
+
+        function toggleContent(contentId) {
+            // 모든 카드의 선택 상태 제거
+            document.querySelectorAll('.selectable-card').forEach(card => {
+                card.style.border = 'none';
+                card.style.transform = 'none';
+            });
+
+            // 모든 내용 숨기기
+            document.querySelectorAll('.content-detail').forEach(content => {
+                content.style.display = 'none';
+            });
+
+            // 선택된 카드 스타일 적용
+            const selectedCard = document.querySelector(`.selectable-card[onclick="toggleContent('${contentId}')"]`);
+            if (selectedCard) {
+                selectedCard.style.border = '2px solid #007bff';
+                selectedCard.style.transform = 'translateY(-5px)';
+            }
+
+            // 선택된 내용 표시
+            const selectedContent = document.getElementById(contentId);
+            if (selectedContent) {
+                selectedContent.style.display = 'block';
+                selectedContent.style.animation = 'fadeIn 0.5s ease-in-out';
+            }
+        }
+
+        // 페이지 로드 시 첫 번째 카드 자동 선택
+        window.addEventListener('load', function() {
+            toggleContent('duty-content');
+        });
+    </script>
+    <script>
+        // 서비스 워커 등록
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

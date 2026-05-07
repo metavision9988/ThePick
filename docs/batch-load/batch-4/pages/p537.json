@@ -1,0 +1,35 @@
+{
+  "book_page": 537,
+  "pdf_page": 544,
+  "chapter": null,
+  "section": "제4절 밭작물 손해평가 및 보험금 산정",
+  "chapter_source": "missing",
+  "section_source": "forward_fill",
+  "text": "농작물재해보험 및 가축재해보험 손해평가의 이론과 실무 - 2권\n- 537 -",
+  "text_lines": 2,
+  "tables": [],
+  "images": [
+    {
+      "idx": 0,
+      "bbox": [64.525, 87.74399999999991, 532.034, 285.88699999999994],
+      "width": 468,
+      "height": 198,
+      "png_path": "images/p537-im00.png"
+    },
+    {
+      "idx": 1,
+      "bbox": [64.525, 288.764, 532.034, 486.907],
+      "width": 468,
+      "height": 198,
+      "png_path": "images/p537-im01.png"
+    },
+    {
+      "idx": 2,
+      "bbox": [64.525, 489.784, 532.034, 687.927],
+      "width": 468,
+      "height": 198,
+      "png_path": "images/p537-im02.png"
+    }
+  ],
+  "fractions": []
+}

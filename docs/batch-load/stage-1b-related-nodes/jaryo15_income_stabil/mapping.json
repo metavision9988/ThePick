@@ -1,0 +1,125 @@
+{
+  "schema_version": "1.1",
+  "stage": "1B",
+  "source": {
+    "file": "docs/manual/2차시험정답지/자료번호15_수입안정보장_11년간기출.pdf",
+    "size_bytes": 457083,
+    "pages": 16,
+    "raw_chars": 16939,
+    "title": "농업수입안정보장 11년간 기출문제",
+    "publisher": "손평에듀 + 한종찬교수 제공",
+    "content_type": "exam_explanation_collection",
+    "exam_type_target": "2nd",
+    "rounds_partial_detected": [2, 3, 4, 7, 8, 10, 11],
+    "fruits_covered_count": 6
+  },
+  "extracted_at": "2026-05-06",
+  "stage_session": "048",
+  "source_textbook_year": 2025,
+  "source_partial_2026_revision_reflected": true,
+  "version_drift_warning": "partial",
+  "version_drift_rationale": "★ 본 자료 = 한종찬교수(BATCH-R1 저자) 제공 — 26년 일부 개정 명시 반영 ('26년 과거수입형 개정 반영' 본문 명시). 단 전체 38건 갱신 중 일부만 흡수 가능 → 추가 검증 의무. 자료5/9 학원 풀이와 차이",
+  "potential_revision_drift": [
+    {
+      "revision_id": "REV-2026-37-INCOME-DETAIL",
+      "drift_severity": "low",
+      "concern": "★ 본 자료가 농업수입안정 표본수+보험금+옥수수 손해액 26년 개정 일부 반영 — 자체 흡수 부분 + 일부 잔여"
+    },
+    {
+      "revision_id": "REV-2026-LOSS-DEGREE",
+      "drift_severity": "n/a",
+      "concern": "수입안정 영역 직접 영향 X"
+    }
+  ],
+  "domain_areas": ["BATCH-5", "BATCH-R2"],
+  "core_concept_nodes": [
+    {
+      "id": "INV-078",
+      "name": "포도 농업수입감소 4단계 조사",
+      "batch_id": "BATCH-5",
+      "relevance": "primary"
+    },
+    {
+      "id": "CROP-090",
+      "name": "포도 (농업수입감소)",
+      "batch_id": "BATCH-5",
+      "relevance": "primary"
+    }
+  ],
+  "crop_nodes": [
+    {
+      "label": "마늘",
+      "node_ids": ["CROP-034"],
+      "batch_id": "BATCH-4/5",
+      "occurrence_count": 13,
+      "note": "★ 최다 — 농업수입안정 영역"
+    },
+    {
+      "label": "옥수수",
+      "node_ids": ["CROP-029"],
+      "batch_id": "BATCH-4/5",
+      "occurrence_count": 10,
+      "note": "★ 26년 손해액 산식 신설 (REV-2026-37)"
+    },
+    { "label": "콩", "node_ids": ["CROP-031"], "batch_id": "BATCH-4/5", "occurrence_count": 7 },
+    {
+      "label": "포도",
+      "node_ids": ["CROP-005", "CROP-090"],
+      "batch_id": "BATCH-2/5",
+      "occurrence_count": 6
+    },
+    {
+      "label": "밀",
+      "node_ids": ["CROP-025"],
+      "batch_id": "BATCH-3",
+      "occurrence_count": 1,
+      "note": "★ Session 049 정제 — TD-S48-3 해소 (CROP-025 BATCH-3 논작물). 보리 CROP-026 + 귀리 CROP-027도 동일 BATCH-3 영역 매핑 가능 (자료15 본문 추가 빈도 시)"
+    },
+    { "label": "양파", "node_ids": ["CROP-033"], "batch_id": "BATCH-4/5", "occurrence_count": 1 }
+  ],
+  "exam_question_links": [
+    {
+      "question_id": "Q-2025-11-2ND-017",
+      "year": 2025,
+      "round": 11,
+      "exam_type": "2nd",
+      "subject": "2과목 (손해평가)",
+      "relevance": "primary",
+      "rationale": "★ 농업수입안정 옥수수 — 본 자료 옥수수 10 빈도 + 26년 산식 직접 매핑"
+    }
+  ],
+  "exam_question_search": {
+    "1st_exam_matches": 0,
+    "2nd_exam_matches": 1,
+    "total": 1,
+    "note": "1차 525 키워드 매칭 0건 — 농업수입안정은 2차 손해평가 영역 한정"
+  },
+  "★_critical_finding_★": {
+    "title": "★ 본 자료 = 26년 부분 개정 반영 + 한종찬교수 BATCH-R1 저자 동일",
+    "rationale": "자료5/9 학원 풀이는 25년 기반, 자료15는 한종찬교수 제공 + '26년 과거수입형 개정 반영' 명시. 26년 정합도 自高. INSERT 자산 활용 시 status 영역 재검토 의무 (자료5/9 = draft / 자료15 = active 가능)",
+    "deferred_to": "8 자료 일괄 plan 작성 시 자료별 status 분류 의무"
+  },
+  "td_carry_over": [],
+  "td_resolved_session_049": [
+    {
+      "id": "TD-S48-3",
+      "resolution": "CROP-025 밀 (BATCH-3 논작물) wrangler d1 production 검증 영속. 인접 후보: CROP-026 보리, CROP-027 귀리 (동일 BATCH-3, 자료 추가 매핑 시 활용)"
+    }
+  ],
+  "decisions_applied": {
+    "D-S1B-1": "A",
+    "D-S1B-2": "키워드 매칭만",
+    "D-S1B-3": "현 schema",
+    "D-S1B-4": "8 자료 일괄",
+    "D-S1B-5": "primary/secondary",
+    "D-S1B-6": "다음 자료 11번 인삼+해가림"
+  },
+  "summary": {
+    "core_nodes_count": 2,
+    "crop_nodes_count": 6,
+    "crop_id_total_count": 6,
+    "exam_question_links": 1,
+    "potential_drifts": 2,
+    "verdict": "본 자료 = 한종찬교수 + 26년 부분 반영 (자료5/9와 차이). 영역 BATCH-5 농업수입감소 + BATCH-R2 §10 정합. 5번 자료와 INSERT 자산 status 분류 차이 가능"
+  }
+}
