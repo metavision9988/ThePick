@@ -8,6 +8,7 @@ import { createProgressRoutes } from './progress/routes.js';
 import { purgeOldRateLimits } from './scheduled/rate-limit-gc.js';
 import { createTelemetryRoutes } from './telemetry/routes.js';
 import { createVectorizeRoutes, type VectorizeRouteBindings } from './vectorize/routes.js';
+import { createUserSearchRoutes } from './search/routes.js';
 import { createWebhookRoutes } from './webhooks/payment.js';
 
 /**
@@ -98,6 +99,9 @@ app.use(
   '/api/admin/vectorize/*',
   cors({ ...buildCorsOptions(), allowHeaders: ['Content-Type', 'X-Admin-Token'] }),
 );
+// Phase 2A Step 3 (Session 058) — public user search route (인증 0, MVP).
+// rate-limit 별도 step (P3-m1 carry-over). user_session 인증 별도 step.
+app.use('/api/search', cors(buildCorsOptions()));
 
 // L1 Edge Cache 헤더 자동 주입 (ADR-008 §8) — 4-Pass C-3 반영
 // **첫 번째** 미들웨어로 등록: 어떤 경로에서 어떤 이유로 early-return 되어도
@@ -131,6 +135,7 @@ app.route('/api/progress', createProgressRoutes());
 app.route('/api/telemetry', createTelemetryRoutes());
 app.route('/api/webhooks', createWebhookRoutes());
 app.route('/api/admin/vectorize', createVectorizeRoutes());
+app.route('/api/search', createUserSearchRoutes());
 
 app.get('/', (c) => {
   return c.json({

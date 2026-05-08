@@ -80,6 +80,15 @@ type = "ratelimit"
 namespace_id = "1003"
 simple = { limit = 300, period = 60 }
 
+# Phase 2A Step 3 (Session 058) — Pass 3 ADVOCATE C1 흡수
+# 60 req/60s: 정상 학습자 (분당 1초당 1 query) 충분, abuse (Workers AI bge-m3 비용 폭증) 저지.
+# /api/search public route 보호 — 인증 0 + rate-limit 으로 1차 방어선.
+[[unsafe.bindings]]
+name = "SEARCH_RATE_LIMITER_IP"
+type = "ratelimit"
+namespace_id = "1004"
+simple = { limit = 60, period = 60 }
+
 # ============================================================
 # Vectorize (ADR-004 v2 / Session 056) — bge-m3 1024d cosine
 # dev: miniflare local emulation (실제 인덱스 미접근). production 인덱스명 일치 (.env.example).
@@ -130,6 +139,13 @@ type = "ratelimit"
 namespace_id = "2003"
 simple = { limit = 300, period = 60 }
 
+# Phase 2A Step 3 (Session 058) — /api/search rate-limit (Pass 3 ADVOCATE C1 흡수)
+[[env.staging.unsafe.bindings]]
+name = "SEARCH_RATE_LIMITER_IP"
+type = "ratelimit"
+namespace_id = "2004"
+simple = { limit = 60, period = 60 }
+
 # Vectorize staging — 격리 인덱스 (DA-C3 정합, staging 자동화 PR 데이터가 production 미오염)
 [[env.staging.vectorize]]
 binding = "VECTORIZE"
@@ -176,6 +192,13 @@ name = "WEBHOOK_RATE_LIMITER_IP"
 type = "ratelimit"
 namespace_id = "3003"
 simple = { limit = 300, period = 60 }
+
+# Phase 2A Step 3 (Session 058) — /api/search rate-limit (Pass 3 ADVOCATE C1 흡수)
+[[env.production.unsafe.bindings]]
+name = "SEARCH_RATE_LIMITER_IP"
+type = "ratelimit"
+namespace_id = "3004"
+simple = { limit = 60, period = 60 }
 
 # Vectorize production — 운영 인덱스 (.env.example VECTORIZE_INDEX 정합)
 [[env.production.vectorize]]
