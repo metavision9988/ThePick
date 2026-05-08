@@ -265,6 +265,196 @@ describe('/api/search route', () => {
   });
 
   // ============================================================
+  // Pass 3 M1 PII log sanitize (Session 059)
+  // ============================================================
+  describe('Pass 3 M1 PII log sanitize', () => {
+    it('console.error 에 query 평문 비로깅 (length + hash 만)', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const failingEnv: UserSearchRouteBindings = {
+        ...env,
+        VECTORIZE: {
+          upsert: vi.fn(),
+          query: vi.fn(async () => {
+            throw new Error('persistent failure');
+          }),
+        } as unknown as UserSearchRouteBindings['VECTORIZE'],
+        ENVIRONMENT: 'production',
+      };
+      const sensitiveQuery = '내 사회보장번호 999-88-7777 관련 질문';
+      await postSearch(
+        { examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: sensitiveQuery },
+        failingEnv,
+      );
+      expect(errorSpy).toHaveBeenCalled();
+      const allLogs = errorSpy.mock.calls.map((c) => String(c[0])).join('\n');
+      expect(allLogs).not.toContain('999-88-7777');
+      expect(allLogs).not.toContain('사회보장번호');
+      expect(allLogs).not.toContain(sensitiveQuery);
+      // 구조화 로그에 length/hash 포함
+      expect(allLogs).toMatch(/queryLength/);
+      expect(allLogs).toMatch(/queryHash/);
+      errorSpy.mockRestore();
+    });
+
+    it('canonical logger JSON 구조: message + service + phase + examId + queryLength + queryHash', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const failingEnv: UserSearchRouteBindings = {
+        ...env,
+        VECTORIZE: {
+          upsert: vi.fn(),
+          query: vi.fn(async () => {
+            throw new Error('boom');
+          }),
+        } as unknown as UserSearchRouteBindings['VECTORIZE'],
+        ENVIRONMENT: 'production',
+      };
+      await postSearch(
+        { examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: '표본주수 산정 기준' },
+        failingEnv,
+      );
+      expect(errorSpy).toHaveBeenCalled();
+      const logged = errorSpy.mock.calls[0][0] as string;
+      const parsed = JSON.parse(logged) as Record<string, unknown>;
+      // canonical createLogger schema (Pass 4 MAJ-1 흡수, Session 059)
+      expect(parsed.level).toBe('error');
+      expect(parsed.message).toBe('user_search_failed');
+      expect(parsed.service).toBe('thepick-api');
+      expect(parsed.environment).toBe('production');
+      expect(typeof parsed.timestamp).toBe('string');
+      // search 모듈 context fields
+      expect(parsed.module).toBe('search/user');
+      expect(parsed.phase).toBe('query');
+      expect(parsed.examId).toBe(EXAM_IDS.SON_HAE_PYEONG_GA_SA);
+      expect(parsed.queryLength).toBe('표본주수 산정 기준'.length);
+      expect(parsed.queryHash).toMatch(/^[0-9a-f]{12}$/);
+      // err 인자 미전달 (Pass 1 MAJ-1 carry-over) — error 필드 부재 확인
+      expect(parsed.error).toBeUndefined();
+      errorSpy.mockRestore();
+    });
+
+    it('Pass 1 CRIT-1: digestQueryForLog throw 시 hash_unavailable fallback (PII 정책 보존)', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      // crypto.subtle.digest mock throw — globalThis 타입은 Workers/Node 런타임에서
+      // crypto 를 포함하나 TS lib 정의에 따라 미선언. 명시적 cast 로 안전 접근.
+      const subtle = (globalThis as unknown as { crypto: { subtle: SubtleCrypto } }).crypto.subtle;
+      const digestSpy = vi
+        .spyOn(subtle, 'digest')
+        .mockRejectedValue(new Error('webcrypto unavailable'));
+      const failingEnv: UserSearchRouteBindings = {
+        ...env,
+        VECTORIZE: {
+          upsert: vi.fn(),
+          query: vi.fn(async () => {
+            throw new Error('boom');
+          }),
+        } as unknown as UserSearchRouteBindings['VECTORIZE'],
+        ENVIRONMENT: 'production',
+      };
+      const sensitive = '민감 query 평문';
+      const res = await postSearch(
+        { examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: sensitive },
+        failingEnv,
+      );
+      // catch 블록이 throw 자체를 발산하지 않고 정상 500 응답
+      expect(res.status).toBe(500);
+      // 로그에 평문 미노출 (PII 정책 보존)
+      const allLogs = errorSpy.mock.calls.map((c) => String(c[0])).join('\n');
+      expect(allLogs).not.toContain(sensitive);
+      // hash 필드는 fallback 값
+      const logged = errorSpy.mock.calls[0][0] as string;
+      const parsed = JSON.parse(logged) as Record<string, unknown>;
+      expect(parsed.queryHash).toBe('hash_unavailable');
+      expect(parsed.queryLength).toBe(sensitive.length);
+      digestSpy.mockRestore();
+      errorSpy.mockRestore();
+    });
+
+    it('Pass 3 MAJ-A1: ENVIRONMENT="development" 매칭 → dev mode response (full err.message)', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const failingEnv: UserSearchRouteBindings = {
+        ...env,
+        VECTORIZE: {
+          upsert: vi.fn(),
+          query: vi.fn(async () => {
+            throw new Error('boom');
+          }),
+        } as unknown as UserSearchRouteBindings['VECTORIZE'],
+        ENVIRONMENT: 'development', // wrangler dev default
+      };
+      const res = await postSearch(
+        { examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: '질문' },
+        failingEnv,
+      );
+      expect(res.status).toBe(500);
+      const body = (await res.json()) as { message: string; phase: string };
+      expect(body.phase).toBe('query');
+      // dev mode: full err.message (phase + 시도 횟수). production 이면 phase 만.
+      expect(body.message).toContain('Vectorize.query 실패');
+      errorSpy.mockRestore();
+    });
+  });
+
+  // ============================================================
+  // Pass 3 M2 SQL 구조 마스킹 (Session 059)
+  // ============================================================
+  describe('Pass 3 M2 SQL 구조 마스킹', () => {
+    it('console.error 에 SQL 키워드 (LEFT JOIN / ROW_NUMBER / status_transitions) 미노출', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const failingEnv: UserSearchRouteBindings = {
+        ...env,
+        DB: {
+          prepare: () => ({
+            bind: () => ({
+              all: () =>
+                Promise.reject(
+                  new Error(
+                    'no such column near "LEFT JOIN status_transitions ROW_NUMBER OVER PARTITION"',
+                  ),
+                ),
+            }),
+          }),
+        } as unknown as D1Database,
+        VECTORIZE: makeMockVectorize([{ id: 'LAW-X', score: 0.9, metadata: {} }]),
+        ENVIRONMENT: 'production',
+      };
+      await postSearch({ examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: '질문' }, failingEnv);
+      expect(errorSpy).toHaveBeenCalled();
+      const allLogs = errorSpy.mock.calls.map((c) => String(c[0])).join('\n');
+      expect(allLogs).not.toMatch(/LEFT JOIN/i);
+      expect(allLogs).not.toMatch(/ROW_NUMBER/i);
+      expect(allLogs).not.toMatch(/status_transitions/i);
+      expect(allLogs).not.toMatch(/PARTITION/i);
+      errorSpy.mockRestore();
+    });
+
+    it('UserSearchError.message (filter phase) 에 SQL keyword 미포함', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const failingEnv: UserSearchRouteBindings = {
+        ...env,
+        DB: {
+          prepare: () => ({
+            bind: () => ({
+              all: () => Promise.reject(new Error('SELECT FROM WHERE LEFT JOIN syntax error')),
+            }),
+          }),
+        } as unknown as D1Database,
+        VECTORIZE: makeMockVectorize([{ id: 'LAW-X', score: 0.9, metadata: {} }]),
+        ENVIRONMENT: 'test', // dev: full err.message in response
+      };
+      const res = await postSearch(
+        { examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: '질문' },
+        failingEnv,
+      );
+      const body = (await res.json()) as { message: string; phase: string };
+      expect(body.phase).toBe('filter');
+      // dev 환경 response 에도 SQL keyword 미노출 (UserSearchError.message 자체가 sanitized)
+      expect(body.message).not.toMatch(/LEFT JOIN|SELECT|FROM|WHERE/i);
+      expect(body.message).toContain('Stage 2 graph filter 실패');
+      errorSpy.mockRestore();
+    });
+  });
+
+  // ============================================================
   // P3-M2 details masking (production 환경)
   // ============================================================
   describe('P3-M2 production 환경 details masking', () => {

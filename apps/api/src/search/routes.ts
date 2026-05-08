@@ -19,7 +19,13 @@
 
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { ErrorCode, assertValidExamId, type ExamId } from '@thepick/shared';
+import {
+  ErrorCode,
+  assertValidExamId,
+  createLogger,
+  type ExamId,
+  type LoggerEnvironment,
+} from '@thepick/shared';
 import {
   searchKnowledgeNodesForUser,
   UserSearchError,
@@ -31,6 +37,7 @@ import {
 } from './user-search.js';
 import type { AiBinding } from '../vectorize/upserter.js';
 import { getClientIp, type RateLimiter } from '../auth/rate-limit.js';
+import { digestQueryForLog } from './log-redact.js';
 
 export interface UserSearchRouteBindings {
   readonly DB: D1Database;
@@ -89,10 +96,43 @@ export function createUserSearchRoutes(): Hono<{ Bindings: UserSearchRouteBindin
       return c.json(result);
     } catch (err) {
       if (err instanceof UserSearchError) {
-        // P3-M2 정합 — production/staging 에서는 cause.message 마스킹
-        const isDev = c.env.ENVIRONMENT === 'dev' || c.env.ENVIRONMENT === 'test';
+        // Pass 3 M2 (Session 058) + Pass 3 MAJ-A1 (Session 059) — wrangler dev default
+        // ENVIRONMENT='development' 매칭 추가. 'dev'/'development'/'test' 모두 dev 모드.
+        const env = c.env.ENVIRONMENT ?? 'production';
+        const isDev = env === 'dev' || env === 'development' || env === 'test';
         const safeMessage = isDev ? err.message : err.phase;
-        console.error(`User search failed (phase=${err.phase}): ${err.message}`);
+
+        // Pass 1 CRIT-1 흡수 (Session 059) — digestQueryForLog throw 시에도 PII 정책 보존.
+        // crypto.subtle 미가용/throw 시 'hash_unavailable' fallback (query 평문 절대 미로깅).
+        let queryDigest: { length: number; hash: string };
+        try {
+          queryDigest = await digestQueryForLog(query);
+        } catch {
+          queryDigest = { length: query.length, hash: 'hash_unavailable' };
+        }
+
+        // Pass 4 MAJ-1 흡수 (Session 059) — canonical createLogger 도입 (schema 통일).
+        // err 인자 의도적 미전달: serializeError 가 cause chain 자동 surface 시
+        // underlying D1/Vectorize error.message (SQL keyword 등) 가 logRecord 에 노출
+        // → Pass 3 M2 (Session 058) 마스킹 정책과 충돌. causeName 만 surface.
+        // Pass 1 MAJ-1 (cause message 운영 디버깅 surface) 는 별도 step carry-over —
+        // canonical logger 의 serializeError 에 SQL keyword 패턴 redact 추가 후 진입.
+        const cause = (err as { cause?: unknown }).cause;
+        const causeName = cause instanceof Error ? cause.name : undefined;
+        const logger = createLogger({
+          service: 'thepick-api',
+          environment: env as LoggerEnvironment,
+        });
+        logger.error('user_search_failed', undefined, {
+          module: 'search/user',
+          phase: err.phase,
+          examId,
+          queryLength: queryDigest.length,
+          queryHash: queryDigest.hash,
+          // err.message 는 Pass 3 M2 (Session 058) 흡수 후 public-safe.
+          errMessage: err.message,
+          causeName,
+        });
         return c.json(
           {
             error: ErrorCode.AI_GENERATION_ERROR,

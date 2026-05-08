@@ -63,6 +63,11 @@
   - 그러나 현 schema (migrations 0001~0026) 에는 `valid_from` 컬럼이 `exam_questions` / `revision_changes` 에만 존재
   - 본 step은 `is_current_active=1` (Materialized Active View, ADR-013) 가 활성-버전 semantic 캡슐화 — SUPERSEDES 트리거 자동 비활성화
   - Year 2 별도 step: `knowledge_nodes` ADD COLUMN valid_from + revision_changes JOIN 도입 검토
+- **Pass 3 M1+M2 흡수 4-Pass 잔여 carry-over** (★ Session 059, `.claude/reviews/review-20260508-172630-session-059-pass3-m1m2-4pass.md`):
+  - **Pass 3 MAJ-A2** UserSearchResult.query 응답 body echo — Cloudflare Logs / CDN edge log / Service Worker 캐시 등 surface 에서 PII leak 재발 가능. 응답 body `query` 필드 제거 vs hash 대체 vs UX 보존 trade-off 결정 — 별도 ADR.
+  - **Pass 1 MAJ-1** UserSearchError cause.message 운영 디버깅 surface — canonical logger `serializeError` 에 SQL keyword pattern redact 추가 후 진입. 본 step 은 causeName 만 surface (causeMessage 미surface).
+  - **Pass 2 MAJ-1** Multi-Path Fallback step 에서 `c.set('queryDigest', ...)` Hono context 캐시 패턴 도입 (request 당 SHA-256 재계산 회피).
+  - **Pass 3 MIN-1** SHA-256 unsalted → 짧은 query (사번/학번 7~8자리 ID) dictionary attack 가능 → HMAC-with-pepper 검토 (Year 1 carry-over).
 
 ### 2.3 결정 영속 (진산 결정 갈림길 0건)
 

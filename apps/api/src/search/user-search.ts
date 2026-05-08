@@ -321,13 +321,10 @@ async function runVectorizeQueryWithTimeout(
       // timeout 은 retry 안 함 (의도적 빠른 실패)
       if (err instanceof UserSearchError && err.phase === 'timeout') throw err;
       // 마지막 시도 실패 시 throw
+      // Pass 3 M2 흡수 (Session 059) — public message 에 underlying err.message 비포함.
+      // 내부 디테일 (Vectorize 응답/SQL fragment) 은 cause 체인에 보존, dev 만 inspect.
       if (attempt === ADR_008_RETRY_COUNT) {
-        const msg = err instanceof Error ? err.message : String(err);
-        throw new UserSearchError(
-          `Vectorize.query 실패 (${attempt + 1} 시도): ${msg}`,
-          'query',
-          err,
-        );
+        throw new UserSearchError(`Vectorize.query 실패 (${attempt + 1} 시도)`, 'query', err);
       }
       // Pass 4 M1 흡수 — ADR-008 §2 retry "300ms 후" backoff
       await new Promise((resolve) => setTimeout(resolve, 300));
@@ -348,9 +345,9 @@ async function runWithRetry<T>(
       return await fn();
     } catch (err) {
       lastError = err;
+      // Pass 3 M2 흡수 (Session 059) — underlying err.message 미포함. cause 체인에 보존.
       if (attempt === ADR_008_RETRY_COUNT) {
-        const msg = err instanceof Error ? err.message : String(err);
-        throw new UserSearchError(`${phase} 실패 (${attempt + 1} 시도): ${msg}`, phase, err);
+        throw new UserSearchError(`${phase} 실패 (${attempt + 1} 시도)`, phase, err);
       }
     }
   }
@@ -408,7 +405,8 @@ async function fetchApprovedNodes(
       .all<ApprovedNodeRow>();
     return result.results ?? [];
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new UserSearchError(`Stage 2 D1 hard filter 실패: ${msg}`, 'filter', err);
+    // Pass 3 M2 흡수 (Session 059) — public message 에 SQL keyword (LEFT JOIN / ROW_NUMBER /
+    // status_transitions / WHERE 등) 비노출. 내부 디테일은 cause 에 보존, dev 만 inspect.
+    throw new UserSearchError('Stage 2 graph filter 실패', 'filter', err);
   }
 }
