@@ -55,9 +55,14 @@
 
 - **Multi-Path Fallback** (Rule 18 / ADR-015) — keyword search + topic cluster routing — 별도 step (Stage 2/3 PoC PASS 후)
 - **Concurrent Execution** (Rule 23 / ADR-019) — Vector + Keyword + Topic 동시 — 별도 step
-- **user_session 인증 + rate-limit** — auth 영역 별도 step (P3-m1 carry-over 정합)
+- **user_session 인증** — auth 영역 별도 step. 본 step은 rate-limit (60 req/60s/IP) 만 적용
 - **table\_\* status hard filter** (table\_\* 자체 status 부재 — 부모 table_structures.status JOIN 추론은 Stage 2 hard filter 시 별도 SQL 분기 필요)
-- **production smoke test** — admin G5.5 검수 후 일부 노드 'approved' 전환 후 별도 step
+- **production smoke test (approved 노드 응답)** — admin G5.5 검수 후 일부 노드 'approved' 전환 후 별도 step
+- **valid_from time-based effectivity 필터** (★ Pass 4 C1 재평가, Session 058):
+  - SEARCH_PIPELINE.md §4 line 62 + ADR-012 §Decision Stage 2 가 `knowledge_nodes.valid_from` 컬럼 존재 가정
+  - 그러나 현 schema (migrations 0001~0026) 에는 `valid_from` 컬럼이 `exam_questions` / `revision_changes` 에만 존재
+  - 본 step은 `is_current_active=1` (Materialized Active View, ADR-013) 가 활성-버전 semantic 캡슐화 — SUPERSEDES 트리거 자동 비활성화
+  - Year 2 별도 step: `knowledge_nodes` ADD COLUMN valid_from + revision_changes JOIN 도입 검토
 
 ### 2.3 결정 영속 (진산 결정 갈림길 0건)
 
