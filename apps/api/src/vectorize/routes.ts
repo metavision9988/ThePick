@@ -32,6 +32,12 @@ import {
   type NodeForVectorize,
   type VectorizeUpsertMetadata,
 } from './upserter.js';
+import {
+  fetchTableStructuresForVectorize,
+  fetchTableHeadersForVectorize,
+  fetchTableCellsForVectorize,
+} from './table-fetcher.js';
+import { parsePageRefToInt } from './page-ref.js';
 
 /**
  * 검색 시 추가로 의존하는 `query` 메서드 — upserter.ts 인터페이스 확장 (라우트 전용).
@@ -63,14 +69,28 @@ export interface VectorizeRouteBindings extends AdminTokenBindings {
   readonly AI: AiBinding;
 }
 
-const BootstrapBodySchema = z.object({
-  examId: z.string().min(1),
-  source: z.enum(['knowledge_nodes']).default('knowledge_nodes'),
-  limit: z.number().int().min(1).max(100).default(50),
-  offset: z.number().int().min(0).default(0),
-  status: z.string().min(1).optional(),
-  dryRun: z.boolean().default(false),
-});
+const BOOTSTRAP_SOURCES = [
+  'knowledge_nodes',
+  'table_structures',
+  'table_headers',
+  'table_cells',
+] as const;
+
+const BootstrapBodySchema = z
+  .object({
+    examId: z.string().min(1),
+    source: z.enum(BOOTSTRAP_SOURCES).default('knowledge_nodes'),
+    limit: z.number().int().min(1).max(100).default(50),
+    offset: z.number().int().min(0).default(0),
+    status: z.string().min(1).optional(),
+    dryRun: z.boolean().default(false),
+  })
+  // Pass 3 ADVOCATE M1 (Session 057) — table_* source 는 자체 status 컬럼 부재 (부모
+  // table_structures.status 추론). status 필터 결합 시 silent ignore 가 운영자 misconfig 위험.
+  .refine((data) => !(data.source !== 'knowledge_nodes' && data.status !== undefined), {
+    message: 'status filter is only supported with source=knowledge_nodes',
+    path: ['status'],
+  });
 
 const SearchBodySchema = z.object({
   examId: z.string().min(1),
@@ -115,36 +135,30 @@ export function createVectorizeRoutes(): Hono<{ Bindings: VectorizeRouteBindings
       return c.json({ error: ErrorCode.VALIDATION_ERROR, message: 'INVALID_EXAM_ID' }, 400);
     }
 
-    if (source !== 'knowledge_nodes') {
-      return c.json({ error: ErrorCode.VALIDATION_ERROR, message: 'UNSUPPORTED_SOURCE' }, 400);
-    }
-
-    const baseSelect =
-      'SELECT id, type, name, description, lv1_insurance, lv2_crop, page_ref, version_year, truth_weight, status FROM knowledge_nodes';
-    const sql =
-      typeof status === 'string'
-        ? `${baseSelect} WHERE status = ? ORDER BY id LIMIT ? OFFSET ?`
-        : `${baseSelect} ORDER BY id LIMIT ? OFFSET ?`;
-    const params: unknown[] =
-      typeof status === 'string' ? [status, limit, offset] : [limit, offset];
-
-    // Pass 1 SURGEON M1 흡수 — D1 SDK 는 실패 시 throw 로 보고 (D1Result.success literal true).
-    // 따라서 try-catch 로 silent skip 차단 — Hono onError 일반 500 우회 + cause 메시지 전파.
-    let d1Result: D1Result<KnowledgeNodeRow>;
+    let nodes: ReadonlyArray<NodeForVectorize>;
     try {
-      d1Result = await c.env.DB.prepare(sql)
-        .bind(...params)
-        .all<KnowledgeNodeRow>();
+      // Pass 1 SURGEON M1 흡수 (knowledge_nodes 정합) — table fetcher 도 D1 throw 시 동일 에러 처리.
+      // 본 step Step 2 추가 (table_structures/headers/cells dispatcher) — 각 fetcher 내부에서 prepare/bind/all
+      nodes = await fetchNodesBySource(c.env.DB, source, examId, { limit, offset }, status);
     } catch (cause) {
       const msg = cause instanceof Error ? cause.message : String(cause);
+      // Pass 3 ADVOCATE M2 (Session 057) — production/staging 에서 cause.message 는 SQL 구조
+      // (테이블/컬럼명/JOIN) 노출 위험. dev 환경만 details 노출, 그 외 SQLite 에러 코드만 surface.
+      const isDev = c.env.ENVIRONMENT === 'dev' || c.env.ENVIRONMENT === 'test';
+      const sqliteCodeMatch = msg.match(/SQLITE_[A-Z_]+/);
+      const safeDetails = isDev
+        ? msg
+        : sqliteCodeMatch !== null
+          ? sqliteCodeMatch[0]
+          : 'INTERNAL_ERROR';
+      console.error(`D1 query failed (source=${source}, examId=${rawExamId}): ${msg}`);
       return c.json(
-        { error: ErrorCode.INTERNAL_ERROR, message: 'D1_QUERY_FAILED', details: msg },
+        { error: ErrorCode.INTERNAL_ERROR, message: 'D1_QUERY_FAILED', details: safeDetails },
         500,
       );
     }
-    const rows = d1Result.results ?? [];
 
-    if (rows.length === 0) {
+    if (nodes.length === 0) {
       return c.json({
         fetched: 0,
         upserted: 0,
@@ -158,13 +172,12 @@ export function createVectorizeRoutes(): Hono<{ Bindings: VectorizeRouteBindings
 
     if (dryRun) {
       return c.json({
-        fetched: rows.length,
+        fetched: nodes.length,
+        source,
         dryRun: true,
-        sampleNodeIds: rows.slice(0, 5).map((r) => r.id),
+        sampleNodeIds: nodes.slice(0, 5).map((n) => n.id),
       });
     }
-
-    const nodes: NodeForVectorize[] = rows.map((r) => buildNodeForVectorize(r));
 
     let upsertResult;
     try {
@@ -184,7 +197,8 @@ export function createVectorizeRoutes(): Hono<{ Bindings: VectorizeRouteBindings
     }
 
     return c.json({
-      fetched: rows.length,
+      fetched: nodes.length,
+      source,
       ...upsertResult,
       sampleNodeIds: nodes.slice(0, 5).map((n) => n.id),
     });
@@ -271,6 +285,64 @@ export function createVectorizeRoutes(): Hono<{ Bindings: VectorizeRouteBindings
   return app;
 }
 
+type BootstrapSource = (typeof BOOTSTRAP_SOURCES)[number];
+
+/**
+ * source 별 fetcher dispatcher — knowledge_nodes 는 inline SQL,
+ * table_* 는 table-fetcher.ts 위임 (Phase 2A Step 2).
+ *
+ * `status` 필터는 knowledge_nodes 만 지원 (table_* 의 status 는 부모 table_structures 추론이므로
+ * fetcher 내부에서 자동 inherit — caller 가 status 필터를 강제하면 의미 모호).
+ */
+async function fetchNodesBySource(
+  db: D1Database,
+  source: BootstrapSource,
+  examId: ExamId,
+  pagination: { limit: number; offset: number },
+  status: string | undefined,
+): Promise<ReadonlyArray<NodeForVectorize>> {
+  switch (source) {
+    case 'knowledge_nodes':
+      return fetchKnowledgeNodesForVectorize(db, pagination, status);
+    case 'table_structures':
+      return fetchTableStructuresForVectorize(db, examId, pagination);
+    case 'table_headers':
+      return fetchTableHeadersForVectorize(db, examId, pagination);
+    case 'table_cells':
+      return fetchTableCellsForVectorize(db, examId, pagination);
+    default: {
+      // Pass 2 ARCHITECT A1 (Session 057) — exhaustiveness check.
+      // BootstrapSource enum 확장 시 컴파일 타임 차단 + 런타임 throw (silent undefined 차단).
+      const _exhaustive: never = source;
+      throw new Error(`unsupported source: ${String(_exhaustive)}`);
+    }
+  }
+}
+
+async function fetchKnowledgeNodesForVectorize(
+  db: D1Database,
+  pagination: { limit: number; offset: number },
+  status: string | undefined,
+): Promise<ReadonlyArray<NodeForVectorize>> {
+  const baseSelect =
+    'SELECT id, type, name, description, lv1_insurance, lv2_crop, page_ref, version_year, truth_weight, status FROM knowledge_nodes';
+  const sql =
+    typeof status === 'string'
+      ? `${baseSelect} WHERE status = ? ORDER BY id LIMIT ? OFFSET ?`
+      : `${baseSelect} ORDER BY id LIMIT ? OFFSET ?`;
+  const params: unknown[] =
+    typeof status === 'string'
+      ? [status, pagination.limit, pagination.offset]
+      : [pagination.limit, pagination.offset];
+
+  const result = await db
+    .prepare(sql)
+    .bind(...params)
+    .all<KnowledgeNodeRow>();
+  const rows = result.results ?? [];
+  return rows.map(buildNodeForVectorize);
+}
+
 function buildNodeForVectorize(row: KnowledgeNodeRow): NodeForVectorize {
   const description = row.description?.trim() ?? '';
   const text = description.length > 0 ? `${row.name}\n${description}` : row.name;
@@ -300,24 +372,4 @@ function buildNodeForVectorize(row: KnowledgeNodeRow): NodeForVectorize {
   return { id: row.id, text, metadata };
 }
 
-/**
- * page_ref 문자열에서 첫 정수만 추출. 'p.123-125' / '684' / null 모두 처리.
- *
- * Pass 1 SURGEON M3 흡수 — `page_ref` 가 string 인데 정수 추출 실패 시
- * `0` sentinel 로 silent fallback 되면 검색 결과 출처 표시 시 'p.0' 으로
- * 사용자 혼란. caller (`buildNodeForVectorize`) 가 nodeId 와 함께 console.warn
- * 출력하여 운영자 detect 가능하도록 분리.
- */
-function parsePageRefToInt(pageRef: string | null | undefined): {
-  value: number;
-  parsed: boolean;
-} {
-  if (typeof pageRef !== 'string' || pageRef.trim() === '') {
-    return { value: 0, parsed: false };
-  }
-  const match = pageRef.match(/\d+/);
-  if (match === null) {
-    return { value: 0, parsed: false };
-  }
-  return { value: Number.parseInt(match[0], 10), parsed: true };
-}
+// parsePageRefToInt 는 ./page-ref.js 단일 출처 (Session 057 5th MAJOR-1 흡수 — DRY).
