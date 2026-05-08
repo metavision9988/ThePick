@@ -7,6 +7,7 @@ import { cachePolicyMiddleware } from './middleware/cache-policy.js';
 import { createProgressRoutes } from './progress/routes.js';
 import { purgeOldRateLimits } from './scheduled/rate-limit-gc.js';
 import { createTelemetryRoutes } from './telemetry/routes.js';
+import { createVectorizeRoutes, type VectorizeRouteBindings } from './vectorize/routes.js';
 import { createWebhookRoutes } from './webhooks/payment.js';
 
 /**
@@ -44,6 +45,9 @@ type Bindings = {
   IP_PEPPER?: string;
   // Step 19 — Engine Observability v1 admin token (Phase 1 임시, Cloudflare Access 도입 후 제거)
   ADMIN_API_TOKEN?: string;
+  // Phase 2A Session 056 — Vectorize 인덱싱 + RAG smoke test (ADR-004 §3 + plan phase2a-vectorize-indexing)
+  VECTORIZE: VectorizeRouteBindings['VECTORIZE'];
+  AI: VectorizeRouteBindings['AI'];
 };
 
 const KNOWN_ENVIRONMENTS: ReadonlySet<LoggerEnvironment> = new Set<LoggerEnvironment>([
@@ -88,6 +92,12 @@ app.use(
   '/api/telemetry/*',
   cors({ ...buildCorsOptions(), allowHeaders: ['Content-Type', 'X-Admin-Token'] }),
 );
+// Pass 3 ADVOCATE C1 흡수 (Session 056) — admin/vectorize CSRF preflight 강제.
+// X-Admin-Token 커스텀 헤더 사용으로 OPTIONS preflight 의무 → CORS 미설정 시 simple-request CSRF 시나리오.
+app.use(
+  '/api/admin/vectorize/*',
+  cors({ ...buildCorsOptions(), allowHeaders: ['Content-Type', 'X-Admin-Token'] }),
+);
 
 // L1 Edge Cache 헤더 자동 주입 (ADR-008 §8) — 4-Pass C-3 반영
 // **첫 번째** 미들웨어로 등록: 어떤 경로에서 어떤 이유로 early-return 되어도
@@ -120,6 +130,7 @@ app.route('/api/auth', createAuthRoutes());
 app.route('/api/progress', createProgressRoutes());
 app.route('/api/telemetry', createTelemetryRoutes());
 app.route('/api/webhooks', createWebhookRoutes());
+app.route('/api/admin/vectorize', createVectorizeRoutes());
 
 app.get('/', (c) => {
   return c.json({

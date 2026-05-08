@@ -1,0 +1,1002 @@
+[
+  {
+    "name": "idx_batch_runs_engine_version",
+    "sql": "CREATE INDEX idx_batch_runs_engine_version ON batch_runs(engine_version)",
+    "type": "index"
+  },
+  {
+    "name": "idx_batch_runs_started_at",
+    "sql": "CREATE INDEX idx_batch_runs_started_at ON batch_runs(started_at)",
+    "type": "index"
+  },
+  {
+    "name": "idx_batch_runs_state",
+    "sql": "CREATE INDEX idx_batch_runs_state ON batch_runs(state)",
+    "type": "index"
+  },
+  {
+    "name": "idx_const_category",
+    "sql": "CREATE INDEX idx_const_category ON constants(category)",
+    "type": "index"
+  },
+  {
+    "name": "idx_const_confusion",
+    "sql": "CREATE INDEX idx_const_confusion ON constants(confusion_level)",
+    "type": "index"
+  },
+  {
+    "name": "idx_const_version",
+    "sql": "CREATE INDEX idx_const_version ON constants(version_year)",
+    "type": "index"
+  },
+  {
+    "name": "idx_constants_active",
+    "sql": "CREATE INDEX idx_constants_active\n  ON constants(is_current_active)",
+    "type": "index"
+  },
+  {
+    "name": "idx_constants_superseded_by",
+    "sql": "CREATE INDEX idx_constants_superseded_by ON constants(superseded_by)",
+    "type": "index"
+  },
+  {
+    "name": "idx_edges_active",
+    "sql": "CREATE INDEX idx_edges_active ON knowledge_edges(is_active)",
+    "type": "index"
+  },
+  {
+    "name": "idx_edges_from",
+    "sql": "CREATE INDEX idx_edges_from ON knowledge_edges(from_node)",
+    "type": "index"
+  },
+  {
+    "name": "idx_edges_to",
+    "sql": "CREATE INDEX idx_edges_to ON knowledge_edges(to_node)",
+    "type": "index"
+  },
+  {
+    "name": "idx_edges_type",
+    "sql": "CREATE INDEX idx_edges_type ON knowledge_edges(edge_type)",
+    "type": "index"
+  },
+  {
+    "name": "idx_engine_telemetry_batch_run",
+    "sql": "CREATE INDEX idx_engine_telemetry_batch_run\n  ON engine_telemetry(batch_run_id)\n  WHERE batch_run_id IS NOT NULL",
+    "type": "index"
+  },
+  {
+    "name": "idx_engine_telemetry_exam_gauge",
+    "sql": "CREATE INDEX idx_engine_telemetry_exam_gauge\n  ON engine_telemetry(exam_id, gauge_name, recorded_at DESC)",
+    "type": "index"
+  },
+  {
+    "name": "idx_engine_telemetry_gauge_recorded",
+    "sql": "CREATE INDEX idx_engine_telemetry_gauge_recorded\n  ON engine_telemetry(gauge_name, recorded_at DESC)",
+    "type": "index"
+  },
+  {
+    "name": "idx_exam_status",
+    "sql": "CREATE INDEX idx_exam_status ON exam_questions(status)",
+    "type": "index"
+  },
+  {
+    "name": "idx_exam_topic",
+    "sql": "CREATE INDEX idx_exam_topic ON exam_questions(topic_cluster)",
+    "type": "index"
+  },
+  {
+    "name": "idx_exam_type",
+    "sql": "CREATE INDEX idx_exam_type ON exam_questions(exam_type)",
+    "type": "index"
+  },
+  {
+    "name": "idx_exam_year",
+    "sql": "CREATE INDEX idx_exam_year ON exam_questions(year)",
+    "type": "index"
+  },
+  {
+    "name": "idx_formulas_active",
+    "sql": "CREATE INDEX idx_formulas_active\n  ON formulas(is_current_active)",
+    "type": "index"
+  },
+  {
+    "name": "idx_formulas_superseded_by",
+    "sql": "CREATE INDEX idx_formulas_superseded_by ON formulas(superseded_by)",
+    "type": "index"
+  },
+  {
+    "name": "idx_knowledge_nodes_active",
+    "sql": "CREATE INDEX idx_knowledge_nodes_active\n  ON knowledge_nodes(is_current_active, status)",
+    "type": "index"
+  },
+  {
+    "name": "idx_knowledge_nodes_batch_run_id",
+    "sql": "CREATE INDEX idx_knowledge_nodes_batch_run_id\n  ON knowledge_nodes(batch_run_id)",
+    "type": "index"
+  },
+  {
+    "name": "idx_knowledge_nodes_batch_source",
+    "sql": "CREATE UNIQUE INDEX idx_knowledge_nodes_batch_source\n  ON knowledge_nodes(batch_run_id, source_id)\n  WHERE batch_run_id IS NOT NULL",
+    "type": "index"
+  },
+  {
+    "name": "idx_mnemonic_confusion",
+    "sql": "CREATE INDEX idx_mnemonic_confusion ON mnemonic_cards(confusion_type)",
+    "type": "index"
+  },
+  {
+    "name": "idx_mnemonic_method",
+    "sql": "CREATE INDEX idx_mnemonic_method ON mnemonic_cards(memorization_method)",
+    "type": "index"
+  },
+  {
+    "name": "idx_mnemonic_target",
+    "sql": "CREATE INDEX idx_mnemonic_target ON mnemonic_cards(target_id)",
+    "type": "index"
+  },
+  {
+    "name": "idx_nodes_book_page",
+    "sql": "CREATE INDEX idx_nodes_book_page ON knowledge_nodes(book_page)",
+    "type": "index"
+  },
+  {
+    "name": "idx_nodes_chapter",
+    "sql": "CREATE INDEX idx_nodes_chapter ON knowledge_nodes(chapter)",
+    "type": "index"
+  },
+  {
+    "name": "idx_nodes_lv1",
+    "sql": "CREATE INDEX idx_nodes_lv1 ON knowledge_nodes(lv1_insurance)",
+    "type": "index"
+  },
+  {
+    "name": "idx_nodes_lv2",
+    "sql": "CREATE INDEX idx_nodes_lv2 ON knowledge_nodes(lv2_crop)",
+    "type": "index"
+  },
+  {
+    "name": "idx_nodes_scope",
+    "sql": "CREATE INDEX idx_nodes_scope ON knowledge_nodes(exam_scope)",
+    "type": "index"
+  },
+  {
+    "name": "idx_nodes_status",
+    "sql": "CREATE INDEX idx_nodes_status ON knowledge_nodes(status)",
+    "type": "index"
+  },
+  {
+    "name": "idx_nodes_type",
+    "sql": "CREATE INDEX idx_nodes_type ON knowledge_nodes(type)",
+    "type": "index"
+  },
+  {
+    "name": "idx_nodes_version",
+    "sql": "CREATE INDEX idx_nodes_version ON knowledge_nodes(version_year)",
+    "type": "index"
+  },
+  {
+    "name": "idx_progress_next",
+    "sql": "CREATE INDEX idx_progress_next ON user_progress(fsrs_next_review)",
+    "type": "index"
+  },
+  {
+    "name": "idx_progress_node",
+    "sql": "CREATE INDEX idx_progress_node ON user_progress(node_id)",
+    "type": "index"
+  },
+  {
+    "name": "idx_progress_user",
+    "sql": "CREATE INDEX idx_progress_user ON user_progress(user_id)",
+    "type": "index"
+  },
+  {
+    "name": "idx_rate_limits_bucket",
+    "sql": "CREATE INDEX idx_rate_limits_bucket\n  ON rate_limits(bucket_minute)",
+    "type": "index"
+  },
+  {
+    "name": "idx_rev_priority",
+    "sql": "CREATE INDEX idx_rev_priority ON revision_changes(exam_priority DESC)",
+    "type": "index"
+  },
+  {
+    "name": "idx_rev_version",
+    "sql": "CREATE INDEX idx_rev_version ON revision_changes(version_year)",
+    "type": "index"
+  },
+  {
+    "name": "idx_review_decisions_deadline",
+    "sql": "CREATE INDEX idx_review_decisions_deadline\n  ON review_decisions(rollback_deadline)",
+    "type": "index"
+  },
+  {
+    "name": "idx_review_decisions_queue",
+    "sql": "CREATE INDEX idx_review_decisions_queue\n  ON review_decisions(queue_id, decided_at)",
+    "type": "index"
+  },
+  {
+    "name": "idx_review_decisions_references",
+    "sql": "CREATE INDEX idx_review_decisions_references\n  ON review_decisions(references_decision_id)",
+    "type": "index"
+  },
+  {
+    "name": "idx_review_decisions_reviewer",
+    "sql": "CREATE INDEX idx_review_decisions_reviewer\n  ON review_decisions(reviewer_id, decided_at)",
+    "type": "index"
+  },
+  {
+    "name": "idx_review_decisions_target",
+    "sql": "CREATE INDEX idx_review_decisions_target\n  ON review_decisions(target_type, target_id, decided_at)",
+    "type": "index"
+  },
+  {
+    "name": "idx_sessions_expires_active",
+    "sql": "CREATE INDEX idx_sessions_expires_active\n  ON sessions(expires_at) WHERE revoked_at IS NULL",
+    "type": "index"
+  },
+  {
+    "name": "idx_sessions_user_active",
+    "sql": "CREATE INDEX idx_sessions_user_active\n  ON sessions(user_id, revoked_at, expires_at)",
+    "type": "index"
+  },
+  {
+    "name": "idx_status_transitions_reviewer",
+    "sql": "CREATE INDEX idx_status_transitions_reviewer\n  ON status_transitions(reviewer_id, transitioned_at)",
+    "type": "index"
+  },
+  {
+    "name": "idx_status_transitions_target",
+    "sql": "CREATE INDEX idx_status_transitions_target\n  ON status_transitions(target_type, target_id, transitioned_at)",
+    "type": "index"
+  },
+  {
+    "name": "idx_status_transitions_to_status",
+    "sql": "CREATE INDEX idx_status_transitions_to_status\n  ON status_transitions(to_status, transitioned_at)",
+    "type": "index"
+  },
+  {
+    "name": "idx_table_cells_formula",
+    "sql": "CREATE INDEX idx_table_cells_formula      ON table_cells(formula_id)",
+    "type": "index"
+  },
+  {
+    "name": "idx_table_cells_merged",
+    "sql": "CREATE INDEX idx_table_cells_merged\n  ON table_cells(merged_with_id)\n  WHERE merged_with_id IS NOT NULL",
+    "type": "index"
+  },
+  {
+    "name": "idx_table_cells_nested",
+    "sql": "CREATE INDEX idx_table_cells_nested ON table_cells(nested_table_id)",
+    "type": "index"
+  },
+  {
+    "name": "idx_table_cells_table_row_col",
+    "sql": "CREATE INDEX idx_table_cells_table_row_col ON table_cells(table_id, row_id, col_id)",
+    "type": "index"
+  },
+  {
+    "name": "idx_table_cells_table_value",
+    "sql": "CREATE INDEX idx_table_cells_table_value  ON table_cells(table_id, value_type)",
+    "type": "index"
+  },
+  {
+    "name": "idx_table_cells_value_partial",
+    "sql": "CREATE INDEX idx_table_cells_value_partial\n  ON table_cells(value_type)\n  WHERE value_type IN ('formula','merged_ref','nested_table')",
+    "type": "index"
+  },
+  {
+    "name": "idx_table_headers_parent",
+    "sql": "CREATE INDEX idx_table_headers_parent     ON table_headers(parent_id)",
+    "type": "index"
+  },
+  {
+    "name": "idx_table_headers_table_axis",
+    "sql": "CREATE INDEX idx_table_headers_table_axis ON table_headers(table_id, axis, level, index_pos)",
+    "type": "index"
+  },
+  {
+    "name": "idx_table_node_links_related",
+    "sql": "CREATE INDEX idx_table_node_links_related ON table_node_links(related_node_id, relation_type)",
+    "type": "index"
+  },
+  {
+    "name": "idx_table_node_links_table",
+    "sql": "CREATE INDEX idx_table_node_links_table   ON table_node_links(table_id, relation_type)",
+    "type": "index"
+  },
+  {
+    "name": "idx_table_structures_pattern",
+    "sql": "CREATE INDEX idx_table_structures_pattern     ON table_structures(pattern_type)",
+    "type": "index"
+  },
+  {
+    "name": "idx_table_structures_source_node",
+    "sql": "CREATE INDEX idx_table_structures_source_node ON table_structures(source_node_id)",
+    "type": "index"
+  },
+  {
+    "name": "idx_table_structures_status",
+    "sql": "CREATE INDEX idx_table_structures_status      ON table_structures(status)",
+    "type": "index"
+  },
+  {
+    "name": "idx_topic_covered",
+    "sql": "CREATE INDEX idx_topic_covered ON topic_clusters(is_covered)",
+    "type": "index"
+  },
+  {
+    "name": "idx_topic_freq",
+    "sql": "CREATE INDEX idx_topic_freq ON topic_clusters(exam_frequency DESC)",
+    "type": "index"
+  },
+  {
+    "name": "idx_topic_lv1",
+    "sql": "CREATE INDEX idx_topic_lv1 ON topic_clusters(lv1)",
+    "type": "index"
+  },
+  {
+    "name": "idx_users_email",
+    "sql": "CREATE UNIQUE INDEX idx_users_email ON users(email)",
+    "type": "index"
+  },
+  {
+    "name": "idx_users_status",
+    "sql": "CREATE INDEX idx_users_status ON users(status)",
+    "type": "index"
+  },
+  {
+    "name": "idx_users_subscription_expires",
+    "sql": "CREATE INDEX idx_users_subscription_expires ON users(subscription_expires_at) WHERE subscription_expires_at IS NOT NULL",
+    "type": "index"
+  },
+  {
+    "name": "idx_webhook_events_provider",
+    "sql": "CREATE INDEX idx_webhook_events_provider\n  ON webhook_events(provider, received_at)",
+    "type": "index"
+  },
+  {
+    "name": "idx_webhook_events_status",
+    "sql": "CREATE INDEX idx_webhook_events_status\n  ON webhook_events(status, received_at)",
+    "type": "index"
+  },
+  {
+    "name": "sessions_refresh_token_hash_unique",
+    "sql": "CREATE UNIQUE INDEX sessions_refresh_token_hash_unique\n  ON sessions(refresh_token_hash)",
+    "type": "index"
+  },
+  {
+    "name": "_cf_KV",
+    "sql": "CREATE TABLE _cf_KV (\n        key TEXT PRIMARY KEY,\n        value BLOB\n      ) WITHOUT ROWID",
+    "type": "table"
+  },
+  {
+    "name": "batch_runs",
+    "sql": "CREATE TABLE batch_runs (\n  batch_run_id TEXT PRIMARY KEY,\n  started_at TEXT NOT NULL,                        \n  completed_at TEXT,                                \n  last_completed_stage TEXT NOT NULL,               \n  last_node_id TEXT,                                \n  state TEXT NOT NULL                               \n    CHECK (state IN ('in_progress', 'completed', 'failed', 'recovered', 'killed')),\n  resume_count INTEGER NOT NULL DEFAULT 0,          \n  fixture_path TEXT NOT NULL,                       \n  state_hash TEXT NOT NULL,                         \n  engine_version TEXT NOT NULL                      \n)",
+    "type": "table"
+  },
+  {
+    "name": "constants",
+    "sql": "CREATE TABLE constants (\n  id TEXT PRIMARY KEY,\n  category TEXT NOT NULL CHECK(category IN ('threshold','coefficient','date','ratio','sample','deductible','insurance_rate')),\n  name TEXT NOT NULL,\n  value TEXT NOT NULL,\n  numeric_value REAL,\n  applies_to TEXT NOT NULL,\n  insurance_type TEXT,\n  confusion_risk TEXT,\n  confusion_level TEXT DEFAULT 'safe' CHECK(confusion_level IN ('safe','warn','danger')),\n  unit TEXT,\n  page_ref TEXT,\n  version_year INTEGER NOT NULL,\n  exam_frequency INTEGER DEFAULT 0,\n  related_formula TEXT,\n  created_at TEXT DEFAULT (datetime('now'))\n, exam_scope TEXT DEFAULT '2nd', is_current_active INTEGER NOT NULL DEFAULT 1\n  CHECK(is_current_active IN (0, 1)), superseded_by TEXT REFERENCES constants(id))",
+    "type": "table"
+  },
+  {
+    "name": "engine_telemetry",
+    "sql": "CREATE TABLE engine_telemetry (\n  id TEXT PRIMARY KEY NOT NULL,\n  exam_id TEXT NOT NULL,\n  gauge_name TEXT NOT NULL,\n  metric_value REAL,\n  metric_json TEXT,\n  source_id TEXT,\n  batch_run_id TEXT,\n  recorded_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),\n  CHECK (gauge_name IN (\n    'batch_progress',\n    'cost',\n    'd1_slo',\n    'graph_integrity',\n    'quality_gate',\n    'formula_accuracy',\n    'reviewer_queue',\n    'learning_slo'\n  )),\n  CHECK (metric_value IS NOT NULL OR metric_json IS NOT NULL)\n)",
+    "type": "table"
+  },
+  {
+    "name": "exam_questions",
+    "sql": "CREATE TABLE exam_questions (\n  id TEXT PRIMARY KEY,\n  year INTEGER NOT NULL,\n  round INTEGER,\n  question_number INTEGER,\n  subject TEXT,\n  content TEXT NOT NULL,\n  answer TEXT,\n  explanation TEXT,\n  valid_from TEXT,\n  valid_until TEXT,\n  superseded_by TEXT,\n  related_nodes TEXT,\n  related_constants TEXT,\n  status TEXT DEFAULT 'active' CHECK(status IN ('active','deprecated','flagged')),\n  created_at TEXT DEFAULT (datetime('now'))\n, exam_type TEXT DEFAULT '2nd', topic_cluster TEXT, memorization_type TEXT, confusion_type TEXT)",
+    "type": "table"
+  },
+  {
+    "name": "formulas",
+    "sql": "CREATE TABLE formulas (\n  id TEXT PRIMARY KEY,\n  name TEXT NOT NULL,\n  equation_template TEXT NOT NULL,\n  equation_display TEXT,\n  variables_schema TEXT NOT NULL,\n  constraints TEXT,\n  expected_inputs TEXT,\n  graceful_degradation TEXT,\n  page_ref TEXT,\n  node_id TEXT REFERENCES knowledge_nodes(id),\n  version_year INTEGER NOT NULL,\n  superseded_by TEXT,\n  created_at TEXT DEFAULT (datetime('now'))\n, is_current_active INTEGER NOT NULL DEFAULT 1\n  CHECK(is_current_active IN (0, 1)))",
+    "type": "table"
+  },
+  {
+    "name": "knowledge_edges",
+    "sql": "CREATE TABLE knowledge_edges (\n  id TEXT PRIMARY KEY,\n  from_node TEXT NOT NULL REFERENCES knowledge_nodes(id),\n  to_node TEXT NOT NULL REFERENCES knowledge_nodes(id),\n  edge_type TEXT NOT NULL,\n  condition TEXT,\n  priority INTEGER DEFAULT 0,\n  is_active INTEGER DEFAULT 1,\n  created_at TEXT DEFAULT (datetime('now'))\n)",
+    "type": "table"
+  },
+  {
+    "name": "knowledge_nodes",
+    "sql": "CREATE TABLE knowledge_nodes (\n  id TEXT PRIMARY KEY,\n  type TEXT NOT NULL CHECK(type IN ('LAW','FORMULA','INVESTIGATION','INSURANCE','CROP','CONCEPT','TERM')),\n  name TEXT NOT NULL,\n  description TEXT,\n  lv1_insurance TEXT,\n  lv2_crop TEXT,\n  lv3_investigation TEXT,\n  page_ref TEXT,\n  batch_id TEXT,\n  version_year INTEGER NOT NULL,\n  superseded_by TEXT,\n  truth_weight INTEGER NOT NULL DEFAULT 5,\n  status TEXT DEFAULT 'draft' CHECK(status IN ('draft','review','approved','published','flagged')),\n  created_at TEXT DEFAULT (datetime('now')),\n  updated_at TEXT DEFAULT (datetime('now'))\n, exam_scope TEXT DEFAULT '2nd', is_current_active INTEGER NOT NULL DEFAULT 1\n  CHECK(is_current_active IN (0, 1)), batch_run_id TEXT, source_id TEXT, book_page INTEGER, pdf_page  INTEGER, chapter   TEXT, section   TEXT)",
+    "type": "table"
+  },
+  {
+    "name": "mnemonic_cards",
+    "sql": "CREATE TABLE mnemonic_cards (\n  id TEXT PRIMARY KEY,\n  target_type TEXT NOT NULL,\n  target_id TEXT NOT NULL,\n  confusion_type TEXT,\n  memorization_method TEXT NOT NULL,\n  content TEXT NOT NULL,\n  reverse_verified INTEGER DEFAULT 0,\n  exam_scope TEXT,\n  status TEXT DEFAULT 'draft',\n  created_at TEXT DEFAULT (datetime('now'))\n)",
+    "type": "table"
+  },
+  {
+    "name": "rate_limits",
+    "sql": "CREATE TABLE rate_limits (\n  user_id TEXT NOT NULL,\n  bucket_minute TEXT NOT NULL,\n  count INTEGER NOT NULL DEFAULT 0,\n  last_updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),\n  PRIMARY KEY (user_id, bucket_minute)\n)",
+    "type": "table"
+  },
+  {
+    "name": "review_decisions",
+    "sql": "CREATE TABLE review_decisions (\n  id TEXT PRIMARY KEY,\n  decision_type TEXT NOT NULL CHECK(decision_type IN (\n    'merge', 'reject', 'keep_both', 'rollback', 'approve', 'flag'\n  )),\n  target_type TEXT NOT NULL CHECK(target_type IN ('node', 'formula', 'constant', 'edge')),\n  target_id TEXT NOT NULL,\n  \n  secondary_target_id TEXT,\n  reviewer_id TEXT NOT NULL,\n  decision_rationale TEXT,\n  \n  ai_recommendation TEXT CHECK(ai_recommendation IS NULL OR ai_recommendation IN (\n    'merge', 'reject', 'keep_both', 'approve', 'flag'\n  )),\n  ai_confidence REAL CHECK(ai_confidence IS NULL OR (ai_confidence >= 0 AND ai_confidence <= 1)),\n  \n  references_decision_id TEXT REFERENCES review_decisions(id),\n  decided_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),\n  \n  rollback_deadline TEXT NOT NULL,\n  \n  queue_id INTEGER NOT NULL CHECK(queue_id IN (1, 2, 3)),\n  batch_id TEXT\n)",
+    "type": "table"
+  },
+  {
+    "name": "revision_changes",
+    "sql": "CREATE TABLE revision_changes (\n  id TEXT PRIMARY KEY,\n  version_year INTEGER NOT NULL,\n  revision_date TEXT NOT NULL,\n  category TEXT NOT NULL,\n  target_section TEXT,\n  target_crops TEXT,\n  change_type TEXT NOT NULL CHECK(change_type IN ('added','modified','deleted','clarified')),\n  before_value TEXT,\n  after_value TEXT,\n  exam_priority INTEGER DEFAULT 10,\n  related_constants TEXT,\n  related_nodes TEXT,\n  created_at TEXT DEFAULT (datetime('now'))\n)",
+    "type": "table"
+  },
+  {
+    "name": "sessions",
+    "sql": "CREATE TABLE sessions (\n  id TEXT PRIMARY KEY,\n  user_id TEXT NOT NULL,\n  refresh_token_hash TEXT NOT NULL,\n  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),\n  last_used_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),\n  expires_at TEXT NOT NULL,\n  revoked_at TEXT,\n  user_agent TEXT,\n  ip_hash TEXT,\n  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE\n)",
+    "type": "table"
+  },
+  {
+    "name": "status_transitions",
+    "sql": "CREATE TABLE status_transitions (\n  id TEXT PRIMARY KEY,\n  target_type TEXT NOT NULL CHECK(target_type IN ('node','formula','constant')),\n  target_id TEXT NOT NULL,\n  from_status TEXT NOT NULL CHECK(from_status IN ('draft','review','approved','flagged')),\n  to_status TEXT NOT NULL CHECK(to_status IN ('draft','review','approved','flagged')),\n  reviewer_id TEXT NOT NULL,\n  reason TEXT,\n  transitioned_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))\n)",
+    "type": "table"
+  },
+  {
+    "name": "table_cells",
+    "sql": "CREATE TABLE \"table_cells\" (\n  id              TEXT PRIMARY KEY,\n  table_id        TEXT NOT NULL REFERENCES table_structures(id),\n  row_id          TEXT NOT NULL REFERENCES table_headers(id),\n  col_id          TEXT NOT NULL REFERENCES table_headers(id),\n  value_text      TEXT,\n  value_type      TEXT NOT NULL CHECK (value_type IN ('text','number','formula','na','merged_ref','nested_table')),\n  formula_id      TEXT REFERENCES formulas(id),\n  merged_with_id  TEXT REFERENCES table_cells(id),\n  nested_table_id TEXT REFERENCES table_structures(id),\n  created_at      INTEGER NOT NULL DEFAULT (strftime('%s','now')),\n  CHECK (id GLOB 'TCELL-[0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'),\n  CHECK (\n    (value_type = 'formula'      AND formula_id      IS NOT NULL) OR\n    (value_type = 'merged_ref'   AND merged_with_id  IS NOT NULL) OR\n    (value_type = 'nested_table' AND nested_table_id IS NOT NULL) OR\n    (value_type IN ('text','number','na'))\n  ),\n  UNIQUE (table_id, row_id, col_id)\n)",
+    "type": "table"
+  },
+  {
+    "name": "table_headers",
+    "sql": "CREATE TABLE table_headers (\n  id          TEXT PRIMARY KEY,\n  table_id    TEXT NOT NULL REFERENCES table_structures(id),\n  axis        TEXT NOT NULL CHECK (axis IN ('row','column')),\n  level       INTEGER NOT NULL DEFAULT 1 CHECK (level >= 1 AND level <= 3),\n  index_pos   INTEGER NOT NULL CHECK (index_pos >= 1 AND index_pos <= 99),\n  parent_id   TEXT REFERENCES table_headers(id),\n  text        TEXT NOT NULL,\n  created_at  INTEGER NOT NULL DEFAULT (strftime('%s','now')),\n  CHECK (\n    (axis='row'    AND id GLOB 'TROW-[0-9][0-9][0-9]-[0-9][0-9]') OR\n    (axis='column' AND id GLOB 'TCOL-[0-9][0-9][0-9]-[0-9][0-9]')\n  ),\n  UNIQUE (table_id, axis, level, index_pos)\n)",
+    "type": "table"
+  },
+  {
+    "name": "table_node_links",
+    "sql": "CREATE TABLE table_node_links (\n  id                INTEGER PRIMARY KEY AUTOINCREMENT,\n  table_id          TEXT NOT NULL REFERENCES table_structures(id),\n  related_node_id   TEXT NOT NULL REFERENCES knowledge_nodes(id),\n  relation_type     TEXT NOT NULL CHECK (relation_type IN ('extracted_from','referenced_by','supersedes')),\n  created_at        INTEGER NOT NULL DEFAULT (strftime('%s','now')),\n  UNIQUE (table_id, related_node_id, relation_type)\n)",
+    "type": "table"
+  },
+  {
+    "name": "table_structures",
+    "sql": "CREATE TABLE \"table_structures\" (\n  id                TEXT PRIMARY KEY,\n  source_node_id    TEXT REFERENCES knowledge_nodes(id),\n  title             TEXT NOT NULL,\n  pattern_type      TEXT NOT NULL CHECK (pattern_type IN (\n                      'A_simple',\n                      'B_2level',\n                      'C_3level',\n                      'D_merged',\n                      'E_na',\n                      'F_formula',\n                      'G_temporal',\n                      'H_nested'\n                    )),\n  row_count         INTEGER NOT NULL CHECK (row_count > 0 AND row_count <= 99),\n  col_count         INTEGER NOT NULL CHECK (col_count > 0 AND col_count <= 99),\n  source            TEXT NOT NULL,\n  status            TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','active','flagged','deprecated')),\n  human_reviewed_at INTEGER,\n  created_at        INTEGER NOT NULL DEFAULT (strftime('%s','now')),\n  updated_at        INTEGER NOT NULL DEFAULT (strftime('%s','now')),\n  CHECK (id GLOB 'TBL-[0-9][0-9][0-9]')\n)",
+    "type": "table"
+  },
+  {
+    "name": "topic_clusters",
+    "sql": "CREATE TABLE topic_clusters (\n  id TEXT PRIMARY KEY,\n  name TEXT NOT NULL,\n  lv1 TEXT,\n  lv2 TEXT,\n  lv3 TEXT,\n  exam_frequency INTEGER DEFAULT 0,\n  question_ids TEXT,\n  is_covered INTEGER DEFAULT 1,\n  source TEXT,\n  created_at TEXT DEFAULT (datetime('now'))\n)",
+    "type": "table"
+  },
+  {
+    "name": "user_progress",
+    "sql": "CREATE TABLE user_progress (\n  id TEXT PRIMARY KEY,\n  user_id TEXT NOT NULL,\n  node_id TEXT REFERENCES knowledge_nodes(id),\n  card_id TEXT,\n  card_type TEXT NOT NULL,\n  fsrs_difficulty REAL DEFAULT 0.3,\n  fsrs_stability REAL DEFAULT 1.0,\n  fsrs_interval INTEGER DEFAULT 1,\n  fsrs_next_review TEXT,\n  total_reviews INTEGER DEFAULT 0,\n  correct_count INTEGER DEFAULT 0,\n  last_confusion_type TEXT,\n  created_at TEXT DEFAULT (datetime('now')),\n  updated_at TEXT DEFAULT (datetime('now'))\n)",
+    "type": "table"
+  },
+  {
+    "name": "users",
+    "sql": "CREATE TABLE users (\n  id TEXT PRIMARY KEY,\n  email TEXT NOT NULL UNIQUE,\n  password_hash TEXT NOT NULL,        \n  password_salt TEXT NOT NULL,        \n  password_iterations INTEGER NOT NULL, \n  \n  subscription_plan TEXT CHECK(subscription_plan IN ('single','combo','all_access') OR subscription_plan IS NULL),\n  subscribed_exams TEXT,              \n  subscription_started_at TEXT,       \n  subscription_expires_at TEXT,       \n  last_login_at TEXT,                 \n  status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','suspended','deleted')),\n  created_at TEXT NOT NULL DEFAULT (datetime('now')),\n  updated_at TEXT NOT NULL DEFAULT (datetime('now'))\n, name TEXT)",
+    "type": "table"
+  },
+  {
+    "name": "webhook_events",
+    "sql": "CREATE TABLE webhook_events (\n  id TEXT PRIMARY KEY,\n  provider TEXT NOT NULL,\n  event_id TEXT NOT NULL,\n  event_type TEXT NOT NULL,\n  payload TEXT NOT NULL,\n  signature TEXT,\n  received_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),\n  processed_at TEXT,\n  status TEXT NOT NULL DEFAULT 'received',\n  error_message TEXT,\n  UNIQUE (provider, event_id)\n)",
+    "type": "table"
+  },
+  {
+    "name": "enforce_book_page_on_insert",
+    "sql": "CREATE TRIGGER enforce_book_page_on_insert\nBEFORE INSERT ON knowledge_nodes\nWHEN NEW.book_page IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'ADR-030 violation: knowledge_nodes INSERT requires book_page (사용자 노출용 본문 페이지). 출처 추적성 의무.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_constants_applies_to_not_null",
+    "sql": "CREATE TRIGGER enforce_constants_applies_to_not_null\nBEFORE INSERT ON constants\nWHEN NEW.applies_to IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'constants.applies_to cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_constants_category_not_null",
+    "sql": "CREATE TRIGGER enforce_constants_category_not_null\nBEFORE INSERT ON constants\nWHEN NEW.category IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'constants.category cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_constants_created_at_not_null",
+    "sql": "CREATE TRIGGER enforce_constants_created_at_not_null\nBEFORE INSERT ON constants\nWHEN NEW.created_at IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'constants.created_at cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_constants_name_not_null",
+    "sql": "CREATE TRIGGER enforce_constants_name_not_null\nBEFORE INSERT ON constants\nWHEN NEW.name IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'constants.name cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_constants_page_ref_not_null",
+    "sql": "CREATE TRIGGER enforce_constants_page_ref_not_null\nBEFORE INSERT ON constants\nWHEN NEW.page_ref IS NULL OR NEW.page_ref = ''\nBEGIN\n  SELECT RAISE(ABORT, 'constants.page_ref is required (source citation). Use \"NNN\", \"NNN-MMM\", or \"NNN:§section\" format.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_constants_value_not_null",
+    "sql": "CREATE TRIGGER enforce_constants_value_not_null\nBEFORE INSERT ON constants\nWHEN NEW.value IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'constants.value cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_constants_version_year_not_null",
+    "sql": "CREATE TRIGGER enforce_constants_version_year_not_null\nBEFORE INSERT ON constants\nWHEN NEW.version_year IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'constants.version_year cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_edges_created_at_not_null",
+    "sql": "CREATE TRIGGER enforce_edges_created_at_not_null\nBEFORE INSERT ON knowledge_edges\nWHEN NEW.created_at IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'knowledge_edges.created_at cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_exam_questions_content_not_null",
+    "sql": "CREATE TRIGGER enforce_exam_questions_content_not_null\nBEFORE INSERT ON exam_questions\nWHEN NEW.content IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'exam_questions.content cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_exam_questions_created_at_not_null",
+    "sql": "CREATE TRIGGER enforce_exam_questions_created_at_not_null\nBEFORE INSERT ON exam_questions\nWHEN NEW.created_at IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'exam_questions.created_at cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_exam_questions_status_not_null",
+    "sql": "CREATE TRIGGER enforce_exam_questions_status_not_null\nBEFORE INSERT ON exam_questions\nWHEN NEW.status IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'exam_questions.status cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_exam_questions_year_not_null",
+    "sql": "CREATE TRIGGER enforce_exam_questions_year_not_null\nBEFORE INSERT ON exam_questions\nWHEN NEW.year IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'exam_questions.year cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_formulas_created_at_not_null",
+    "sql": "CREATE TRIGGER enforce_formulas_created_at_not_null\nBEFORE INSERT ON formulas\nWHEN NEW.created_at IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'formulas.created_at cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_formulas_page_ref_not_null",
+    "sql": "CREATE TRIGGER enforce_formulas_page_ref_not_null\nBEFORE INSERT ON formulas\nWHEN NEW.page_ref IS NULL OR NEW.page_ref = ''\nBEGIN\n  SELECT RAISE(ABORT, 'formulas.page_ref is required (source citation). Use \"NNN\", \"NNN-MMM\", or \"NNN:§section\" format.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_knowledge_nodes_created_at_not_null",
+    "sql": "CREATE TRIGGER enforce_knowledge_nodes_created_at_not_null\nBEFORE INSERT ON knowledge_nodes\nWHEN NEW.created_at IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'knowledge_nodes.created_at cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_knowledge_nodes_page_ref_not_null",
+    "sql": "CREATE TRIGGER enforce_knowledge_nodes_page_ref_not_null\nBEFORE INSERT ON knowledge_nodes\nWHEN NEW.page_ref IS NULL OR NEW.page_ref = ''\nBEGIN\n  SELECT RAISE(ABORT, 'knowledge_nodes.page_ref is required (source citation). Use \"NNN\", \"NNN-MMM\", or \"NNN:§section\" format.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_knowledge_nodes_status_not_null",
+    "sql": "CREATE TRIGGER enforce_knowledge_nodes_status_not_null\nBEFORE INSERT ON knowledge_nodes\nWHEN NEW.status IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'knowledge_nodes.status cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_knowledge_nodes_updated_at_not_null",
+    "sql": "CREATE TRIGGER enforce_knowledge_nodes_updated_at_not_null\nBEFORE INSERT ON knowledge_nodes\nWHEN NEW.updated_at IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'knowledge_nodes.updated_at cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_mnemonic_cards_content_not_null",
+    "sql": "CREATE TRIGGER enforce_mnemonic_cards_content_not_null\nBEFORE INSERT ON mnemonic_cards\nWHEN NEW.content IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'mnemonic_cards.content cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_mnemonic_cards_created_at_not_null",
+    "sql": "CREATE TRIGGER enforce_mnemonic_cards_created_at_not_null\nBEFORE INSERT ON mnemonic_cards\nWHEN NEW.created_at IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'mnemonic_cards.created_at cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_mnemonic_cards_memorization_method_not_null",
+    "sql": "CREATE TRIGGER enforce_mnemonic_cards_memorization_method_not_null\nBEFORE INSERT ON mnemonic_cards\nWHEN NEW.memorization_method IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'mnemonic_cards.memorization_method cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_mnemonic_cards_target_id_not_null",
+    "sql": "CREATE TRIGGER enforce_mnemonic_cards_target_id_not_null\nBEFORE INSERT ON mnemonic_cards\nWHEN NEW.target_id IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'mnemonic_cards.target_id cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_mnemonic_cards_target_type_not_null",
+    "sql": "CREATE TRIGGER enforce_mnemonic_cards_target_type_not_null\nBEFORE INSERT ON mnemonic_cards\nWHEN NEW.target_type IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'mnemonic_cards.target_type cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_page_ref_on_insert",
+    "sql": "CREATE TRIGGER enforce_page_ref_on_insert\nBEFORE INSERT ON knowledge_nodes\nWHEN NEW.page_ref IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'Hard Rule 13 violation: knowledge_nodes INSERT requires page_ref (source citation). Memory project_source_citation_requirement.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_pdf_page_on_insert",
+    "sql": "CREATE TRIGGER enforce_pdf_page_on_insert\nBEFORE INSERT ON knowledge_nodes\nWHEN NEW.pdf_page IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'ADR-030 violation: knowledge_nodes INSERT requires pdf_page (PDF 추적용). 검수 단계 PDF 직접 검증 필수.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_rate_limits_bucket_minute_not_null",
+    "sql": "CREATE TRIGGER enforce_rate_limits_bucket_minute_not_null\nBEFORE INSERT ON rate_limits\nWHEN NEW.bucket_minute IS NULL OR NEW.bucket_minute = ''\nBEGIN\n  SELECT RAISE(ABORT, 'rate_limits.bucket_minute cannot be NULL or empty');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_rate_limits_user_id_not_null",
+    "sql": "CREATE TRIGGER enforce_rate_limits_user_id_not_null\nBEFORE INSERT ON rate_limits\nWHEN NEW.user_id IS NULL OR NEW.user_id = ''\nBEGIN\n  SELECT RAISE(ABORT, 'rate_limits.user_id cannot be NULL or empty');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_review_decisions_merge_requires_secondary",
+    "sql": "CREATE TRIGGER enforce_review_decisions_merge_requires_secondary\nBEFORE INSERT ON review_decisions\nWHEN NEW.decision_type = 'merge'\n  AND (NEW.secondary_target_id IS NULL OR NEW.secondary_target_id = '')\nBEGIN\n  SELECT RAISE(ABORT, 'review_decisions.secondary_target_id is required for merge decision (two-node merge).');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_review_decisions_reviewer_id_not_null",
+    "sql": "CREATE TRIGGER enforce_review_decisions_reviewer_id_not_null\nBEFORE INSERT ON review_decisions\nWHEN NEW.reviewer_id IS NULL OR NEW.reviewer_id = ''\nBEGIN\n  SELECT RAISE(ABORT, 'review_decisions.reviewer_id cannot be NULL or empty');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_review_decisions_rollback_requires_reference",
+    "sql": "CREATE TRIGGER enforce_review_decisions_rollback_requires_reference\nBEFORE INSERT ON review_decisions\nWHEN NEW.decision_type = 'rollback' AND NEW.references_decision_id IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'review_decisions.references_decision_id is required for rollback decision (Hard Rule 31, INSERT-only pattern).');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_review_decisions_target_id_not_null",
+    "sql": "CREATE TRIGGER enforce_review_decisions_target_id_not_null\nBEFORE INSERT ON review_decisions\nWHEN NEW.target_id IS NULL OR NEW.target_id = ''\nBEGIN\n  SELECT RAISE(ABORT, 'review_decisions.target_id cannot be NULL or empty');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_revision_changes_change_type_not_null",
+    "sql": "CREATE TRIGGER enforce_revision_changes_change_type_not_null\nBEFORE INSERT ON revision_changes\nWHEN NEW.change_type IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'revision_changes.change_type cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_revision_changes_created_at_not_null",
+    "sql": "CREATE TRIGGER enforce_revision_changes_created_at_not_null\nBEFORE INSERT ON revision_changes\nWHEN NEW.created_at IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'revision_changes.created_at cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_revision_changes_revision_date_not_null",
+    "sql": "CREATE TRIGGER enforce_revision_changes_revision_date_not_null\nBEFORE INSERT ON revision_changes\nWHEN NEW.revision_date IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'revision_changes.revision_date cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_revision_changes_version_year_not_null",
+    "sql": "CREATE TRIGGER enforce_revision_changes_version_year_not_null\nBEFORE INSERT ON revision_changes\nWHEN NEW.version_year IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'revision_changes.version_year cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_sessions_expires_at_not_empty",
+    "sql": "CREATE TRIGGER enforce_sessions_expires_at_not_empty\n  BEFORE INSERT ON sessions\n  WHEN length(trim(NEW.expires_at)) = 0\n  BEGIN\n    SELECT RAISE(ABORT, 'expires_at must not be empty');\n  END",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_sessions_immutable_created_at",
+    "sql": "CREATE TRIGGER enforce_sessions_immutable_created_at\n  BEFORE UPDATE OF created_at ON sessions\n  WHEN OLD.created_at != NEW.created_at\n  BEGIN\n    SELECT RAISE(ABORT, 'sessions.created_at is immutable');\n  END",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_sessions_immutable_expires_at",
+    "sql": "CREATE TRIGGER enforce_sessions_immutable_expires_at\n  BEFORE UPDATE OF expires_at ON sessions\n  WHEN OLD.expires_at != NEW.expires_at\n  BEGIN\n    SELECT RAISE(ABORT, 'sessions.expires_at is immutable');\n  END",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_sessions_immutable_refresh_token_hash",
+    "sql": "CREATE TRIGGER enforce_sessions_immutable_refresh_token_hash\n  BEFORE UPDATE OF refresh_token_hash ON sessions\n  WHEN OLD.refresh_token_hash != NEW.refresh_token_hash\n  BEGIN\n    SELECT RAISE(ABORT, 'sessions.refresh_token_hash is immutable (rotation = INSERT new + UPDATE old.revoked_at)');\n  END",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_sessions_immutable_user_id",
+    "sql": "CREATE TRIGGER enforce_sessions_immutable_user_id\n  BEFORE UPDATE OF user_id ON sessions\n  WHEN OLD.user_id != NEW.user_id\n  BEGIN\n    SELECT RAISE(ABORT, 'sessions.user_id is immutable');\n  END",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_sessions_refresh_token_hash_length",
+    "sql": "CREATE TRIGGER enforce_sessions_refresh_token_hash_length\n  BEFORE INSERT ON sessions\n  WHEN length(NEW.refresh_token_hash) != 64\n  BEGIN\n    SELECT RAISE(ABORT, 'refresh_token_hash must be 64 hex chars (SHA-256)');\n  END",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_sessions_refresh_token_hash_not_empty",
+    "sql": "CREATE TRIGGER enforce_sessions_refresh_token_hash_not_empty\n  BEFORE INSERT ON sessions\n  WHEN length(trim(NEW.refresh_token_hash)) = 0\n  BEGIN\n    SELECT RAISE(ABORT, 'refresh_token_hash must not be empty');\n  END",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_sessions_revoked_at_one_way",
+    "sql": "CREATE TRIGGER enforce_sessions_revoked_at_one_way\n  BEFORE UPDATE OF revoked_at ON sessions\n  WHEN OLD.revoked_at IS NOT NULL AND NEW.revoked_at IS NULL\n  BEGIN\n    SELECT RAISE(ABORT, 'sessions.revoked_at cannot be unset (one-way transition)');\n  END",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_sessions_user_id_not_empty",
+    "sql": "CREATE TRIGGER enforce_sessions_user_id_not_empty\n  BEFORE INSERT ON sessions\n  WHEN length(trim(NEW.user_id)) = 0\n  BEGIN\n    SELECT RAISE(ABORT, 'user_id must not be empty');\n  END",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_status_transitions_from_status_not_null",
+    "sql": "CREATE TRIGGER enforce_status_transitions_from_status_not_null\nBEFORE INSERT ON status_transitions\nWHEN NEW.from_status IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'status_transitions.from_status cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_status_transitions_one_way",
+    "sql": "CREATE TRIGGER enforce_status_transitions_one_way\nBEFORE INSERT ON status_transitions\nWHEN (NEW.from_status = 'approved' AND NEW.to_status IN ('draft','review'))\n  OR (NEW.from_status = 'review' AND NEW.to_status = 'draft')\n  OR (NEW.from_status = 'flagged' AND NEW.to_status IN ('draft','review','approved'))\n  OR (NEW.from_status = NEW.to_status)\nBEGIN\n  SELECT RAISE(ABORT, 'Illegal status transition. Allowed: draft→review→approved, any→flagged (one-way).');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_status_transitions_reviewer_id_not_null",
+    "sql": "CREATE TRIGGER enforce_status_transitions_reviewer_id_not_null\nBEFORE INSERT ON status_transitions\nWHEN NEW.reviewer_id IS NULL OR NEW.reviewer_id = ''\nBEGIN\n  SELECT RAISE(ABORT, 'status_transitions.reviewer_id cannot be NULL or empty');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_status_transitions_target_id_not_null",
+    "sql": "CREATE TRIGGER enforce_status_transitions_target_id_not_null\nBEFORE INSERT ON status_transitions\nWHEN NEW.target_id IS NULL OR NEW.target_id = ''\nBEGIN\n  SELECT RAISE(ABORT, 'status_transitions.target_id cannot be NULL or empty');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_status_transitions_target_type_not_null",
+    "sql": "CREATE TRIGGER enforce_status_transitions_target_type_not_null\nBEFORE INSERT ON status_transitions\nWHEN NEW.target_type IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'status_transitions.target_type cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_status_transitions_to_status_not_null",
+    "sql": "CREATE TRIGGER enforce_status_transitions_to_status_not_null\nBEFORE INSERT ON status_transitions\nWHEN NEW.to_status IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'status_transitions.to_status cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_topic_clusters_created_at_not_null",
+    "sql": "CREATE TRIGGER enforce_topic_clusters_created_at_not_null\nBEFORE INSERT ON topic_clusters\nWHEN NEW.created_at IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'topic_clusters.created_at cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_topic_clusters_name_not_null",
+    "sql": "CREATE TRIGGER enforce_topic_clusters_name_not_null\nBEFORE INSERT ON topic_clusters\nWHEN NEW.name IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'topic_clusters.name cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_user_progress_card_type_not_null",
+    "sql": "CREATE TRIGGER enforce_user_progress_card_type_not_null\nBEFORE INSERT ON user_progress\nWHEN NEW.card_type IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'user_progress.card_type cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_user_progress_created_at_not_null",
+    "sql": "CREATE TRIGGER enforce_user_progress_created_at_not_null\nBEFORE INSERT ON user_progress\nWHEN NEW.created_at IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'user_progress.created_at cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_user_progress_updated_at_not_null",
+    "sql": "CREATE TRIGGER enforce_user_progress_updated_at_not_null\nBEFORE INSERT ON user_progress\nWHEN NEW.updated_at IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'user_progress.updated_at cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_user_progress_user_id_not_null",
+    "sql": "CREATE TRIGGER enforce_user_progress_user_id_not_null\nBEFORE INSERT ON user_progress\nWHEN NEW.user_id IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'user_progress.user_id cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_users_created_at_not_null",
+    "sql": "CREATE TRIGGER enforce_users_created_at_not_null\nBEFORE INSERT ON users\nWHEN NEW.created_at IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'users.created_at cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_users_email_format",
+    "sql": "CREATE TRIGGER enforce_users_email_format\nBEFORE INSERT ON users\nWHEN NEW.email NOT LIKE '%@%.%'\nBEGIN\n  SELECT RAISE(ABORT, 'users.email must contain @ and domain');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_users_email_not_null",
+    "sql": "CREATE TRIGGER enforce_users_email_not_null\nBEFORE INSERT ON users\nWHEN NEW.email IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'users.email cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_users_password_hash_not_null",
+    "sql": "CREATE TRIGGER enforce_users_password_hash_not_null\nBEFORE INSERT ON users\nWHEN NEW.password_hash IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'users.password_hash cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_users_password_iterations_min",
+    "sql": "CREATE TRIGGER enforce_users_password_iterations_min\nBEFORE INSERT ON users\nWHEN NEW.password_iterations < 600000\nBEGIN\n  SELECT RAISE(ABORT, 'users.password_iterations must be >= 600000 (OWASP 2024 PBKDF2-SHA256 recommendation)');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_users_password_iterations_not_null",
+    "sql": "CREATE TRIGGER enforce_users_password_iterations_not_null\nBEFORE INSERT ON users\nWHEN NEW.password_iterations IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'users.password_iterations cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_users_password_salt_not_null",
+    "sql": "CREATE TRIGGER enforce_users_password_salt_not_null\nBEFORE INSERT ON users\nWHEN NEW.password_salt IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'users.password_salt cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_users_status_not_null",
+    "sql": "CREATE TRIGGER enforce_users_status_not_null\nBEFORE INSERT ON users\nWHEN NEW.status IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'users.status cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_users_updated_at_not_null",
+    "sql": "CREATE TRIGGER enforce_users_updated_at_not_null\nBEFORE INSERT ON users\nWHEN NEW.updated_at IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'users.updated_at cannot be NULL');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_webhook_events_event_id_not_empty",
+    "sql": "CREATE TRIGGER enforce_webhook_events_event_id_not_empty\nBEFORE INSERT ON webhook_events\nWHEN NEW.event_id IS NULL OR length(trim(NEW.event_id)) = 0\nBEGIN\n  SELECT RAISE(ABORT, 'webhook_events.event_id must be non-empty');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_webhook_events_event_type_not_empty",
+    "sql": "CREATE TRIGGER enforce_webhook_events_event_type_not_empty\nBEFORE INSERT ON webhook_events\nWHEN NEW.event_type IS NULL OR length(trim(NEW.event_type)) = 0\nBEGIN\n  SELECT RAISE(ABORT, 'webhook_events.event_type must be non-empty');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_webhook_events_payload_not_empty",
+    "sql": "CREATE TRIGGER enforce_webhook_events_payload_not_empty\nBEFORE INSERT ON webhook_events\nWHEN NEW.payload IS NULL OR length(NEW.payload) = 0\nBEGIN\n  SELECT RAISE(ABORT, 'webhook_events.payload must be non-empty');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_webhook_events_provider_not_empty",
+    "sql": "CREATE TRIGGER enforce_webhook_events_provider_not_empty\nBEFORE INSERT ON webhook_events\nWHEN NEW.provider IS NULL OR length(trim(NEW.provider)) = 0\nBEGIN\n  SELECT RAISE(ABORT, 'webhook_events.provider must be non-empty');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_webhook_events_status_enum_insert",
+    "sql": "CREATE TRIGGER enforce_webhook_events_status_enum_insert\nBEFORE INSERT ON webhook_events\nWHEN NEW.status NOT IN ('received', 'processing', 'processed', 'failed')\nBEGIN\n  SELECT RAISE(ABORT, 'webhook_events.status must be one of: received, processing, processed, failed');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "enforce_webhook_events_status_transition",
+    "sql": "CREATE TRIGGER enforce_webhook_events_status_transition\nBEFORE UPDATE OF status ON webhook_events\nFOR EACH ROW\nWHEN NEW.status != OLD.status AND NOT (\n  (OLD.status = 'received'   AND NEW.status IN ('processing', 'processed', 'failed'))\n  OR (OLD.status = 'processing' AND NEW.status IN ('processed', 'failed'))\n)\nBEGIN\n  SELECT RAISE(ABORT, 'Invalid webhook_events.status transition');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "mav_constants_supersedes_deactivate",
+    "sql": "CREATE TRIGGER mav_constants_supersedes_deactivate\nAFTER INSERT ON constants\nWHEN NEW.superseded_by IS NOT NULL AND NEW.superseded_by != ''\nBEGIN\n  UPDATE constants SET is_current_active = 0\n    WHERE id = NEW.superseded_by AND is_current_active = 1;\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "mav_formulas_supersedes_deactivate",
+    "sql": "CREATE TRIGGER mav_formulas_supersedes_deactivate\nAFTER INSERT ON formulas\nWHEN NEW.superseded_by IS NOT NULL AND NEW.superseded_by != ''\nBEGIN\n  UPDATE formulas SET is_current_active = 0\n    WHERE id = NEW.superseded_by AND is_current_active = 1;\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "mav_supersedes_knowledge_nodes_deactivate",
+    "sql": "CREATE TRIGGER mav_supersedes_knowledge_nodes_deactivate\nAFTER INSERT ON knowledge_edges\nWHEN NEW.edge_type = 'SUPERSEDES'\nBEGIN\n  UPDATE knowledge_nodes\n    SET is_current_active = 0\n    WHERE id = NEW.to_node AND is_current_active = 1;\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_constants_delete",
+    "sql": "CREATE TRIGGER prevent_constants_delete\nBEFORE DELETE ON constants\nBEGIN\n  SELECT RAISE(ABORT, 'DELETE on constants is forbidden. Temporal Graph audit history must be preserved (Hard Rule 2). Use is_current_active=0 via superseded_by chain.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_constants_self_supersede",
+    "sql": "CREATE TRIGGER prevent_constants_self_supersede\nBEFORE INSERT ON constants\nWHEN NEW.superseded_by IS NOT NULL AND NEW.superseded_by = NEW.id\nBEGIN\n  SELECT RAISE(ABORT, 'constants.superseded_by cannot reference itself (cyclic versioning).');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_constants_update",
+    "sql": "CREATE TRIGGER prevent_constants_update\nBEFORE UPDATE ON constants\nWHEN NEW.id IS NOT OLD.id\n  OR NEW.category IS NOT OLD.category\n  OR NEW.name IS NOT OLD.name\n  OR NEW.value IS NOT OLD.value\n  OR NEW.numeric_value IS NOT OLD.numeric_value\n  OR NEW.applies_to IS NOT OLD.applies_to\n  OR NEW.insurance_type IS NOT OLD.insurance_type\n  OR NEW.confusion_risk IS NOT OLD.confusion_risk\n  OR NEW.confusion_level IS NOT OLD.confusion_level\n  OR NEW.unit IS NOT OLD.unit\n  OR NEW.page_ref IS NOT OLD.page_ref\n  OR NEW.version_year IS NOT OLD.version_year\n  OR NEW.exam_frequency IS NOT OLD.exam_frequency\n  OR NEW.related_formula IS NOT OLD.related_formula\n  OR NEW.exam_scope IS NOT OLD.exam_scope\n  OR NEW.superseded_by IS NOT OLD.superseded_by\nBEGIN\n  SELECT RAISE(ABORT, 'UPDATE on constants body columns is forbidden (Hard Rule 2, Temporal Graph). Use INSERT new constant with superseded_by set. Only is_current_active may change.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_engine_telemetry_delete",
+    "sql": "CREATE TRIGGER prevent_engine_telemetry_delete\nBEFORE DELETE ON engine_telemetry\nBEGIN\n  SELECT RAISE(ABORT, 'DELETE on engine_telemetry is forbidden (append-only fact table). Phase 2 GC plan via wrangler d1 execute manual override only.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_engine_telemetry_update",
+    "sql": "CREATE TRIGGER prevent_engine_telemetry_update\nBEFORE UPDATE ON engine_telemetry\nBEGIN\n  SELECT RAISE(ABORT, 'UPDATE on engine_telemetry is forbidden (append-only fact table). Use INSERT for new readings. Phase 2 retention policy via wrangler d1 execute manual override only.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_exam_questions_update",
+    "sql": "CREATE TRIGGER prevent_exam_questions_update\nBEFORE UPDATE ON exam_questions\nBEGIN\n  SELECT RAISE(ABORT, 'UPDATE on exam_questions is forbidden. Use INSERT + superseded_by + valid_until pattern.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_formulas_delete",
+    "sql": "CREATE TRIGGER prevent_formulas_delete\nBEFORE DELETE ON formulas\nBEGIN\n  SELECT RAISE(ABORT, 'DELETE on formulas is forbidden. Temporal Graph audit history must be preserved (Hard Rule 1/2). Use is_current_active=0 via superseded_by chain.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_formulas_self_supersede",
+    "sql": "CREATE TRIGGER prevent_formulas_self_supersede\nBEFORE INSERT ON formulas\nWHEN NEW.superseded_by IS NOT NULL AND NEW.superseded_by = NEW.id\nBEGIN\n  SELECT RAISE(ABORT, 'formulas.superseded_by cannot reference itself (cyclic versioning).');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_formulas_update",
+    "sql": "CREATE TRIGGER prevent_formulas_update\nBEFORE UPDATE ON formulas\nWHEN NEW.id IS NOT OLD.id\n  OR NEW.name IS NOT OLD.name\n  OR NEW.equation_template IS NOT OLD.equation_template\n  OR NEW.equation_display IS NOT OLD.equation_display\n  OR NEW.variables_schema IS NOT OLD.variables_schema\n  OR NEW.constraints IS NOT OLD.constraints\n  OR NEW.expected_inputs IS NOT OLD.expected_inputs\n  OR NEW.graceful_degradation IS NOT OLD.graceful_degradation\n  OR NEW.page_ref IS NOT OLD.page_ref\n  OR NEW.node_id IS NOT OLD.node_id\n  OR NEW.version_year IS NOT OLD.version_year\n  OR NEW.superseded_by IS NOT OLD.superseded_by\nBEGIN\n  SELECT RAISE(ABORT, 'UPDATE on formulas body columns is forbidden (Hard Rule 1/2, Temporal Graph). Use INSERT new formula with superseded_by set. Only is_current_active may change.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_knowledge_nodes_delete",
+    "sql": "CREATE TRIGGER prevent_knowledge_nodes_delete\nBEFORE DELETE ON knowledge_nodes\nBEGIN\n  SELECT RAISE(ABORT, 'DELETE on knowledge_nodes is forbidden. Temporal Graph audit history must be preserved (Hard Rule 1). Use is_current_active=0 via SUPERSEDES.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_knowledge_nodes_update",
+    "sql": "CREATE TRIGGER prevent_knowledge_nodes_update\nBEFORE UPDATE ON knowledge_nodes\nWHEN NEW.id IS NOT OLD.id\n  OR NEW.type IS NOT OLD.type\n  OR NEW.name IS NOT OLD.name\n  OR NEW.description IS NOT OLD.description\n  OR NEW.lv1_insurance IS NOT OLD.lv1_insurance\n  OR NEW.lv2_crop IS NOT OLD.lv2_crop\n  OR NEW.lv3_investigation IS NOT OLD.lv3_investigation\n  OR NEW.page_ref IS NOT OLD.page_ref\n  OR NEW.batch_id IS NOT OLD.batch_id\n  OR NEW.version_year IS NOT OLD.version_year\n  OR NEW.superseded_by IS NOT OLD.superseded_by\n  OR NEW.truth_weight IS NOT OLD.truth_weight\n  OR NEW.status IS NOT OLD.status\n  OR NEW.exam_scope IS NOT OLD.exam_scope\n  \n  OR (OLD.batch_run_id IS NOT NULL AND NEW.batch_run_id IS NOT OLD.batch_run_id)\n  OR (OLD.source_id    IS NOT NULL AND NEW.source_id    IS NOT OLD.source_id)\nBEGIN\n  SELECT RAISE(ABORT, 'UPDATE on knowledge_nodes body columns is forbidden (Hard Rule 1, Temporal Graph). Use INSERT + SUPERSEDES edge pattern. Only is_current_active flip and (batch_run_id/source_id) NULL->value backfill (1회) allowed.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_non_draft_insert",
+    "sql": "CREATE TRIGGER prevent_non_draft_insert\nBEFORE INSERT ON knowledge_nodes\nWHEN NEW.status != 'draft'\nBEGIN\n  SELECT RAISE(ABORT, 'Hard Rule 13 violation: knowledge_nodes INSERT requires status=draft. Use state_transitions UPDATE for transitions.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_review_decisions_ai_silent_adoption",
+    "sql": "CREATE TRIGGER prevent_review_decisions_ai_silent_adoption\nBEFORE INSERT ON review_decisions\nWHEN NEW.ai_recommendation IS NOT NULL\n  AND NEW.ai_recommendation = NEW.decision_type\n  AND (NEW.decision_rationale IS NULL OR LENGTH(TRIM(NEW.decision_rationale)) < 10)\nBEGIN\n  SELECT RAISE(ABORT, 'When AI recommendation matches decision_type, decision_rationale (min 10 chars) is required to prove human review (Hard Rule 29).');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_review_decisions_delete",
+    "sql": "CREATE TRIGGER prevent_review_decisions_delete\nBEFORE DELETE ON review_decisions\nBEGIN\n  SELECT RAISE(ABORT, 'DELETE on review_decisions is forbidden. INSERT-only audit log.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_review_decisions_system_reviewer",
+    "sql": "CREATE TRIGGER prevent_review_decisions_system_reviewer\nBEFORE INSERT ON review_decisions\nWHEN LOWER(NEW.reviewer_id) IN ('system', 'ai', 'auto', 'batch', 'admin', 'root', 'bot', 'service', 'cron', 'worker')\n   OR LOWER(NEW.reviewer_id) LIKE 'ai-%'\n   OR LOWER(NEW.reviewer_id) LIKE 'system-%'\n   OR LOWER(NEW.reviewer_id) LIKE 'auto-%'\n   OR LOWER(NEW.reviewer_id) LIKE 'bot-%'\n   OR LOWER(NEW.reviewer_id) LIKE 'service-%'\n   OR LOWER(NEW.reviewer_id) LIKE 'worker-%'\nBEGIN\n  SELECT RAISE(ABORT, 'reviewer_id must be a human session identifier. System/AI/auto/batch/bot reviewer IDs are forbidden (Hard Rule 29 — AI 추천 자동 채택 금지).');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_review_decisions_update",
+    "sql": "CREATE TRIGGER prevent_review_decisions_update\nBEFORE UPDATE ON review_decisions\nBEGIN\n  SELECT RAISE(ABORT, 'UPDATE on review_decisions is forbidden. INSERT-only audit log. Rollback = INSERT new decision with references_decision_id (Hard Rule 1, 31).');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_revision_changes_update",
+    "sql": "CREATE TRIGGER prevent_revision_changes_update\nBEFORE UPDATE ON revision_changes\nBEGIN\n  SELECT RAISE(ABORT, 'UPDATE on revision_changes is forbidden. This table is append-only audit log.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_status_transitions_delete",
+    "sql": "CREATE TRIGGER prevent_status_transitions_delete\nBEFORE DELETE ON status_transitions\nBEGIN\n  SELECT RAISE(ABORT, 'DELETE on status_transitions is forbidden. This table is append-only audit log.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_status_transitions_update",
+    "sql": "CREATE TRIGGER prevent_status_transitions_update\nBEFORE UPDATE ON status_transitions\nBEGIN\n  SELECT RAISE(ABORT, 'UPDATE on status_transitions is forbidden. This table is append-only audit log.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_supersedes_reverse_cycle",
+    "sql": "CREATE TRIGGER prevent_supersedes_reverse_cycle\nBEFORE INSERT ON knowledge_edges\nWHEN NEW.edge_type = 'SUPERSEDES'\n  AND EXISTS (\n    SELECT 1 FROM knowledge_edges\n    WHERE from_node = NEW.to_node\n      AND to_node = NEW.from_node\n      AND edge_type = 'SUPERSEDES'\n  )\nBEGIN\n  SELECT RAISE(ABORT, 'SUPERSEDES reverse cycle detected. Versioning must be acyclic — A→B SUPERSEDES already exists, cannot INSERT B→A.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_supersedes_self",
+    "sql": "CREATE TRIGGER prevent_supersedes_self\nBEFORE INSERT ON knowledge_edges\nWHEN NEW.edge_type = 'SUPERSEDES' AND NEW.from_node = NEW.to_node\nBEGIN\n  SELECT RAISE(ABORT, 'SUPERSEDES self-reference is forbidden (from_node = to_node).');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_table_cells_critical_update",
+    "sql": "CREATE TRIGGER prevent_table_cells_critical_update\nBEFORE UPDATE OF id, table_id, row_id, col_id, value_type, formula_id, merged_with_id, nested_table_id ON table_cells\nBEGIN\n  SELECT RAISE(ABORT, 'table_cells critical fields are immutable (Hard Rule 28: append-only). Use new TCELL-NNN-NN-NN with SUPERSEDES pattern. Only value_text mutation is allowed for admin G5.5 typo correction.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_table_headers_critical_update",
+    "sql": "CREATE TRIGGER prevent_table_headers_critical_update\nBEFORE UPDATE OF id, table_id, axis, level, index_pos, parent_id ON table_headers\nBEGIN\n  SELECT RAISE(ABORT, 'table_headers critical fields are immutable (Hard Rule 28: append-only). Use new TROW/TCOL with SUPERSEDES pattern. Only text mutation is allowed for typo correction.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_table_node_links_update",
+    "sql": "CREATE TRIGGER prevent_table_node_links_update\nBEFORE UPDATE ON table_node_links\nBEGIN\n  SELECT RAISE(ABORT, 'table_node_links is INSERT-only (Hard Rule 28: append-only). Add new row with relation_type=supersedes for revision tracking.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "prevent_table_structures_critical_update",
+    "sql": "CREATE TRIGGER prevent_table_structures_critical_update\nBEFORE UPDATE OF id, source_node_id, title, pattern_type, row_count, col_count, source ON table_structures\nBEGIN\n  SELECT RAISE(ABORT, 'table_structures critical fields are immutable (Hard Rule 28: append-only). Use status update or new TBL-NNN for revisions.');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "trg_batch_runs_no_duplicate_completed",
+    "sql": "CREATE TRIGGER trg_batch_runs_no_duplicate_completed\nBEFORE INSERT ON batch_runs\nWHEN EXISTS (\n  SELECT 1 FROM batch_runs\n  WHERE batch_run_id = NEW.batch_run_id\n    AND state = 'completed'\n)\nBEGIN\n  SELECT RAISE(ABORT, 'batch_runs: cannot re-insert completed batch_run_id (Idempotency violation)');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "trg_batch_runs_no_state_downgrade",
+    "sql": "CREATE TRIGGER trg_batch_runs_no_state_downgrade\nBEFORE UPDATE OF state ON batch_runs\nWHEN OLD.state = 'completed' AND NEW.state != 'completed'\nBEGIN\n  SELECT RAISE(ABORT, 'batch_runs: cannot transition out of completed state (Idempotency violation)');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "trg_batch_runs_recover_only_from_non_completed",
+    "sql": "CREATE TRIGGER trg_batch_runs_recover_only_from_non_completed\nBEFORE UPDATE OF state ON batch_runs\nWHEN NEW.state = 'recovered' AND OLD.state = 'completed'\nBEGIN\n  SELECT RAISE(ABORT, 'batch_runs: cannot recover completed run (Idempotency violation)');\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "users_auto_update_timestamp",
+    "sql": "CREATE TRIGGER users_auto_update_timestamp\nAFTER UPDATE ON users\nFOR EACH ROW\nWHEN NEW.updated_at = OLD.updated_at\nBEGIN\n  UPDATE users SET updated_at = datetime('now') WHERE id = NEW.id;\nEND",
+    "type": "trigger"
+  },
+  {
+    "name": "webhook_events_auto_processed_at",
+    "sql": "CREATE TRIGGER webhook_events_auto_processed_at\nAFTER UPDATE OF status ON webhook_events\nFOR EACH ROW\nWHEN NEW.status IN ('processed', 'failed') AND OLD.processed_at IS NULL\nBEGIN\n  UPDATE webhook_events SET processed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')\n  WHERE id = NEW.id;\nEND",
+    "type": "trigger"
+  }
+]

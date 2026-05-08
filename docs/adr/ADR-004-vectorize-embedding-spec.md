@@ -63,11 +63,15 @@ interface VectorMetadata {
 - 단일 Vectorize 인덱스 + `exam_id` 필터 방식 (시험별 인덱스 분리 금지 — Workers AI 호출 최적화)
 - Year 1 구현은 하드코딩 `'son-hae-pyeong-ga-sa'` 허용, Year 2 Phase 4 리팩토링 시 adapter 주입 전환
 
-### 4. 인덱싱 정책
+### 4. 인덱싱 정책 (Addendum 2026-05-08, Session 056)
 
-- **approved 상태 노드만 임베딩** (`draft`, `review` 제외)
-- 매년 교재 개정 시 **신규 인덱스 + 구 인덱스 병행 운영 (30일)** 후 전환
-- 삭제는 하지 않음. `is_active=false` 마스킹만.
+> **Addendum 근거**: 본 시점 D1 누적 1240+ 노드 모두 'draft' 상태 (BATCH 1~5 + Phase 2A 별표 5건). 엄격 정책 시 검수 전 RAG smoke test 불가 + 진산 spot check 차단. plan `phase2a-vectorize-indexing.plan.md` D-VEC-1=B 결정.
+
+- **모든 status 인덱싱 대상** (`draft`, `review`, `approved` 모두 포함). 메타데이터 `status` 필드 필수 주입.
+- **검색 단계 단일 방어**: `WHERE status='approved' AND is_current_active=1 AND exam_id=?` (SEARCH_PIPELINE Stage 2). 이중 방어 → 단일 방어 의존. ADR-008 graceful degradation (<0.60 거부)으로 보강.
+- **admin/검수자 검색**: `status` 무관 전수 검색 허용 (G5.5 검수 UI 의존). 일반 사용자 검색은 status='approved' 강제.
+- **매년 교재 개정 시 신규 인덱스 + 구 인덱스 병행 운영 (30일)** 후 전환.
+- **삭제 금지**. `is_active=false` 마스킹만.
 
 ### 5. 쿼리 전략
 
@@ -111,3 +115,4 @@ interface VectorMetadata {
 
 - 2026-04-18: 초안 작성 (v2.1 재정립서 스펙 정식화)
 - 2026-04-18 (Session 8): `exam_id` 메타데이터 필터 필수 원칙 추가 (ADR-007 멀티시험 전환 연동)
+- 2026-05-08 (Session 056): §4 인덱싱 정책 Addendum — `draft`/`review` 도 인덱싱 대상으로 확장. 검색 단계 status 필터 단일 방어 전환 (D-VEC-1=B, plan `phase2a-vectorize-indexing.plan.md`). 메타데이터 `status` 필드 필수 주입.

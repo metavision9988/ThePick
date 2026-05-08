@@ -81,6 +81,17 @@ namespace_id = "1003"
 simple = { limit = 300, period = 60 }
 
 # ============================================================
+# Vectorize (ADR-004 v2 / Session 056) — bge-m3 1024d cosine
+# dev: miniflare local emulation (실제 인덱스 미접근). production 인덱스명 일치 (.env.example).
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "thepick-embeddings"
+
+# Workers AI (bge-m3 임베딩 호출)
+[ai]
+binding = "AI"
+
+# ============================================================
 # Staging (APAC) — remote D1
 # DB id: edacc775-b11c-4200-8a76-284c65fa0542
 # ============================================================
@@ -118,6 +129,14 @@ name = "WEBHOOK_RATE_LIMITER_IP"
 type = "ratelimit"
 namespace_id = "2003"
 simple = { limit = 300, period = 60 }
+
+# Vectorize staging — 격리 인덱스 (DA-C3 정합, staging 자동화 PR 데이터가 production 미오염)
+[[env.staging.vectorize]]
+binding = "VECTORIZE"
+index_name = "thepick-embeddings-staging"
+
+[env.staging.ai]
+binding = "AI"
 
 # ============================================================
 # Production (APAC) — remote D1
@@ -157,6 +176,14 @@ name = "WEBHOOK_RATE_LIMITER_IP"
 type = "ratelimit"
 namespace_id = "3003"
 simple = { limit = 300, period = 60 }
+
+# Vectorize production — 운영 인덱스 (.env.example VECTORIZE_INDEX 정합)
+[[env.production.vectorize]]
+binding = "VECTORIZE"
+index_name = "thepick-embeddings"
+
+[env.production.ai]
+binding = "AI"
 
 # ============================================================
 # Cron Triggers (NC-2 — 2026-04-24)
