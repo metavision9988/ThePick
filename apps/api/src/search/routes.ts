@@ -1,5 +1,5 @@
 /**
- * User search routes — public RAG 검색 라우트 (Phase 2A Step 3).
+ * User search routes — public RAG 검색 라우트 (Phase 2A Step 3 + Multi-Path Fallback).
  *
  * 라우트:
  *   - POST `/api/search` — 학습자 자연어 질문 → 검증된 knowledge_nodes top-K
@@ -8,13 +8,15 @@
  *   - 본 step 인증 0 (public route, MVP). user_session middleware 별도 step
  *
  * 응답:
- *   - `{query, examId, topK, gracefulDegradation, top1Score, results: [...]}`
- *   - graceful=true → Multi-Path Fallback 진입 신호 (별도 step)
+ *   - 정상 (Stage 1+2+3): `{query, examId, topK, gracefulDegradation, top1Score, results}`
+ *   - Multi-Path 진입 (graceful=true OR stage2Count=0): `fallback: {stage, source, ...}`
  *
  * 근거:
  *   - docs/plans/phase2a-user-search-route.plan.md §3.1
- *   - docs/architecture/SEARCH_PIPELINE.md v2.1 §2~§4
+ *   - docs/plans/phase2a-multi-path-fallback.plan.md §3.2
+ *   - docs/architecture/SEARCH_PIPELINE.md v2.1 §2~§5
  *   - docs/adr/ADR-008-graceful-degradation.md
+ *   - docs/adr/ADR-015-multi-path-fallback-pipeline.md
  */
 
 import { Hono } from 'hono';
@@ -27,17 +29,23 @@ import {
   type LoggerEnvironment,
 } from '@thepick/shared';
 import {
+  embedQuery,
   searchKnowledgeNodesForUser,
   UserSearchError,
   DEFAULT_RESULT_TOP_K,
   MAX_RESULT_TOP_K,
   type UserSearchDeps,
+  type UserSearchResult,
   type VectorizeQueryBinding,
   type UserSearchD1,
 } from './user-search.js';
 import type { AiBinding } from '../vectorize/upserter.js';
 import { getClientIp, type RateLimiter } from '../auth/rate-limit.js';
-import { digestQueryForLog } from './log-redact.js';
+import { digestQueryForLog, type QueryDigest } from './log-redact.js';
+import {
+  runMultiPathFallback,
+  type MultiPathFallbackResponse,
+} from './multi-path-fallback/index.js';
 
 export interface UserSearchRouteBindings {
   readonly DB: D1Database;
@@ -91,8 +99,33 @@ export function createUserSearchRoutes(): Hono<{ Bindings: UserSearchRouteBindin
       db: c.env.DB as unknown as UserSearchD1,
     };
 
+    // Pass 4 MAJ-B 흡수 (Session 059) — queryDigest 1회 계산 + Hono context 캐시.
+    // fallback 진입 path 와 catch path 가 모두 본 변수 재사용 → request 당 SHA-256 1회.
+    // Pass 1 CRIT-1 정합: safeQueryDigest 가 'hash_unavailable' fallback 보장.
+    const queryDigest = await safeQueryDigest(query);
+
     try {
-      const result = await searchKnowledgeNodesForUser(deps, examId, query, topK);
+      // Pass 2 MAJ-1 흡수 (Session 059 → Multi-Path step) — bge-m3 임베딩 1회.
+      // Stage 1 + Multi-Path Stage 3 양쪽에 precomputedEmbedding 재사용 (호출 절감).
+      const queryEmbedding = await embedQuery(c.env.AI, query);
+      const result = await searchKnowledgeNodesForUser(deps, examId, query, topK, {
+        precomputedEmbedding: queryEmbedding,
+      });
+
+      // Multi-Path Fallback 진입 조건 (gracefulDegradation=true 또는 stage2Count=0)
+      // - graceful=true: top-1 < 0.60 (Stage 1 임계 미달)
+      // - stage2Count=0: Stage 2 hard filter 후 0건 (production 'approved' 0건 정합)
+      if (result.gracefulDegradation || result.stage2Count === 0) {
+        const fallback = await runMultiPathFallback(
+          { db: deps.db, vectorize: deps.vectorize },
+          examId,
+          query,
+          queryDigest,
+          queryEmbedding,
+        );
+        return c.json(buildMultiPathResponse(result, fallback));
+      }
+
       return c.json(result);
     } catch (err) {
       if (err instanceof UserSearchError) {
@@ -101,15 +134,6 @@ export function createUserSearchRoutes(): Hono<{ Bindings: UserSearchRouteBindin
         const env = c.env.ENVIRONMENT ?? 'production';
         const isDev = env === 'dev' || env === 'development' || env === 'test';
         const safeMessage = isDev ? err.message : err.phase;
-
-        // Pass 1 CRIT-1 흡수 (Session 059) — digestQueryForLog throw 시에도 PII 정책 보존.
-        // crypto.subtle 미가용/throw 시 'hash_unavailable' fallback (query 평문 절대 미로깅).
-        let queryDigest: { length: number; hash: string };
-        try {
-          queryDigest = await digestQueryForLog(query);
-        } catch {
-          queryDigest = { length: query.length, hash: 'hash_unavailable' };
-        }
 
         // Pass 4 MAJ-1 흡수 (Session 059) — canonical createLogger 도입 (schema 통일).
         // err 인자 의도적 미전달: serializeError 가 cause chain 자동 surface 시
@@ -147,4 +171,35 @@ export function createUserSearchRoutes(): Hono<{ Bindings: UserSearchRouteBindin
   });
 
   return app;
+}
+
+/**
+ * digestQueryForLog 안전 호출 — Pass 1 CRIT-1 흡수 (Session 059).
+ *
+ * crypto.subtle 미가용/throw 시 'hash_unavailable' fallback. PII 정책 (query 평문
+ * 절대 미로깅) 보존.
+ */
+async function safeQueryDigest(query: string): Promise<QueryDigest> {
+  try {
+    return await digestQueryForLog(query);
+  } catch {
+    return { length: query.length, hash: 'hash_unavailable' };
+  }
+}
+
+/**
+ * Multi-Path Fallback 응답 build — Stage 1 결과 + fallback 결과 조합.
+ *
+ * UserSearchResult shape 보존 (gracefulDegradation/top1Score/stage1Count/stage2Count) +
+ * fallback 메타 추가 (Multi-Path Fallback 진입 시점 학습자 UI 분기 신호).
+ */
+interface MultiPathHttpResponse extends UserSearchResult {
+  readonly fallback: MultiPathFallbackResponse;
+}
+
+function buildMultiPathResponse(
+  stage123: UserSearchResult,
+  fallback: MultiPathFallbackResponse,
+): MultiPathHttpResponse {
+  return { ...stage123, fallback };
 }

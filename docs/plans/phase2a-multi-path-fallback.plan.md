@@ -64,12 +64,14 @@ Stage 4 Honest Refusal + 검수 큐 기록  ← 본 step 신규 (telemetry 활�
 - D-MPF-2 옵션 A 의 한계: topic_clusters 50건은 농학 역공학 단일 시험 (Hard Rule 15 Year 1 한시 예외). Year 2 멀티시험 진입 시 examId 필터 필수 — 본 step 에서 examId 컬럼 추가 검토.
 - D-MPF-3 옵션 A 의 운영 비용: review_queue → admin G5.5 검수 UI → 검수자 워크플로우. 학습자 거부율 < 5% 가정 시 일 50~100 건 검수 — 인간 부담 가능.
 
-## 2.4 결정 영속 (진산 결정 시 갱신)
+## 2.4 결정 영속 (★ 진산 결정 — 2026-05-08 Session 059)
 
-- D-MPF-1: \_\_\_ (대기)
-- D-MPF-2: \_\_\_ (대기)
-- D-MPF-3: \_\_\_ (대기)
-- D-MPF-4: \_\_\_ (대기)
+- **D-MPF-1**: **옵션 A** (D1 LIKE/substring 단순 매칭) — Workers 즉시 가동, MVP 정합. 정확도 < 85% 미달 시 옵션 B (bge-m3 reranking) 보강 의무.
+- **D-MPF-2**: **옵션 A** (topic_clusters 50건 + bge-m3 임베딩 cosine) — Vectorize 재활용, Cloudflare 단일 벤더 정합.
+- **D-MPF-3**: **옵션 A** (신규 review_queue D1 테이블 + migration 0027) — admin G5.5 와 통합 검수 워크플로우.
+- **D-MPF-4**: **옵션 A** (Stage 2 + 3 + 4 모두 단일 step) — 운영 전제 구현.
+
+진산 발화: "권장 A 모두 채택, 진행" (Session 059 결정).
 
 ---
 
@@ -86,10 +88,11 @@ Stage 4 Honest Refusal + 검수 큐 기록  ← 본 step 신규 (telemetry 활�
 
 **`apps/api/src/search/multi-path-fallback/topic-cluster-router.ts`** (NEW):
 
-- `runTopicClusterRouting(deps, examId, queryEmbedding): Promise<TopicClusterResult>`
+- `runTopicClusterRouting(vectorize, db, examId, queryEmbedding): Promise<TopicClusterResult>`
 - 입력: 이미 계산된 query 임베딩 (Stage 1 단계의 bge-m3 결과 재활용 — Pass 2 MAJ-1 정합)
-- D1: topic_clusters 50건 전수 조회 (50건 정도면 in-memory 비교 충분)
-- 비교: bge-m3 임베딩 cosine similarity → top-3 cluster + cluster 내 노드 (knowledge_nodes JOIN via lv1/lv2 매칭)
+- **★ Silent Pivot 정정 (Session 059 Pass 4 MAJ-A 흡수)**: 본 plan 초안 명세 (D1 50건 in-memory cosine) 대신 **Vectorize.query(filter: {node_type: 'topic_cluster', exam_id})** 채택. 사유: (1) bge-m3 1024-차원 cosine 50회 inline 계산 시 CPU 50ms 한도 위협, (2) topic_clusters 임베딩 사전 적재 → Vectorize 인덱스 재사용 시 latency ~150ms vs inline 1500ms+, (3) Cloudflare 단일 벤더 정합 (Vectorize binding 재사용).
+- **★ Pass 2 CRITICAL-1 흡수**: filter 키 `'type'` → `'node_type'` (vectorize/upserter.ts VectorizeUpsertMetadata 정합). exam_id 필터 추가 (Hard Rule 16 zero-cost).
+- D1: topic_clusters 메타 조회 (id 기반 lookup) + 각 cluster 의 lv1/lv2 분리 매칭으로 knowledge_nodes JOIN (Pass 1 MAJ-4 흡수 — 이전 OR 결합 정밀도 손실 차단).
 - 출력: `{ clusters: [{id, name, lv1, lv2, similarity}], nodes: [...] }`
 
 **`apps/api/src/search/multi-path-fallback/honest-refusal.ts`** (NEW):
@@ -242,13 +245,28 @@ CREATE INDEX IF NOT EXISTS idx_review_queue_hash ON review_queue(query_hash);  -
 
 ## 10. carry-over (다음 step / 별도)
 
+### Session 058 carry-over (이월)
+
 - **Concurrent Execution + Short-circuit** (Rule 23 / ADR-019) — Vector + Keyword + Topic 동시 + race + 800ms timeout. 본 step 후순위.
 - **kkma/khaiii 형태소 분석기** — Year 2 또는 별도 ADR. Python subprocess 빌드 시 inverted index 사전 적재.
 - **응답 body `query` echo 정책** (Pass 3 MAJ-A2) — 별도 ADR 결정 의무 (본 step 진입 전 권장).
 - **canonical logger serializeError SQL keyword pattern redact** (Pass 1 MAJ-1) — 본 step 의 multi-path-fallback console.error 도 동일 정책 적용 가능.
 - **valid_from time-based effectivity** (Pass 4 C1) — Year 2.
 - **Pass 3 MIN-1 HMAC-with-pepper** — Year 1 carry-over.
-- **G-MPF-7 Hono context queryDigest 캐시 — 단위 테스트 spy 의무**.
+
+### Session 059 4-Pass carry-over (Multi-Path 4-Pass 결과, MAJOR 미흡수분)
+
+- **Pass 1 MAJ-2 + Pass 3 M2** Stage 2 토큰별 D1 LIKE → FTS5 inverted index Year 2 carry-over (현 Promise.all 병렬화 + LIKE leading-% 한계 영속).
+- **Pass 1 MAJ-5** Stage 2/3/4 ADR-008 timeout (800ms) 통합 — 현 순차 await 누적 ~1400ms 가능, SLO p95 < 800ms 미달 가능. ADR-019 Concurrent step 진입 시 동시 흡수.
+- **Pass 2 MAJ-3** Concurrent (Rule 23 / ADR-019) 호환 — 본 step `runMultiPathFallback` sequential variant 보존, race wrap 시 Stage 4 부수효과 (review_queue INSERT) 외부 commit 시점 분리 필요.
+- **Pass 3 M1** review_queue dedup — `INSERT ... ON CONFLICT(exam_id, query_hash) DO UPDATE` + UNIQUE 제약 추가. admin G5.5 step 진입 전 의무.
+- **Pass 3 M2** fallback path cost amplification — fallback path 별 cost-aware rate-limit 분리 (10 req/60s/IP) + telemetry alert.
+- **Pass 3 M4 / Pass 4 MAJ-A** topic_clusters Vectorize 적재 step — admin upsert endpoint or batch script 영속 plan 미존재. Stage 3 활성화 의무.
+  - 임시 가드: 적재 부재 시 Stage 3 = graceful Miss → 모든 graceful=true 가 Stage 4 직행. SP-T07 (거부율 < 5%) 위반 가능 → 적재 step 완료 전 SP-T07 게이트 boundary 별도 명시.
+- **Pass 4 MAJ-C** SP-T06 (≥ 85%) / SP-T07 (≤ 5%) 측정 fixture + 정확도 계산 — 별도 measurement step.
+- **Pass 4 MIN-A 흡수 영속**: index.ts Stage 4 review_queue INSERT 실패 시 graceful catch 적용 완료. caller (routes.ts) 측 logger 기반 best-effort surface 는 carry-over.
+- **Pass 1 MIN-3 / MIN-4 / Pass 3 m1~m3 / Pass 4 MIN-B** — minor 보강 (LIKE wildcard escape / lv1·lv2 정렬 / reviewQueueId 통보 contract / topK 단위 테스트) 별도 step.
+- **i18n key 등록** (Pass 2 MINOR-1 + Pass 3 C1 carry-over): `apps/web/src/i18n/ko.json` 에 `'fallback.honest_refusal.out_of_scope'` 키 추가 — apps/web 작업 step 진입 시 의무.
 
 ---
 

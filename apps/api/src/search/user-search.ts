@@ -136,6 +136,26 @@ interface ApprovedNodeRow {
 }
 
 /**
+ * bge-m3 임베딩 단독 호출 (Stage 1 + Multi-Path Fallback Stage 3 재사용).
+ *
+ * Pass 2 MAJ-1 흡수 (Session 059): routes.ts 가 1회 호출 후 user-search +
+ * multi-path-fallback 양쪽에 전달 — request 당 bge-m3 호출 1회 보장 (CPU/비용 절감).
+ *
+ * @throws {UserSearchError} embed 실패 (1 retry 후)
+ */
+export async function embedQuery(ai: AiBinding, query: string): Promise<ReadonlyArray<number>> {
+  if (!query || query.trim() === '') {
+    throw new UserSearchError('query must be non-empty', 'embed');
+  }
+  const aiResp = await runWithRetry(() => ai.run('@cf/baai/bge-m3', { text: [query] }), 'embed');
+  const queryVector = aiResp.data[0];
+  if (!Array.isArray(queryVector) || queryVector.length === 0) {
+    throw new UserSearchError('bge-m3 응답 차원 부재', 'embed');
+  }
+  return queryVector;
+}
+
+/**
  * 학습자 자연어 질문 → 검증된 knowledge_nodes top-K + 출처.
  *
  * 처리 단계:
@@ -144,6 +164,9 @@ interface ApprovedNodeRow {
  *   3. Stage 3 Truth Weight Re-rank: TRUTH_WEIGHTS 가중치 정렬 (동일 weight 내 vector 보존)
  *   4. graceful degradation 플래그 응답 (top-1 < 0.60)
  *
+ * @param opts.precomputedEmbedding bge-m3 임베딩이 호출자(routes.ts) 에서 이미 계산된
+ *   경우 재사용 (Multi-Path Fallback 와 공유). Pass 2 MAJ-1 흡수 (Session 059).
+ *
  * @throws {UserSearchError} embed 실패 / query 실패 / D1 실패 / timeout (800ms)
  */
 export async function searchKnowledgeNodesForUser(
@@ -151,6 +174,7 @@ export async function searchKnowledgeNodesForUser(
   examId: ExamId,
   query: string,
   topK: number = DEFAULT_RESULT_TOP_K,
+  opts?: { readonly precomputedEmbedding?: ReadonlyArray<number> },
 ): Promise<UserSearchResult> {
   if (!examId || (examId as string).trim() === '') {
     throw new UserSearchError('examId is required (Hard Rule 16 시험 경계 강제)', 'filter');
@@ -160,15 +184,11 @@ export async function searchKnowledgeNodesForUser(
   }
   const effectiveTopK = Math.min(Math.max(topK, 1), MAX_RESULT_TOP_K);
 
-  // Stage 1.a: bge-m3 임베딩
-  const aiResp = await runWithRetry(
-    () => deps.ai.run('@cf/baai/bge-m3', { text: [query] }),
-    'embed',
-  );
-  const queryVector = aiResp.data[0];
-  if (!Array.isArray(queryVector) || queryVector.length === 0) {
-    throw new UserSearchError('bge-m3 응답 차원 부재', 'embed');
-  }
+  // Stage 1.a: bge-m3 임베딩 — precomputed 있으면 재사용 (Pass 2 MAJ-1)
+  const queryVector =
+    opts?.precomputedEmbedding !== undefined
+      ? opts.precomputedEmbedding
+      : await embedQuery(deps.ai, query);
 
   // Stage 1.b: Vectorize.query (timeout + retry)
   const vectorMatches = await runVectorizeQueryWithTimeout(deps.vectorize, queryVector, examId);

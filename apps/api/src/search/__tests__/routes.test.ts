@@ -455,6 +455,104 @@ describe('/api/search route', () => {
   });
 
   // ============================================================
+  // Multi-Path Fallback e2e (Session 059, D-MPF-1~4=A)
+  // ============================================================
+  describe('Multi-Path Fallback e2e', () => {
+    it('graceful=true (top-1 < 0.60) → fallback 자동 진입 (Stage 4 honest_refusal)', async () => {
+      // 모든 매칭 score < 0.60 → graceful=true → fallback. Stage 2 keyword "존재안함" 매칭 0건,
+      // Stage 3 topic_clusters Vectorize filter type='topic_cluster' 결과 0건
+      // → Stage 4 honest_refusal
+      const lowEnv: UserSearchRouteBindings = {
+        ...env,
+        VECTORIZE: makeMockVectorize([{ id: 'LAW-TEST-001', score: 0.55, metadata: {} }]),
+      };
+      const res = await postSearch(
+        { examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: '존재안함존재안함', topK: 3 },
+        lowEnv,
+      );
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        gracefulDegradation: boolean;
+        fallback: { stage: number; source: string };
+      };
+      expect(body.gracefulDegradation).toBe(true);
+      expect(body.fallback).toBeDefined();
+      expect(body.fallback.stage).toBe(4);
+      expect(body.fallback.source).toBe('honest-refusal');
+    });
+
+    it('Stage 2 매칭 시 fallback.stage=2 응답 (graceful=true 후 keyword 발견)', async () => {
+      const lowEnv: UserSearchRouteBindings = {
+        ...env,
+        VECTORIZE: makeMockVectorize([{ id: 'NONEXISTENT', score: 0.55, metadata: {} }]),
+      };
+      const res = await postSearch(
+        { examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: '법령 본문', topK: 3 },
+        lowEnv,
+      );
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        fallback: { stage: number; source: string; results: Array<{ id: string }> };
+      };
+      expect(body.fallback.stage).toBe(2);
+      expect(body.fallback.source).toBe('keyword-fallback');
+      expect(body.fallback.results.map((r) => r.id)).toContain('LAW-TEST-001');
+    });
+
+    it('Stage 4 honest_refusal 시 review_queue INSERT 정합 (PII hash + length 만)', async () => {
+      const lowEnv: UserSearchRouteBindings = {
+        ...env,
+        VECTORIZE: makeMockVectorize([{ id: 'NONEXISTENT', score: 0.5, metadata: {} }]),
+      };
+      const sensitiveQuery = '내 사번 12345678';
+      const res = await postSearch(
+        { examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: sensitiveQuery },
+        lowEnv,
+      );
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        fallback: { stage: number; reviewQueueId?: string };
+      };
+      expect(body.fallback.stage).toBe(4);
+
+      // review_queue INSERT 검증 — query 평문 미저장 (Pass 3 M1 정합)
+      const rows = await backend.db
+        .prepare('SELECT exam_id, query_hash, query_length, reason FROM review_queue')
+        .all<{
+          exam_id: string;
+          query_hash: string;
+          query_length: number;
+          reason: string;
+        }>();
+      expect(rows.results?.length).toBe(1);
+      const r = rows.results![0];
+      expect(r.exam_id).toBe(EXAM_IDS.SON_HAE_PYEONG_GA_SA);
+      expect(r.query_hash).toMatch(/^[0-9a-f]{12}$/);
+      expect(r.query_length).toBe(sensitiveQuery.length);
+      expect(r.reason).toBe('honest_refusal');
+      const allFields = `${r.exam_id}|${r.query_hash}|${r.query_length}|${r.reason}`;
+      expect(allFields).not.toContain(sensitiveQuery);
+      expect(allFields).not.toContain('12345678');
+    });
+
+    it('정상 stage 1+2+3 (graceful=false) → fallback 미진입', async () => {
+      const res = await postSearch({
+        examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+        query: '법령 본문',
+        topK: 3,
+      });
+      const body = (await res.json()) as {
+        gracefulDegradation: boolean;
+        fallback?: unknown;
+        results: Array<{ id: string }>;
+      };
+      expect(body.gracefulDegradation).toBe(false);
+      expect(body.fallback).toBeUndefined();
+      expect(body.results.length).toBeGreaterThan(0);
+    });
+  });
+
+  // ============================================================
   // P3-M2 details masking (production 환경)
   // ============================================================
   describe('P3-M2 production 환경 details masking', () => {
