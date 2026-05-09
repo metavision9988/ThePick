@@ -123,7 +123,15 @@ export function createUserSearchRoutes(): Hono<{ Bindings: UserSearchRouteBindin
           queryDigest,
           queryEmbedding,
         );
-        return c.json(buildMultiPathResponse(result, fallback));
+        // Pass 3 CRIT-3 흡수 (Session 061 4-Pass): production 응답에서 stage3Diagnostics
+        // strip — telemetry leak (Vectorize index 분포 / 임계값 역산 / infra
+        // fingerprinting) 차단. NIST SP 800-53 SI-11 (Error Handling) 정합.
+        // staging/development/test 는 SP-T06/T07 측정 + 운영 진단용 보존.
+        const env = c.env.ENVIRONMENT ?? 'production';
+        const allowDiagnostics =
+          env === 'dev' || env === 'development' || env === 'test' || env === 'staging';
+        const sanitizedFallback = allowDiagnostics ? fallback : stripStage3Diagnostics(fallback);
+        return c.json(buildMultiPathResponse(result, sanitizedFallback));
       }
 
       return c.json(result);
@@ -202,4 +210,26 @@ function buildMultiPathResponse(
   fallback: MultiPathFallbackResponse,
 ): MultiPathHttpResponse {
   return { ...stage123, fallback };
+}
+
+/**
+ * Pass 3 CRIT-3 흡수 (Session 061 4-Pass) — production 응답에서 stage3Diagnostics
+ * 제거. Stage 3 (matching hit) 응답의 diagnostics 필드는 routes.ts 응답 build 시
+ * 별도 strip 미수행 (현재 honest-refusal 응답에만 stage3Diagnostics? optional 노출).
+ * Stage 3 hit 시 TopicClusterRouterResult.diagnostics 는 production 에서도 surface
+ * 되나 results.length > 0 이라 전체 응답 의미가 달라짐 — 별도 step carry-over.
+ */
+function stripStage3Diagnostics(fallback: MultiPathFallbackResponse): MultiPathFallbackResponse {
+  if (fallback.stage === 4 && fallback.stage3Diagnostics !== undefined) {
+    const sanitized: Omit<typeof fallback, 'stage3Diagnostics'> = {
+      source: fallback.source,
+      honestRefusal: fallback.honestRefusal,
+      messageKey: fallback.messageKey,
+      reviewQueueId: fallback.reviewQueueId,
+      results: fallback.results,
+      stage: fallback.stage,
+    };
+    return sanitized as MultiPathFallbackResponse;
+  }
+  return fallback;
 }

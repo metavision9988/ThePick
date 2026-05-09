@@ -15,12 +15,32 @@ const queryDigest = { length: 5, hash: 'cafebabecafe' };
 interface MockMatch {
   id: string;
   score: number;
+  values?: ReadonlyArray<number>;
 }
 
+/** 모든 query 호출에 동일 응답 (Stage 4 진입 시나리오 — cluster 매칭 0건). */
 function makeVectorize(matches: ReadonlyArray<MockMatch>): VectorizeQueryBinding {
   return {
     upsert: vi.fn(),
     query: vi.fn(async () => ({ count: matches.length, matches })),
+  } as unknown as VectorizeQueryBinding;
+}
+
+/**
+ * Sequential mock — D-TCV-4-FIX-1=B-1 정합 (Session 061).
+ * cluster 1st query → cluster.embedding 으로 knowledge_node 2nd query.
+ */
+function makeSequentialVectorize(
+  responses: ReadonlyArray<ReadonlyArray<MockMatch>>,
+): VectorizeQueryBinding {
+  let callIdx = 0;
+  return {
+    upsert: vi.fn(),
+    query: vi.fn(async () => {
+      const matches = responses[callIdx] ?? [];
+      callIdx += 1;
+      return { count: matches.length, matches };
+    }),
   } as unknown as VectorizeQueryBinding;
 }
 
@@ -31,9 +51,12 @@ interface PreparedRow {
 /**
  * SQL 종류별 결과를 분기로 구성하는 mock D1.
  * - keywordFallbackRows: name/description LIKE 매칭 후보
- * - clusterRows: topic_clusters
- * - clusterNodeRows: lv1_insurance/lv2_crop 매칭 노드
- * - reviewQueueAll: review_queue INSERT 결과 (보통 빈)
+ * - clusterRows: topic_clusters 메타 (Stage 3.b)
+ * - clusterNodeRows: knowledge_nodes 메타 (Stage 3.c, fetchNodesByIds 결과)
+ * - reviewQueueInsertSpy: review_queue INSERT 호출 spy
+ *
+ * D-TCV-4-FIX-1=B-1 정합 (Session 061): clusterNodeRows 분기를 'kn.id IN' 으로 변경
+ * (이전 'lv1_insurance' → 'kn.id IN' 으로 fetchNodesByIds 정합).
  */
 function makeRouterMockD1(opts: {
   readonly keywordFallbackRows?: ReadonlyArray<PreparedRow>;
@@ -54,7 +77,7 @@ function makeRouterMockD1(opts: {
               if (sql.includes('topic_clusters')) {
                 return { results: (opts.clusterRows ?? []) as ReadonlyArray<T> };
               }
-              if (sql.includes('lv1_insurance')) {
+              if (sql.includes('kn.id IN')) {
                 return { results: (opts.clusterNodeRows ?? []) as ReadonlyArray<T> };
               }
               if (sql.includes('LIKE ?')) {
@@ -99,8 +122,9 @@ describe('runMultiPathFallback', () => {
     expect(reviewSpy).not.toHaveBeenCalled();
   });
 
-  it('Stage 2 Miss → Stage 3 매칭 (review_queue 미INSERT)', async () => {
+  it('Stage 2 Miss → Stage 3 매칭 (review_queue 미INSERT, D-TCV-4-FIX-1=B-1)', async () => {
     const reviewSpy = vi.fn();
+    const clusterEmbedding = new Array<number>(BGE_M3_DIM).fill(0.7);
     const d = makeRouterMockD1({
       keywordFallbackRows: [],
       clusterRows: [
@@ -125,7 +149,12 @@ describe('runMultiPathFallback', () => {
       ],
       reviewQueueInsertSpy: reviewSpy,
     });
-    const v = makeVectorize([{ id: 'TOPIC-001', score: 0.7 }]);
+    // 1st query (cluster matching): TOPIC-001 with values
+    // 2nd query (knowledge_node matching by cluster.embedding): LAW-001
+    const v = makeSequentialVectorize([
+      [{ id: 'TOPIC-001', score: 0.7, values: clusterEmbedding }],
+      [{ id: 'LAW-001', score: 0.55 }],
+    ]);
     const r = await runMultiPathFallback(
       { db: d, vectorize: v },
       exam,

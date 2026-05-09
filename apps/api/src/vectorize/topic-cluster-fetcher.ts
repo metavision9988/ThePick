@@ -10,12 +10,12 @@
  *   - exam_id 자동 주입 (Hard Rule 16/17 — upserter.ts 가 처리)
  *   - lv1/lv2 메타 보존 (Year 2 zero-cost — exam_id 컬럼 부재 가정)
  *
- * ★★ Reality Anchor (lv2 의미 mismatch — D-TCV-4=A carry-over):
- *   production topic_clusters.lv2 는 점수 분류 ('5점' / '15점' / '5점/15점') 이지 작물명이 아님.
- *   metadata.lv2_crop 으로 적재하지만, topic-cluster-router.ts:fetchNodesByCluster 의
- *   `kn.lv2_crop = ?` 매칭은 의미 mismatch (knowledge_nodes.lv2_crop은 '벼'/'마늘' 등 작물).
- *   별도 step에서 fetchNodesByCluster 정정 의무 (lv1만 매칭 또는 새 lv2_score 도입).
- *   본 fetcher 는 적재 책임 단일 — 의미 정합은 별도 step.
+ * ★★ Reality Anchor 처리 영속 (D-TCV-4-FIX-1=B-1, Session 061):
+ *   production topic_clusters.lv1 (간소화 도메인 11종) ≠ kn.lv1_insurance (보험 종목명) /
+ *   topic_clusters.lv2 (점수 분류) ≠ kn.lv2_crop (작물명) — 직접 컬럼 매칭 영구 0건.
+ *   본 fetcher 의 metadata.lv1_insurance / lv2_crop 적재는 Year 1 시점 보존 (Year 2 zero-cost
+ *   전환 인터페이스). topic-cluster-router.ts 는 lv1/lv2 컬럼 매칭 폐기 후 Vectorize 2nd query
+ *   (cluster.embedding → knowledge_node 의미 매칭) 로 전환됨 (Session 061).
  *
  * 비스코프:
  *   - Vectorize upsert (upsertNodesToVectorize 위임)

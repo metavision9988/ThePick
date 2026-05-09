@@ -91,14 +91,32 @@ export interface HonestRefusalResponse {
   readonly messageKey: typeof HONEST_REFUSAL_MESSAGE_KEY;
   readonly reviewQueueId: string;
   readonly results: ReadonlyArray<never>;
+  /**
+   * D-TCV-4-FIX-1=B-1 진단 (Session 061) — Stage 3 routing 미히트 시 어디서 막혔는지
+   * surface. SP-T06/T07 측정 + production tuning 종료 시점에 별도 ADR 로 제거 또는
+   * debug-only flag 토글 carry-over.
+   */
+  readonly stage3Diagnostics?: {
+    readonly clusterMatchCount: number;
+    readonly clusterAboveThresholdCount: number;
+    readonly top1ClusterScore: number;
+    readonly clustersWithEmbeddingCount: number;
+    readonly nodeQueryAttemptCount: number;
+    readonly nodeMatchCount: number;
+    readonly nodeAboveThresholdCount: number;
+  };
 }
 
-export function buildHonestRefusalResponse(reviewQueueId: string): HonestRefusalResponse {
+export function buildHonestRefusalResponse(
+  reviewQueueId: string,
+  stage3Diagnostics?: HonestRefusalResponse['stage3Diagnostics'],
+): HonestRefusalResponse {
   return {
     source: 'honest-refusal',
     honestRefusal: true,
     messageKey: HONEST_REFUSAL_MESSAGE_KEY,
     reviewQueueId,
     results: [],
+    ...(stage3Diagnostics ? { stage3Diagnostics } : {}),
   };
 }

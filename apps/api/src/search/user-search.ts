@@ -53,6 +53,31 @@ export const DEFAULT_RESULT_TOP_K = 3;
 export const MAX_RESULT_TOP_K = 10;
 
 /**
+ * Vectorize metadata filter value 타입.
+ *
+ * Cloudflare Vectorize V2 spec 은 `$eq` / `$ne` / `$in` / `$nin` 객체 형식
+ * operator 를 명시하지만, Session 061 staging e2e 실측 결과 V2 binding 은 객체
+ * 형식 적용 시 0건 반환 (binding spec mismatch 또는 미배포 — Cloudflare changelog
+ * 모니터링 carry-over).
+ *
+ * 따라서 Year 1 운영 코드는 단순 `string | number | boolean` equality filter 만
+ * 사용 + client-side post-filter (예: topic-cluster-router.ts:STAGE3_NODE_ID_EXCLUDE_PREFIXES)
+ * 로 cross-pollution 차단.
+ *
+ * union 의 operator 분기 (`$eq`/`$ne`/`$in`/`$nin`) 는 Year 2 carry-over — V2
+ * binding 정상화 검증 후 활성화 예정 (4-Pass M2-2 / M4-C2 carry-over, ADR-004 §3
+ * Addendum 영속 의무).
+ */
+export type VectorizeFilterValue =
+  | string
+  | number
+  | boolean
+  | { readonly $eq?: string | number | boolean }
+  | { readonly $ne?: string | number | boolean }
+  | { readonly $in?: ReadonlyArray<string | number | boolean> }
+  | { readonly $nin?: ReadonlyArray<string | number | boolean> };
+
+/**
  * Vectorize.query 인터페이스 (upserter.ts VectorizeBinding 확장 — query 메서드 추가).
  */
 export interface VectorizeQueryBinding extends VectorizeBinding {
@@ -60,7 +85,7 @@ export interface VectorizeQueryBinding extends VectorizeBinding {
     values: ReadonlyArray<number>,
     options: {
       readonly topK: number;
-      readonly filter?: Record<string, string | number | boolean>;
+      readonly filter?: Record<string, VectorizeFilterValue>;
       readonly returnMetadata?: 'none' | 'indexed' | 'all';
       readonly returnValues?: boolean;
     },
@@ -70,6 +95,7 @@ export interface VectorizeQueryBinding extends VectorizeBinding {
       readonly id: string;
       readonly score: number;
       readonly metadata?: Record<string, unknown>;
+      readonly values?: ReadonlyArray<number>;
     }>;
   }>;
 }

@@ -92,7 +92,9 @@ export async function runMultiPathFallback(
     // best-effort — INSERT 실패 시 reviewQueueId 는 client 에 전송되나 D1 row 부재.
     // carry-over (plan §10): caller 측 logger.error('review_queue_insert_failed', ...) 적용.
   }
-  const refusal = buildHonestRefusalResponse(reviewQueueId);
+  // D-TCV-4-FIX-1=B-1 진단 surface (Session 061): Stage 3 미히트 시 어디서 막혔는지
+  // staging/production e2e + SP-T06/T07 측정 시점에 검증.
+  const refusal = buildHonestRefusalResponse(reviewQueueId, topicResult.diagnostics);
   return { ...refusal, stage: 4 };
 }
 
