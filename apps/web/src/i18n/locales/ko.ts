@@ -96,4 +96,11 @@ export const ko: TranslationDictionary = {
     ago: '전',
     remaining: '남음',
   },
+
+  fallback: {
+    honest_refusal: {
+      out_of_scope:
+        '이 질문은 현재 손해평가사 학습 범위에서 답을 찾지 못했습니다. 검수자가 확인 후 보강할 예정입니다. 다른 표현으로 다시 질문해 주세요.',
+    },
+  },
 };

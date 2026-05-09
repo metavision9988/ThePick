@@ -103,6 +103,12 @@ export interface TranslationDictionary {
     ago: string;
     remaining: string;
   };
+
+  fallback: {
+    honest_refusal: {
+      out_of_scope: string;
+    };
+  };
 }
 
 type PathsToStringProps<T> = T extends string

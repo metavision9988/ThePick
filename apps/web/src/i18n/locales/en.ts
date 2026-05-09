@@ -96,4 +96,11 @@ export const en: TranslationDictionary = {
     ago: 'ago',
     remaining: 'remaining',
   },
+
+  fallback: {
+    honest_refusal: {
+      out_of_scope:
+        "This question wasn't found in the current Insurance Loss Adjuster scope. A reviewer will examine and expand coverage. Please try rephrasing your question.",
+    },
+  },
 };

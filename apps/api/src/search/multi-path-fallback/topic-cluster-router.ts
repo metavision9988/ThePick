@@ -39,6 +39,7 @@
 
 import { TRUTH_WEIGHTS, type ExamId, type NodeType } from '@thepick/shared';
 import { parsePageRefToInt } from '../../vectorize/page-ref.js';
+import { TOPIC_CLUSTER_NODE_TYPE } from '../../vectorize/topic-cluster-fetcher.js';
 import {
   UserSearchError,
   type UserSearchD1,
@@ -116,7 +117,7 @@ export async function runTopicClusterRouting(
   try {
     const resp = await vectorize.query(queryEmbedding, {
       topK: TOPIC_CLUSTER_TOP_K,
-      filter: { node_type: 'topic_cluster', exam_id: examId as string },
+      filter: { node_type: TOPIC_CLUSTER_NODE_TYPE, exam_id: examId as string },
       returnMetadata: 'none',
     });
     vectorMatches = resp.matches ?? [];

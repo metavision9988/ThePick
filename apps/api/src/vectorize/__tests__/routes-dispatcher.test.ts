@@ -117,6 +117,13 @@ async function seedFixtures(db: D1Database): Promise<void> {
     )
     .bind('TCELL-998-01-01', 'TBL-998', 'TROW-998-01', 'TCOL-998-01', 'cell value', 'text')
     .run();
+
+  await db
+    .prepare(
+      'INSERT INTO topic_clusters (id, name, lv1, lv2, lv3, exam_frequency, is_covered, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    )
+    .bind('TC-998', '논작물 — 표본구간 수확량산정', '논작물', '5점', null, 7, 1, 'test fixture')
+    .run();
 }
 
 describe('Vectorize routes — dispatcher 통합 (P4-M1 흡수)', () => {
@@ -270,6 +277,20 @@ describe('Vectorize routes — dispatcher 통합 (P4-M1 흡수)', () => {
       expect(res.status).toBe(200);
     });
 
+    it('P3-M1: source=topic_clusters + status → 400 (status filter 거부)', async () => {
+      const res = await authedPost('/api/admin/vectorize/bootstrap', {
+        examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+        source: 'topic_clusters',
+        status: 'approved',
+      });
+      expect(res.status).toBe(400);
+      const body = (await res.json()) as { error: string; details: unknown };
+      expect(body.error).toBe('VALIDATION_ERROR');
+      expect(JSON.stringify(body.details)).toContain(
+        'status filter is only supported with source=knowledge_nodes',
+      );
+    });
+
     it('P3-M1: source=table_headers + no status → PASS', async () => {
       const res = await authedPost('/api/admin/vectorize/bootstrap', {
         examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
@@ -347,6 +368,57 @@ describe('Vectorize routes — dispatcher 통합 (P4-M1 흡수)', () => {
       const body = (await res.json()) as { fetched: number; sampleNodeIds: string[] };
       expect(body.fetched).toBe(1);
       expect(body.sampleNodeIds).toContain('TCELL-998-01-01');
+    });
+
+    it('source=topic_clusters → TC-998 dryRun + source 응답 명시', async () => {
+      const res = await authedPost('/api/admin/vectorize/bootstrap', {
+        examId,
+        source: 'topic_clusters',
+        dryRun: true,
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        fetched: number;
+        source: string;
+        sampleNodeIds: string[];
+      };
+      expect(body.fetched).toBe(1);
+      expect(body.source).toBe('topic_clusters');
+      expect(body.sampleNodeIds).toContain('TC-998');
+    });
+
+    it('source=topic_clusters (실제 upsert) → metadata.node_type=topic_cluster + exam_id 자동 주입', async () => {
+      const res = await authedPost('/api/admin/vectorize/bootstrap', {
+        examId,
+        source: 'topic_clusters',
+        dryRun: false,
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        fetched: number;
+        upserted: number;
+        mutationId: string;
+        sampleNodeIds: string[];
+      };
+      expect(body.fetched).toBe(1);
+      expect(body.upserted).toBe(1);
+      expect(body.mutationId).toBe('mock-mutation-001');
+      expect(body.sampleNodeIds).toContain('TC-998');
+
+      const vectorizeMock = env.VECTORIZE as unknown as { upsert: ReturnType<typeof vi.fn> };
+      expect(vectorizeMock.upsert).toHaveBeenCalledTimes(1);
+      const upsertCall = vectorizeMock.upsert.mock.calls[0][0] as Array<{
+        id: string;
+        metadata: Record<string, unknown>;
+      }>;
+      expect(upsertCall[0].id).toBe('TC-998');
+      expect(upsertCall[0].metadata.exam_id).toBe(examId);
+      expect(upsertCall[0].metadata.node_type).toBe('topic_cluster');
+      expect(upsertCall[0].metadata.status).toBe('approved');
+      expect(upsertCall[0].metadata.truth_weight).toBe(5);
+      expect(upsertCall[0].metadata.lv1_insurance).toBe('논작물');
+      // ★ Reality Anchor 영속: lv2_crop = '5점' (점수 분류, 의미 mismatch — D-TCV-4 carry-over)
+      expect(upsertCall[0].metadata.lv2_crop).toBe('5점');
     });
 
     it('source=table_cells (실제 upsert) → AI + Vectorize.upsert 호출 + sampleNodeIds', async () => {

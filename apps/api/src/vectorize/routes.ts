@@ -37,6 +37,7 @@ import {
   fetchTableHeadersForVectorize,
   fetchTableCellsForVectorize,
 } from './table-fetcher.js';
+import { fetchTopicClustersForVectorize } from './topic-cluster-fetcher.js';
 import { parsePageRefToInt } from './page-ref.js';
 
 /**
@@ -74,6 +75,7 @@ const BOOTSTRAP_SOURCES = [
   'table_structures',
   'table_headers',
   'table_cells',
+  'topic_clusters',
 ] as const;
 
 const BootstrapBodySchema = z
@@ -86,9 +88,12 @@ const BootstrapBodySchema = z
     dryRun: z.boolean().default(false),
   })
   // Pass 3 ADVOCATE M1 (Session 057) — table_* source 는 자체 status 컬럼 부재 (부모
-  // table_structures.status 추론). status 필터 결합 시 silent ignore 가 운영자 misconfig 위험.
+  // table_structures.status 추론). topic_clusters 도 status 컬럼 부재 (운영 sentinel 'approved'
+  // 자동 적재, fetcher 측에서 TOPIC_CLUSTER_STATUS 상수 참조). Pass 2 ARCHITECT C1 (Session 060)
+  // 흡수 — 운영자 misconfig 차단 + 모호한 메시지 제거.
   .refine((data) => !(data.source !== 'knowledge_nodes' && data.status !== undefined), {
-    message: 'status filter is only supported with source=knowledge_nodes',
+    message:
+      "status filter is only supported with source=knowledge_nodes (table_*/topic_clusters have no status column — auto sentinel 'approved')",
     path: ['status'],
   });
 
@@ -310,6 +315,8 @@ async function fetchNodesBySource(
       return fetchTableHeadersForVectorize(db, examId, pagination);
     case 'table_cells':
       return fetchTableCellsForVectorize(db, examId, pagination);
+    case 'topic_clusters':
+      return fetchTopicClustersForVectorize(db, examId, pagination);
     default: {
       // Pass 2 ARCHITECT A1 (Session 057) — exhaustiveness check.
       // BootstrapSource enum 확장 시 컴파일 타임 차단 + 런타임 throw (silent undefined 차단).
