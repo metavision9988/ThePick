@@ -138,12 +138,15 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
     const normalizedEmail = email.trim().toLowerCase();
 
     const pwned = await checkPwned(password, logger);
-    if (pwned.status === 'pwned') {
-      return c.json(
-        { error: 'PASSWORD_PWNED', message: AUTH_MESSAGES.REGISTER_PASSWORD_PWNED },
-        422,
-      );
-    }
+    // ★ Phase 2 Eval MVP 임시 — HIBP 'pwned' 분기 주석 처리 (ADR-034, Session 065 진산 명시 발화).
+    // 호출 + logging 보존 (audit trail), 'pwned' 응답이어도 register 통과.
+    // Phase 3 launch 직전 복원 의무: 아래 if 블록 주석 해제 + PASSWORD_PWNED 회귀 테스트 unskip.
+    // if (pwned.status === 'pwned') {
+    //   return c.json(
+    //     { error: 'PASSWORD_PWNED', message: AUTH_MESSAGES.REGISTER_PASSWORD_PWNED },
+    //     422,
+    //   );
+    // }
 
     let hashed;
     try {

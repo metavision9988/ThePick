@@ -326,7 +326,9 @@ describe('🌟 정상 이용자 플로우', () => {
 // ===========================================================================
 
 describe('🛡️ 보안 방어 시나리오', () => {
-  it('S5. 유출된 비밀번호 "password" 로 가입 시도 → HIBP 감지로 거부', async () => {
+  // ★ ADR-034: Phase 2 Eval MVP 동안 HIBP 'pwned' 분기 비활성화 (auth/routes.ts:140 주석 처리).
+  // Phase 3 launch 직전 HIBP 'pwned' 422 정책 복원 시 본 test unskip 의무.
+  it.skip('S5. 유출된 비밀번호 "password" 로 가입 시도 → HIBP 감지로 거부 (ADR-034 carry-over)', async () => {
     mockHibpPwned();
     const register = await registerUser(TEST_EMAIL, 'password');
     expect(register.status).toBe(422);

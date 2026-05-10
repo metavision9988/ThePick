@@ -26,8 +26,15 @@ export const PBKDF2_HASH_BYTES = 32;
 /** PBKDF2 hash 알고리즘. Web Crypto API 요구 문자열. */
 export const PBKDF2_HASH_ALGORITHM = 'SHA-256' as const;
 
-/** 비밀번호 최소 길이. */
-export const PASSWORD_MIN_LENGTH = 8;
+/**
+ * 비밀번호 최소 길이.
+ *
+ * ★ 임시 정책 (Phase 2 Eval MVP, Session 065 진산 명시 발화):
+ *   - 평가 환경 한정 4 (테스트 편의)
+ *   - 본격 정책 8 (OWASP 권고 + ADR-005 정합)
+ *   - **Phase 3 launch 직전 복원 의무** — ADR-034 §"복원 의무" 6항목 PASS 후 launch.
+ */
+export const PASSWORD_MIN_LENGTH = 4;
 
 /** 비밀번호 최대 길이 (DoS 방어 — PBKDF2 입력 길이 제한). */
 export const PASSWORD_MAX_LENGTH = 1024;
