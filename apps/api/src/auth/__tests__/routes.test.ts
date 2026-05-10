@@ -200,7 +200,7 @@ function parseCookie(setCookieHeader: string, name: string): string | null {
 // ---------------------------------------------------------------------------
 
 describe('POST /api/auth/login → Set-Cookie (Step 1-4)', () => {
-  it('success → 200 + Set-Cookie 2종 with HttpOnly/SameSite=Strict', async () => {
+  it('success → 200 + Set-Cookie 2종 with HttpOnly/SameSite=Lax (dev/test, ADR-036)', async () => {
     const fake = buildFakeDb();
     await seedUser(fake, 'alice@example.com', TEST_PASSWORD);
     const app = createAuthRoutes();
@@ -220,7 +220,8 @@ describe('POST /api/auth/login → Set-Cookie (Step 1-4)', () => {
     expect(setCookie).toContain(ACCESS_TOKEN_COOKIE);
     expect(setCookie).toContain(REFRESH_TOKEN_COOKIE);
     expect(setCookie).toMatch(/HttpOnly/i);
-    expect(setCookie).toMatch(/SameSite=Strict/i);
+    // ★ ADR-036: dev/test 환경 'Lax' (same-origin localhost). production은 'None' (cross-origin pages.dev↔workers.dev).
+    expect(setCookie).toMatch(/SameSite=Lax/i);
     // dev(test) 환경은 Secure 미적용 정책
     expect(setCookie).not.toMatch(/Secure/);
 

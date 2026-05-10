@@ -205,7 +205,8 @@ describe('🌟 정상 이용자 플로우', () => {
     expect(setCookie).toContain(ACCESS_TOKEN_COOKIE);
     expect(setCookie).toContain(REFRESH_TOKEN_COOKIE);
     expect(setCookie).toMatch(/HttpOnly/i);
-    expect(setCookie).toMatch(/SameSite=Strict/i);
+    // ★ ADR-036: dev/test 환경 'Lax' (same-origin). production은 'None' (cross-origin pages.dev↔workers.dev).
+    expect(setCookie).toMatch(/SameSite=Lax/i);
 
     const userId = getUserId(TEST_EMAIL);
     expect(countActiveSessions(userId), '활성 세션 1개').toBe(1);

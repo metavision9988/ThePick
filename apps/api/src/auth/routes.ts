@@ -502,14 +502,28 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
 
 // ---------------------------------------------------------------------------
 // Cookie helpers (Step 1-4)
-// ADR-005 §Addendum: HttpOnly + Secure + SameSite=Strict
-// dev 환경은 Secure 완화 (wrangler dev 는 http://localhost:8787)
+// ADR-005 §Addendum: HttpOnly + Secure + SameSite (환경별 분기, ADR-036)
+// dev 환경: Secure 완화 (wrangler dev http://localhost:8787) + SameSite=Lax (same-origin)
+// staging/production: cross-origin (apps/web *.pages.dev ↔ apps/api *.workers.dev)
+//   → SameSite=None + Secure (Phase 3 launch 시 custom domain same-site 강화 carry-over, ADR-036)
 // ---------------------------------------------------------------------------
 
 type AuthContext = Context<{ Bindings: AuthBindings }>;
 
 function isSecureCookieEnv(environment: string | undefined): boolean {
   return environment === 'staging' || environment === 'production';
+}
+
+/**
+ * SameSite 환경별 분기 (ADR-036).
+ *
+ * - production/staging: 'None' (cross-origin pages.dev ↔ workers.dev). Secure 강제.
+ * - dev/test: 'Lax' (same-origin localhost, CSRF 방어 + GET top-level OK)
+ *
+ * Phase 3 launch 직전 custom domain 통합 시 'Strict'로 복원 의무 (ADR-005 정합).
+ */
+function authCookieSameSite(environment: string | undefined): 'Strict' | 'Lax' | 'None' {
+  return isSecureCookieEnv(environment) ? 'None' : 'Lax';
 }
 
 function setAuthCookies(
@@ -519,17 +533,18 @@ function setAuthCookies(
   environment: string | undefined,
 ): void {
   const secure = isSecureCookieEnv(environment);
+  const sameSite = authCookieSameSite(environment);
   setCookie(c, ACCESS_TOKEN_COOKIE, accessToken, {
     httpOnly: true,
     secure,
-    sameSite: 'Strict',
+    sameSite,
     path: ACCESS_TOKEN_COOKIE_PATH,
     maxAge: ACCESS_TOKEN_TTL_SECONDS,
   });
   setCookie(c, REFRESH_TOKEN_COOKIE, refreshToken, {
     httpOnly: true,
     secure,
-    sameSite: 'Strict',
+    sameSite,
     path: REFRESH_TOKEN_COOKIE_PATH,
     maxAge: REFRESH_TOKEN_TTL_SECONDS,
   });
@@ -537,12 +552,15 @@ function setAuthCookies(
 
 function clearAuthCookies(c: AuthContext, environment: string | undefined): void {
   const secure = isSecureCookieEnv(environment);
+  const sameSite = authCookieSameSite(environment);
   deleteCookie(c, ACCESS_TOKEN_COOKIE, {
     path: ACCESS_TOKEN_COOKIE_PATH,
     secure,
+    sameSite,
   });
   deleteCookie(c, REFRESH_TOKEN_COOKIE, {
     path: REFRESH_TOKEN_COOKIE_PATH,
     secure,
+    sameSite,
   });
 }
