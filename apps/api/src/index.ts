@@ -31,6 +31,8 @@ const CORS_ALLOWED_ORIGINS: readonly string[] = [
   'https://thepick.app',
   // Step 19 — admin-web Cloudflare Pages 도메인 (production 배포 후 갱신)
   'https://thepick-admin.pages.dev',
+  // Phase 2 Eval MVP Step 5-A — apps/web production Pages (thepick-web 글로벌 점유 충돌 회피, Session 065)
+  'https://thepick-study.pages.dev',
 ];
 
 type Bindings = {

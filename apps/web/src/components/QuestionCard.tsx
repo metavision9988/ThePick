@@ -87,8 +87,8 @@ export function QuestionCard({ examType = '2nd' }: QuestionCardProps) {
         { credentials: 'include' },
       );
       if (res.status === 401) {
-        setPhase('error');
-        setErrorMsg('인증이 필요합니다. 로그인 후 다시 시도해 주세요.');
+        const next = encodeURIComponent(window.location.pathname);
+        window.location.href = `/auth/login?next=${next}`;
         return;
       }
       if (!res.ok) {
@@ -120,8 +120,8 @@ export function QuestionCard({ examType = '2nd' }: QuestionCardProps) {
         body: JSON.stringify({ questionId: question.id, userAnswer }),
       });
       if (res.status === 401) {
-        setPhase('error');
-        setErrorMsg('인증이 필요합니다.');
+        const next = encodeURIComponent(window.location.pathname);
+        window.location.href = `/auth/login?next=${next}`;
         return;
       }
       if (res.status === 422) {

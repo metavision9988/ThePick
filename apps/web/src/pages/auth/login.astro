@@ -1,0 +1,10 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { AuthForm } from '@/components/AuthForm';
+---
+
+<BaseLayout title="로그인 — 쪽집게">
+  <main class="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
+    <AuthForm client:load />
+  </main>
+</BaseLayout>

@@ -209,7 +209,7 @@ function isAnswerCorrect(question: ExamQuestion, userAnswer: string): boolean {
 ### 6.4 apps/web /study 페이지 (Step 3)
 
 - 라우트: `apps/web/src/pages/study.astro`
-- 인증 미들웨어: 미인증 → /auth/login redirect (Astro middleware 또는 client-side check)
+- 인증 미들웨어: 미인증 → `/auth/login?next=/study/` redirect (§6.5 영속)
 - React Island: `QuestionCard.tsx`
   - state: `{ phase: 'loading' | 'answering' | 'graded', question, userAnswer, gradeResult }`
   - on mount: GET /api/study/next?examType=2nd → state.question
@@ -218,6 +218,25 @@ function isAnswerCorrect(question: ExamQuestion, userAnswer: string): boolean {
 - markdown 렌더: question.content / explanation / relatedNodes 의 TBL-\* nodeData
   - 의존성: marked 또는 micromark (Cloudflare 단일 벤더 정합 검증 필요 — Workers compatible)
 - 디자인: A 기본 + B 단축키 (Ctrl+Enter)
+
+### 6.5 ★★ M6 즉시 흡수 — apps/web 임시 인증 페이지 (Step 5-A G9 진입 차단 해소, Session 065)
+
+진산님 G9 production browser 학습 시도 진입 차단 (auth/login.astro 미구현, handoff-073 §F.4 M6) 즉시 흡수.
+
+- `apps/web/src/components/AuthForm.tsx` (NEW) — login + register toggle, email/password (+ name optional), `credentials: 'include'`, 성공 시 `?next` 또는 `/study/` redirect, 에러 메시지 surface (EMAIL_TAKEN / PASSWORD_PWNED / INVALID_CREDENTIALS / RATE_LIMITED)
+- `apps/web/src/pages/auth/login.astro` (NEW) — BaseLayout + AuthForm island
+- `apps/web/src/components/QuestionCard.tsx` (UPDATE) — 401 → `/auth/login?next=<encoded path>` redirect (next + grade 양쪽)
+- ProgressSummary.tsx 401 처리는 'unauthenticated' state 그대로 유지 (sidebar surface, QuestionCard redirect와 race 회피)
+
+진산님 G9 진입 절차:
+
+1. https://thepick-study.pages.dev/auth/login → 회원가입 (이메일/비밀번호 8자+)
+2. 자동 로그인 + cookie 발급 (tp_access + tp_refresh) + /study/ redirect
+3. /study/ 페이지 → 첫 문제 표시 → Ctrl+Enter 채점
+
+Phase 3 launch 직전 본격 인증 UI carry-over (memory `project_launch_legal_bundle_deferred.md`):
+
+- 이메일 인증, 비밀번호 재설정, 회원탈퇴, 약관/PII 동의 — 본 step은 평가 환경 진입 최소 기능
 
 ---
 
