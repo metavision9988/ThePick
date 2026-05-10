@@ -9,6 +9,7 @@ import { purgeOldRateLimits } from './scheduled/rate-limit-gc.js';
 import { createTelemetryRoutes } from './telemetry/routes.js';
 import { createVectorizeRoutes, type VectorizeRouteBindings } from './vectorize/routes.js';
 import { createUserSearchRoutes } from './search/routes.js';
+import { createStudyRoutes } from './study/routes.js';
 import { createWebhookRoutes } from './webhooks/payment.js';
 
 /**
@@ -84,6 +85,8 @@ function buildCorsOptions() {
 }
 app.use('/api/auth/*', cors(buildCorsOptions()));
 app.use('/api/progress/*', cors(buildCorsOptions()));
+// Phase 2 Eval MVP (phase2-eval-mvp.plan §6.2/§6.3) — 진산님 직접 평가 환경 학습 라우트.
+app.use('/api/study/*', cors(buildCorsOptions()));
 // Step 19 MAJOR-AD-1 흡수 — admin-web /telemetry 페이지 ↔ apps/api 크로스-오리진 보장.
 // X-Admin-Token 커스텀 헤더 사용으로 OPTIONS preflight 의무 → CORS 미설정 시 100% 차단.
 // Phase B (handoff-028) 흡수 — admin_session HttpOnly 쿠키 인증 추가.
@@ -136,6 +139,7 @@ app.route('/api/telemetry', createTelemetryRoutes());
 app.route('/api/webhooks', createWebhookRoutes());
 app.route('/api/admin/vectorize', createVectorizeRoutes());
 app.route('/api/search', createUserSearchRoutes());
+app.route('/api/study', createStudyRoutes());
 
 app.get('/', (c) => {
   return c.json({
