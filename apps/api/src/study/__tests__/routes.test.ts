@@ -181,11 +181,10 @@ async function fetchAs(userId: string, path: string, init: RequestInit = {}): Pr
 }
 
 describe('study routes — pure helpers', () => {
-  it('normalizeAnswer: trim + lowercase + 공백 제거 + 원형숫자 → 숫자 + "번"/"호" 접미사 제거', () => {
+  it('normalizeAnswer: trim + lowercase + 공백 제거 + 원형숫자 → 숫자 + "번" 접미사 제거', () => {
     expect(normalizeAnswer('  ②번 ')).toBe('2');
     expect(normalizeAnswer('②')).toBe('2');
     expect(normalizeAnswer('2번')).toBe('2');
-    expect(normalizeAnswer('2호')).toBe('2');
     expect(normalizeAnswer('보 험 가 액')).toBe('보험가액');
     expect(normalizeAnswer('CONCEPT')).toBe('concept');
   });
@@ -197,6 +196,24 @@ describe('study routes — pure helpers', () => {
     expect(isAnswerCorrect('2', '3')).toBe(false);
     expect(isAnswerCorrect(null, '1')).toBe(false);
     expect(isAnswerCorrect('', '1')).toBe(false);
+  });
+
+  // 4-Pass Pass 3 CRIT-3 회귀 — '번' vs '호' false-positive 차단 검증.
+  // 정답 '1번' 일 때 사용자 '1호' 입력은 오답이어야 한다 ('호' 정합 시 동/호수 의미).
+  it('CRIT-3 regression: "1번" vs "1호" 동등 처리 차단', () => {
+    expect(normalizeAnswer('1번')).toBe('1');
+    expect(normalizeAnswer('1호')).toBe('1호');
+    expect(isAnswerCorrect('1번', '1호')).toBe(false);
+    expect(isAnswerCorrect('1호', '1번')).toBe(false);
+  });
+
+  // 4-Pass Pass 1 CRIT-1 회귀 — regex character class 확장 누락 시 silent '0' corruption 차단.
+  // 본 테스트는 현 구현 (① ~ ⑩) 정합 + 미래 [①-⑳] 확장 시 indexOf=-1 가드 보장 의도.
+  it('CRIT-1 regression: 원형숫자 정상 매핑 + 비-circle 입력 그대로', () => {
+    expect(normalizeAnswer('①')).toBe('1');
+    expect(normalizeAnswer('⑩')).toBe('10');
+    expect(normalizeAnswer('abc')).toBe('abc');
+    expect(normalizeAnswer('5')).toBe('5');
   });
 });
 
@@ -477,6 +494,32 @@ describe('POST /api/study/grade', () => {
     expect(res.status).toBe(422);
     const body = (await res.json()) as StudyResponseBody;
     expect(body.error).toBe('QUESTION_HAS_NO_ANSWER');
+  });
+
+  // 4-Pass Pass 3 CRIT-2 회귀 — rate-limit (분당 20회) 적용 검증.
+  // 21회째 시도가 429 반환해야 함 (TD-030 정합).
+  it('CRIT-2 regression: rate-limit 20/min 초과 시 429', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-rl', answer: '1', examType: '2nd' });
+    // 20회 정상 시도
+    for (let i = 0; i < 20; i++) {
+      const res = await fetchAs('u1', '/grade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId: 'eq-rl', userAnswer: '1' }),
+      });
+      expect([200, 404]).toContain(res.status);
+    }
+    // 21회째 — 429 RATE_LIMIT_EXCEEDED + Retry-After 헤더
+    const blocked = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-rl', userAnswer: '1' }),
+    });
+    expect(blocked.status).toBe(429);
+    const body = (await blocked.json()) as StudyResponseBody;
+    expect(body.error).toBe('RATE_LIMIT_EXCEEDED');
+    expect(blocked.headers.get('Retry-After')).not.toBeNull();
   });
 
   it('사용자 격리 — u1 progress 가 u2 grade 에 영향 X', async () => {

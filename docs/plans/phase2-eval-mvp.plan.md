@@ -58,7 +58,7 @@
 
 ### Q1. 이것이 불가능할 이유 3가지
 
-1. **BATCH-2~5 노드의 metadata 정확도 미검증** — Session 062 부트스트랩은 BATCH-1 74건만이고 진산님 직접 검수 0건. BATCH-2~5 SQL 일괄 approved 전환 시 misclassified 노드가 학습자에 noise로 surface됨. → **mitigation**: reviewer_id `'session-063-admin-bootstrap'` 표식 보존 (진산님 직접 재검수 시 식별 가능 + audit trail).
+1. **BATCH-2~5 노드의 metadata 정확도 미검증** — Session 062 부트스트랩은 BATCH-1 74건만이고 진산님 직접 검수 0건. BATCH-2~5 SQL 일괄 approved 전환 시 misclassified 노드가 학습자에 noise로 surface됨. → **mitigation**: reviewer_id `'session-064-admin-bootstrap'` 표식 보존 (진산님 직접 재검수 시 식별 가능 + audit trail).
 2. **2차 exam_questions 20건은 약술/계산형이라 텍스트 exact match 부적합** — "보험가액 산정 절차를 서술하시오" 같은 문제는 채점 자동화 불가. → **mitigation**: §6 채점 알고리즘에서 examType + content 패턴으로 단답형/객관식만 자동 채점, 약술형은 모범답안 surface + 사용자 self-grade 채택. 또는 Step 3 진입 시 단답형 가용 건수 재확인 후 1차 525건도 평가 대상으로 포함 결정.
 3. **production Stage 3 timeout (handoff-071 §3 우선순위 1 M2-1)** — Stage 3 직렬 ~600ms timeout 가시. 학습자 검색 라우트가 timeout 노출 시 평가 환경 자체가 noise. → **mitigation**: 본 plan은 `/study` 라우트로 검색이 아닌 exam_questions 직접 표시 → Stage 3 미경유. 학습자가 '자유 검색' 시도 시 M2-1 carry-over 우선순위 1 잔존 영향.
 
@@ -118,7 +118,7 @@
 - 채점 결과 화면 = 정답만 1줄, 해설은 "더보기" 토글 — 평가 환경의 신호 측정 noise 최소화 (진산님이 본인 답이 맞았는지만 빠르게 체감)
 - 관습 깸 포인트: "학습 화면 = 정보 풍부" 통념 → "평가 환경 = 신호 압축"
 
-**plan 채택**: A 기본 + B의 단축키 (Ctrl+Enter 채점) — Step 3 진입 시 진산님 최종 결정. 1안 단독 금지.
+**plan 채택**: A 기본 + B의 단축키 (Ctrl+Enter 채점 / **Ctrl+N 다음 문제** — Session 064 Step 3 진입 시 자동 추가, 4-Pass M11 carry-over로 macOS Cmd+N 새 창 충돌 검증 후속). 1안 단독 금지.
 
 ---
 
@@ -130,8 +130,8 @@
 -- scripts/admin-bootstrap-batch2-5-approved.sql
 INSERT INTO status_transitions (id, target_type, target_id, from_status, to_status, reviewer_id, reason, transitioned_at)
 SELECT
-  'st-s063-' || kn.id, 'node', kn.id, 'draft', 'approved',
-  'session-063-admin-bootstrap',
+  'st-s064-' || kn.id, 'node', kn.id, 'draft', 'approved',
+  'session-064-admin-bootstrap',
   'BATCH-2~5 부트스트랩 (phase2-eval-mvp.plan §6.1, 진산님 직접 재검수 표식 보존)',
   strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 FROM knowledge_nodes kn
@@ -140,9 +140,9 @@ WHERE kn.batch_id IN ('BATCH-2','BATCH-3','BATCH-4','BATCH-5')
   AND NOT EXISTS (SELECT 1 FROM status_transitions st WHERE st.target_type='node' AND st.target_id=kn.id);
 ```
 
-- idempotent (deterministic id `st-s063-` + NOT EXISTS) — Session 062 패턴 재사용
+- idempotent (deterministic id `st-s064-` + NOT EXISTS) — Session 062 패턴 재사용
 - 기대 결과: ~500건 추가 (production knowledge_nodes BATCH-2~5 active 합)
-- production 적용 후 검증 SQL: `SELECT COUNT(*) FROM status_transitions WHERE reviewer_id='session-063-admin-bootstrap'`
+- production 적용 후 검증 SQL: `SELECT COUNT(*) FROM status_transitions WHERE reviewer_id='session-064-admin-bootstrap'`
 
 ### 6.2 GET /api/study/next (Step 2-A)
 
@@ -225,7 +225,7 @@ function isAnswerCorrect(question: ExamQuestion, userAnswer: string): boolean {
 
 | Gate | 명세                                                                                                                                     | 검증                                                                                                       |
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| G1   | BATCH-2~5 SQL bootstrap 적용 → status_transitions reviewer_id='session-063-admin-bootstrap' 행 수 ≥ 400                                  | `SELECT COUNT(*)` production D1                                                                            |
+| G1   | BATCH-2~5 SQL bootstrap 적용 → status_transitions reviewer_id='session-064-admin-bootstrap' 행 수 ≥ 400                                  | `SELECT COUNT(*)` production D1                                                                            |
 | G2   | production e2e: BATCH-2 영역 query (예: "적과후착과수 산정") → /api/search results.length ≥ 3                                            | curl + jq                                                                                                  |
 | G3   | POST /api/study/grade 단위 테스트 ≥ 8건 PASS (정답/오답/normalize/normalize miss/L3/Hard Rule 16/17/출처)                                | vitest                                                                                                     |
 | G4   | GET /api/study/next 단위 테스트 ≥ 4건 PASS (가중치/미시도 우선/exam_type 필터/exhausted)                                                 | vitest                                                                                                     |
@@ -267,11 +267,27 @@ function isAnswerCorrect(question: ExamQuestion, userAnswer: string): boolean {
 
 - POST /api/admin/transitions 라우트 신규
 - ContentQueue.tsx fetch 연결
-- session-063-admin-bootstrap 표식 보존 → 진산님 명시 검수 시 reviewer_id 'jinsan-admin-NNN' 으로 갱신
+- session-064-admin-bootstrap 표식 보존 → 진산님 명시 검수 시 reviewer_id 'jinsan-admin-NNN' 으로 갱신
 
 ### 8.6 상태 표현 (Loading / Empty / Error / Offline)
 
 - 본 plan §6.4는 phase 분기만 명시. 상세 UI 상태 매트릭스는 4-Pass Pass 3 ADVOCATE 검증 영역.
+
+### 8.7 ★★ TBL-\* / TROW-\* markdown 렌더 (4-Pass M10 carry-over, Session 064)
+
+본 plan §3 표 5행 + §6.4 "marked / micromark 의존성" 명시했으나 **Step 3 미구현**. QuestionCard.tsx 의 relatedNodes 는 단순 텍스트 라인 (id/name/bookPage 만 표기).
+
+- Reality Anchor §4 Q2 type-C "TBL-\* 노드 markdown 렌더 깨짐" 검증 신호 surface 자체 안 됨 → "표가 깨진다" 가 아닌 "표가 안 나온다" 의 noise 로 진산님이 인식할 가능성
+- carry-over 별도 plan: `docs/plans/phase2-tbl-markdown-render.plan.md` 신규
+- 의존성 검토: marked / micromark / remark + Cloudflare Workers 호환 (apps/api 측면) + Astro client island 번들 크기
+
+### 8.8 ★★ G5 Playwright e2e (4-Pass M12 carry-over, Session 064)
+
+본 plan §7 G5 게이트 "Playwright e2e ≥ 1건" 명시 의무이나 Playwright 미설치 + Step 5 production deploy 의존으로 본 step carry-over.
+
+- 대체 검증: G9 진산님 production browser 1회 학습 시도 (Step 5)
+- 본격 e2e 도입 별도 plan: `docs/plans/phase2-eval-mvp-e2e-playwright.plan.md` 신규
+- 진입 → 채점 → 결과 → 출처 surface → 다음 문제 4 단계 시나리오
 
 ---
 

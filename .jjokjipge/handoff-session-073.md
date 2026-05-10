@@ -70,10 +70,67 @@
 - typecheck + lint exit 0 / Hard Rule 17 grep 0 / G11 0 위반
 - ★ G5 Playwright e2e — Playwright 미설치, **G9 진산님 production browser 1회 학습 시도로 대체 carry-over**
 
-### F. ★ Step 4 (4-Pass) + Step 5 (production deploy) carry-over
+### F. ★★★ Step 4 — 4-Pass 독립 리뷰 (review-gate hook 의무 발현, 본 세션 흡수)
 
-- 본 세션 90분/50턴 임계 도달 + 본 세션 산출 코드 양 (~ 1,100 LoC) 4-Pass 독립 리뷰 의무
-- 다음 세션(065) Step 1 = 4-Pass 4 에이전트 병렬 (silent-failure-hunter / backend-architect / security-engineer / code-reviewer) → CRITICAL 0 (G8) → 즉시 흡수 → production deploy → 진산 1회 학습 시도
+review-gate.sh hook 강제 발현 → 본 세션 내 4-Pass 의무 진행 (Step 4 carry-over 취소).
+
+#### F.1 4-Pass 결과 (4 에이전트 병렬, general-purpose × 4)
+
+| Pass        | ✅ PASS | 🔴 CRIT | 🟠 MAJOR | 🟡 MINOR |
+| ----------- | ------- | ------- | -------- | -------- |
+| 1 SURGEON   | 8       | 1       | 4        | 3        |
+| 2 ARCHITECT | 9       | 0       | 2        | 3        |
+| 3 ADVOCATE  | 7       | 2       | 3        | 2        |
+| 4 CONTRACT  | 7       | 0       | 3        | 4        |
+| **누적**    | **31**  | **3**   | **12**   | **12**   |
+
+- 통합 보고서: `.claude/reviews/review-20260510-150000-phase2-eval-mvp-step1-3-4pass.md`
+
+#### F.2 ★★★ CRIT 3건 즉시 흡수 (G8 게이트)
+
+1. **CRIT-1 (Pass 1)** routes.ts:180 — `String(circledNumbers.indexOf(m) + 1)` indexOf=-1 silent corruption. **흡수**: `if (idx === -1) return m;` 명시 분기.
+2. **CRIT-2 (Pass 3)** routes.ts /grade rate-limit 부재 → enumeration oracle. **흡수**: progress 패턴 재사용 (`checkAndIncrementRateLimit` 분당 20회 + RateLimitExceeded + jitter + 429).
+3. **CRIT-3 (Pass 3)** normalizeAnswer `/번$|호$/` false-positive ('1번' vs '1호'). **흡수**: `/번$/` 단순화 (호$ 제거). 정답 패턴별 분기 carry-over.
+
+#### F.3 회귀 테스트 신규 3건
+
+- CRIT-1 회귀: 원형숫자 정상 매핑 + 비-circle 입력 그대로
+- CRIT-2 회귀: rate-limit 20/min 초과 시 429 + Retry-After 헤더
+- CRIT-3 회귀: '1번' vs '1호' 동등 처리 차단
+
+→ apps/api 487 → **490 PASS** / typecheck + lint exit 0
+
+#### F.4 ★ MAJOR 12건 carry-over (phase 종료 전 또는 다음 phase 초기 흡수 의무)
+
+- M2 (Pass 1): /next LEFT JOIN tiebreak — `WHERE up.node_id IS NULL` 추가
+- M3 + M5 (Pass 1+2): user_progress UNIQUE 제약 부재 → 동시 INSERT race. **마이그레이션 0027 신규** carry-over (`CREATE UNIQUE INDEX idx_user_progress_card ON user_progress(user_id, card_id, card_type) WHERE card_id IS NOT NULL`)
+- M4 (Pass 1): /next N+1 enrichment → Promise.all 병렬화
+- M6 (Pass 2): apps/web 인증 진입점 (auth/login.astro) 부재 — 별도 plan
+- M7 (Pass 3): correctAnswer 무조건 echo → "오답 N회 후 노출" 토글 별도 plan
+- M8 (Pass 3): Ctrl+N macOS Cmd+N 새 창 차단 → `e.metaKey === false` 가드 (다음 step 즉시 흡수 후보)
+- M9 (Pass 3): 오프라인 graceful 안내 별도 plan
+- M10 (Pass 4): plan §3 TBL-\* markdown 렌더 Silent Pivot — **plan §8.7 영속**, `phase2-tbl-markdown-render.plan.md` 신규
+- M11 (Pass 4): plan §5 Ctrl+N silent expansion — plan §5 갱신 영속 ✓
+- M12 (Pass 4): G5 Playwright e2e — **plan §8.8 영속**, `phase2-eval-mvp-e2e-playwright.plan.md` 신규
+
+#### F.5 ★ MINOR 12건 carry-over (배치 정리)
+
+- m1 dead-code `void examIdParam.examId` (Hard Rule 16 시그니처 의도)
+- m2 `new Date().toISOString()` vs SQL `datetime('now')` 형식 불일치
+- m3 `useEffect` deps `[]` exhaustive-deps
+- m4 /next CPU 50ms (M4 통합)
+- m5 i18n carry-over 미명시 — 다음 phase
+- m6 PUBLIC_API_BASE_URL fallback localhost — Pages 빌드 fail-fast
+- m7 HTTP 코드 학습자 노출 — graceful 메시지 강화
+- m8 reviewer_id audit trail 빈약 — 진산 직접 검수 시 갱신 todo
+- m9 plan §6.1 session 번호 mismatch — **plan 일괄 갱신 ✓** (sed s/063/064/g)
+- m10 한국어 "조사" normalize 미구현 — 다음 step
+- m11 AESTHETIC emerald-100/900 토큰 외 색
+- m12 lint-staged 자동 포맷 의존
+
+### G. ★★★ Step 5 (production deploy) carry-over (다음 세션)
+
+- apps/web Cloudflare Pages 배포 + thepick-api-production wrangler deploy + 진산님 1회 학습 시도 (G9)
 
 ---
 
@@ -164,17 +221,11 @@ apps/web build : 2 pages 성공 (index.html + study/index.html, client 186kB / g
   > /home/soo/ClaudePro/ThePick/.claude/reports/sprint1-step5-5-verify-session-065-entry-run1.json
 ```
 
-### 2. ★★★ Phase 2 Eval MVP — Step 4 (4-Pass 독립 리뷰, 의무)
+### 2. ★ Step 4 (4-Pass) — **본 세션 완료** (CRIT 3 흡수 + MAJOR 12 / MINOR 12 carry-over)
 
-- 4 에이전트 병렬 (`.claude/rules/auto-review-protocol.md` 정합):
-  - Pass 1 SURGEON: silent-failure-hunter (코드 정합성)
-  - Pass 2 ARCHITECT: backend-architect (연계 / 의존성)
-  - Pass 3 ADVOCATE: security-engineer (UX + 보안)
-  - Pass 4 CONTRACT: code-reviewer (기획 대조)
-- 리뷰 범위: apps/api/src/study/_ + apps/api/src/index.ts + apps/web/src/_ + scripts/admin-bootstrap-batch2-5-approved.sql
-- 통합 보고서: `.claude/reviews/review-{YYYYMMDD-HHMMSS}-phase2-eval-mvp-step1-3-4pass.md`
-- 게이트: G8 CRITICAL 0 → 즉시 흡수
-- ★ memory `feedback_review_filename_pattern.md` 정합 — review-\* prefix 의무
+- 통합 보고서: `.claude/reviews/review-20260510-150000-phase2-eval-mvp-step1-3-4pass.md`
+- G8 CRITICAL 0 PASS — Step 5 진입 가능
+- 본 핸드오프 §F 상세 영속
 
 ### 3. ★★★ Phase 2 Eval MVP — Step 5 (production deploy + 진산님 1회 학습 시도)
 

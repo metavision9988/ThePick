@@ -32,6 +32,11 @@ import {
 } from '@thepick/shared';
 import { requireAuth, type RequireAuthVariables } from '../auth/middleware/require-auth.js';
 import { D1_UNIQUE_CONSTRAINT_PATTERN, withRetry } from '../middleware/retry.js';
+import {
+  checkAndIncrementRateLimit,
+  RateLimitExceeded,
+  sleepJitter,
+} from '../progress/rate-limit.js';
 
 const KNOWN_ENVIRONMENTS: ReadonlySet<LoggerEnvironment> = new Set<LoggerEnvironment>([
   'development',
@@ -173,12 +178,21 @@ type StudyEnv = {
  */
 export function normalizeAnswer(s: string): string {
   const circledNumbers = '①②③④⑤⑥⑦⑧⑨⑩';
-  return s
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '')
-    .replace(/[①-⑩]/g, (m) => String(circledNumbers.indexOf(m) + 1))
-    .replace(/번$|호$/, '');
+  return (
+    s
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/[①-⑩]/g, (m) => {
+        // 4-Pass Pass 1 CRIT-1 흡수 — regex character class와 circledNumbers 어긋날 시
+        // (미래 ⑪~⑳ 확장 누락) indexOf=-1 → '0' silent corruption 차단.
+        const idx = circledNumbers.indexOf(m);
+        return idx === -1 ? m : String(idx + 1);
+      })
+      // 4-Pass Pass 3 CRIT-3 / Pass 1 M1 흡수 — '호$' 제거. '1번' vs '1호' false-positive
+      // ('번' 객관식 ≠ '호' 동/호수) 차단. '호' 정답 패턴별 분기는 carry-over.
+      .replace(/번$/, '')
+  );
 }
 
 export function isAnswerCorrect(expected: string | null, userAnswer: string): boolean {
@@ -372,6 +386,21 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       );
     }
     void examIdParam.examId;
+
+    // 4-Pass Pass 3 CRIT-2 흡수 — enumeration oracle 차단 (정답 dump 방지).
+    // progress/review 패턴 재사용 (TD-030). 분당 20회 cap + 429 응답 + jitter.
+    try {
+      await checkAndIncrementRateLimit(c.env.DB, userId, { limitPerMinute: 20 });
+    } catch (err) {
+      if (err instanceof RateLimitExceeded) {
+        await sleepJitter();
+        c.header('Retry-After', String(err.retryAfterSeconds));
+        return c.json({ error: 'RATE_LIMIT_EXCEEDED' }, 429);
+      }
+      logger.error('rate-limit check failed', err, { userId });
+      c.header('Retry-After', '5');
+      return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
+    }
 
     const parsed = gradeSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) {
