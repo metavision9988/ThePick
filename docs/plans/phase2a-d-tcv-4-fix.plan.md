@@ -235,15 +235,42 @@ async function fetchNodesByIds(
 
 ## 8. carry-over (다음 step / 별도)
 
-### 8.1 SP-T06 측정 (본 step 후속, handoff-069 §3 우선순위 2)
+### 8.0 ★ admin G5.5 부분 진입 (★ Session 062 종착)
+
+진산 결정 (Session 062 — handoff-070 §3 우선순위 1): **BATCH-1 적과전 75건 status='approved' 전환 (74건 active 적용, 1건 inactive 자연 제외).**
+
+- 영속 스크립트: `scripts/admin-bootstrap-batch1-approved.sql`
+- production 적용: `wrangler d1 execute thepick-db-production --remote --file ...` → changes=75 / active 74건 status='approved'
+- reviewer_id: `'session-062-admin-bootstrap'` (시스템 부트스트랩 표식)
+- idempotent: `'st-s062-' || node_id` deterministic id + NOT EXISTS clause (재실행 시 conflict 자연 차단)
+- production e2e 검증:
+  - Stage 1 통과 query "적과후착과수 산정 방법" → top1=0.69, stage2Count=7, results=5 ✅
+  - Stage 3 진입 query "태풍 피해 평가 절차" (staging) → clusterMatch=3, nodeAbove=11, results=0 (cluster 매칭 노드가 BATCH-1 외 영역 — 추가 검수 carry-over)
+- production timeout 1회 발생 (M2-1 Stage 3 직렬 ~600ms 정합) — 다음 세션 carry-over 우선
+
+**측정 차단 해소**: BATCH-1 영역 query 50건 SP-T06 측정 가능 환경 확보. messageKey 'out_of_scope' misrepresent 부분 해소 (BATCH-1 query 한정).
+
+### 8.1 SP-T06 측정 spec 구체화 + 측정 (★ 다음 세션 plan 단위 work)
+
+본 세션 zoom-out 발견: SEARCH_PIPELINE.md §7 + plan §6 정의가 추상도 높음. 다음 세션 별도 plan으로 spec 구체화 후 진행.
+
+**spec 미정 항목 (다음 세션 결정 의무)**:
+
+- "정확 토픽" 정의 — top-1 노드 일치 / top-K 내 surface / matched cluster.id 일치 중 어느 것?
+- expected node 추출 방법 — 수동 fixture / exam_questions 기반 자동 / 노드 name 셀프 매칭?
+- 50건 query 출처 — 기출 발췌 / 자연 query 수동 작성 / cluster.lv1 11종 × 평균 4~5건 분배?
+- 측정 환경 — production (BATCH-1 only) 또는 staging (BATCH 전체) — staging의 경우 추가 BATCH approved 전환 의무
+
+**fixture 후보 영역 (BATCH-1 active 74건 정합)**:
 
 - fixture 50건 (production cluster.lv1 11종 × 평균 4~5건 학습자 query)
 - top-5 정확도 ≥ 85% 목표 (옵션 B-1 추정 80~90% 정합)
 - 미달 시: KNOWLEDGE_NODE_MIN_SIMILARITY 임계 조정 (0.40 → 0.35) / cluster.name 임베딩 재적재 (lv1+name 결합 D-TCV-1=B 보강) 검토
 
-### 8.2 SP-T07 측정 (handoff-069 §3 우선순위 2)
+### 8.2 SP-T07 측정 (★ 다음 세션 plan 단위 work)
 
 - out-of-scope query 100건 → Stage 4 honest-refusal 진입율 ≤ 5% 목표
+- spec 미정: out-of-scope query 출처 (다른 시험 영역 / 일반 일상어 / 의도적 noise?)
 
 ### 8.3 운영 안전성 (handoff-069 §3 우선순위 3)
 
