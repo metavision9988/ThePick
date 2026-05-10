@@ -61,6 +61,9 @@ const SCENARIO_MIGRATIONS = [
   '0017_engine_telemetry.sql',
   '0018_enforce_draft_only_insert.sql',
   '0019_knowledge_nodes_page_chapter_meta.sql',
+  // ★ ADR-035: PBKDF2 iterations Workers 호환 100k (0007 trigger >= 600000 → >= 100000 갱신).
+  // 본 마이그레이션이 0007 이후 적용되어야 인증 시나리오 통과 (Session 065).
+  '0028_pbkdf2_iterations_workers_compat.sql',
 ];
 
 export interface SqliteBackedD1 {

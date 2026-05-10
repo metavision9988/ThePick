@@ -76,7 +76,8 @@ describe('DUMMY_HASH embedded constant', () => {
     const src = await fs.readFile(new URL('../dummy-verify.ts', import.meta.url), 'utf-8');
     // 소스에 리터럴 숫자가 박혀있으면 경고 (PBKDF2_ITERATIONS 상수 경유만 허용).
     expect(src).toContain('iterations: PBKDF2_ITERATIONS');
-    // 상수가 ADR-005 최소값 600000 을 충족하는지 재확인.
-    expect(PBKDF2_ITERATIONS).toBeGreaterThanOrEqual(600000);
+    // ★ ADR-035: Cloudflare Workers Web Crypto PBKDF2 max=100,000 채택. ADR-005 600k vs Workers 제약 silent drift 해소.
+    // Phase 3 launch 직전 Argon2id 또는 외부 hash service 검토 carry-over (ADR-035 §"복원 의무").
+    expect(PBKDF2_ITERATIONS).toBeGreaterThanOrEqual(100000);
   });
 });

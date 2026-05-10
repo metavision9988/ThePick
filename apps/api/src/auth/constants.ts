@@ -5,17 +5,22 @@
  */
 
 /**
- * OWASP 2024 PBKDF2-SHA256 최소 반복 횟수 (ADR-005).
+ * PBKDF2-SHA256 반복 횟수 (ADR-035 — Cloudflare Workers 호환 100k).
+ *
+ * ★ Cloudflare Workers Web Crypto API 제약: PBKDF2 iterations **상한 100,000**
+ * (`NotSupportedError: iteration counts above 100000 are not supported`).
+ * → ADR-005 OWASP 2024 600k 권고 vs Workers runtime 제약 충돌 → 100k 채택.
  *
  * 근거:
- *   - OWASP Password Storage Cheat Sheet (2024 rev) — PBKDF2-SHA256: 600,000
- *   - ADR-005 본문 "Iterations: 600,000" 준수
- *   - 자격증 학습 서비스 특성상 사용자 계정 탈취 시 학습 이력·결제 정보 유출
- *     → 서버 CPU 부담 감수하고 엄격 적용
+ *   - ADR-035 §"결정" — Workers 호환 최대 100k 채택 (Phase 2 Eval MVP, Session 065)
+ *   - OWASP 2024 권고 미충족 (보안 trade-off 영속) — Phase 3 launch 직전
+ *     Argon2id 또는 외부 hash service 검토 carry-over (ADR-035 §"복원 의무")
+ *   - 자격증 학습 서비스 특성상 사용자 계정 탈취 시 학습 이력·결제 정보 유출 위험
+ *     → 본 100k는 임시. PBKDF2 한계 + Workers runtime 제약 영속 인지 의무.
  *
- * Workers 영향: 약 100~150ms CPU per hash (Paid tier 30s 상한 대비 여유).
+ * Workers 영향: 약 20~30ms CPU per hash (Paid tier 30s 상한 대비 여유).
  */
-export const PBKDF2_ITERATIONS = 600000;
+export const PBKDF2_ITERATIONS = 100000;
 
 /** Salt 바이트 길이 (128-bit). */
 export const PBKDF2_SALT_BYTES = 16;
