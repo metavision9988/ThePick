@@ -80,4 +80,55 @@ describe('DUMMY_HASH embedded constant', () => {
     // Phase 3 launch 직전 Argon2id 또는 외부 hash service 검토 carry-over (ADR-035 §"복원 의무").
     expect(PBKDF2_ITERATIONS).toBeGreaterThanOrEqual(100000);
   });
+
+  /**
+   * ★ Session 066 5-Persona C-01 흡수 — bytes ↔ iterations runtime invariant.
+   * 임베드된 hash/salt 바이트가 sentinel 평문을 PBKDF2_ITERATIONS 회 반복한
+   * 결과와 정확히 일치해야 함. v1(600k) → v2(100k) 전환 또는 미래 v3 복원 시
+   * 주석 갱신만 하고 hash bytes 재생성을 누락하면 본 테스트가 실패하여 차단.
+   *
+   * Pass 1 (Surgeon) C-1 + Pass 2 CRIT-2 + Pass 3 C-1 + Persona 1 MAJOR-2 동일
+   * 지적에 대한 단일 회귀 가드.
+   */
+  it('matches runtime PBKDF2(sentinel, salt, PBKDF2_ITERATIONS) — invariant guard', async () => {
+    const fs = await import('node:fs/promises');
+    const crypto = await import('node:crypto');
+    const src = await fs.readFile(new URL('../dummy-verify.ts', import.meta.url), 'utf-8');
+
+    // sentinel 평문 추출 (`pt = '...'` 패턴, JSDoc 스크립트 영역)
+    const ptMatch = src.match(/pt\s*=\s*'(dummy-verify-sentinel-[^']+)'/);
+    expect(ptMatch).not.toBeNull();
+    const sentinel = ptMatch![1]!;
+
+    // salt 시드 버전 추출 (`|salt|vN` 패턴)
+    const saltSeedMatch = src.match(/'\|salt\|(v\d+)'/);
+    expect(saltSeedMatch).not.toBeNull();
+    const saltVersion = saltSeedMatch![1]!;
+
+    // 임베드된 base64 hash/salt 추출
+    const hashMatch = src.match(/hash:\s*'([A-Za-z0-9+/=]+)'/);
+    const saltMatch = src.match(/salt:\s*'([A-Za-z0-9+/=]+)'/);
+    expect(hashMatch).not.toBeNull();
+    expect(saltMatch).not.toBeNull();
+    const embeddedHash = Buffer.from(hashMatch![1]!, 'base64');
+    const embeddedSalt = Buffer.from(saltMatch![1]!, 'base64');
+
+    // runtime 재생성
+    const expectedSalt = crypto
+      .createHash('sha256')
+      .update(`${sentinel}|salt|${saltVersion}`)
+      .digest()
+      .subarray(0, PBKDF2_SALT_BYTES);
+    const expectedHash = crypto.pbkdf2Sync(
+      sentinel,
+      expectedSalt,
+      PBKDF2_ITERATIONS,
+      PBKDF2_HASH_BYTES,
+      'sha256',
+    );
+
+    // 정합 검증 — 두 바이트 시퀀스가 정확히 일치해야 함
+    expect(embeddedSalt.equals(expectedSalt)).toBe(true);
+    expect(embeddedHash.equals(expectedHash)).toBe(true);
+  });
 });
