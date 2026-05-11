@@ -244,7 +244,8 @@ describe('GET /api/study/next', () => {
     seedUser('u1', 'u1@test.com');
     seedExamQuestion({ id: 'eq-1st-1', examType: '1st', content: '1차 문제' });
     seedExamQuestion({ id: 'eq-2nd-1', examType: '2nd', content: '2차 문제' });
-    const res = await fetchAs('u1', '/next');
+    // ★ Session 065: 라우트 default '2nd' → '1st' 변경 (production 실측 정합). 본 test는 examType filter 검증 의도.
+    const res = await fetchAs('u1', '/next?examType=2nd');
     expect(res.status).toBe(200);
     const body = (await res.json()) as StudyResponseBody;
     expect(body.exhausted).toBe(false);
@@ -262,7 +263,7 @@ describe('GET /api/study/next', () => {
       totalReviews: 1,
       correctCount: 1,
     });
-    const res = await fetchAs('u1', '/next?count=2');
+    const res = await fetchAs('u1', '/next?count=2&examType=2nd');
     expect(res.status).toBe(200);
     const body = (await res.json()) as StudyResponseBody;
     expect(body.questions).toHaveLength(2);
@@ -286,7 +287,7 @@ describe('GET /api/study/next', () => {
       totalReviews: 5,
       correctCount: 1,
     });
-    const res = await fetchAs('u1', '/next?count=2');
+    const res = await fetchAs('u1', '/next?count=2&examType=2nd');
     const body = (await res.json()) as StudyResponseBody;
     expect(body.questions![0].id).toBe('eq-weak');
     expect(body.questions![1].id).toBe('eq-mastered');
@@ -312,7 +313,7 @@ describe('GET /api/study/next', () => {
       questionNumber: 5,
       relatedNodes: ['CONCEPT-001', 'LAW-007'],
     });
-    const res = await fetchAs('u1', '/next');
+    const res = await fetchAs('u1', '/next?examType=2nd');
     const body = (await res.json()) as StudyResponseBody;
     const q = body.questions![0];
     expect(q.relatedNodes).toHaveLength(2);

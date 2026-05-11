@@ -303,7 +303,10 @@ export function createStudyRoutes(): Hono<StudyEnv> {
     }
     void examIdParam.examId;
 
-    const examTypeRaw = c.req.query('examType') ?? '2nd';
+    // ★ Phase 2 Eval MVP plan §3 결정 갱신 (Session 065 진산 옵션 3 선택):
+    // production 실측 2차 9건 모두 answer null = 자동 채점 0% → 1차 525건 default 채택.
+    // 2차 self-grade는 plan §8.3 별도 plan (`docs/plans/phase2-2nd-self-grade.plan.md`) carry-over.
+    const examTypeRaw = c.req.query('examType') ?? '1st';
     const examTypeParsed = examTypeSchema.safeParse(examTypeRaw);
     if (!examTypeParsed.success) {
       return c.json(

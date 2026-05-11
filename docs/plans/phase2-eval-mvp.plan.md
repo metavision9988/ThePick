@@ -42,15 +42,15 @@
 
 ## 3. 채택안 (자동 결정 — memory `feedback_no_granular_decisions.md` 정합)
 
-| 결정         | 채택안                                                                                                                     | 사유                                                                                                                                                          |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 채점 방식    | 텍스트 정규화 (공백/대소문자/조사) 후 exact match + 보기 번호 매칭                                                         | exam_questions.answer 가 "1" / "②" / "보험가액의 80%" 등 혼합 — 단계적 정규화 후 비교. memory `project_source_citation_requirement.md` 정합 (정답 100% 정확). |
-| 문제 추출    | `correctCount` 적은 것 우선 + `status='active'` + 사용자 미시도 우선 (단순 가중치)                                         | FSRS Phase 2 이월. 본 plan은 학습 효과보단 검수 노이즈 surface 측정 목적이라 단순 가중치 충분.                                                                |
-| 학습 영역    | 2차 시험 문제 (examType='2nd', exam_questions 20건) 우선                                                                   | 1차 525건은 객관식 5지선다 정답 명확, 2차 20건은 약술/계산형 — 정확도/신뢰성 평가에 2차가 더 변별력 있음                                                      |
-| 출처 surface | `sourceCitations: { manualPages?, lawArticles?, examReferences? }` + `relatedNodes: { id, name, nodeType, manualPage? }[]` | memory `project_source_citation_requirement.md` 의무                                                                                                          |
-| 표 노드 표시 | TBL-\* / TROW-\* 노드 markdown 테이블 렌더 (relatedNodes 일부)                                                             | memory `project_table_processing_core_capability.md` 정합                                                                                                     |
-| 인증         | requireAuth 미들웨어 (progress 라우트와 동일)                                                                              | 기존 패턴 재사용                                                                                                                                              |
-| 디자인       | A/B/C 3안 §5 영속 (1안 금지)                                                                                               | AESTHETIC.md `## 3-Variant 규칙` 의무                                                                                                                         |
+| 결정         | 채택안                                                                                                                     | 사유                                                                                                                                                                                                                                                           |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 채점 방식    | 텍스트 정규화 (공백/대소문자/조사) 후 exact match + 보기 번호 매칭                                                         | exam_questions.answer 가 "1" / "②" / "보험가액의 80%" 등 혼합 — 단계적 정규화 후 비교. memory `project_source_citation_requirement.md` 정합 (정답 100% 정확).                                                                                                  |
+| 문제 추출    | `correctCount` 적은 것 우선 + `status='active'` + 사용자 미시도 우선 (단순 가중치)                                         | FSRS Phase 2 이월. 본 plan은 학습 효과보단 검수 노이즈 surface 측정 목적이라 단순 가중치 충분.                                                                                                                                                                 |
+| 학습 영역    | **1차 시험 문제 (examType='1st', exam_questions 525건) default — Session 065 진산 옵션 3 선택**                            | production 실측 (Session 065): 2차 9건 모두 `answer IS NULL` = 자동 채점 0%. 1차 525건 모두 answer filled = 자동 채점 100%. plan §3 초기 가정 ("2차 변별력") vs 실측 mismatch → 1차 default 즉시 + 2차 self-grade carry-over (`phase2-2nd-self-grade.plan.md`) |
+| 출처 surface | `sourceCitations: { manualPages?, lawArticles?, examReferences? }` + `relatedNodes: { id, name, nodeType, manualPage? }[]` | memory `project_source_citation_requirement.md` 의무                                                                                                                                                                                                           |
+| 표 노드 표시 | TBL-\* / TROW-\* 노드 markdown 테이블 렌더 (relatedNodes 일부)                                                             | memory `project_table_processing_core_capability.md` 정합                                                                                                                                                                                                      |
+| 인증         | requireAuth 미들웨어 (progress 라우트와 동일)                                                                              | 기존 패턴 재사용                                                                                                                                                                                                                                               |
+| 디자인       | A/B/C 3안 §5 영속 (1안 금지)                                                                                               | AESTHETIC.md `## 3-Variant 규칙` 의무                                                                                                                                                                                                                          |
 
 ---
 
@@ -272,10 +272,12 @@ Phase 3 launch 직전 본격 인증 UI carry-over (memory `project_launch_legal_
 - M2-1 Promise.all 병렬화 흡수 후 /search 라우트 학습자 노출 안전
 - 본 plan은 exam_questions 직접 표시만, 자유 검색 X
 
-### 8.3 약술형 self-grade UI (Q2 type-D 정합)
+### 8.3 약술형 self-grade UI (Q2 type-D 정합) — **별도 plan 영속 (Session 065)**
 
-- 2차 약술형 문제 채점 자동화 불가
+- 2차 약술형 문제 채점 자동화 불가 (production 실측: 2차 9건 모두 answer null)
 - self-grade UX (모범답안 surface + 사용자 ✅/⚠️/❌ 자체 평가) 별도 plan
+- ★ 영속: `docs/plans/phase2-2nd-self-grade.plan.md` (Session 065 carry-over)
+- 진산 옵션 3 선택 — 1차 default 즉시 + 2차 self-grade 별도 plan
 
 ### 8.4 mnemonic_cards 학습 surface
 
