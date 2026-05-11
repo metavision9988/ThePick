@@ -64,6 +64,10 @@ const SCENARIO_MIGRATIONS = [
   // ★ ADR-035: PBKDF2 iterations Workers 호환 100k (0007 trigger >= 600000 → >= 100000 갱신).
   // 본 마이그레이션이 0007 이후 적용되어야 인증 시나리오 통과 (Session 065).
   '0028_pbkdf2_iterations_workers_compat.sql',
+  // ★ Session 066 5-Persona C-06: user_progress (user_id, card_id, card_type) partial UNIQUE
+  // + (user_id, node_id, card_type) concept partial UNIQUE. Year 2 Phase 4 마이그레이션 폭탄 예방
+  // (Persona4-BCRIT1) + lookup 가속 (Persona2-PCRIT1) + 4-Pass M-1 catch 분기 활성화.
+  '0029_user_progress_unique_constraint.sql',
 ];
 
 export interface SqliteBackedD1 {
