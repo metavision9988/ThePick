@@ -357,22 +357,26 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       return c.json({ exhausted: true, questions: [] });
     }
 
-    const enriched: NextQuestionOut[] = [];
-    for (const q of questions) {
-      const relatedNodes = await enrichRelatedNodes(c.env.DB, q.related_nodes, logger);
-      enriched.push({
-        id: q.id,
-        year: q.year,
-        round: q.round,
-        questionNumber: q.question_number,
-        subject: q.subject,
-        content: q.content,
-        examType: q.exam_type,
-        topicCluster: q.topic_cluster,
-        relatedNodes,
-        sourceCitations: buildSourceCitations(q, relatedNodes),
-      });
-    }
+    // ★ Session 066 5-Persona C-07 흡수 — N+1 직렬 enrichment → Promise.all 병렬.
+    // count=5 시 직렬 6 D1 round-trip (Edge→D1 RTT 30~50ms × 5 = 150~250ms wallclock)을
+    // 1 round-trip wave 로 압축. handoff-073 §F.4 M4 동시 해소.
+    const enriched: NextQuestionOut[] = await Promise.all(
+      questions.map(async (q) => {
+        const relatedNodes = await enrichRelatedNodes(c.env.DB, q.related_nodes, logger);
+        return {
+          id: q.id,
+          year: q.year,
+          round: q.round,
+          questionNumber: q.question_number,
+          subject: q.subject,
+          content: q.content,
+          examType: q.exam_type,
+          topicCluster: q.topic_cluster,
+          relatedNodes,
+          sourceCitations: buildSourceCitations(q, relatedNodes),
+        };
+      }),
+    );
 
     return c.json({ exhausted: false, questions: enriched });
   });
