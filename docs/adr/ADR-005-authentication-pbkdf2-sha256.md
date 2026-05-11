@@ -1,9 +1,18 @@
 # ADR-005: 인증 비밀번호 해싱 — PBKDF2-SHA256 (WebCrypto)
 
-- **상태:** Accepted
+- **상태:** Accepted (★ Partially superseded — 평가 환경 한정, Phase 3 launch 직전 복원 의무)
 - **결정일:** 2026-04-14 (감사 수정 시 확정), 기록화 2026-04-18
 - **결정자:** 진산 + Claude Opus 4.7 (독립 리뷰)
 - **관련:** Phase 0 독립 리뷰 C-2 (Argon2 Workers 비호환)
+- **Partially-superseded-by:**
+  - [ADR-034](./ADR-034-test-password-policy-relaxation.md) — `PASSWORD_MIN_LENGTH` (8→4) + HIBP 분기 disable (평가 환경 임시)
+  - [ADR-035](./ADR-035-pbkdf2-iterations-workers-compat.md) — `PBKDF2_ITERATIONS` (600,000→100,000, Workers Web Crypto 상한) + 마이그레이션 0028 트리거 하한 100,000
+  - [ADR-036](./ADR-036-auth-cookie-samesite-cross-origin.md) — Cookie `SameSite` (Strict→None, cross-origin pages.dev↔workers.dev 한정)
+
+> ⚠️ **본 ADR-005 본문(아래)은 launch-ready 600k/8자/Strict 정합이다.**
+> Phase 2 Eval MVP 평가 환경(진산 단독 user)에서 ADR-034/035/036이 일부 정책을 임시 supersede한다.
+> 본문을 참고하는 미래 세션은 반드시 ADR-034/035/036 §"복원 의무"를 동시에 확인하여 silent regression을 차단할 것.
+> Phase 3 launch 직전 1주 스프린트에서 본 ADR-005 본문 그대로 복원이 의무 chain이다.
 
 ## 맥락 (Context)
 
@@ -279,3 +288,4 @@ function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
 - 2026-04-18 (Session 8 Step 1-1 구현 정합): 저장 포맷을 modular crypt format 단일 문자열에서 **3개 컬럼 분리** (`password_hash` / `password_salt` / `password_iterations`) 로 정식 채택. iterations 업그레이드 추적 가시성 + DB 트리거 방어선 연동 근거.
 - 2026-04-18 (Session 8 4-Pass 리뷰 C-6 해소): 구현이 ADR 본문과 정합 복원. `apps/api/src/auth/constants.ts` `PBKDF2_ITERATIONS = 600000`, `migrations/0007_users_strict_hardening.sql` 트리거 하한 600000 상향.
 - 2026-04-22 (Session 10 Step 1-4): §Addendum 추가 — JWT 쿠키 Phase 2 → Phase 1 조기 도입. Access JWT (HS256 15min) + D1 Refresh Token (30day rotation). 근거: Phase 1 downstream blocked 해소, OAuth 2.0 표준.
+- 2026-05-11 (Session 066 4-Pass + 5-Persona 통합 리뷰 C-02 해소): 헤더에 `Partially-superseded-by` 필드 + 본문 상단 경고 box 추가. ADR-034/035/036 3건이 평가 환경에서 ADR-005를 부분 supersede 중인 상태를 명시하여 미래 세션의 silent regression (예: 600k 정합 가정으로 코드 되돌림 → Workers `NotSupportedError` 재발현) 차단. 본 ADR-005 본문 자체는 launch-ready 기준으로 불변 유지 — Phase 3 launch 직전 복원 chain의 reference point 역할.

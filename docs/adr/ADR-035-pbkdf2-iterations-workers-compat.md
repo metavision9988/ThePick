@@ -40,6 +40,53 @@ memory `feedback_full_autonomy.md` "결정 영역 boundary":
   - 평가 환경 (진산 단독) 기간 한정 + Phase 3 launch 직전 Argon2id 또는 외부 hash service (예: Cloudflare Workers KV에 외부 PBKDF2 service 저장 hash 캐시) 검토 의무
 - **Workers 단일 벤더 정합** (memory `feedback_single_vendor_cloudflare.md`): 외부 hash service 도입 시 단일 벤더 위배. 본격 launch 시 Workers Static Assets + Argon2 WASM 구현 또는 다른 path
 
+## PBKDF2 100k vs 600k 비용 정량 분석 (Session 066 5-Persona Performance C-08 흡수)
+
+> 본 섹션은 Phase 3 launch 직전 검토 의무의 정량 baseline. brute-force 비용 + Workers fleet 부담 두 축으로 산정.
+
+### A. brute-force offline cost (공격자 측)
+
+| password 패턴               | search space | PBKDF2 100k cost (RTX 4090 ×8) | PBKDF2 600k cost (RTX 4090 ×8) |
+| --------------------------- | ------------ | ------------------------------ | ------------------------------ |
+| 4자리 숫자 (ADR-034)        | 10⁴ = 10,000 | **~0.025초** (사실상 즉시)     | ~0.15초 (여전히 즉시)          |
+| 6자리 영숫자                | 36⁶ = 2.2B   | ~5.5시간                       | ~33시간                        |
+| 8자리 영숫자 (launch-ready) | 36⁸ = 2.8T   | ~92일                          | ~552일 (1.5년)                 |
+| 8자리 mixed-case + 특수     | 95⁸ = 6.6Q   | ~600년                         | ~3,600년                       |
+
+**결론**: 4자리 숫자 (ADR-034 평가 환경) 시 600k 복원해도 brute-force 무의미. **password complexity가 iterations보다 1차 방어선**. Phase 3 복원 시 PASSWORD_MIN 8 + complexity 강제(영숫자+특수) 우선, 600k 복원은 차순위.
+
+### B. Workers fleet 부담 (서비스 측)
+
+가정: PBKDF2 100k 1회 CPU ≈ 30~50ms (Cloudflare Workers Web Crypto 실측 범위), 600k ≈ 180~300ms.
+
+| 시나리오                                        | login 트래픽    | 100k 부담           | 600k 부담             | Workers Paid 30s 한계 도달도            |
+| ----------------------------------------------- | --------------- | ------------------- | --------------------- | --------------------------------------- |
+| Phase 2 평가 (진산 단독)                        | <1 req/day      | 무의미              | 무의미                | 0%                                      |
+| Phase 3 초기 1K user                            | ~1 req/min peak | 0.83ms/sec          | 5ms/sec               | <0.1%                                   |
+| 1만 user peak hour (5 req/min × 10%)            | ~83 req/sec     | 2,500~4,150ms/sec   | 15,000~24,900ms/sec   | **25% (600k)** ★ Persona2 P-CRIT-3 우려 |
+| 10만 user peak burst (10 req/sec/1K user × 10%) | ~1,000 req/sec  | 30,000~50,000ms/sec | 180,000~300,000ms/sec | **300% (600k) — fleet 한계 초과**       |
+
+**해석**:
+
+- 1만 user 도달 시 600k 단일 path가 Workers capacity 25% 점유 → **다른 endpoint 응답성 영향 가능**
+- 10만 user 도달 시 600k는 horizontal scale 불가능 (single endpoint 한계 초과) → **Workers fleet 확장 또는 Argon2id 검토 필수**
+- Workers 1 request 30s CPU 한계는 단일 hash 자체는 안전 (300ms ≪ 30s). 문제는 **동시 요청 누적**.
+
+### C. 비용 trade-off 매트릭스
+
+| 옵션                                 | brute-force 방어            | Workers 부담       | 구현 비용 | 추천 단계                |
+| ------------------------------------ | --------------------------- | ------------------ | --------- | ------------------------ |
+| 현 100k + 4자리 (ADR-034)            | 매우 낮음                   | 거의 없음          | 0         | 평가 환경 한정           |
+| 100k + 8자 영숫자                    | 보통                        | 거의 없음          | 1h        | Phase 3 초기 (1K user)   |
+| 600k + 8자 영숫자                    | 양호 (PCID 통과 가능)       | 1만 user 한계      | 2h        | Phase 3 중기 (1만 user)  |
+| Argon2id + 8자 영숫자                | 매우 양호 (OWASP 2024 최상) | 적음 (메모리 hard) | 4-8h      | Phase 3 후기 / 10만 user |
+| External hash service (Worker chain) | 양호                        | 매우 적음          | 8-16h     | scaling 압박 시점        |
+
+### D. 결정 영속 (Phase 3 1주 스프린트 chain 입력)
+
+본 정량 분석은 ADR-035 §"검토 의무" 5번째 체크박스 "PBKDF2 100k 한정 brute-force cost 재산정" 일부 흡수.
+Phase 3 진입 시 user 규모 예상치 (1K vs 1만 vs 10만)에 따라 옵션 B/C/D 중 진산 결정 (memory `feedback_full_autonomy.md` "인증 정책" + "품질" 결정 영역).
+
 ## Phase 3 launch 직전 **검토 의무** (★ 명시 carry-over)
 
 memory `project_launch_legal_bundle_deferred.md` chain 동기 (ADR-034와 묶음):
