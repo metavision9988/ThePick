@@ -142,6 +142,14 @@ const CONFUSION_TYPES = [
 ] as const;
 const CARD_TYPES = ['flashcard', 'ox', 'blank', 'exam', 'calculation'] as const;
 
+// Phase 3 학습 UX 모드 (plan §13 lock + migrations 0032~0035)
+const INPUT_TYPES = ['multiple_choice', 'fill_blank', 'essay', 'calc'] as const;
+const FSRS_STATES = ['new', 'learning', 'review', 'relearning'] as const;
+const FSRS_RATINGS = ['again', 'hard', 'good', 'easy'] as const;
+const STUDY_REVIEW_CARD_TYPES = ['exam', 'concept'] as const;
+const SESSION_MODES = ['category', 'topic', 'confusion', 'weak', 'mixed'] as const;
+const SESSION_PHASES = ['warmup', 'main', 'cooldown', 'completed'] as const;
+
 // ---------------------------------------------------------------------------
 // 1. Knowledge Nodes (Temporal Graph + Truth Weight)
 // ---------------------------------------------------------------------------
@@ -325,6 +333,10 @@ export const examQuestions = sqliteTable('exam_questions', {
   topicCluster: text('topic_cluster'),
   memorizationType: text('memorization_type'),
   confusionType: text('confusion_type', { enum: CONFUSION_TYPES }),
+  // Migration 0032 (Phase 3 학습 UX D1 lock) — 4 type 분기
+  inputType: text('input_type', { enum: INPUT_TYPES }).notNull().default('fill_blank'),
+  distractors: text('distractors'), // JSON array of 4 strings (객관식 오답 후보)
+  calcVariables: text('calc_variables'), // JSON object { var_name: numeric_value }
   createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`),
@@ -363,6 +375,13 @@ export const userProgress = sqliteTable('user_progress', {
   fsrsStability: real('fsrs_stability').default(1.0),
   fsrsInterval: integer('fsrs_interval').default(1),
   fsrsNextReview: text('fsrs_next_review'),
+  // Migration 0033 (Phase 3 학습 UX D7 lock option C) — FSRS-4 column 확장
+  fsrsReps: integer('fsrs_reps').notNull().default(0),
+  fsrsLapses: integer('fsrs_lapses').notNull().default(0),
+  fsrsState: text('fsrs_state', { enum: FSRS_STATES }).notNull().default('new'),
+  fsrsLastReview: text('fsrs_last_review'),
+  masteredAt: text('mastered_at'), // fsrs_stability ≥ 30일 도달 시점
+  weakScore: real('weak_score').notNull().default(0), // 0~1, 높을수록 약점
   totalReviews: integer('total_reviews').default(0),
   correctCount: integer('correct_count').default(0),
   lastConfusionType: text('last_confusion_type', { enum: CONFUSION_TYPES }),
@@ -372,6 +391,53 @@ export const userProgress = sqliteTable('user_progress', {
   updatedAt: text('updated_at')
     .notNull()
     .default(sql`(datetime('now'))`),
+});
+
+// ---------------------------------------------------------------------------
+// 8A. Study Reviews (Migration 0034 — packages/srs.scheduleReview 영속 source)
+// ---------------------------------------------------------------------------
+
+export const studyReviews = sqliteTable('study_reviews', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  cardId: text('card_id').notNull(),
+  cardType: text('card_type', { enum: STUDY_REVIEW_CARD_TYPES }).notNull(),
+  reviewedAt: text('reviewed_at')
+    .notNull()
+    .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
+  rating: text('rating', { enum: FSRS_RATINGS }).notNull(),
+  intervalDays: integer('interval_days').notNull(),
+  stabilityBefore: real('stability_before'),
+  stabilityAfter: real('stability_after'),
+  shuffleSeed: text('shuffle_seed'),
+  sessionId: text('session_id'),
+});
+
+// ---------------------------------------------------------------------------
+// 8B. Study Sessions + Streak Records (Migration 0035 — D5 lock 게이미피케이션)
+// ---------------------------------------------------------------------------
+
+export const studySessions = sqliteTable('study_sessions', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  startedAt: text('started_at')
+    .notNull()
+    .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
+  endedAt: text('ended_at'),
+  mode: text('mode', { enum: SESSION_MODES }).notNull(),
+  modeParams: text('mode_params'), // JSON
+  phase: text('phase', { enum: SESSION_PHASES }).notNull().default('warmup'),
+  cardsPlanned: integer('cards_planned').notNull(),
+  cardsCompleted: integer('cards_completed').notNull().default(0),
+  correctCount: integer('correct_count').notNull().default(0),
+});
+
+export const streakRecords = sqliteTable('streak_records', {
+  userId: text('user_id').primaryKey(),
+  currentStreak: integer('current_streak').notNull().default(0),
+  longestStreak: integer('longest_streak').notNull().default(0),
+  lastStudyDate: text('last_study_date'), // YYYY-MM-DD UTC
+  dailyGoal: integer('daily_goal').notNull().default(20),
 });
 
 // ---------------------------------------------------------------------------
@@ -480,6 +546,16 @@ export type NewExamQuestion = typeof examQuestions.$inferInsert;
 
 export type MnemonicCard = typeof mnemonicCards.$inferSelect;
 export type NewMnemonicCard = typeof mnemonicCards.$inferInsert;
+
+// Phase 3 학습 UX (Migrations 0034 + 0035)
+export type StudyReview = typeof studyReviews.$inferSelect;
+export type NewStudyReview = typeof studyReviews.$inferInsert;
+
+export type StudySession = typeof studySessions.$inferSelect;
+export type NewStudySession = typeof studySessions.$inferInsert;
+
+export type StreakRecord = typeof streakRecords.$inferSelect;
+export type NewStreakRecord = typeof streakRecords.$inferInsert;
 
 export type UserProgress = typeof userProgress.$inferSelect;
 export type NewUserProgress = typeof userProgress.$inferInsert;

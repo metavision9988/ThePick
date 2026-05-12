@@ -10,12 +10,13 @@
 
 - **Session 067 C-14 영속 시점**: 2026-05-12 KST (0029)
 - **Session 069 Phase 3 launch 직전 Step 1 적용 시점**: 2026-05-12 KST (0030 + 0031, login_history audit trail)
+- **Session 069 Step 3-UX-4 적용 시점**: 2026-05-12 KST (0032 ~ 0035, Phase 3 학습 UX 스키마)
 - **wrangler 토큰**: `claude-code-thepick` (User API Token, 2026-05-10 발급)
-- **확인 출력**: `✅ No migrations to apply!` (Session 069 적용 후 재확인)
+- **확인 출력**: `✅ No migrations to apply!` (Session 069 0032~0035 적용 후 재확인)
 
 ---
 
-## 적용된 마이그레이션 (0001 ~ 0031, 31개 chain)
+## 적용된 마이그레이션 (0001 ~ 0035, 35개 chain)
 
 | 번호 | 파일                                      | 상태 | 비고                                                                                              |
 | ---- | ----------------------------------------- | ---- | ------------------------------------------------------------------------------------------------- |
@@ -43,6 +44,50 @@
 | 0029 | user_progress_unique_constraint.sql       | ✅   | ★★ Session 067 신규 적용 (C-06 흡수) — 5 commands / 1.04ms                                        |
 | 0030 | login_history.sql                         | ✅   | ★★ Session 069 신규 적용 (Phase 3 chain Stage C / C-12) — login audit trail, 7 commands / 1.67ms  |
 | 0031 | login_history_event_type.sql              | ✅   | ★★ Session 069 신규 적용 (Phase 3 chain Stage E / P-α C-α-2) — refresh audit, 4 commands / 2.42ms |
+| 0032 | exam_questions_input_type.sql             | ✅   | ★★ Session 069 Step 3-UX-4 — D1 lock 4 type 분기 (input_type + distractors + calc_variables)      |
+| 0033 | user_progress_fsrs_extension.sql          | ✅   | ★★ Session 069 Step 3-UX-4 — D7 option C FSRS-4 column 확장 + weak_score + mastered_at            |
+| 0034 | study_reviews.sql                         | ✅   | ★★ Session 069 Step 3-UX-4 — packages/srs.scheduleReview 영속 source, 7 commands / 1.03ms         |
+| 0035 | study_sessions_streak.sql                 | ✅   | ★★ Session 069 Step 3-UX-4 — D5 lock 게이미피케이션 + 세션 흐름, 7 commands / 0.95ms              |
+
+### 0032~0035 적용 detail (Session 069 Step 3-UX-4 본 회차)
+
+#### 트리거
+
+- Phase 3 학습 UX core 패키지 2종 (learning-modes + srs, Session 069 commits 66f98cd + 3ea4533) 영속 후속
+- plan `docs/plans/migration-0032-0035-learning-ux-schema.plan.md` 진산 명시 승인
+- packages/srs의 FsrsCardState 영속 column matching 의무
+
+#### Apply 결과
+
+```
+🌀 Executing on remote database thepick-db-production (a9b8d521-dc99-46f7-835c-1f226cebdbf8)
+🚣 Executed 7 commands in 1.03ms (0032 + 0033 + 0034)
+🚣 Executed 7 commands in 0.95ms (0035)
+┌───────────────────────────────────────┬────────┐
+│ name                                  │ status │
+├───────────────────────────────────────┼────────┤
+│ 0032_exam_questions_input_type.sql    │ ✅     │
+├───────────────────────────────────────┼────────┤
+│ 0033_user_progress_fsrs_extension.sql │ ✅     │
+├───────────────────────────────────────┼────────┤
+│ 0034_study_reviews.sql                │ ✅     │
+├───────────────────────────────────────┼────────┤
+│ 0035_study_sessions_streak.sql        │ ✅     │
+└───────────────────────────────────────┴────────┘
+```
+
+#### Post-apply 검증
+
+- `migrations list --remote` → ✅ No migrations to apply
+- user_progress row 무손실: **15 rows** (Phase 2 baseline 유지)
+- exam_questions row 무손실: **545 rows** (Phase 2 BATCH 6 + R2 누적 baseline 유지)
+- 신규 테이블 3종 정합: streak_records / study_reviews / study_sessions (sqlite_master 확인)
+- user_progress 신규 6 컬럼: fsrs_reps / fsrs_lapses / fsrs_state / fsrs_last_review / mastered_at / weak_score ✅
+- exam_questions 신규 3 컬럼: input_type / distractors / calc_variables ✅
+- 기존 row 모두 input_type='fill_blank' default 적용 (Phase 2 routes 회귀 0)
+- 기존 row 모두 fsrs_state='new' default 적용 (packages/srs.createFreshCard 첫 review 정합)
+
+---
 
 ---
 
@@ -165,5 +210,5 @@ wrangler d1 migrations list thepick-db-production --remote --env=production
 
 ---
 
-**작성**: Session 067 (Claude Opus 4.7 1M context) — C-14 흡수 → Session 069 갱신 (Phase 3 launch 직전 Step 1)
-**일자**: 2026-05-12 KST (0029 적용) + 2026-05-12 KST (0030 + 0031 적용, Session 069)
+**작성**: Session 067 (Claude Opus 4.7 1M context) — C-14 흡수 → Session 069 갱신 (Phase 3 launch 직전 Step 1) → Session 069 Step 3-UX-4 갱신 (0032~0035 Phase 3 학습 UX)
+**일자**: 2026-05-12 KST (0029 / 0030+0031 / 0032~0035 chain, Session 069 누적 6 마이그레이션 production apply)
