@@ -7,20 +7,46 @@
  */
 
 import { useEffect, useState } from 'react';
-import { PASSWORD_MIN_LENGTH_RELAXED } from '@thepick/shared';
+import { PASSWORD_MIN_LENGTH_RELAXED, PASSWORD_MAX_LENGTH } from '@thepick/shared';
 
 const API_BASE: string = import.meta.env.PUBLIC_API_BASE_URL ?? 'http://localhost:8787';
 
-// Phase 2 default — env-based 정책은 서버에서 추가 enforcement (C-03).
-// 클라이언트는 floor만 hint, 실제 정책 미충족 시 서버가 422 응답.
-const PASSWORD_MIN_HINT = PASSWORD_MIN_LENGTH_RELAXED;
+// Stage E P-δ C-δ-2 흡수 — 클라이언트-서버 정책 sync.
+// PUBLIC_PASSWORD_MIN_LENGTH Astro env (build-time) → 서버 PASSWORD_MIN_LENGTH와 동기 갱신.
+// Phase 3 toggle 시 web 재배포 의무 (wrangler.toml + .env 동시 변경).
+// fallback: RELAXED (Phase 2 default, 4자) — env 미설정 시 server enforcement이 최종 게이트.
+const PUBLIC_PASSWORD_MIN: string | undefined = import.meta.env.PUBLIC_PASSWORD_MIN_LENGTH;
+const PASSWORD_MIN_HINT = (() => {
+  if (PUBLIC_PASSWORD_MIN === undefined || PUBLIC_PASSWORD_MIN === '') {
+    return PASSWORD_MIN_LENGTH_RELAXED;
+  }
+  const parsed = Number.parseInt(PUBLIC_PASSWORD_MIN, 10);
+  if (
+    !Number.isFinite(parsed) ||
+    parsed < PASSWORD_MIN_LENGTH_RELAXED ||
+    parsed > PASSWORD_MAX_LENGTH
+  ) {
+    return PASSWORD_MIN_LENGTH_RELAXED;
+  }
+  return parsed;
+})();
 
 type Mode = 'login' | 'register';
 type Phase = 'idle' | 'submitting' | 'error';
 
+// Stage E P-δ C-δ-1 흡수 — 422 응답 issues 배열 파싱.
+// 서버 enforcePasswordPolicy / Zod validation 모두 동일 형식: {issues: [{path, code, minimum?, message}]}
+interface AuthErrorIssue {
+  readonly path?: ReadonlyArray<string | number>;
+  readonly code?: string;
+  readonly minimum?: number;
+  readonly message?: string;
+}
+
 interface AuthError {
   readonly error: string;
   readonly message?: string;
+  readonly issues?: ReadonlyArray<AuthErrorIssue>;
 }
 
 const ERROR_MESSAGES: Readonly<Record<string, string>> = {
@@ -28,7 +54,54 @@ const ERROR_MESSAGES: Readonly<Record<string, string>> = {
   PASSWORD_PWNED: '안전하지 않은 비밀번호입니다. 다른 비밀번호를 사용해 주세요.',
   INVALID_CREDENTIALS: '이메일 또는 비밀번호가 일치하지 않습니다.',
   RATE_LIMITED: '시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.',
+  VALIDATION_ERROR: '입력값을 확인해 주세요.',
+  TOO_MANY_REQUESTS: '시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.',
 };
+
+/**
+ * Stage E P-δ C-δ-1 — 422 응답에서 사용자 친화 메시지 추출.
+ *
+ * 우선순위:
+ *   1. password too_small issue → "비밀번호는 N자 이상이어야 합니다"
+ *   2. email validation issue → "이메일 형식이 올바르지 않습니다"
+ *   3. 기타 issues[0].message → 그대로 표시
+ *   4. fallback → ERROR_MESSAGES.VALIDATION_ERROR
+ */
+function extractValidationMessage(issues: ReadonlyArray<AuthErrorIssue> | undefined): string {
+  if (issues === undefined || issues.length === 0) {
+    return ERROR_MESSAGES.VALIDATION_ERROR ?? '입력값을 확인해 주세요.';
+  }
+  const passwordIssue = issues.find((iss) => iss.path?.[0] === 'password');
+  if (passwordIssue !== undefined) {
+    if (passwordIssue.code === 'too_small' && typeof passwordIssue.minimum === 'number') {
+      return `비밀번호는 ${passwordIssue.minimum}자 이상이어야 합니다.`;
+    }
+    if (passwordIssue.message !== undefined && passwordIssue.message !== '') {
+      return `비밀번호: ${passwordIssue.message}`;
+    }
+  }
+  const emailIssue = issues.find((iss) => iss.path?.[0] === 'email');
+  if (emailIssue !== undefined) {
+    return '이메일 형식이 올바르지 않습니다.';
+  }
+  return issues[0]?.message ?? ERROR_MESSAGES.VALIDATION_ERROR ?? '입력값을 확인해 주세요.';
+}
+
+/**
+ * Stage E P-δ M-δ-1 흡수 — 429 응답 Retry-After 헤더 파싱 + 사용자 친화 안내.
+ *
+ * Retry-After 초 단위 → "약 N분 후" 또는 "약 N초 후" 표시.
+ */
+function formatRateLimitMessage(retryAfterSeconds: number | null): string {
+  if (retryAfterSeconds === null || !Number.isFinite(retryAfterSeconds) || retryAfterSeconds <= 0) {
+    return ERROR_MESSAGES.RATE_LIMITED ?? '시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.';
+  }
+  if (retryAfterSeconds >= 60) {
+    const minutes = Math.ceil(retryAfterSeconds / 60);
+    return `시도가 너무 많습니다. 약 ${minutes}분 후 다시 시도해 주세요.`;
+  }
+  return `시도가 너무 많습니다. 약 ${retryAfterSeconds}초 후 다시 시도해 주세요.`;
+}
 
 function resolveNext(): string {
   if (typeof window === 'undefined') return '/study/';
@@ -75,11 +148,20 @@ export function AuthForm() {
       }
       const errBody = (await res.json().catch(() => null)) as AuthError | null;
       const code = errBody?.error ?? 'UNKNOWN';
-      const fallback =
-        res.status === 429
-          ? ERROR_MESSAGES.RATE_LIMITED
-          : (ERROR_MESSAGES[code] ?? `요청 실패 (HTTP ${res.status})`);
-      setErrorMsg(fallback);
+
+      // Stage E P-δ C-δ-1 흡수 — 422 issues 우선 파싱 (사용자 친화 메시지)
+      let resolvedMsg: string;
+      if (res.status === 422 && errBody !== null) {
+        resolvedMsg = extractValidationMessage(errBody.issues);
+      } else if (res.status === 429) {
+        // Stage E P-δ M-δ-1 흡수 — Retry-After 헤더 파싱
+        const retryAfterRaw = res.headers.get('Retry-After');
+        const retryAfter = retryAfterRaw !== null ? Number.parseInt(retryAfterRaw, 10) : null;
+        resolvedMsg = formatRateLimitMessage(retryAfter);
+      } else {
+        resolvedMsg = ERROR_MESSAGES[code] ?? `요청 실패 (HTTP ${res.status})`;
+      }
+      setErrorMsg(resolvedMsg);
       setPhase('error');
     } catch (err) {
       console.error('auth fetch failed', err);
@@ -138,7 +220,13 @@ export function AuthForm() {
         )}
 
         {errorMsg !== null && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">{errorMsg}</p>
+          <p
+            role="alert"
+            aria-live="polite"
+            className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700"
+          >
+            {errorMsg}
+          </p>
         )}
 
         <button

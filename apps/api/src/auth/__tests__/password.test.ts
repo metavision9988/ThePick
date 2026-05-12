@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { PBKDF2_HASH_BYTES, PBKDF2_ITERATIONS, PBKDF2_SALT_BYTES } from '../constants.js';
-import { hashPassword, timingSafeEqual, verifyPassword } from '../password.js';
+import {
+  hashPassword,
+  timingSafeEqual,
+  verifyPassword,
+  verifyPasswordWithUpgrade,
+} from '../password.js';
 
 describe('hashPassword', () => {
   it('produces salt + hash + iterations', async () => {
@@ -77,6 +82,43 @@ describe('verifyPassword', () => {
     const result = await verifyPassword(oversized, stored);
     expect(result).toBe(false);
   });
+});
+
+// Stage E P-α C-α-3 — PBKDF2 upgrade chain
+describe('verifyPasswordWithUpgrade', () => {
+  it('returns valid=true + needsRehash=false when stored matches current target', async () => {
+    const stored = await hashPassword('correct-horse-battery-staple');
+    expect(stored.iterations).toBe(PBKDF2_ITERATIONS);
+    const result = await verifyPasswordWithUpgrade('correct-horse-battery-staple', stored);
+    expect(result.valid).toBe(true);
+    expect(result.needsRehash).toBe(false);
+  });
+
+  it('returns valid=false + needsRehash=false when stored below FLOOR (downgrade rejected)', async () => {
+    const stored = await hashPassword('correct-horse-battery-staple');
+    const downgraded = { ...stored, iterations: 50000 }; // below FLOOR=100000
+    const result = await verifyPasswordWithUpgrade('correct-horse-battery-staple', downgraded);
+    expect(result.valid).toBe(false);
+    expect(result.needsRehash).toBe(false);
+  });
+
+  it('returns valid=false + needsRehash=false for wrong password', async () => {
+    const stored = await hashPassword('correct-horse-battery-staple');
+    const result = await verifyPasswordWithUpgrade('wrong-password', stored);
+    expect(result.valid).toBe(false);
+    expect(result.needsRehash).toBe(false);
+  });
+
+  it('returns valid=false for empty password (length guard)', async () => {
+    const stored = await hashPassword('correct-horse-battery-staple');
+    const result = await verifyPasswordWithUpgrade('', stored);
+    expect(result.valid).toBe(false);
+    expect(result.needsRehash).toBe(false);
+  });
+
+  // Future: PBKDF2_ITERATIONS toggle (e.g. 600k via Argon2id WASM) 시점에
+  // stored=100k(legacy) vs target=600k → valid=true + needsRehash=true 검증 의무 (현재는
+  // FLOOR=TARGET=100k이라 needsRehash=true 경로 미발화 — 테스트는 toggle 시점 추가).
 });
 
 describe('timingSafeEqual', () => {

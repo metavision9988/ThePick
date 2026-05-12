@@ -430,6 +430,15 @@ export const users = sqliteTable('users', {
 // migration 0030 정합 (수동 SQL ↔ Drizzle 동기화 NC-1 정책).
 // ---------------------------------------------------------------------------
 
+/**
+ * login_history event_type — 0031 마이그레이션 (Stage E P-α C-α-2 흡수).
+ *
+ * 'login' = login handler 직접 진입 (password verify 성공)
+ * 'refresh' = refresh handler rotation (stolen refresh token 추적)
+ */
+export const LOGIN_HISTORY_EVENT_TYPES = ['login', 'refresh'] as const;
+export type LoginHistoryEventType = (typeof LOGIN_HISTORY_EVENT_TYPES)[number];
+
 export const loginHistory = sqliteTable('login_history', {
   id: text('id').primaryKey(), // UUID v4
   userId: text('user_id')
@@ -437,9 +446,11 @@ export const loginHistory = sqliteTable('login_history', {
     .references(() => users.id, { onDelete: 'cascade' }),
   loginAt: text('login_at')
     .notNull()
-    .default(sql`(datetime('now'))`),
+    .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
   ipHash: text('ip_hash'), // SHA-256(IP || pepper), NULL 허용 (IP_PEPPER 미설정 시)
   userAgent: text('user_agent'), // truncate to USER_AGENT_MAX_LENGTH (256)
+  // Stage E P-α C-α-2 — refresh audit (login + refresh 분리)
+  eventType: text('event_type', { enum: LOGIN_HISTORY_EVENT_TYPES }).notNull().default('login'),
 });
 
 // ---------------------------------------------------------------------------

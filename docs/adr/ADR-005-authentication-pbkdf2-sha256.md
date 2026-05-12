@@ -147,12 +147,14 @@ function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
 
 기존: "사용자 10만+ 시점"만 명시 → **너무 느린 트리거**. 아래 3개 중 **하나라도** 충족 시 즉시 재평가:
 
-| 트리거                                 | 실행 액션                                          |
-| -------------------------------------- | -------------------------------------------------- |
-| ① **연 1회 정기 점검 (매년 4월)**      | OWASP 최신 권고 확인, 필요 시 iterations 상향      |
-| ② **DB 유출 사고 발생**                | 즉시 전 사용자 비밀번호 리셋 + iterations 2배 증가 |
-| ③ **Paid CPU quota 80% 연속 7일 도달** | iterations 하향(300~400k) + Argon2 전환 검토       |
-| ④ **HIBP Pwned API 차단 유입 1% 초과** | 최소 비밀번호 길이 8→10 상향                       |
+> ★ **Stage E P-γ CRIT-Pγ-2 흡수 (Session 068, 2026-05-12)** — 본 ADR의 600k 파라미터는 ADR-035 (Cloudflare Workers Web Crypto API 100k cap)에 의해 **partially superseded**. 본 §"파라미터 재평가 트리거" 검토 시 반드시 ADR-035 §"복원 의무" 우선 확인 의무 — Argon2id WASM 또는 외부 hash service 검토 trigger와 함께 평가. ADR-035 임시 정책 만료 (Phase 3 launch 직전) 이전에는 본 ADR §의 600k 기준 적용 차단 (Workers runtime 호환 부재).
+
+| 트리거                                 | 실행 액션                                                                                                                         |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| ① **연 1회 정기 점검 (매년 4월)**      | OWASP 최신 권고 확인 + ★ ADR-035 §"복원 의무" 6항목 검토 (Argon2id WASM 평가). 단순 iterations 상향은 Workers 100k cap으로 차단됨 |
+| ② **DB 유출 사고 발생**                | 즉시 전 사용자 비밀번호 리셋 + iterations 2배 증가 (★ ADR-035 cap 내) + Argon2id 긴급 전환 검토                                   |
+| ③ **Paid CPU quota 80% 연속 7일 도달** | iterations 하향(300~400k) + Argon2 전환 검토 (★ 현재 100k 운영 중 — ADR-035 §결정 정합)                                           |
+| ④ **HIBP Pwned API 차단 유입 1% 초과** | 최소 비밀번호 길이 8→10 상향                                                                                                      |
 
 ### HIBP Pwned 체크 (Phase 1로 앞당김)
 

@@ -50,12 +50,14 @@ interface FakeSessionRow {
 }
 
 // Phase 3 launch chain C-12 — login_history audit trail mock
+// Stage E P-α C-α-2 — event_type 추가 (login / refresh)
 interface FakeLoginHistoryRow {
   id: string;
   user_id: string;
   login_at: string;
   ip_hash: string | null;
   user_agent: string | null;
+  event_type: 'login' | 'refresh';
 }
 
 interface FakeDb {
@@ -153,15 +155,24 @@ function buildFakeDb(): FakeDb {
             return { success: true, meta: { changes: 1 } };
           }
           // Phase 3 launch chain C-12 — login_history INSERT mock
+          // Stage E P-α C-α-2 — event_type 컬럼 추가 (login / refresh)
           if (/^INSERT INTO login_history/i.test(sql)) {
-            const [id, user_id, login_at, ip_hash, user_agent] = bound as [
+            const [id, user_id, login_at, ip_hash, user_agent, event_type] = bound as [
               string,
               string,
               string,
               string | null,
               string | null,
+              'login' | 'refresh',
             ];
-            loginHistory.set(id, { id, user_id, login_at, ip_hash, user_agent });
+            loginHistory.set(id, {
+              id,
+              user_id,
+              login_at,
+              ip_hash,
+              user_agent,
+              event_type,
+            });
             return { success: true, meta: { changes: 1 } };
           }
           throw new Error(`fake db: unhandled run SQL: ${sql}`);
@@ -535,6 +546,16 @@ describe('POST /api/auth/refresh (Step 1-4 rotation + reuse detection)', () => {
     const revoked = Array.from(fake.sessions.values()).filter((s) => s.revoked_at !== null);
     expect(active.length).toBe(1);
     expect(revoked.length).toBe(1);
+
+    // Stage E P-α C-α-2 흡수 — refresh rotation도 login_history에 'refresh' event 누적
+    const refreshEvents = Array.from(fake.loginHistory.values()).filter(
+      (e) => e.event_type === 'refresh',
+    );
+    expect(refreshEvents.length).toBe(1);
+    const loginEvents = Array.from(fake.loginHistory.values()).filter(
+      (e) => e.event_type === 'login',
+    );
+    expect(loginEvents.length).toBe(1); // 직전 loginAndGetRefresh의 login 1회
   });
 
   it('cookie 없음 → 401 missing_refresh', async () => {

@@ -51,7 +51,7 @@ import {
 } from './constants.js';
 import { performDummyVerify } from './dummy-verify.js';
 import { checkPwned } from './hibp.js';
-import { hashPassword, verifyPassword } from './password.js';
+import { hashPassword, verifyPasswordWithUpgrade } from './password.js';
 import {
   checkEmailRateLimit,
   checkIpRateLimit,
@@ -197,16 +197,11 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
       );
     }
 
+    // Stage E P-α C-α-1 흡수 — HIBP timing oracle 차단.
+    // checkPwned는 항상 호출 (audit logging 보존), hashPassword도 항상 실행 (timing 평탄화).
+    // env=true/false 응답 시간 차이로 HIBP_ENABLED 상태 enumerate 차단 (Phase 3 toggle 시각 보호).
+    // 흐름: checkPwned 호출 → hashPassword 실행 → HIBP 분기 (env=true + 'pwned' → reject) → INSERT
     const pwned = await checkPwned(password, logger);
-    // C-03 env 분기 — HIBP 'pwned' 응답 처리 (ADR-034 §"복원 의무" 자동화).
-    //   - env.HIBP_ENABLED 미설정/'false' → 호출 + logging 보존, register 통과 (Phase 2 default)
-    //   - env.HIBP_ENABLED = 'true' → 'pwned' 응답 시 422 reject (Phase 3 toggle)
-    if (isHibpEnabled(c.env.HIBP_ENABLED) && pwned.status === 'pwned') {
-      return c.json(
-        { error: 'PASSWORD_PWNED', message: AUTH_MESSAGES.REGISTER_PASSWORD_PWNED },
-        422,
-      );
-    }
 
     let hashed;
     try {
@@ -214,6 +209,17 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
     } catch (err) {
       logger.error('hashPassword failed', err, { email: normalizedEmail });
       return c.json({ error: 'HASH_ERROR' }, 500);
+    }
+
+    // C-03 env 분기 — HIBP 'pwned' 응답 처리 (ADR-034 §"복원 의무" 자동화).
+    //   - env.HIBP_ENABLED 미설정/'false' → 호출 + logging 보존, register 통과 (Phase 2 default)
+    //   - env.HIBP_ENABLED = 'true' → 'pwned' 응답 시 422 reject (Phase 3 toggle)
+    // ★ hashPassword 후 분기 — env 상태 timing leak 차단 (P-α C-α-1).
+    if (isHibpEnabled(c.env.HIBP_ENABLED) && pwned.status === 'pwned') {
+      return c.json(
+        { error: 'PASSWORD_PWNED', message: AUTH_MESSAGES.REGISTER_PASSWORD_PWNED },
+        422,
+      );
     }
 
     const userId = crypto.randomUUID();
@@ -348,16 +354,43 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
       return c.json(genericFailure, 401);
     }
 
-    const valid = await verifyPassword(password, {
+    const verifyResult = await verifyPasswordWithUpgrade(password, {
       hash: row.password_hash,
       salt: row.password_salt,
       iterations: row.password_iterations,
     });
-    if (!valid) {
+    if (!verifyResult.valid) {
       return c.json(genericFailure, 401);
     }
 
     const now = new Date().toISOString();
+
+    // Stage E P-α C-α-3 — PBKDF2 iterations upgrade chain.
+    // verify 성공 + needsRehash=true (stored < PBKDF2_ITERATIONS target) → 재해시 + UPDATE.
+    // 기존 100k user가 미래 toggle (예: 600k) 후 login 시점에 자동 upgrade.
+    if (verifyResult.needsRehash) {
+      try {
+        const rehashed = await hashPassword(password);
+        await withRetry(() =>
+          c.env.DB.prepare(
+            `UPDATE users SET password_hash = ?, password_salt = ?, password_iterations = ?, updated_at = ? WHERE id = ?`,
+          )
+            .bind(rehashed.hash, rehashed.salt, rehashed.iterations, now, row.id)
+            .run(),
+        );
+        logger.info('password rehashed to current iterations target', {
+          userId: row.id,
+          oldIterations: row.password_iterations,
+          newIterations: rehashed.iterations,
+        });
+      } catch (err) {
+        // 재해시 실패는 login 자체 보존 — 다음 login 시 재시도
+        logger.warn('password rehash failed (login proceeds with old hash)', {
+          userId: row.id,
+          cause: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
 
     // C-12 (Phase 3 launch chain, Stage C) — login_history audit trail.
     // 기존 UPDATE users SET last_login_at은 audit 단절 (덮어쓰기). migration 0030 login_history
@@ -381,9 +414,9 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
     try {
       await withRetry(() =>
         c.env.DB.prepare(
-          `INSERT INTO login_history (id, user_id, login_at, ip_hash, user_agent) VALUES (?, ?, ?, ?, ?)`,
+          `INSERT INTO login_history (id, user_id, login_at, ip_hash, user_agent, event_type) VALUES (?, ?, ?, ?, ?, ?)`,
         )
-          .bind(crypto.randomUUID(), row.id, now, ipHashForHistory, userAgentForHistory)
+          .bind(crypto.randomUUID(), row.id, now, ipHashForHistory, userAgentForHistory, 'login')
           .run(),
       );
     } catch (err) {
@@ -397,7 +430,7 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
           userId: row.id,
           severity: 'critical',
           remediation:
-            'Run: wrangler d1 migrations apply thepick-db-production --remote (apps/api/migrations/0030_login_history.sql)',
+            'Run: wrangler d1 migrations apply thepick-db-production --remote (migrations/0030_login_history.sql + 0031_login_history_event_type.sql)',
         });
       } else {
         // transient D1 error (timeout / lock 등) — 관찰성 손실만
@@ -584,6 +617,48 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
       const newSession = await createRefreshSession(c.env.DB, lookup.userId, refreshCtx);
       const accessToken = await signAccessToken(lookup.userId, newSession.sessionId, jwtSecret);
       setAuthCookies(c, accessToken, newSession.refreshToken, c.env.ENVIRONMENT);
+
+      // Stage E P-α C-α-2 흡수 — refresh rotation audit trail.
+      // 기존 코드는 refresh 시 login_history 미기록 → stolen refresh token으로 30일 silent
+      // rotation 가능. event_type='refresh' INSERT로 forensic 추적 가능.
+      // graceful (refresh 자체 성공 보존, drift 시 critical 로깅).
+      const refreshNow = new Date().toISOString();
+      try {
+        await withRetry(() =>
+          c.env.DB.prepare(
+            `INSERT INTO login_history (id, user_id, login_at, ip_hash, user_agent, event_type) VALUES (?, ?, ?, ?, ?, ?)`,
+          )
+            .bind(
+              crypto.randomUUID(),
+              lookup.userId,
+              refreshNow,
+              ipHashValue,
+              refreshCtx.userAgent,
+              'refresh',
+            )
+            .run(),
+        );
+      } catch (auditErr) {
+        const errMsg = auditErr instanceof Error ? auditErr.message : String(auditErr);
+        const isSchemaDrift = /no such (table|column)/i.test(errMsg);
+        if (isSchemaDrift) {
+          logger.error(
+            'login_history schema drift on refresh — migration 0030/0031 not applied',
+            auditErr,
+            {
+              userId: lookup.userId,
+              severity: 'critical',
+              remediation:
+                'Run: wrangler d1 migrations apply thepick-db-production --remote (migrations/0030 + 0031)',
+            },
+          );
+        } else {
+          logger.warn('login_history refresh audit failed (transient)', {
+            userId: lookup.userId,
+            cause: errMsg,
+          });
+        }
+      }
 
       return c.json({ ok: true });
     } catch (err) {

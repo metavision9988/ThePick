@@ -22,6 +22,20 @@ import {
 import type { PasswordHashResult } from './types.js';
 
 /**
+ * PBKDF2 iterations FLOOR (다운그레이드 공격 방어 최소값).
+ *
+ * ★ Stage E P-α C-α-3 흡수: 기존 PBKDF2_ITERATIONS=100k 가입 user는 verify 시 영구히
+ * 100k에 묶임. 미래 PBKDF2_ITERATIONS toggle (e.g. 600k) 시 기존 user가 lockout 되는
+ * 문제 차단 — FLOOR는 100k 고정 (lockout 차단), TARGET은 PBKDF2_ITERATIONS (재해시 트리거).
+ *
+ * 정합:
+ *   - stored.iterations < FLOOR: 다운그레이드 공격 가능성 → verify reject
+ *   - FLOOR ≤ stored.iterations < PBKDF2_ITERATIONS: verify 성공 + needsRehash=true
+ *   - stored.iterations >= PBKDF2_ITERATIONS: verify 성공 + needsRehash=false
+ */
+const PBKDF2_ITERATIONS_FLOOR = 100000;
+
+/**
  * 평문 비밀번호에서 PBKDF2-SHA256 해시를 생성한다.
  *
  * @throws {AppError} ValidationError — 길이 위반
@@ -53,23 +67,44 @@ export async function verifyPassword(
   plaintext: string,
   stored: PasswordHashResult,
 ): Promise<boolean> {
+  const result = await verifyPasswordWithUpgrade(plaintext, stored);
+  return result.valid;
+}
+
+/**
+ * Stage E P-α C-α-3 — verify 성공 시 needsRehash 정보 반환.
+ *
+ * 호출 측 (login handler)에서 needsRehash=true 시 재해시 + UPDATE users 수행.
+ * 기존 100k iterations user가 PBKDF2_ITERATIONS toggle (e.g. 600k) 후 login 시점에 자동 upgrade.
+ *
+ * 다운그레이드 방어는 PBKDF2_ITERATIONS_FLOOR 기준 (100k) — toggle 후에도 기존 user lockout 차단.
+ *
+ * @returns `{ valid, needsRehash }` — needsRehash=true 시 호출 측에서 재해시 의무
+ */
+export async function verifyPasswordWithUpgrade(
+  plaintext: string,
+  stored: PasswordHashResult,
+): Promise<{ readonly valid: boolean; readonly needsRehash: boolean }> {
   if (plaintext.length < PASSWORD_MIN_LENGTH || plaintext.length > PASSWORD_MAX_LENGTH) {
-    return false;
+    return { valid: false, needsRehash: false };
   }
-  if (stored.iterations < PBKDF2_ITERATIONS) {
-    // 다운그레이드 공격 방어 — 저장값이 현 최소 반복 수 미만이면 거부.
-    // 이 경로는 DB 트리거(enforce_users_password_iterations_min)가 차단하지만 2중 방어.
-    return false;
+  if (stored.iterations < PBKDF2_ITERATIONS_FLOOR) {
+    // 다운그레이드 공격 방어 — 저장값이 FLOOR 미만이면 거부.
+    // DB 트리거(enforce_users_password_iterations_min)도 이 경로를 차단 (2중 방어).
+    return { valid: false, needsRehash: false };
   }
 
   const expectedHash = base64ToBytes(stored.hash);
   const salt = base64ToBytes(stored.salt);
   if (expectedHash.byteLength !== PBKDF2_HASH_BYTES || salt.byteLength !== PBKDF2_SALT_BYTES) {
-    return false;
+    return { valid: false, needsRehash: false };
   }
 
   const candidateHash = await derivePbkdf2Bits(plaintext, salt, stored.iterations);
-  return timingSafeEqual(candidateHash, expectedHash);
+  const valid = timingSafeEqual(candidateHash, expectedHash);
+  // needsRehash: 검증 성공 AND stored가 현재 target보다 낮은 iterations
+  const needsRehash = valid && stored.iterations < PBKDF2_ITERATIONS;
+  return { valid, needsRehash };
 }
 
 /**
