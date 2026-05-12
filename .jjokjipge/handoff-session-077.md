@@ -14,7 +14,9 @@
   - 2395851 — Stage A (C-05 + C-03)
   - 5d85028 — Stage B (C-04 + C-09)
   - 20e1ff5 — Stage C (C-12)
-  - **630c0a6** — Stage D (CRIT-P5-1/-2 + 5-페르소나 영속)
+  - 630c0a6 — Stage D (CRIT-P5-1/-2 + 5-페르소나 영속)
+  - 12b6c71 — handoff-077 (Stage A~D 종착)
+  - **ec0f922** — Stage E (메타 5-페르소나 신규 CRIT 7건 흡수 + 본 handoff 갱신)
 
 ---
 
@@ -153,7 +155,7 @@ shared tests   : 64 PASS (Session 067 50 → +14 신규 password-policy)
 
 ---
 
-## ★★★ 14 CRIT 매트릭스 — 5/5 = 100% 종결
+## ★★★ 14 CRIT 매트릭스 — 5/5 = 100% 종결 + 메타 5-페르소나 신규 7 CRIT 즉시 흡수
 
 | 분류                             | 건수 | 진행                                                                               |
 | -------------------------------- | ---- | ---------------------------------------------------------------------------------- |
@@ -161,8 +163,19 @@ shared tests   : 64 PASS (Session 067 50 → +14 신규 password-policy)
 | ✅ **Phase 3 launch chain 종결** | 5/5  | C-03 (Stage A) + C-04 (Stage B) + C-05 (Stage A) + C-09 (Stage B) + C-12 (Stage C) |
 | 🟠 별도 task                     | 1    | C-10 TD-VRF-001 비결정성 정체 동정                                                 |
 | 🟡 Year 2 carry-over             | 1    | C-11 0028 trigger zero-cost chain                                                  |
+| ✅ **5-페르소나 P5 신규**        | 2/2  | CRIT-P5-1 migration drift + CRIT-P5-2 rollback matrix (Stage D)                    |
+| ✅ **메타 5-페르소나 신규**      | 7/7  | C-α-1/2/3 + CRIT-Pγ-1/2 + C-δ-1/2 (Stage E)                                        |
 
-★ **Phase 3 launch chain 14 CRIT 매트릭스 12/14 = 86% 흡수** (잔여 2건은 별도 task / Year 2 carry-over).
+★ **Phase 3 launch chain 14 CRIT 12/14 + 신규 9 CRIT 모두 흡수** (잔여 C-10 별도 task + C-11 Year 2).
+
+### Stage E (메타 5-페르소나 추가 검증, commit ec0f922)
+
+진산 명시 요청 "자가 검증 편향 테스트" — 직전 16 에이전트 (4-Pass 3회 + Phase 5-페르소나) 시각 편향 차단을 위해 다른 도메인 5 페르소나 (security/system/root-cause/frontend/business) 병렬 호출 → 신규 CRIT 7건 즉시 흡수:
+
+- **P-α security**: HIBP timing oracle / refresh audit hole / PBKDF2 영구화 (3건)
+- **P-γ root-cause**: ADR template 부재 / ADR-005 reverse-link (2건)
+- **P-δ frontend**: AuthForm 422 silent / 클라이언트-서버 mismatch (2건)
+- 통합 보고서: `.claude/reviews/review-20260512-145736-phase3-stage-e-meta-5-persona-absorption.md`
 
 ---
 
