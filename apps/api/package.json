@@ -22,7 +22,8 @@
     "drizzle-orm": "^0.45.2",
     "zod": "^3.24.0",
     "@thepick/shared": "workspace:*",
-    "@thepick/learning-modes": "workspace:*"
+    "@thepick/learning-modes": "workspace:*",
+    "@thepick/srs": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260415.1",

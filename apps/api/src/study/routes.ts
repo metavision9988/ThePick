@@ -32,15 +32,25 @@ import {
 } from '@thepick/shared';
 import {
   INPUT_TYPES,
+  gradeCalc,
+  gradeEssay,
   gradeFillBlank,
   gradeMultipleChoice,
   multipleChoiceAnswerToIndex,
-  normalizeAnswer,
   shuffleChoices,
   todayDateString,
+  type EssaySelfRating,
+  type FsrsRating,
   type InputType,
   type ShuffledChoice,
 } from '@thepick/learning-modes';
+import {
+  MASTERED_THRESHOLD_DAYS,
+  computeWeakScore,
+  createFreshCard,
+  scheduleReview,
+  type FsrsCardState,
+} from '@thepick/srs';
 import { requireAuth, type RequireAuthVariables } from '../auth/middleware/require-auth.js';
 import { D1_UNIQUE_CONSTRAINT_PATTERN, withRetry } from '../middleware/retry.js';
 import {
@@ -100,12 +110,18 @@ function requireExamId(value: string | undefined): {
 
 const examTypeSchema = z.enum(['1st', '2nd']);
 
+const ESSAY_SELF_RATINGS = ['correct', 'partial', 'incorrect'] as const;
+
 const gradeSchema = z.object({
   questionId: z.string().min(1).max(128),
-  /** 객관식: 셔플 라벨 ('A' ~ 'E') / 단답+서술+계산: 자유 텍스트. */
+  /** 객관식: 셔플 라벨 ('A' ~ 'E') / 단답+계산: 자유 텍스트 / 서술: 사용자 작성 답안. */
   userAnswer: z.string().min(1).max(2000),
   /** Step 3-UX-5a — input_type 분기. 미지정 시 question.input_type 사용 (backward-compat). */
   inputType: z.enum(INPUT_TYPES).optional(),
+  /** Step 3-UX-5b — essay self-grade ('correct' | 'partial' | 'incorrect'). essay type 한정. */
+  selfRating: z.enum(ESSAY_SELF_RATINGS).optional(),
+  /** Step 3-UX-5b — calc tolerance (default 0). 소수점 비교 허용 폭. */
+  calcTolerance: z.number().min(0).max(1).optional(),
 });
 
 interface ExamQuestionRow {
@@ -139,6 +155,50 @@ interface ProgressExistingRow {
   readonly id: string;
   readonly total_reviews: number | null;
   readonly correct_count: number | null;
+  // Step 3-UX-5b — FSRS-4 column (Migration 0033 정합)
+  readonly fsrs_difficulty: number | null;
+  readonly fsrs_stability: number | null;
+  readonly fsrs_interval: number | null;
+  readonly fsrs_next_review: string | null;
+  readonly fsrs_reps: number | null;
+  readonly fsrs_lapses: number | null;
+  readonly fsrs_state: string | null;
+  readonly fsrs_last_review: string | null;
+  readonly mastered_at: string | null;
+}
+
+/**
+ * D1 user_progress row → packages/srs FsrsCardState (column 매핑).
+ *
+ * D7 lock option C 정합 — 기존 fsrs_* 4 컬럼 + 신규 4 컬럼 (Migration 0033).
+ * 신규 row가 부재(null)인 경우 default 값 적용 → packages/srs.createFreshCard 정합.
+ */
+function rowToFsrsState(row: ProgressExistingRow): FsrsCardState {
+  return {
+    due: row.fsrs_next_review ?? new Date(0).toISOString(),
+    stability: row.fsrs_stability ?? 0,
+    difficulty: row.fsrs_difficulty ?? 0,
+    reps: row.fsrs_reps ?? 0,
+    lapses: row.fsrs_lapses ?? 0,
+    state: (row.fsrs_state as FsrsCardState['state']) ?? 'new',
+    lastReview: row.fsrs_last_review,
+    scheduledDays: row.fsrs_interval ?? 0,
+  };
+}
+
+/**
+ * isCorrect + selfRating → FsrsRating 변환.
+ *
+ * - essay: selfRating ('correct'/'partial'/'incorrect') → 'good'/'hard'/'again'
+ * - 그 외: isCorrect → 'good' (true) / 'again' (false)
+ *
+ * Step 3-UX-5b — packages/srs.scheduleReview rating 입력 source.
+ */
+function decideFsrsRating(isCorrect: boolean, selfRating: EssaySelfRating | undefined): FsrsRating {
+  if (selfRating === 'correct') return 'good';
+  if (selfRating === 'partial') return 'hard';
+  if (selfRating === 'incorrect') return 'again';
+  return isCorrect ? 'good' : 'again';
 }
 
 interface RelatedNodeOut {
@@ -522,7 +582,13 @@ export function createStudyRoutes(): Hono<StudyEnv> {
     if (!parsed.success) {
       return c.json({ error: 'VALIDATION_ERROR', issues: parsed.error.issues }, 422);
     }
-    const { questionId, userAnswer, inputType: requestedInputType } = parsed.data;
+    const {
+      questionId,
+      userAnswer,
+      inputType: requestedInputType,
+      selfRating: requestedSelfRating,
+      calcTolerance: requestedCalcTolerance,
+    } = parsed.data;
 
     let question: ExamQuestionRow | null;
     try {
@@ -555,6 +621,7 @@ export function createStudyRoutes(): Hono<StudyEnv> {
     const inputType: InputType = resolveInputType(requestedInputType ?? question.input_type);
     let isCorrect = false;
     let correctLabel: string | undefined;
+    let shuffleSeedForAudit: string | null = null;
 
     if (inputType === 'multiple_choice') {
       // 객관식: 셔플 재생성 후 originalIndex 역추적 → answer 매칭.
@@ -572,25 +639,51 @@ export function createStudyRoutes(): Hono<StudyEnv> {
         });
         isCorrect = result.isCorrect;
         correctLabel = result.correctLabel;
+        // study_reviews.shuffle_seed audit — 정답 위치 telemetry 미노출, seed만 기록.
+        shuffleSeedForAudit = todayDateString();
       }
     } else if (inputType === 'fill_blank') {
       const result = gradeFillBlank({ expected: question.answer, userAnswer });
       isCorrect = result.isCorrect;
-    } else if (inputType === 'essay' || inputType === 'calc') {
-      // Step 3-UX-5b 통합 후속 — essay self-grade + calc Formula Engine 비교.
-      // 현 chunk는 normalize 분리 + 객관식 셔플 우선. 본 분기는 fill_blank fallback.
-      const result = gradeFillBlank({ expected: question.answer, userAnswer });
-      isCorrect = result.isCorrect;
+    } else if (inputType === 'essay') {
+      // Step 3-UX-5b — essay self-grade.
+      // selfRating 미주입 시 정답 string 매칭 fallback (backward-compat).
+      if (requestedSelfRating !== undefined) {
+        const result = gradeEssay({ userAnswer, selfRating: requestedSelfRating });
+        isCorrect = result.isCorrect;
+      } else {
+        const result = gradeFillBlank({ expected: question.answer, userAnswer });
+        isCorrect = result.isCorrect;
+      }
+    } else if (inputType === 'calc') {
+      // Step 3-UX-5b — calc numeric 비교 (tolerance 허용).
+      // 자동 채점 불가 시 fill_blank fallback (backward-compat).
+      const calcResult = gradeCalc({
+        expectedValue: question.answer,
+        userValue: userAnswer,
+        tolerance: requestedCalcTolerance ?? 0,
+      });
+      if (calcResult.autoGraded) {
+        isCorrect = calcResult.isCorrect;
+      } else {
+        const result = gradeFillBlank({ expected: question.answer, userAnswer });
+        isCorrect = result.isCorrect;
+      }
     }
-
-    void normalizeAnswer; // import 영속 — Step 3-UX-5b/c에서 사용 예정
 
     const relatedNodes = await enrichRelatedNodes(c.env.DB, question.related_nodes, logger);
     const sourceCitations = buildSourceCitations(question, relatedNodes);
 
+    // Step 3-UX-5b — FSRS-4 rating 결정 + scheduleReview 호출.
+    const fsrsRating = decideFsrsRating(isCorrect, requestedSelfRating);
+    const nowDate = new Date();
+    const nowIso = nowDate.toISOString();
+
     try {
       const existing = await c.env.DB.prepare(
-        `SELECT id, total_reviews, correct_count
+        `SELECT id, total_reviews, correct_count,
+                fsrs_difficulty, fsrs_stability, fsrs_interval, fsrs_next_review,
+                fsrs_reps, fsrs_lapses, fsrs_state, fsrs_last_review, mastered_at
            FROM user_progress
           WHERE user_id = ?
             AND card_id = ?
@@ -601,19 +694,65 @@ export function createStudyRoutes(): Hono<StudyEnv> {
         .bind(userId, questionId)
         .first<ProgressExistingRow>();
 
+      // FSRS state 계산 — existing row → restored FsrsCardState, 없으면 createFreshCard.
+      const previousState: FsrsCardState =
+        existing !== null ? rowToFsrsState(existing) : createFreshCard(nowDate);
+      const reviewResult = scheduleReview({
+        state: previousState,
+        rating: fsrsRating,
+        now: nowDate,
+      });
+      const nextState = reviewResult.nextState;
+
+      // weak_score 계산 — subjectCorrectRate + conceptStability (D2 lock).
+      const newTotal = Number(existing?.total_reviews ?? 0) + 1;
+      const newCorrect = Number(existing?.correct_count ?? 0) + (isCorrect ? 1 : 0);
+      const subjectCorrectRate = newTotal > 0 ? newCorrect / newTotal : 0;
+      const weakScore = computeWeakScore({
+        subjectCorrectRate,
+        conceptStability: nextState.stability,
+      });
+
+      // mastered_at 갱신 — stability ≥ MASTERED_THRESHOLD_DAYS 도달 시점 영속.
+      const masteredAtNew =
+        existing?.mastered_at ?? (nextState.stability >= MASTERED_THRESHOLD_DAYS ? nowIso : null);
+
       if (existing !== null) {
-        const newTotal = Number(existing.total_reviews ?? 0) + 1;
-        const newCorrect = Number(existing.correct_count ?? 0) + (isCorrect ? 1 : 0);
         const updateResult = await withRetry(() =>
           c.env.DB.prepare(
             `UPDATE user_progress
                 SET total_reviews = ?,
                     correct_count = ?,
                     last_confusion_type = ?,
+                    fsrs_difficulty = ?,
+                    fsrs_stability = ?,
+                    fsrs_interval = ?,
+                    fsrs_next_review = ?,
+                    fsrs_reps = ?,
+                    fsrs_lapses = ?,
+                    fsrs_state = ?,
+                    fsrs_last_review = ?,
+                    mastered_at = ?,
+                    weak_score = ?,
                     updated_at = datetime('now')
               WHERE id = ?`,
           )
-            .bind(newTotal, newCorrect, question.confusion_type, existing.id)
+            .bind(
+              newTotal,
+              newCorrect,
+              question.confusion_type,
+              nextState.difficulty,
+              nextState.stability,
+              nextState.scheduledDays,
+              nextState.due,
+              nextState.reps,
+              nextState.lapses,
+              nextState.state,
+              nextState.lastReview,
+              masteredAtNew,
+              weakScore,
+              existing.id,
+            )
             .run(),
         );
         if (!updateResult.value.success) {
@@ -621,19 +760,34 @@ export function createStudyRoutes(): Hono<StudyEnv> {
         }
       } else {
         const progressId = crypto.randomUUID();
-        const nowIso = new Date().toISOString();
         const insertResult = await withRetry(() =>
           c.env.DB.prepare(
             `INSERT INTO user_progress
-               (id, user_id, node_id, card_id, card_type, fsrs_difficulty, fsrs_stability,
-                fsrs_interval, fsrs_next_review, total_reviews, correct_count,
-                last_confusion_type, created_at, updated_at)
-             VALUES (?, ?, NULL, ?, 'exam', 0.3, 1.0, 1, NULL, 1, ?, ?, ?, ?)`,
+               (id, user_id, node_id, card_id, card_type,
+                fsrs_difficulty, fsrs_stability, fsrs_interval, fsrs_next_review,
+                fsrs_reps, fsrs_lapses, fsrs_state, fsrs_last_review,
+                mastered_at, weak_score,
+                total_reviews, correct_count, last_confusion_type, created_at, updated_at)
+             VALUES (?, ?, NULL, ?, 'exam',
+                     ?, ?, ?, ?,
+                     ?, ?, ?, ?,
+                     ?, ?,
+                     1, ?, ?, ?, ?)`,
           )
             .bind(
               progressId,
               userId,
               questionId,
+              nextState.difficulty,
+              nextState.stability,
+              nextState.scheduledDays,
+              nextState.due,
+              nextState.reps,
+              nextState.lapses,
+              nextState.state,
+              nextState.lastReview,
+              masteredAtNew,
+              weakScore,
               isCorrect ? 1 : 0,
               question.confusion_type,
               nowIso,
@@ -644,6 +798,39 @@ export function createStudyRoutes(): Hono<StudyEnv> {
         if (!insertResult.value.success) {
           throw new Error('D1_INSERT_FAILED');
         }
+      }
+
+      // Step 3-UX-5b — study_reviews INSERT (review 이력 trace, Migration 0034 정합).
+      // packages/srs.replayReviews source. session_id는 Step 3-UX-5c carry-over (현 NULL).
+      try {
+        await withRetry(() =>
+          c.env.DB.prepare(
+            `INSERT INTO study_reviews
+               (id, user_id, card_id, card_type, reviewed_at, rating,
+                interval_days, stability_before, stability_after, shuffle_seed, session_id)
+             VALUES (?, ?, ?, 'exam', ?, ?, ?, ?, ?, ?, NULL)`,
+          )
+            .bind(
+              crypto.randomUUID(),
+              userId,
+              questionId,
+              nowIso,
+              fsrsRating,
+              nextState.scheduledDays,
+              reviewResult.review.stabilityBefore,
+              reviewResult.review.stabilityAfter,
+              shuffleSeedForAudit,
+            )
+            .run(),
+        );
+      } catch (err) {
+        // study_reviews INSERT 실패는 user_progress UPSERT 영향 0 (audit trail만 누락).
+        // Pass 3 ADVOCATE — silent failure 차단 위해 warn 로깅.
+        logger.warn('study_reviews INSERT failed (audit trail only)', {
+          err: err instanceof Error ? err.message : String(err),
+          userId,
+          questionId,
+        });
       }
     } catch (err) {
       if (err instanceof Error && D1_UNIQUE_CONSTRAINT_PATTERN.test(err.message)) {

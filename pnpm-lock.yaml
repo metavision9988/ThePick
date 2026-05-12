@@ -87,6 +87,9 @@ importers:
       '@thepick/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@thepick/srs':
+        specifier: workspace:*
+        version: link:../../packages/srs
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@cloudflare/workers-types@4.20260418.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.9.0)(gel@2.2.0)
