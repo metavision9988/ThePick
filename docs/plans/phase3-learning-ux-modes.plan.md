@@ -108,14 +108,14 @@ risk_level: **L3** (사용자 학습 데이터 + DB 스키마 변경 + 코어 �
   - sourceCitations + relatedNodes 응답
 - L3: user_progress 사용자 데이터
 
-### 3.3 데이터 모델 baseline
+### 3.3 데이터 모델 baseline (★ Session 070 진입 시점 검증 정합)
 
 ```sql
--- exam_questions (Phase 2 baseline)
+-- exam_questions (Phase 2 baseline, 0001 + 0002 schema)
 CREATE TABLE exam_questions (
   id TEXT PRIMARY KEY,
-  exam_id TEXT NOT NULL,
-  year INTEGER,
+  -- exam_id 컬럼 부재 (Hard Rule 16 Year 2 zero-cost — 함수 시그니처 examId 의무, WHERE 절은 Year 2 도입)
+  year INTEGER NOT NULL,
   round INTEGER,
   question_number INTEGER,
   exam_type TEXT,          -- '1st' | '2nd'
@@ -124,22 +124,36 @@ CREATE TABLE exam_questions (
   answer TEXT,             -- 단일 정답 (★ distractor 없음)
   explanation TEXT,
   related_nodes TEXT,      -- JSON array of knowledge_nodes.id
+  related_constants TEXT,
   topic_cluster TEXT,
-  confusion_type TEXT      -- 헷갈림 type (cross_crop 등)
+  confusion_type TEXT,     -- 헷갈림 type (cross_crop 등)
+  valid_from TEXT,
+  valid_until TEXT,
+  superseded_by TEXT,
+  status TEXT DEFAULT 'active' CHECK(status IN ('active','deprecated','flagged'))
 );
 
--- user_progress (Phase 2 baseline)
+-- user_progress (Phase 2 baseline, 0002 + 0029)
 CREATE TABLE user_progress (
+  id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
-  card_id TEXT,            -- exam_questions.id (card_type='exam')
-  node_id TEXT,            -- knowledge_nodes.id (card_type='concept')
-  card_type TEXT NOT NULL, -- 'exam' | 'concept'
+  node_id TEXT REFERENCES knowledge_nodes(id),
+  card_id TEXT,
+  card_type TEXT NOT NULL,
+  -- ★ FSRS 컬럼 4종 이미 존재 (Phase 2 baseline) — Session 070 진입 시점 검증
+  fsrs_difficulty REAL DEFAULT 0.3,
+  fsrs_stability REAL DEFAULT 1.0,
+  fsrs_interval INTEGER DEFAULT 1,
+  fsrs_next_review TEXT,
   total_reviews INTEGER DEFAULT 0,
   correct_count INTEGER DEFAULT 0,
-  -- ★ FSRS 컬럼 없음
-  -- ★ 약점/마스터 컬럼 없음
+  last_confusion_type TEXT,
+  created_at TEXT,
+  updated_at TEXT
 );
 ```
+
+★ **Session 070 진입 시 정합 발견**: `user_progress`에 이미 FSRS 컬럼 4종 존재 (fsrs_difficulty + stability + interval + next_review). plan §13 D7 lock 정합 — option C 채택 (컬럼 확장).
 
 ### 3.4 baseline의 명확한 한계
 
@@ -383,14 +397,45 @@ ALTER TABLE exam_questions ADD COLUMN calc_variables TEXT;  -- JSON object
 CREATE INDEX idx_exam_questions_input_type ON exam_questions(input_type);
 ```
 
-### 8.2 마이그레이션 0033 — user_progress FSRS 컬럼
+### 8.2 마이그레이션 0033 — user_progress FSRS 컬럼 확장 (D7 lock option C)
+
+★ Session 070 진입 시 정합 발견: 기존 fsrs_difficulty/stability/interval/next_review 4 컬럼 활용. 신규 4 컬럼만 추가 (option C 채택).
 
 ```sql
--- FSRS-4 상태 (stability + difficulty + last review + scheduled days)
-ALTER TABLE user_progress ADD COLUMN fsrs_state TEXT;  -- JSON: { stability, difficulty, last_review, scheduled_days }
-ALTER TABLE user_progress ADD COLUMN mastered_at TEXT;  -- stability ≥ 임계값 도달 시점
-ALTER TABLE user_progress ADD COLUMN weak_score REAL DEFAULT 0;  -- 약점 가중치 (0~1)
+-- 기존 컬럼 유지: fsrs_difficulty REAL, fsrs_stability REAL, fsrs_interval INTEGER, fsrs_next_review TEXT
+
+-- 신규 FSRS-4 컬럼 (column 확장 패턴)
+ALTER TABLE user_progress ADD COLUMN fsrs_reps INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE user_progress ADD COLUMN fsrs_lapses INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE user_progress ADD COLUMN fsrs_state TEXT NOT NULL DEFAULT 'new'
+  CHECK (fsrs_state IN ('new', 'learning', 'review', 'relearning'));
+ALTER TABLE user_progress ADD COLUMN fsrs_last_review TEXT;  -- nullable, 첫 review 전 NULL
+
+-- 약점/마스터 (D2 lock 정합)
+ALTER TABLE user_progress ADD COLUMN mastered_at TEXT;  -- fsrs_stability ≥ 30일 도달 시점
+ALTER TABLE user_progress ADD COLUMN weak_score REAL NOT NULL DEFAULT 0;  -- 0~1 (높을수록 약점)
+
+CREATE INDEX idx_user_progress_weak ON user_progress(user_id, weak_score DESC);
 ```
+
+packages/srs `FsrsCardState` → column 매핑 (apps/api Step 3-UX-5 통합 시):
+
+| FsrsCardState | column                  |
+| ------------- | ----------------------- |
+| due           | fsrs_next_review (ISO)  |
+| stability     | fsrs_stability          |
+| difficulty    | fsrs_difficulty         |
+| reps          | fsrs_reps (신규)        |
+| lapses        | fsrs_lapses (신규)      |
+| state         | fsrs_state (신규)       |
+| lastReview    | fsrs_last_review (신규) |
+| scheduledDays | fsrs_interval (INTEGER) |
+
+backward-compat:
+
+- 기존 row의 fsrs_state default='new' → packages/srs `createFreshCard` 첫 review 시 정상 동작
+- 기존 fsrs_difficulty=0.3 + fsrs_stability=1.0 default → ts-fsrs 첫 review 시 자체 갱신 (paper 정합 확인 의무)
+- 기존 progress/routes.ts SELECT/INSERT은 4 신규 컬럼 NOT NULL DEFAULT 정합으로 그대로 동작
 
 ### 8.3 마이그레이션 0034 — study_reviews 신규 (review 이력)
 
@@ -666,9 +711,24 @@ mode 별 메타데이터 + 카드 풀 통계:
 
 후속 carry-over 결정 (Step 3-UX 진행 중 또는 본격 launch 시점):
 
-- D7 (carry-over): D5 랭킹 서비스 도입 여부
-- D8 (carry-over): D2 약점 영역 α/β 가중치 정밀 조정
-- D9 (carry-over): 학습 데이터 telemetry (게이지 추가 — memory `project_engine_observability`)
+- D8 (carry-over): D5 랭킹 서비스 도입 여부
+- D9 (carry-over): D2 약점 영역 α/β 가중치 정밀 조정
+- D10 (carry-over): 학습 데이터 telemetry (게이지 추가 — memory `project_engine_observability`)
+
+### 13.3 추가 결정 lock — Session 070 진입 시 발견 정합
+
+| ID  | 영역                  | 결정 (lock)                                                                                  |
+| --- | --------------------- | -------------------------------------------------------------------------------------------- |
+| D7  | FSRS column 정합 정책 | ★ **option C: 기존 fsrs\_\* 4 컬럼 유지 + 신규 4 컬럼 추가** (reps/lapses/state/last_review) |
+
+근거: `user_progress` 테이블에 이미 fsrs_difficulty/stability/interval/next_review 4 컬럼 존재 (0002 마이그레이션). apps/api/{study,progress}/routes.ts에서 광범위 사용 중. JSON 단일 전환 시 routes 전면 재작성 + 진산 G9 임시 row 15건 데이터 마이그레이션 필요.
+
+option C 영향:
+
+- 마이그레이션 0033 (§8.2) — 신규 4 컬럼 추가만 (idempotent ALTER ADD COLUMN NOT NULL DEFAULT)
+- packages/srs `FsrsCardState` ↔ column 매핑 layer만 신설 (apps/api Step 3-UX-5)
+- 기존 progress/routes.ts SELECT/INSERT 100% 호환 (column 추가만)
+- backward-compat 완전 (마이그레이션 적용 후 기존 row의 fsrs_state default='new' → 첫 review 시 ts-fsrs 정상 동작)
 
 ---
 
