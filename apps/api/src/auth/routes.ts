@@ -55,6 +55,7 @@ import { hashPassword, verifyPassword } from './password.js';
 import {
   checkEmailRateLimit,
   checkIpRateLimit,
+  checkRegisterEmailRateLimit,
   getClientIp,
   type RateLimiter,
 } from './rate-limit.js';
@@ -172,6 +173,20 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
 
     const { email, password, name } = parsed.data;
     const normalizedEmail = email.trim().toLowerCase();
+
+    // C-04 (Phase 3 launch chain, Stage B) — register endpoint per-email rate-limit.
+    // 다중 IP 풀 brute-force 차단 (login과 별도 key prefix `register:` 사용 — 4-Pass MAJOR-A1 흡수).
+    // 정책: 5 attempts/600s (login 정책 동일 binding 공유, counter 독립). legitimate 가입 1회로 충분.
+    const registerEmailAllowed = await checkRegisterEmailRateLimit(
+      c.env.AUTH_RATE_LIMITER_EMAIL,
+      normalizedEmail,
+      c.env.ENVIRONMENT,
+      logger,
+    );
+    if (!registerEmailAllowed) {
+      c.header('Retry-After', '600');
+      return c.json({ error: 'TOO_MANY_REQUESTS' }, 429);
+    }
 
     // C-03 env 분기 — Zod floor 통과 후 환경별 정책 추가 검증.
     const policyIssue = enforcePasswordPolicy(password, c.env);

@@ -673,3 +673,61 @@ describe('POST /api/auth/register → env-based password policy (C-03)', () => {
     expect(res.status).toBe(201);
   });
 });
+
+// ---------------------------------------------------------------------------
+// /register — Phase 3 launch chain C-04 register per-email rate-limit
+// ---------------------------------------------------------------------------
+
+describe('POST /api/auth/register → per-email rate-limit (C-04)', () => {
+  const denyAll: RateLimiter = { limit: async () => ({ success: false }) };
+
+  it('AUTH_RATE_LIMITER_EMAIL 거부 → 429 TOO_MANY_REQUESTS + Retry-After=600', async () => {
+    const fake = buildFakeDb();
+    const app = createAuthRoutes();
+    const env = {
+      DB: fake.db,
+      ENVIRONMENT: 'test',
+      AUTH_RATE_LIMITER_IP: allowAll,
+      AUTH_RATE_LIMITER_EMAIL: denyAll, // email rate-limit 초과 시뮬레이션
+      JWT_SECRET: VALID_JWT_SECRET,
+      IP_PEPPER: IP_PEPPER,
+    };
+    const res = await app.request(
+      '/register',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'bruteforce@example.com', password: 'abcd' }),
+      },
+      env,
+    );
+    expect(res.status).toBe(429);
+    expect(res.headers.get('Retry-After')).toBe('600');
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe('TOO_MANY_REQUESTS');
+  });
+
+  it('IP rate-limit 거부가 email rate-limit보다 우선 (IP가 먼저 체크)', async () => {
+    const fake = buildFakeDb();
+    const app = createAuthRoutes();
+    const env = {
+      DB: fake.db,
+      ENVIRONMENT: 'test',
+      AUTH_RATE_LIMITER_IP: denyAll, // IP rate-limit 초과
+      AUTH_RATE_LIMITER_EMAIL: allowAll,
+      JWT_SECRET: VALID_JWT_SECRET,
+      IP_PEPPER: IP_PEPPER,
+    };
+    const res = await app.request(
+      '/register',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'someone@example.com', password: 'abcd' }),
+      },
+      env,
+    );
+    expect(res.status).toBe(429);
+    expect(res.headers.get('Retry-After')).toBe('60'); // IP rate-limit Retry-After
+  });
+});

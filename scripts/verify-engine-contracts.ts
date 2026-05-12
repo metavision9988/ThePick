@@ -1107,6 +1107,102 @@ function checkP0NoSkippedTests(): BooleanMetric {
   });
 }
 
+// === Phase 3 launch chain C-09 — ADR-034 carry-over skip 자동 알람 ===
+//
+// 목적: ADR-034 §"복원 의무" 임시 skip 테스트가 Phase 3 launch 직전에 누락되지 않도록
+// 자동 검출. 본 게이트는 다음 2 조건 검사:
+//   1. apps/api/src 전체 test 파일 내 skip 카운트 ≤ ADR_034_BASELINE (현 2건)
+//      → 신규 skip 도입 = 보호되지 않은 silent skip leak 위험
+//   2. 검출된 모든 skip이 'ADR-034 carry-over' 태그 보유 → 검증 의도 명시 의무
+//
+// Phase 3 launch 직전 unskip 의무 (ADR-034 §"복원 의무" 6항목):
+//   - skip 카운트 0건 도달 시 BASELINE 갱신 + 본 게이트 통과
+//   - skip 1~2건 carry-over 상태 = Phase 2 default, Phase 3 launch 차단 조건은 아님
+//
+// 본 게이트의 핵심 기능: skip 3건+ 발생 시 즉시 FAIL → operator visibility 강제.
+
+// BASELINE 현 시점 (Session 068 Stage B) skip 2건 핀:
+//   - apps/api/src/auth/__tests__/password.test.ts:24 (PASSWORD_PWNED 422 회귀)
+//   - apps/api/src/__tests__/scenarios.test.ts:332 (HIBP S5 가입 거부)
+// Phase 3 launch unskip 시 0건 도달 + BASELINE → 0 갱신 (또는 본 check 자체 archive).
+const ADR_034_SKIP_BASELINE = 2;
+const ADR_034_TAG_PATTERN = 'ADR-034 carry-over';
+
+function checkAdr034CarryOverSkips(): BooleanMetric {
+  const args: string[] = [
+    'grep',
+    '-nE',
+    String.raw`(it|describe|test)\.(skip|todo)\s*\(`,
+    '--',
+    'apps/api/src/',
+  ];
+  const res = safeExec('git', args, REPO_ROOT);
+  // git grep: status 0 = 매치 발견, 1 = 매치 없음 (= 0건, BASELINE 갱신 권고)
+  if (res.status === 1) {
+    return {
+      name: `ADR-034 carry-over skip 알람 (BASELINE ${ADR_034_SKIP_BASELINE}건)`,
+      value: true,
+      required: true,
+      status: 'PASS',
+      evidence: `apps/api/src 테스트 skip 0건 — ADR-034 복원 의무 완료 후 BASELINE 갱신 권고`,
+    };
+  }
+  if (res.status !== 0) {
+    return {
+      name: `ADR-034 carry-over skip 알람 (BASELINE ${ADR_034_SKIP_BASELINE}건)`,
+      value: false,
+      required: true,
+      status: 'FAIL',
+      evidence: `git grep 비정상 종료 (status=${res.status})`,
+    };
+  }
+
+  // skip 카운트 + 태그 검증 (테스트 파일만 + 주석 제외)
+  const skipLines = res.stdout
+    .split('\n')
+    .filter((line) => line.length > 0)
+    .filter((line) => {
+      const firstColon = line.indexOf(':');
+      if (firstColon === -1) return false;
+      const filepath = line.slice(0, firstColon);
+      if (!filepath.endsWith('.ts')) return false;
+      if (!filepath.includes('__tests__') && !filepath.includes('.test.')) return false;
+      const parts = line.split(':');
+      if (parts.length < 3) return false;
+      const content = parts.slice(2).join(':').trim();
+      if (content.startsWith('//') || content.startsWith('*') || content.startsWith('/*')) {
+        return false;
+      }
+      return true;
+    });
+
+  const skipCount = skipLines.length;
+  const tagged = skipLines.filter((line) => line.includes(ADR_034_TAG_PATTERN));
+  const untagged = skipLines.filter((line) => !line.includes(ADR_034_TAG_PATTERN));
+
+  // 판정: 카운트 ≤ BASELINE AND 모든 skip이 태그 보유
+  const exceedsBaseline = skipCount > ADR_034_SKIP_BASELINE;
+  const hasUntagged = untagged.length > 0;
+  const isPass = !exceedsBaseline && !hasUntagged;
+
+  let evidence: string;
+  if (isPass) {
+    evidence = `apps/api/src skip ${skipCount}건 (BASELINE ${ADR_034_SKIP_BASELINE}건 이하 + ADR-034 carry-over 태그 ${tagged.length}건 모두 정합)`;
+  } else if (exceedsBaseline) {
+    evidence = `skip 카운트 ${skipCount}건 > BASELINE ${ADR_034_SKIP_BASELINE}건 — 신규 skip leak 위험. 위반: ${skipLines.slice(0, 3).join(' | ')}`;
+  } else {
+    evidence = `untagged skip ${untagged.length}건 발견 (ADR-034 carry-over 태그 누락 = silent skip leak): ${untagged.slice(0, 3).join(' | ')}`;
+  }
+
+  return {
+    name: `ADR-034 carry-over skip 알람 (BASELINE ${ADR_034_SKIP_BASELINE}건)`,
+    value: isPass,
+    required: true,
+    status: isPass ? 'PASS' : 'FAIL',
+    evidence,
+  };
+}
+
 // === E2E AC 시나리오 커버 파일 카운트 ===
 
 function countE2EScenarios(): NumericMetric {
@@ -1249,7 +1345,8 @@ async function main(): Promise<void> {
   const formulaSafety = checkFormulaEngineSafety();
   const innerHtml = checkInnerHtmlUsage();
   const consoleCheck = checkConsoleUsage();
-  const cat7Booleans = [hr17, formulaSafety, innerHtml, consoleCheck];
+  const adr034Skip = checkAdr034CarryOverSkips();
+  const cat7Booleans = [hr17, formulaSafety, innerHtml, consoleCheck, adr034Skip];
   const cat7: CategoryReport = {
     id: 7,
     name: '보안 테스트 (Cat 7)',
@@ -1258,6 +1355,7 @@ async function main(): Promise<void> {
     booleans: cat7Booleans,
     notes: [
       'production-quality.md Hard Rule 17 + Formula Engine 동적 실행 차단 + XSS + Step 18 logger 회귀 방어.',
+      'Phase 3 launch chain C-09 — ADR-034 carry-over skip 자동 알람 (BASELINE 2건, Phase 3 unskip 후 0건 도달 시 BASELINE 갱신).',
     ],
   };
 

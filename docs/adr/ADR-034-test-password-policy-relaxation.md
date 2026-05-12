@@ -35,14 +35,18 @@ memory `feedback_full_autonomy.md` "결정 영역 boundary" 정합 — **인증 
 
 ## Phase 3 launch 직전 **복원 의무** (★ 명시 carry-over)
 
+★ **Session 068 Stage A 종착 후 갱신**: PASSWORD_MIN_LENGTH / HIBP 분기는 코드 변경 0 + env toggle 자동화 완료 (Phase 3 chain C-03/C-05). 본 §의 첫 3항목은 `wrangler.toml` env value 변경 + `wrangler deploy` 만으로 복원 가능.
+
 Phase 3 launch 1주 전 또는 외부 사용자 등록 진입점 노출 시점에 다음 모두 복원:
 
-- [ ] `apps/api/src/auth/constants.ts:30` `PASSWORD_MIN_LENGTH = 8` 복원
-- [ ] `apps/api/src/auth/routes.ts:140-146` HIBP 'pwned' 422 분기 활성화
-- [ ] `apps/api/src/auth/__tests__/routes.test.ts` PASSWORD_PWNED 422 회귀 테스트 활성화
+- [ ] `apps/api/wrangler.toml` production env `PASSWORD_MIN_LENGTH="8"` toggle (★ Stage A 자동화 완료, 코드 변경 0)
+- [ ] `apps/api/wrangler.toml` production env `HIBP_ENABLED="true"` toggle (★ Stage A 자동화 완료, 코드 변경 0)
+- [ ] `apps/api/src/auth/__tests__/password.test.ts:24` PASSWORD_PWNED 422 회귀 테스트 `it.skip` 해제 (★ skip 자동 알람 — C-09 Stage B)
+- [ ] register endpoint per-email rate-limit 동작 검증 (★ Stage B C-04 완료, 5 attempts/600s 정책)
 - [ ] register/login 실패 시 RATE_LIMITED 429 응답 정책 검증 (현행 패턴 유지)
 - [ ] memory `project_launch_legal_bundle_deferred.md` carry-over chain에 본 ADR-034 reference 추가
 - [ ] 기존 평가 환경 user 4자리 password 일괄 reset 정책 결정 (forced password reset 또는 grandfather clause)
+- [ ] apps/web `AuthForm.tsx` 클라이언트 minLength dynamic 반영 (Stage A 4-Pass MAJOR M-β carry-over)
 
 ## 영향 범위
 

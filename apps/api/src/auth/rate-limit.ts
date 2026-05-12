@@ -87,6 +87,8 @@ export async function checkIpRateLimit(
 /**
  * Email 기반 rate limit (login 실패 반복 방어).
  * 같은 이메일에 대한 여러 IP 의 공격도 추적.
+ *
+ * Key: `email:${email}` (login 전용 counter).
  */
 export async function checkEmailRateLimit(
   limiter: RateLimiter | undefined,
@@ -98,6 +100,27 @@ export async function checkEmailRateLimit(
     return handleMissingBinding('AUTH_RATE_LIMITER_EMAIL', environment, logger);
   }
   const { success } = await limiter.limit({ key: `email:${email}` });
+  return success;
+}
+
+/**
+ * Register endpoint 전용 email rate limit (Phase 3 launch chain C-04).
+ *
+ * ★ login과 별도 key prefix(`register:`) 사용. 같은 binding의 limit policy(5/600s)는 공유하나
+ * counter는 독립 — Stage B 4-Pass MAJOR-A1 흡수 (register 5회 시도로 victim login lockout 차단).
+ *
+ * 정책: 같은 email 5 attempts/600s. legitimate 가입 1회로 충분 → 정상 사용자 영향 0.
+ */
+export async function checkRegisterEmailRateLimit(
+  limiter: RateLimiter | undefined,
+  email: string,
+  environment: string | undefined,
+  logger: Logger,
+): Promise<boolean> {
+  if (limiter === undefined) {
+    return handleMissingBinding('AUTH_RATE_LIMITER_EMAIL', environment, logger);
+  }
+  const { success } = await limiter.limit({ key: `register:${email}` });
   return success;
 }
 
