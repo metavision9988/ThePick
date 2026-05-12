@@ -25,6 +25,7 @@
       "@thepick/parser": ["packages/parser/src"],
       "@thepick/parser-1st-exam": ["packages/parser-1st-exam/src"],
       "@thepick/formula-engine": ["packages/formula-engine/src"],
+      "@thepick/learning-modes": ["packages/learning-modes/src"],
       "@thepick/quality": ["packages/quality/src"],
       "@thepick/study-material-generator": ["packages/study-material-generator/src"],
       "@modules/*": ["modules/*/src"]
