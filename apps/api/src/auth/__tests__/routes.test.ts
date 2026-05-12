@@ -49,15 +49,26 @@ interface FakeSessionRow {
   ip_hash: string | null;
 }
 
+// Phase 3 launch chain C-12 — login_history audit trail mock
+interface FakeLoginHistoryRow {
+  id: string;
+  user_id: string;
+  login_at: string;
+  ip_hash: string | null;
+  user_agent: string | null;
+}
+
 interface FakeDb {
   readonly db: D1Database;
   readonly users: Map<string, FakeUserRow>;
   readonly sessions: Map<string, FakeSessionRow>;
+  readonly loginHistory: Map<string, FakeLoginHistoryRow>;
 }
 
 function buildFakeDb(): FakeDb {
   const users = new Map<string, FakeUserRow>();
   const sessions = new Map<string, FakeSessionRow>();
+  const loginHistory = new Map<string, FakeLoginHistoryRow>();
 
   const db = {
     prepare: (sql: string) => {
@@ -141,6 +152,18 @@ function buildFakeDb(): FakeDb {
           if (/UPDATE users SET last_login_at/i.test(sql)) {
             return { success: true, meta: { changes: 1 } };
           }
+          // Phase 3 launch chain C-12 — login_history INSERT mock
+          if (/^INSERT INTO login_history/i.test(sql)) {
+            const [id, user_id, login_at, ip_hash, user_agent] = bound as [
+              string,
+              string,
+              string,
+              string | null,
+              string | null,
+            ];
+            loginHistory.set(id, { id, user_id, login_at, ip_hash, user_agent });
+            return { success: true, meta: { changes: 1 } };
+          }
           throw new Error(`fake db: unhandled run SQL: ${sql}`);
         },
         first: async <T>(): Promise<T | null> => {
@@ -178,7 +201,7 @@ function buildFakeDb(): FakeDb {
     },
   } as unknown as D1Database;
 
-  return { db, users, sessions };
+  return { db, users, sessions, loginHistory };
 }
 
 async function seedUser(fake: FakeDb, email: string, password: string): Promise<string> {
@@ -295,6 +318,70 @@ describe('POST /api/auth/login → Set-Cookie (Step 1-4)', () => {
     );
     expect(res.status).toBe(500);
     expect(fake.sessions.size).toBe(0); // session 미발급
+  });
+
+  // Phase 3 launch chain C-12 (Session 068 Stage C) — login_history audit trail
+  it('success → login_history INSERT 1건 (audit trail 누적, C-12)', async () => {
+    const fake = buildFakeDb();
+    const userId = await seedUser(fake, 'audit@example.com', TEST_PASSWORD);
+    const app = createAuthRoutes();
+
+    const res = await app.request(
+      '/login',
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'user-agent': 'TestAgent/1.0',
+        },
+        body: JSON.stringify({ email: 'audit@example.com', password: TEST_PASSWORD }),
+      },
+      buildEnv(fake),
+    );
+    expect(res.status).toBe(200);
+    expect(fake.loginHistory.size).toBe(1);
+    const entry = Array.from(fake.loginHistory.values())[0]!;
+    expect(entry.user_id).toBe(userId);
+    expect(entry.login_at).toMatch(/^\d{4}-\d{2}-\d{2}T/); // ISO 8601
+    expect(entry.user_agent).toBe('TestAgent/1.0');
+    // dev/test 환경은 IP_PEPPER 있으나 hashIp 결과 string 또는 null 허용
+    expect(entry.ip_hash === null || typeof entry.ip_hash === 'string').toBe(true);
+  });
+
+  it('login_history INSERT 실패 → login 자체는 성공 (graceful, C-12)', async () => {
+    const fake = buildFakeDb();
+    await seedUser(fake, 'graceful@example.com', TEST_PASSWORD);
+    const app = createAuthRoutes();
+
+    // login_history INSERT만 throw, 다른 SQL은 정상 동작 (bind chain 정합 유지)
+    const originalPrepare = fake.db.prepare.bind(fake.db);
+    fake.db.prepare = ((sql: string) => {
+      const stmt = originalPrepare(sql);
+      if (/^INSERT INTO login_history/i.test(sql)) {
+        const failingStmt: D1PreparedStatement = {
+          ...stmt,
+          bind: () => failingStmt, // bind chain 유지
+          run: async (): Promise<never> => {
+            throw new Error('simulated login_history INSERT failure');
+          },
+        } as unknown as D1PreparedStatement;
+        return failingStmt;
+      }
+      return stmt;
+    }) as typeof fake.db.prepare;
+
+    const res = await app.request(
+      '/login',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'graceful@example.com', password: TEST_PASSWORD }),
+      },
+      buildEnv(fake),
+    );
+    expect(res.status).toBe(200); // login 성공
+    expect(fake.sessions.size).toBe(1); // session 발급
+    expect(fake.loginHistory.size).toBe(0); // login_history 누락 (graceful)
   });
 });
 

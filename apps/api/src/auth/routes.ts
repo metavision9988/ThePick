@@ -358,15 +358,37 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
     }
 
     const now = new Date().toISOString();
+
+    // C-12 (Phase 3 launch chain, Stage C) — login_history audit trail.
+    // 기존 UPDATE users SET last_login_at은 audit 단절 (덮어쓰기). migration 0030 login_history
+    // 테이블에 INSERT 누적 — incident forensics + GDPR/PIPA 정합.
+    // IP_PEPPER 미설정 시 ipHash NULL 허용 (PII 최소수집), user_agent는 truncate.
+    const ipPepperForHistory = c.env.IP_PEPPER;
+    let ipHashForHistory: string | null = null;
+    if (ipPepperForHistory !== undefined && ipPepperForHistory.length > 0) {
+      try {
+        ipHashForHistory = await hashIp(ip, ipPepperForHistory);
+      } catch (err) {
+        // ipHash 실패는 audit trail 누락만 — login 성공 보존
+        logger.warn('login_history ip hash failed', {
+          userId: row.id,
+          cause: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+    const userAgentForHistory = truncateUserAgent(c.req.header('user-agent'));
+
     try {
       await withRetry(() =>
-        c.env.DB.prepare(`UPDATE users SET last_login_at = ?, updated_at = ? WHERE id = ?`)
-          .bind(now, now, row.id)
+        c.env.DB.prepare(
+          `INSERT INTO login_history (id, user_id, login_at, ip_hash, user_agent) VALUES (?, ?, ?, ?, ?)`,
+        )
+          .bind(crypto.randomUUID(), row.id, now, ipHashForHistory, userAgentForHistory)
           .run(),
       );
     } catch (err) {
-      // 로그인 자체는 성공 — last_login_at 업데이트 실패는 관찰성 손실만
-      logger.warn('last_login_at update failed', {
+      // 로그인 자체는 성공 — login_history INSERT 실패는 관찰성 손실만 (graceful)
+      logger.warn('login_history insert failed', {
         userId: row.id,
         cause: err instanceof Error ? err.message : String(err),
       });

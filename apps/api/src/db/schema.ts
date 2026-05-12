@@ -409,6 +409,9 @@ export const users = sqliteTable('users', {
   subscribedExams: text('subscribed_exams'), // JSON array of ExamId
   subscriptionStartedAt: text('subscription_started_at'),
   subscriptionExpiresAt: text('subscription_expires_at'),
+  // ★ Phase 3 launch chain C-12 (Stage C) — last_login_at은 audit trail 단절.
+  // 신규 로그인 이력은 `login_history` 테이블에 INSERT 누적. 본 컬럼은 backward-compat
+  // 유지 (관련 검색/admin/sessions 영향 방지). 향후 별도 마이그레이션에서 폐기 검토.
   lastLoginAt: text('last_login_at'),
   status: text('status', { enum: USER_STATUSES }).notNull().default('active'),
   createdAt: text('created_at')
@@ -417,6 +420,26 @@ export const users = sqliteTable('users', {
   updatedAt: text('updated_at')
     .notNull()
     .default(sql`(datetime('now'))`),
+});
+
+// ---------------------------------------------------------------------------
+// Login History (Phase 3 launch chain C-12, Session 068 Stage C)
+//
+// users.last_login_at UPDATE는 audit trail 단절 (1회 기록만 보존). incident
+// forensics + GDPR/PIPA 정합을 위해 별도 이력 테이블에 INSERT 누적.
+// migration 0030 정합 (수동 SQL ↔ Drizzle 동기화 NC-1 정책).
+// ---------------------------------------------------------------------------
+
+export const loginHistory = sqliteTable('login_history', {
+  id: text('id').primaryKey(), // UUID v4
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  loginAt: text('login_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  ipHash: text('ip_hash'), // SHA-256(IP || pepper), NULL 허용 (IP_PEPPER 미설정 시)
+  userAgent: text('user_agent'), // truncate to USER_AGENT_MAX_LENGTH (256)
 });
 
 // ---------------------------------------------------------------------------
@@ -431,6 +454,9 @@ export type NewKnowledgeEdge = typeof knowledgeEdges.$inferInsert;
 
 export type Formula = typeof formulas.$inferSelect;
 export type NewFormula = typeof formulas.$inferInsert;
+
+export type LoginHistory = typeof loginHistory.$inferSelect;
+export type NewLoginHistory = typeof loginHistory.$inferInsert;
 
 export type Constant = typeof constants.$inferSelect;
 export type NewConstant = typeof constants.$inferInsert;

@@ -174,7 +174,8 @@ Phase 2 Eval MVP 완전 종착 (14 CRIT 매트릭스 즉시 흡수 7/7 종결) �
 - [ ] 5-페르소나 기술부채 심층 리뷰 (refactoring / performance / quality / backend / devops)
 - [ ] ADR-034/035/036 §"복원 의무" 본문 갱신 (env 분기 자동화 반영)
 - [ ] memory `project_launch_legal_bundle_deferred.md` carry-over 갱신
-- [ ] production redeploy + smoke test
+- [ ] **migration 0030 production 적용 선행 의무** (코드 deploy 전 D1 마이그레이션 — 미적용 시 INSERT graceful catch로 audit 0건 누적, Stage C 4-Pass MINOR-3 흡수)
+- [ ] production redeploy + smoke test (Workers Version 갱신 + production-migration-status.md 영속)
 - [ ] handoff-077 영속
 
 ---
