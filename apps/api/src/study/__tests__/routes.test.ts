@@ -13,12 +13,16 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ACCESS_TOKEN_COOKIE, EXAM_IDS } from '@thepick/shared';
 import { createD1FromSqlite, type SqliteBackedD1 } from '../../__tests__/helpers/d1-from-sqlite.js';
 import { signAccessToken } from '../../auth/session.js';
-import {
-  createStudyRoutes,
-  type StudyBindings,
-  normalizeAnswer,
-  isAnswerCorrect,
-} from '../routes.js';
+import { createStudyRoutes, type StudyBindings } from '../routes.js';
+// Step 3-UX-5a — normalize/isAnswerCorrect 로직은 packages/learning-modes로 분리.
+// 본 테스트는 분리 후에도 동일 회귀 정합 검증 (Pass 1 CRIT-1 + Pass 1 M1).
+import { gradeFillBlank, normalizeAnswer } from '@thepick/learning-modes';
+
+/** Step 3-UX-5 이전 호환 helper — gradeFillBlank wrapper. */
+function isAnswerCorrect(expected: string | null, userAnswer: string): boolean {
+  if (expected === null || expected === '') return false;
+  return gradeFillBlank({ expected, userAnswer }).isCorrect;
+}
 
 const VALID_JWT_SECRET = 'study-test-jwt-secret-32bytes-plus-v1';
 

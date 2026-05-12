@@ -68,6 +68,15 @@ const SCENARIO_MIGRATIONS = [
   // + (user_id, node_id, card_type) concept partial UNIQUE. Year 2 Phase 4 마이그레이션 폭탄 예방
   // (Persona4-BCRIT1) + lookup 가속 (Persona2-PCRIT1) + 4-Pass M-1 catch 분기 활성화.
   '0029_user_progress_unique_constraint.sql',
+  // Session 068 Stage C C-12 — login_history audit trail
+  '0030_login_history.sql',
+  // Session 068 Stage E P-α C-α-2 — login_history.event_type (login/refresh 분리)
+  '0031_login_history_event_type.sql',
+  // Session 069 Step 3-UX-4 — Phase 3 학습 UX 스키마 4 chain (plan §13 D1/D2/D7 lock)
+  '0032_exam_questions_input_type.sql',
+  '0033_user_progress_fsrs_extension.sql',
+  '0034_study_reviews.sql',
+  '0035_study_sessions_streak.sql',
 ];
 
 export interface SqliteBackedD1 {

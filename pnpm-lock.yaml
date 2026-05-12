@@ -81,6 +81,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@thepick/learning-modes':
+        specifier: workspace:*
+        version: link:../../packages/learning-modes
       '@thepick/shared':
         specifier: workspace:*
         version: link:../../packages/shared

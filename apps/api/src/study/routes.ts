@@ -30,6 +30,17 @@ import {
   type Logger,
   type LoggerEnvironment,
 } from '@thepick/shared';
+import {
+  INPUT_TYPES,
+  gradeFillBlank,
+  gradeMultipleChoice,
+  multipleChoiceAnswerToIndex,
+  normalizeAnswer,
+  shuffleChoices,
+  todayDateString,
+  type InputType,
+  type ShuffledChoice,
+} from '@thepick/learning-modes';
 import { requireAuth, type RequireAuthVariables } from '../auth/middleware/require-auth.js';
 import { D1_UNIQUE_CONSTRAINT_PATTERN, withRetry } from '../middleware/retry.js';
 import {
@@ -91,7 +102,10 @@ const examTypeSchema = z.enum(['1st', '2nd']);
 
 const gradeSchema = z.object({
   questionId: z.string().min(1).max(128),
+  /** 객관식: 셔플 라벨 ('A' ~ 'E') / 단답+서술+계산: 자유 텍스트. */
   userAnswer: z.string().min(1).max(2000),
+  /** Step 3-UX-5a — input_type 분기. 미지정 시 question.input_type 사용 (backward-compat). */
+  inputType: z.enum(INPUT_TYPES).optional(),
 });
 
 interface ExamQuestionRow {
@@ -107,6 +121,10 @@ interface ExamQuestionRow {
   readonly exam_type: string | null;
   readonly topic_cluster: string | null;
   readonly confusion_type: string | null;
+  // Migration 0032 — Phase 3 학습 UX 4 type 분기 (Step 3-UX-5a)
+  readonly input_type: string | null;
+  readonly distractors: string | null;
+  readonly calc_variables: string | null;
 }
 
 interface KnowledgeNodeRow {
@@ -141,6 +159,13 @@ interface SourceCitations {
   readonly lawArticles: ReadonlyArray<string>;
 }
 
+interface ChoiceOut {
+  /** 셔플 후 표시 라벨 ('A' ~ 'E'). 클라이언트 입력 source. */
+  readonly label: string;
+  /** 보기 텍스트. */
+  readonly text: string;
+}
+
 interface NextQuestionOut {
   readonly id: string;
   readonly year: number;
@@ -152,6 +177,12 @@ interface NextQuestionOut {
   readonly topicCluster: string | null;
   readonly relatedNodes: ReadonlyArray<RelatedNodeOut>;
   readonly sourceCitations: SourceCitations;
+  // Step 3-UX-5a — Phase 3 학습 UX 4 type 분기
+  readonly inputType: InputType;
+  /** 객관식만 (셔플된 라벨 + 텍스트). 정답 라벨 비노출 (서버 측 originalIndex 역추적). */
+  readonly choices: ReadonlyArray<ChoiceOut> | null;
+  /** 계산식만 (산식 변수 JSON). */
+  readonly calcVariables: Record<string, number> | null;
 }
 
 interface GradeResultOut {
@@ -160,6 +191,8 @@ interface GradeResultOut {
   readonly explanation: string | null;
   readonly sourceCitations: SourceCitations;
   readonly relatedNodes: ReadonlyArray<RelatedNodeOut>;
+  /** 객관식만 — 채점 후 셔플 라벨 노출 (사전 노출 0). */
+  readonly correctLabel?: string;
 }
 
 type StudyEnv = {
@@ -168,36 +201,97 @@ type StudyEnv = {
 };
 
 /**
- * 채점 normalize — 공백 / 대소문자 / 원형숫자 / "번"/"호" 접미사 제거.
+ * normalizeAnswer는 packages/learning-modes로 분리 (Step 3-UX-2 commit 66f98cd).
+ * 본 파일은 import 경유 사용 — 동일 회귀 정합 (Pass 1 CRIT-1 silent corruption 차단).
  *
- * exam_questions.answer 값 패턴 (2026-05-10 production 실측 기반):
- *   "1" / "②" / "보험가액의 80%" / "착과수조사·과중조사·낙과피해조사·고사주수조사"
- *
- * normalize 의도: 사용자가 "②", "2", "2번" 어느 형태로 입력해도 동일 정답으로 매칭.
- * Reality Anchor (plan §4 Q2 type-D): false negative 발생 시 본 normalize 강화 필요.
+ * isAnswerCorrect는 fill_blank input type에 한정 (gradeFillBlank 사용).
+ * 객관식/서술/계산은 별도 type 분기 (gradeMultipleChoice / gradeEssay / gradeCalc).
  */
-export function normalizeAnswer(s: string): string {
-  const circledNumbers = '①②③④⑤⑥⑦⑧⑨⑩';
-  return (
-    s
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, '')
-      .replace(/[①-⑩]/g, (m) => {
-        // 4-Pass Pass 1 CRIT-1 흡수 — regex character class와 circledNumbers 어긋날 시
-        // (미래 ⑪~⑳ 확장 누락) indexOf=-1 → '0' silent corruption 차단.
-        const idx = circledNumbers.indexOf(m);
-        return idx === -1 ? m : String(idx + 1);
-      })
-      // 4-Pass Pass 3 CRIT-3 / Pass 1 M1 흡수 — '호$' 제거. '1번' vs '1호' false-positive
-      // ('번' 객관식 ≠ '호' 동/호수) 차단. '호' 정답 패턴별 분기는 carry-over.
-      .replace(/번$/, '')
-  );
+
+/**
+ * exam_questions.input_type 검증 + 기본값 'fill_blank' (마이그레이션 0032 default 정합).
+ */
+function resolveInputType(value: string | null | undefined): InputType {
+  if (value === null || value === undefined) return 'fill_blank';
+  const found = INPUT_TYPES.find((t) => t === value);
+  return found ?? 'fill_blank';
 }
 
-export function isAnswerCorrect(expected: string | null, userAnswer: string): boolean {
-  if (expected === null || expected === '') return false;
-  return normalizeAnswer(expected) === normalizeAnswer(userAnswer);
+/**
+ * 객관식 보기 셔플. exam_questions.distractors (JSON array 4 + answer 합쳐 5 보기) → shuffleChoices.
+ *
+ * 정합:
+ *   - distractors JSON parse 실패 시 null 반환 (객관식 셔플 불가 → routes 측 inputType fallback)
+ *   - 정답 (answer) 인덱스 = 0 (첫 번째) → 셔플 후 originalIndex로 역추적
+ *   - 셔플 시드: D3 lock — hash(userId || questionId || YYYYMMDD)
+ */
+async function buildShuffledChoices(
+  userId: string,
+  question: ExamQuestionRow,
+  logger: Logger,
+): Promise<ShuffledChoice[] | null> {
+  if (question.distractors === null || question.distractors === '') return null;
+  if (question.answer === null || question.answer === '') return null;
+
+  let distractors: string[];
+  try {
+    const parsed: unknown = JSON.parse(question.distractors);
+    if (!Array.isArray(parsed)) {
+      logger.warn('distractors JSON not array', { questionId: question.id });
+      return null;
+    }
+    distractors = parsed.filter((v): v is string => typeof v === 'string' && v.length > 0);
+  } catch (err) {
+    logger.warn('distractors JSON parse failed', { err: String(err), questionId: question.id });
+    return null;
+  }
+
+  // 정답 + distractors 합쳐 originalTexts. 정답은 index 0.
+  const originalTexts = [question.answer, ...distractors];
+  if (originalTexts.length < 2 || originalTexts.length > 5) {
+    logger.warn('choice count out of range', {
+      questionId: question.id,
+      count: originalTexts.length,
+    });
+    return null;
+  }
+
+  try {
+    return await shuffleChoices(originalTexts, {
+      userId,
+      questionId: question.id,
+      date: todayDateString(),
+    });
+  } catch (err) {
+    logger.warn('shuffleChoices failed', { err: String(err), questionId: question.id });
+    return null;
+  }
+}
+
+/**
+ * exam_questions.calc_variables JSON parse → Record<string, number> | null.
+ */
+function parseCalcVariables(
+  json: string | null,
+  questionId: string,
+  logger: Logger,
+): Record<string, number> | null {
+  if (json === null || json === '') return null;
+  try {
+    const parsed: unknown = JSON.parse(json);
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      logger.warn('calc_variables JSON not object', { questionId });
+      return null;
+    }
+    const out: Record<string, number> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (typeof v === 'number' && Number.isFinite(v)) out[k] = v;
+    }
+    return out;
+  } catch (err) {
+    logger.warn('calc_variables JSON parse failed', { err: String(err), questionId });
+    return null;
+  }
 }
 
 /**
@@ -330,7 +424,7 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       const result = await c.env.DB.prepare(
         `SELECT eq.id, eq.year, eq.round, eq.question_number, eq.subject, eq.content,
                 eq.answer, eq.explanation, eq.related_nodes, eq.exam_type, eq.topic_cluster,
-                eq.confusion_type
+                eq.confusion_type, eq.input_type, eq.distractors, eq.calc_variables
            FROM exam_questions eq
            LEFT JOIN user_progress up
              ON up.card_id = eq.id
@@ -360,9 +454,21 @@ export function createStudyRoutes(): Hono<StudyEnv> {
     // ★ Session 066 5-Persona C-07 흡수 — N+1 직렬 enrichment → Promise.all 병렬.
     // count=5 시 직렬 6 D1 round-trip (Edge→D1 RTT 30~50ms × 5 = 150~250ms wallclock)을
     // 1 round-trip wave 로 압축. handoff-073 §F.4 M4 동시 해소.
+    //
+    // Step 3-UX-5a 갱신: input_type 분기 + 객관식 셔플 (D3 lock 정합).
     const enriched: NextQuestionOut[] = await Promise.all(
       questions.map(async (q) => {
-        const relatedNodes = await enrichRelatedNodes(c.env.DB, q.related_nodes, logger);
+        const inputType = resolveInputType(q.input_type);
+        const [relatedNodes, shuffled] = await Promise.all([
+          enrichRelatedNodes(c.env.DB, q.related_nodes, logger),
+          inputType === 'multiple_choice'
+            ? buildShuffledChoices(userId, q, logger)
+            : Promise.resolve(null),
+        ]);
+        const choices: ReadonlyArray<ChoiceOut> | null =
+          shuffled !== null ? shuffled.map((c) => ({ label: c.label, text: c.text })) : null;
+        const calcVariables =
+          inputType === 'calc' ? parseCalcVariables(q.calc_variables, q.id, logger) : null;
         return {
           id: q.id,
           year: q.year,
@@ -374,6 +480,9 @@ export function createStudyRoutes(): Hono<StudyEnv> {
           topicCluster: q.topic_cluster,
           relatedNodes,
           sourceCitations: buildSourceCitations(q, relatedNodes),
+          inputType,
+          choices,
+          calcVariables,
         };
       }),
     );
@@ -413,13 +522,14 @@ export function createStudyRoutes(): Hono<StudyEnv> {
     if (!parsed.success) {
       return c.json({ error: 'VALIDATION_ERROR', issues: parsed.error.issues }, 422);
     }
-    const { questionId, userAnswer } = parsed.data;
+    const { questionId, userAnswer, inputType: requestedInputType } = parsed.data;
 
     let question: ExamQuestionRow | null;
     try {
       question = await c.env.DB.prepare(
         `SELECT id, year, round, question_number, subject, content, answer, explanation,
-                related_nodes, exam_type, topic_cluster, confusion_type
+                related_nodes, exam_type, topic_cluster, confusion_type,
+                input_type, distractors, calc_variables
            FROM exam_questions
           WHERE id = ?
             AND status = 'active'
@@ -440,7 +550,41 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       return c.json({ error: 'QUESTION_HAS_NO_ANSWER', questionId }, 422);
     }
 
-    const isCorrect = isAnswerCorrect(question.answer, userAnswer);
+    // Step 3-UX-5a — input_type 분기 채점.
+    // 클라이언트 request inputType 우선 (체크), 없으면 question.input_type 사용.
+    const inputType: InputType = resolveInputType(requestedInputType ?? question.input_type);
+    let isCorrect = false;
+    let correctLabel: string | undefined;
+
+    if (inputType === 'multiple_choice') {
+      // 객관식: 셔플 재생성 후 originalIndex 역추적 → answer 매칭.
+      const shuffled = await buildShuffledChoices(userId, question, logger);
+      if (shuffled === null) {
+        // distractors 부재 또는 parse 실패 → fill_blank fallback (backward-compat)
+        const result = gradeFillBlank({ expected: question.answer, userAnswer });
+        isCorrect = result.isCorrect;
+      } else {
+        const correctOriginalIndex = multipleChoiceAnswerToIndex(question.answer);
+        const result = gradeMultipleChoice({
+          submittedLabel: userAnswer,
+          shuffledChoices: shuffled,
+          correctOriginalIndex,
+        });
+        isCorrect = result.isCorrect;
+        correctLabel = result.correctLabel;
+      }
+    } else if (inputType === 'fill_blank') {
+      const result = gradeFillBlank({ expected: question.answer, userAnswer });
+      isCorrect = result.isCorrect;
+    } else if (inputType === 'essay' || inputType === 'calc') {
+      // Step 3-UX-5b 통합 후속 — essay self-grade + calc Formula Engine 비교.
+      // 현 chunk는 normalize 분리 + 객관식 셔플 우선. 본 분기는 fill_blank fallback.
+      const result = gradeFillBlank({ expected: question.answer, userAnswer });
+      isCorrect = result.isCorrect;
+    }
+
+    void normalizeAnswer; // import 영속 — Step 3-UX-5b/c에서 사용 예정
+
     const relatedNodes = await enrichRelatedNodes(c.env.DB, question.related_nodes, logger);
     const sourceCitations = buildSourceCitations(question, relatedNodes);
 
@@ -516,6 +660,7 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       explanation: question.explanation,
       sourceCitations,
       relatedNodes,
+      ...(correctLabel !== undefined ? { correctLabel } : {}),
     };
     return c.json(result);
   });
