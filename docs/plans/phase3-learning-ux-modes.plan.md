@@ -638,20 +638,37 @@ mode 별 메타데이터 + 카드 풀 통계:
 
 ---
 
-## 13. 진산님 결정 의무 항목 (D1~D6)
+## 13. 진산님 결정 의무 항목 (D1~D6) — ★ Session 070 진산 회신 lock (2026-05-12 KST)
 
-본 plan을 본격 구현 진입 (Step 3-UX-2 코딩) 전 진산 결정 의무:
+본 plan 본격 구현 진입 (Step 3-UX-2 코딩) 전 진산 결정 의무. **6 항목 모두 Claude 권고대로 lock**.
 
-| ID  | 영역                          | 옵션                                                                 | Claude 권고               |
-| --- | ----------------------------- | -------------------------------------------------------------------- | ------------------------- |
-| D1  | distractor 데이터 출처        | 기출 원문 추출 / LLM 생성 / 유사 문제 풀                             | 기출 원문 (§6.3)          |
-| D2  | SRS 알고리즘 + 약점 영역 정의 | FSRS / SM2 / Leitner × subject / topic / confusion / concept         | FSRS-4 + subject+concept  |
-| D3  | 보기 셔플 시드 정책           | userId+questionId+date / userId+questionId 영구 / 첫 시도 후 lock    | userId+questionId+date    |
-| D4  | progressive disclosure        | 전체 동시 / 단계별 토글 / 정답 즉시 + 토글                           | 정답 즉시 + 토글          |
-| D5  | 게이미피케이션 강도           | 미니멀 (streak만) / 표준 (streak + 마스터 + 일일) / 풍부 (랭킹 추가) | 표준 (부정 강조 X)        |
-| D6  | 모바일 gesture                | swipe 활성 default / 큰 버튼만 / 설정 toggle                         | 큰 버튼 + optional toggle |
+| ID  | 영역                          | 결정 (lock)                                                                                                     |
+| --- | ----------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| D1  | distractor 데이터 출처        | ★ **기출 원문 5지선다 추출 + adminUI 검수** — BATCH 보강 1-2주 (Step 3-UX-7)                                    |
+| D2  | SRS 알고리즘 + 약점 영역 정의 | ★ **FSRS-4 + subject+concept** — `packages/srs/` 신규 (Step 3-UX-3), weak_score = subject 정답률 + concept 가중 |
+| D3  | 보기 셔플 시드 정책           | ★ **`hash(userId\|\|questionId\|\|YYYYMMDD)`** — 일자별 결정성, device sync 보장                                |
+| D4  | progressive disclosure        | ★ **정답 즉시 + 토글** — 정답 + 해설 동시 노출, 출처 + 관련 자료는 토글                                         |
+| D5  | 게이미피케이션 강도           | ★ **표준 (streak + 마스터 + 일일)** — 부정 강조 X, 랭킹 chunk 추후 진산 결정 carry-over                         |
+| D6  | 모바일 gesture                | ★ **큰 버튼 + optional toggle** — default 큰 버튼, 설정에서 swipe 활성 선택                                     |
 
-진산 §13 회신 → 본 plan §6 PITR 영역 lock + Step 3-UX-2 진입.
+### 13.1 lock 결정 영향 정리 (Step 3-UX-2~7 implementation 진입 직접 정합)
+
+- **§6.1 SRS**: FSRS-4 채택 → `packages/srs/` 신규 + ts-fsrs npm 도입 (Step 3-UX-3)
+- **§6.2 셔플**: 일자별 결정성 → `packages/learning-modes/src/shuffle.ts` `dailySeed(userId, questionId)` (Step 3-UX-2)
+- **§6.3 distractor**: 기출 원문 → adminUI 검수 BATCH (Step 3-UX-7, 진산 + admin 1-2주)
+- **§6.4 약점**: subject+concept 결합 → `weakScore = α·(1 - subject_correct_rate) + β·(1 - concept_stability)` (Step 3-UX-3)
+- **§6.5 disclosure**: 정답 즉시 + 토글 → `GradedResultPanel` 정답/해설 always-on + 출처/관련 자료 `<details>` (Step 3-UX-6)
+- **§6.6 gesture**: 큰 버튼 + toggle → `SwipeToggle` setting + accessibility ARIA 정합 (Step 3-UX-6)
+
+### 13.2 본 plan 다음 단계
+
+진산 §13 회신 + 본 plan §13.1 lock 완료. **Step 3-UX-2 (packages/learning-modes 신설)** 진입 가능 상태. 단, Phase 3 launch 1주 스프린트 chain 정합 (memory `project_launch_legal_bundle_deferred`)으로 본격 구현 진입 시점은 진산 추가 발화 의무.
+
+후속 carry-over 결정 (Step 3-UX 진행 중 또는 본격 launch 시점):
+
+- D7 (carry-over): D5 랭킹 서비스 도입 여부
+- D8 (carry-over): D2 약점 영역 α/β 가중치 정밀 조정
+- D9 (carry-over): 학습 데이터 telemetry (게이지 추가 — memory `project_engine_observability`)
 
 ---
 
