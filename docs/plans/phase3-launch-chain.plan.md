@@ -182,13 +182,41 @@ Phase 2 Eval MVP 완전 종착 (14 CRIT 매트릭스 즉시 흡수 7/7 종결) �
 
 ## 6. 롤백 전략
 
-| Stage | 롤백 방법                                                                                                |
-| ----- | -------------------------------------------------------------------------------------------------------- |
-| A     | constants.ts revert + shared package 미사용 — 기존 PASSWORD_MIN_LENGTH=4 유지 (Phase 2 임시 정책 그대로) |
-| B     | rate-limit 추가 코드 주석 처리 — IP 기반 rate-limit만 활성 (현 상태 회귀)                                |
-| C     | migration 0030 rollback (DROP TABLE login_history) + routes.ts:303 UPDATE 복원                           |
+### 6.1 Stage 단위 롤백 방법
+
+| Stage | 롤백 방법                                                                                                                      |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------ |
+| A     | constants.ts revert + shared package 미사용 — 기존 PASSWORD_MIN_LENGTH=4 유지 (Phase 2 임시 정책 그대로)                       |
+| B     | rate-limit 추가 코드 주석 처리 — IP 기반 rate-limit만 활성 (현 상태 회귀)                                                      |
+| C     | migration 0030 rollback (DROP TABLE login*history; DELETE FROM d1_migrations WHERE name='0030*\*') + routes.ts:303 UPDATE 복원 |
 
 ★ 각 Stage는 **독립 commit + push** — production 영향 없는 변경부터 점진 적용. Stage A/B는 prod env vars 갱신 전까지는 코드 변경만으로 prod 영향 0.
+
+### 6.2 부분 rollback 안전 매트릭스 (★ Stage D CRIT-P5-2 흡수)
+
+새벽 3시 on-call 시점에 즉흥 판단 차단 — 본 매트릭스를 따라 결정.
+
+| Rollback 조합           | 잔존 stage     | 위험 평가                                                                                    | 권고                                                                                        |
+| ----------------------- | -------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| **C only**              | A + B 유지     | 안전 — login_history 단절만, 인증 정책 유지                                                  | ★ login_history 장애 시 채택                                                                |
+| **B only**              | A + C 유지     | ★ **위험** — register rate-limit 제거 → multi-IP brute-force 노출. C는 audit 누적 (장점)     | ❌ 비권장 (rate-limit 별도 fix 우선)                                                        |
+| **A only**              | B + C 유지     | 안전 — env 분기 → 정적 정책 회귀. 단 Phase 3 toggle 의도 무효화                              | env 분기 자체 장애 시 채택                                                                  |
+| **B + C**               | A 유지         | ★ **위험** — brute-force 노출 + audit 단절 동시                                              | ❌ 비권장                                                                                   |
+| **A + C**               | B 유지         | 안전 — register rate-limit 유지 + 환경 분기 제거 + audit 단절                                | Phase 3 전체 chain 부분 되돌릴 때                                                           |
+| **A + B + C** (전체)    | 없음           | ★★ **고위험** — Phase 2 베이스라인 회귀: password 4자 + HIBP 미체크 + rate-limit 0 + audit 0 | ❌ 인증 도메인 전체 장애만 (sessions/JWT 영향). 운영팀 단독 결정 금지 — 진산 명시 승인 필수 |
+| **Stage D 자체 revert** | A + B + C 유지 | 안전 — schema drift 감지 + rollback matrix 제거. 본 chain 정상 동작                          | Stage D 신규 logger.error 노이즈 시                                                         |
+
+### 6.3 Migration 0030 rollback DDL (Stage D MAJ-12 흡수 일부)
+
+```sql
+-- 본 SQL은 production 적용 전 staging에서 dry-run 의무.
+-- 0030 적용 후 1주 이내 rollback 시점에만 실행 권장 (data loss 1주 분).
+PRAGMA foreign_keys = ON;
+DROP TABLE IF EXISTS login_history;
+DELETE FROM d1_migrations WHERE name = '0030_login_history.sql';
+```
+
+★ Migration rollback 이후 코드 deploy 시 routes.ts login_history INSERT 호출이 schema drift 분기로 진입 — Stage D logger.error remediation 메시지로 운영자 알림.
 
 ---
 

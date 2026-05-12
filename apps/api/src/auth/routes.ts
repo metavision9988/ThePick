@@ -387,11 +387,25 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
           .run(),
       );
     } catch (err) {
-      // 로그인 자체는 성공 — login_history INSERT 실패는 관찰성 손실만 (graceful)
-      logger.warn('login_history insert failed', {
-        userId: row.id,
-        cause: err instanceof Error ? err.message : String(err),
-      });
+      // Stage D CRIT-P5-1 흡수 — schema drift (login_history 테이블 부재) 자동 감지.
+      // 코드 deploy 후 migration 0030 미적용 시 'no such table: login_history' throw.
+      // graceful catch (login 자체는 성공) + schema drift는 CRITICAL 로깅으로 격리.
+      const errMsg = err instanceof Error ? err.message : String(err);
+      const isSchemaDrift = /no such table.*login_history/i.test(errMsg);
+      if (isSchemaDrift) {
+        logger.error('login_history schema drift — migration 0030 not applied', err, {
+          userId: row.id,
+          severity: 'critical',
+          remediation:
+            'Run: wrangler d1 migrations apply thepick-db-production --remote (apps/api/migrations/0030_login_history.sql)',
+        });
+      } else {
+        // transient D1 error (timeout / lock 등) — 관찰성 손실만
+        logger.warn('login_history insert failed (transient)', {
+          userId: row.id,
+          cause: errMsg,
+        });
+      }
     }
 
     // Step 1-4 — Access JWT + Refresh Session 발급 (ADR-005 §Addendum)
