@@ -157,6 +157,91 @@
 
 **범례:** ✅ 완료 / 🟡 진행 중 / 🔴 대기 (Phase 1 차단 게이트) / ⚪ Phase 2 이월
 
+### Phase 1 closeout 이후 progression — Session 040~069 (★ Session 069 sync)
+
+```
+Phase 1 closeout (Session 039) 이후 progression
+│
+├── Phase 2 Eval MVP (Session 040~064, 25 세션) ........................ ✅ 종착
+│   │
+│   ├── BATCH 적재 chain — 1~6 + R2 누적 (Knowledge Graph)
+│   │   ├── BATCH-1 v2 재추출 + KG JSON 생성 .......................... ✅ Session 040~041
+│   │   ├── BATCH-2~6 인덱스 적재 + 진산 검수 chain ................... ✅ Session 042~058
+│   │   ├── BATCH-R2 인덱스 회복 + revision_changes 누적 .............. ✅ Session 058~060
+│   │   └── 누적: 767 노드 / 1223 엣지 / 39 revision_changes
+│   │
+│   ├── Phase 2 평가 환경 코어 (Step 1~5, Session 061~064)
+│   │   ├── Step 1 admin G5.5 부트스트랩 414건 active approved ........ ✅ 2d53a9e (Session 061)
+│   │   ├── Step 2 /api/study/{next,grade} 라우트 (L3) ............... ✅ c9c5532 (Session 061)
+│   │   ├── Step 3 /study 페이지 + Ctrl+Enter 평가 UX ................ ✅ d5101db (Session 062)
+│   │   ├── Step 4 4-Pass 독립 리뷰 CRIT 3건 흡수 (G8 PASS) .......... ✅ f98532d (Session 063)
+│   │   └── Step 5 Pages thepick-study + CORS + M6 인증 UI ........... ✅ 661dccc (Session 064)
+│   │
+│   ├── 신규 ADR 본 phase 진입 트리거: ADR-030 (Session 038~039 BATCH-1 chain 신설)
+│   └── 마이그레이션 0019 ~ 0027 (Pattern-H + review_queue 누적 8건) .. ✅ Session 040~060
+│
+├── Phase 2.5 인증 정책 chain (Session 065~066, 2 세션) ............... ✅ 종착
+│   │
+│   ├── ADR-034 평가 환경 비밀번호 정책 임시 완화 ..................... ✅ 65ba0bf (Session 065)
+│   │   └── PASSWORD_MIN_LENGTH 8 → 4 + HIBP disable (평가 환경 한정)
+│   ├── ADR-035 PBKDF2 100k Workers 호환 (register 500 해소) .......... ✅ 661c320 (Session 065)
+│   │   └── 마이그레이션 0028 PBKDF2_ITERATIONS 600k → 100k
+│   ├── ADR-036 Cookie SameSite cross-origin (pages.dev ↔ workers.dev) ✅ 4db5527 (Session 065)
+│   │   └── authCookieSameSite(environment) 환경별 분기
+│   │
+│   └── 9 에이전트 통합 리뷰 (4-Pass × 3 + 5-페르소나 1회) — Session 066
+│       ├── 4-Pass × 3 (silent-failure-hunter + backend + security) ... ✅ Session 066
+│       ├── 5-페르소나 1회 (refactor + perf + quality + backend + devops) ✅ Session 066
+│       ├── 14 CRIT 매트릭스 (C-01 ~ C-14) ............................ ✅ Session 066~068
+│       └── 누적: CRIT 5건 흡수 (C-01/02/06/07/08) + MAJOR 6건 즉시 흡수
+│
+├── Phase 3 launch chain Stage A~E (Session 067~068, 2 세션) .......... ✅ 종착
+│   │
+│   ├── Stage A — Foundation (C-05 + C-03) ............................ ✅ 2395851
+│   │   ├── C-05 PASSWORD_MIN packages/shared 단일 source-of-truth
+│   │   └── C-03 임시 정책 env 분기 (ADR-034/035/036 toggle 자동화)
+│   ├── Stage B — register 강화 (C-04 + C-09) ......................... ✅ 5d85028
+│   │   ├── C-04 register email rate-limit (5/600s, 다중 IP brute-force)
+│   │   └── C-09 verify-engine-contracts ADR-034 skip 자동 알람 (Cat 7)
+│   ├── Stage C — audit trail (C-12) ★ 14 CRIT 5/5 종결 ............... ✅ 20e1ff5
+│   │   └── login_history audit trail + 마이그레이션 0030
+│   ├── Stage D — P5 신규 CRIT 2건 흡수 ............................... ✅ 630c0a6
+│   │   └── CRIT-P5-1/-2 schema drift 감지 + 5-페르소나 통합 보고서 영속
+│   └── Stage E — 메타 5-페르소나 7 CRIT 흡수 ......................... ✅ ec0f922
+│       ├── PBKDF2 timing oracle (HIBP env enumerate 누설 봉합)
+│       ├── refresh audit hole (event_type 컬럼 + 마이그레이션 0031)
+│       ├── PBKDF2 upgrade carry-over chain
+│       ├── ADR-037 governance 신설 (임시 ADR template + verify gate carry-over)
+│       └── AuthForm 422 UX
+│
+├── Phase 3 launch 직전 production deploy chain Step 1-5 (Session 069 본 회차) ✅ 종착
+│   ├── Step 1 migration 0030 + 0031 production apply ................. ✅ Session 069
+│   ├── Step 2 production secret 검증 (JWT/IP_PEPPER/MOCK/ADMIN) ...... ✅ Session 069
+│   ├── Step 3 apps/api production redeploy (Version 02267900) ........ ✅ Session 069
+│   ├── Step 4 smoke test (login_history baseline 0 → 1 row) .......... ✅ Session 069
+│   └── Step 5 ADR-034/035/036 retrofit + migration status 영속 ....... ✅ a5a8dac (Session 069)
+│
+└── Phase 3 launch ⚪ 후속 quarterly carry-over (Session 070+ 의무)
+    ├── checkAdrTemporaryPolicyExpiry() verify gate 신규 .............. ⚪ Session 070+
+    ├── FakeDb → in-memory SQLite 전환 ............................... ⚪ Session 070+
+    ├── MAJ-5 hashIp 중복 호출 통합 .................................. ⚪ Session 070+
+    ├── users.lastLoginAt 폐기 마이그레이션 0032 ..................... ⚪ Session 070+
+    ├── admin login_history 조회 API ................................. ⚪ Session 070+
+    ├── 5-페르소나 P-α/β/γ/δ/ε MINOR 16 dedupe 매트릭스 .............. ⚪ Session 070+
+    └── 학습 UX plan (docs/plans/phase3-learning-ux-modes.plan.md) ... ⚪ Phase 3 launch 1주 직전
+```
+
+**누적 통계 (Session 040~069, 30개 세션)**:
+
+- 신규 ADR: 8건 (ADR-030 ~ ADR-037)
+- 신규 마이그레이션: 13건 (0019 ~ 0031, 본 chain BATCH + 인증 + audit 흡수)
+- 4-Pass 리뷰 누적: 12회+ (Phase 2 Step 4 + Stage A/B/C 각 1 + 14 CRIT chain 다회)
+- 5-페르소나 리뷰 누적: 4회 (Session 066 1차 + Stage D P5 + Stage E 메타 5-페르소나 + 14 CRIT 매트릭스)
+- CRITICAL 흡수: **21건** (14 CRIT 매트릭스 5/5 + P5 신규 2건 + 메타 5-페르소나 7건 + Phase 2 Step 4 3건 dedupe)
+- BATCH 적재 누적: 767 노드 / 1223 엣지 / 39 revision_changes
+- production migration: 0001 ~ 0031 (31개 완전 적용)
+- production Worker Version: 02267900-7171-4526-a73e-b6f42ce48737 (Session 069 baseline)
+
 ---
 
 ## 2. Gantt Chart (시간 압축 — 2일 농축)
@@ -274,6 +359,57 @@ gantt
 
 미래 일정 (5-03 이후) 은 추정 — 진산님 트리거 시점에 따라 변동.
 
+### Phase 1 closeout 이후 Gantt — Session 040~069 (★ Session 069 sync)
+
+```mermaid
+gantt
+    title Phase 2/2.5/3 progression — Session 040~069 (10일 농축)
+    dateFormat YYYY-MM-DD
+    axisFormat %m/%d
+
+    section Phase 2 Eval MVP BATCH
+    BATCH-1 v2 재추출 + KG JSON :done, p2_b1, 2026-05-04, 2d
+    BATCH-2~6 인덱스 적재        :done, p2_b26, 2026-05-06, 4d
+    BATCH-R2 회복                :done, p2_br2, 2026-05-08, 2d
+
+    section Phase 2 평가 코어
+    Step 1 admin G5.5 부트스트랩    :done, p2_s1, 2026-05-08, 1d
+    Step 2 /api/study/next+grade    :done, p2_s2, 2026-05-08, 1d
+    Step 3 /study 페이지            :done, p2_s3, 2026-05-09, 1d
+    Step 4 4-Pass CRIT 3건 흡수     :done, p2_s4, 2026-05-09, 1d
+    Step 5 Pages + CORS + M6 인증   :done, p2_s5, 2026-05-10, 1d
+
+    section Phase 2.5 인증 정책
+    ADR-034 평가 password 완화      :done, p25_a34, 2026-05-10, 1d
+    ADR-035 PBKDF2 100k Workers     :done, p25_a35, 2026-05-10, 1d
+    ADR-036 SameSite cross-origin   :done, p25_a36, 2026-05-10, 1d
+    9 에이전트 통합 (4-Pass×3+5P)   :done, p25_9a, 2026-05-11, 1d
+
+    section Phase 3 launch chain Stage A~E
+    Stage A Foundation C-05+C-03    :done, p3_sa, 2026-05-12, 1d
+    Stage B register C-04+C-09      :done, p3_sb, 2026-05-12, 1d
+    Stage C audit C-12 14/14 종결   :done, p3_sc, 2026-05-12, 1d
+    Stage D P5 CRIT 2건             :done, p3_sd, 2026-05-12, 1d
+    Stage E 메타 5P 7 CRIT          :done, p3_se, 2026-05-12, 1d
+
+    section Phase 3 launch 직전 deploy
+    Step 1 migration 0030+0031      :done, p3_st1, 2026-05-12, 1d
+    Step 2 secret 검증              :done, p3_st2, 2026-05-12, 1d
+    Step 3 apps/api redeploy        :done, p3_st3, 2026-05-12, 1d
+    Step 4 smoke test               :done, p3_st4, 2026-05-12, 1d
+    Step 5 ADR retrofit + WBS sync  :done, p3_st5, 2026-05-12, 1d
+
+    section Phase 3 launch 후속 carry-over
+    quarterly 6 항목                :         p3_qc, 2026-05-13, 7d
+    학습 UX plan (Phase 3 1주 직전) :         p3_ux, 2026-05-20, 5d
+```
+
+**Phase 2/2.5/3 chain 추정 일정 주의**:
+
+- 일자는 commit timestamp + handoff 작성일 기준. mermaid gantt 최소 단위 1일이라 동일 일자 다중 task는 시각상 stack됨.
+- Session 069 deploy chain Step 1-5는 실제 ~30분~1시간 작업이나 가시화 위해 1d 표기.
+- "Phase 3 launch 후속 carry-over"는 trigger 의존 — 진산 결정 시점에 따라 변동.
+
 ---
 
 ## 3. 카테고리별 진척 (Cat 1~8 — verify-engine-contracts.ts 자동 게이트)
@@ -307,6 +443,21 @@ gantt
 |  **P2**  | C-PERF-4 parseFormula cache key                      | performance |  2h  | Phase 2 진입 직전 의무 (한도 변경 시 stale cache)                                                   |
 |  **P3**  | C-RF-1 resolveLoggerEnv 단일 출처                    | refactoring |  1d  | 6개월 부채 (Phase 1 종료 게이트 또는 Phase 2)                                                       |
 |  **P3**  | C-RF-2 withRetry 통합                                | refactoring |  1d  | 6개월 부채 (Phase 1 종료 게이트 또는 Phase 2)                                                       |
+
+### ★ Session 069 sync — Phase 3 launch 후속 quarterly carry-over (★ Session 070+ 의무, handoff-078 §"다음 세션 할 일" §1)
+
+| 우선순위 | 항목                                                                         | 영역              | 분량 | 비고                                                                                             |
+| :------: | :--------------------------------------------------------------------------- | :---------------- | :--: | :----------------------------------------------------------------------------------------------- |
+|  **P0**  | checkAdrTemporaryPolicyExpiry() verify gate 신규                             | tooling/ADR-037   | 1-2h | ADR-037 §6 — `Accepted (temporary)` ADR deadline 30일 이내 자동 알람. Session 069 retrofit 후속. |
+|  **P0**  | 학습 UX plan 본격 (docs/plans/phase3-learning-ux-modes.plan.md)              | UX/Phase 3 launch |  1d  | memory `project_ux_north_star_phase3` 정합. Phase 3 launch 1주 직전 chain 진입 전 완성 의무.     |
+|  **P1**  | FakeDb → in-memory SQLite 전환                                               | testing           |  1d  | Session 068 5-페르소나 MAJOR-1 dedupe. routes.test.ts mock 정합성 강화.                          |
+|  **P1**  | MAJ-5 hashIp 중복 호출 통합                                                  | performance       |  5m  | routes.ts:330+410 두 곳 같은 IP 2회 hash 부담 제거. 5분 trivial.                                 |
+|  **P1**  | admin login_history 조회 API                                                 | admin observ.     |  4h  | admin-web /telemetry 또는 별도 admin page. Phase 3 launch 후 user 행동 forensics.                |
+|  **P2**  | users.lastLoginAt 폐기 마이그레이션 0032                                     | DB 스키마         | 30m  | 0030 backward-compat 의무 해소. SUPERSEDES 0030 + sessions/admin 영향 확인.                      |
+|  **P2**  | 5-페르소나 P-α/β/γ/δ/ε MINOR 16 dedupe 매트릭스                              | review ops        |  2h  | Session 068 메타 5-페르소나 carry-over. Stage E 통합 보고서 정리.                                |
+|  **P2**  | C-10 TD-VRF-001 비결정성 100회 누적 동정                                     | 메타 안정성       |  1d  | Session 067~069 안정 PASS. 100회 자동 재현 시도 결정.                                            |
+|  **P2**  | admin-web GraphVisualizer NodeType TABLE/ROW_HEADER/COL_HEADER/CELL retrofit | UI/ADR-032        |  4h  | Stage E carry-over. ADR-032 v1.5.0 정합 부족 부채 정리.                                          |
+|  **P3**  | WBS §5 Devil's Advocate Ledger Phase 2/3 chain TD 추가                       | doc/ledger        |  1h  | Phase 2 (Session 040~064) + Phase 2.5 + Phase 3 chain 신규 TD 누적 reconstruction.               |
 
 ---
 
@@ -346,6 +497,34 @@ gantt
 | `feedback_document_first_workflow`               | ✅ 정합 (본 WBS 문서 영속)                                                                                                                                                 |
 | `project_anthropic_cap_pre_install`              | 🟡 BATCH-1 진입 직전 활성 (handoff-035 §1 명시)                                                                                                                            |
 
+### ★ Session 069 sync — 신규 memory 정합 (Phase 2/2.5/3 chain 누적)
+
+| 메모리                                               | 본 시점 상태 (Session 069 종착)                                                                                            |
+| :--------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------- |
+| `project_v3_final_multi_exam_deferred`               | ✅ Year 1 9테이블 유지 정합 (Phase 3 launch chain audit trail 확장은 별도 — login_history 신규)                            |
+| `project_vision_mvp_generalization`                  | ✅ 자격증 자동 훈련 엔진 MVP 진행 (Phase 2 Eval MVP G9 production browser 학습 검증 종착)                                  |
+| `feedback_copyright_skip`                            | ✅ 정합 (감사/리뷰/plan에서 재언급 0건)                                                                                    |
+| `project_launch_legal_bundle_deferred`               | 🟡 Phase 3 launch 1주 직전 활성 (ADR-034/035/036 복원 chain + 법무 3종 + 회원탈퇴 + 이메일 인증 + custom domain + UX 묶음) |
+| `project_source_citation_requirement` (FK 근거)      | 🟡 BATCH 적재 단계별 영속 (모든 생성 콘텐츠 근거 FK 보관 chain)                                                            |
+| `project_slm_lora_deferred_2027`                     | ⚪ 2027-04 동결 (트리거 시점 환기)                                                                                         |
+| `feedback_focus_reliability_not_schedule`            | ✅ 정합 (본 chain 안정성/신뢰성/항상성 집중 — Phase 3 launch deploy 5/5 종착)                                              |
+| `project_batch_load_workflow`                        | ✅ Claude Code 직접 처리 (Opus 4.7) — BATCH-1~6 + R2 정합                                                                  |
+| `project_content_build_engine_as_core`               | ✅ 무결성 영속 (ADR-011 + docs/architecture/ 7 문서 + 4 코어 모듈)                                                         |
+| `feedback_document_first_workflow`                   | ✅ 정합 (본 WBS + handoff-078 + ADR-037 본 chain 영속)                                                                     |
+| `feedback_two_fix_failures_zoom_out`                 | ✅ 정합 (verify 비결정성 TD-VRF-001 ledger 명시)                                                                           |
+| `project_anthropic_cap_pre_install`                  | 🟡 Phase 2 진입 시 의무 활성 (망각 차단 hook 필요)                                                                         |
+| `project_completion_notification_obligation`         | ✅ Session 068 14 CRIT 5/5 종결 + Session 069 deploy 5/5 종착 명시 영속                                                    |
+| `project_engine_observability` (8 게이지)            | 🟡 6 게이지 wire-up + login_history (audit trail) 추가 게이지 검토 carry-over                                              |
+| `feedback_review_filename_pattern` (review-\*)       | ✅ 정합 (Phase 2/3 chain `review-202605*` 영속)                                                                            |
+| `reference_quality_wbs_dashboard`                    | ✅ 본 WBS 살아있는 문서 — Session 069 sync 진행 중                                                                         |
+| `feedback_other_exams_ocr_deferred`                  | ✅ 정합 (손해평가사 Claude multimodal 충분, 다른 시험 OCR 후순위)                                                          |
+| `project_table_processing_core_capability` (ADR-032) | 🟡 admin-web GraphVisualizer NodeType retrofit carry-over (§4 P2)                                                          |
+| `feedback_pat_plaintext_ok`                          | ✅ 정합 (GitHub PAT carry-over 0건)                                                                                        |
+| `feedback_full_autonomy`                             | ✅ 정합 (Session 069 production deploy 4 단계 자동 진행 — secret list / migration apply / deploy / D1 query)               |
+| `project_custom_domain_thepick_app_collision`        | 🟡 Phase 3 launch 직전 후보 재검토 carry-over (ADR-036 trigger)                                                            |
+| `project_ux_north_star_phase3`                       | 🟡 §4 P0 학습 UX plan 신규 작성 의무 (Session 070+ 활성)                                                                   |
+| `feedback_test_env_password_dont_nag` (Session 069)  | ✅ 정합 (Session 069 진산 발화 후 영속 — 평가 환경 4자리 password 권고 X)                                                  |
+
 ---
 
 ## 7. 다음 단계 (진산님 결정 트리거 — handoff-035 §3.2 그대로 유효)
@@ -357,6 +536,19 @@ gantt
 |  3  | "admin-web 먼저"                             | 3-4h | CRIT-QPHASE1-1 단독                                                                |
 |  4  | "telemetry-client 먼저"                      | 2-3h | CRITICAL-DO-S1-1 단독                                                              |
 |  5  | "BATCH-1 진입 직전 후속 PR 일괄"             | 1주  | Group A 잔여 2건 + Phase B + production staging dry-run + Anthropic cap            |
+
+> ★ 상기 5 트리거는 Phase 1 closeout baseline. 본 시점 (Session 069 종착)에는 모두 ✅ 해소되거나 자연 dissolve (BATCH-1 적재 Session 040~ chain으로 진행).
+
+### ★ Session 069 sync — Phase 3 launch 후속 결정 트리거
+
+|  #  | 트리거                                                                      | 분량 | 영역                                                                                            |
+| :-: | :-------------------------------------------------------------------------- | :--- | :---------------------------------------------------------------------------------------------- |
+|  1  | **"학습 UX plan 본격"** ★ 진산 명시 (memory `project_ux_north_star_phase3`) | 1d   | docs/plans/phase3-learning-ux-modes.plan.md 신규 — 객관식/주관식/보기 랜덤/학습 모드            |
+|  2  | "ADR-037 verify gate 신규"                                                  | 1-2h | checkAdrTemporaryPolicyExpiry() — 30일 이내 deadline 자동 알람 (Session 069 retrofit 직접 후속) |
+|  3  | "quarterly carry-over 6 항목 일괄"                                          | 2-3d | FakeDb→SQLite + hashIp dedup + admin API + lastLoginAt 폐기 + MINOR 매트릭스 + GraphVisualizer  |
+|  4  | "Phase 3 launch 1주 스프린트 진입"                                          | 1주  | ADR-034/035/036 복원 chain + 법무 3종 + 회원탈퇴 + 이메일 인증 + custom domain + 학습 UX 묶음   |
+|  5  | "WBS reconstruction 본격 후속"                                              | 2-4h | §5 Devil's Advocate Ledger Phase 2/3 chain TD 추가 + §3 카테고리 Cat 9/10 누적 + master-test v3 |
+|  6  | "C-10 TD-VRF-001 100회 누적 동정"                                           | 1d   | verify-determinism.ts 자동 100회 재현 + drift signal 영속                                       |
 
 ---
 
@@ -372,9 +564,23 @@ gantt
 
 ---
 
-## 9. ★★ Session 040~069 progression reconstruction carry-over (★ Session 070+ 의무)
+## 9. ★★ Session 040~069 progression reconstruction (★ Session 069 본격 sync 완료 + 잔여 carry-over)
 
-본 WBS는 Phase 1 closeout (Session 039) baseline. Session 040~069 30 세션 진척이 §0 Executive Summary에만 압축 반영. **§1 WBS 트리 / §2 Gantt / §4 4-Pass 매트릭스 / §6 memory 정합표** 본격 reconstruction은 Session 070+ chunk 분할 의무 (handoff-078 §"다음 세션 할 일" §4 정합).
+**★ Session 069 본격 sync 완료 (2026-05-12)**:
+
+- §0 Executive Summary: Phase 3 launch 직전 deploy chain 종착 정합 ✅
+- §1 WBS 트리: Phase 2 Eval MVP + 2.5 인증 chain + 3 chain Stage A~E + Step 1-5 chain 본격 sync ✅
+- §2 Gantt: Phase 2/2.5/3 chain 10일 농축 mermaid gantt 추가 ✅
+- §4 잔여 task 매트릭스: Phase 3 launch 후속 quarterly carry-over 10 항목 추가 ✅
+- §6 memory 정합표: 23 신규 memory 매핑 추가 ✅
+- §7 다음 단계: Phase 3 launch 후속 결정 트리거 6종 추가 ✅
+
+**잔여 carry-over (Session 070+ chunk 분할 의무)**:
+
+- §3 카테고리별 진척 — Cat 9 (Table-as-Micro-KG ADR-032) + Cat 10 (Drizzle/SQL enum 정합) 누적 detail
+- §5 Devil's Advocate Ledger — Phase 2/3 chain 신규 TD 누적 (예: TD-PHASE3-1 timing oracle / TD-PHASE3-2 refresh audit / TD-PHASE3-3 PBKDF2 upgrade chain)
+- master-test-checklist v3 갱신 (Cat 5 분리 5A/5B + footnote + Cat 9/10 추가)
+- tech-debt.md TD-DO-053~056 + Group B/C 28~30건 + Phase 2/3 chain TD 누적
 
 본격 reconstruction 시 다음 자료를 정합 출처로 흡수:
 
@@ -419,6 +625,6 @@ gantt
 
 ---
 
-**작성**: Session 035 (Claude Opus 4.7 1M context) → Session 039 갱신 → **Session 069 종착 부분 sync** (Phase 3 launch 직전 production deploy chain Step 1-5)
-**다음 갱신**: Session 070+ chunk 분할 reconstruction (Session 040~069 30 세션 진척 §1~§7 본격 sync)
+**작성**: Session 035 (Claude Opus 4.7 1M context) → Session 039 갱신 → **Session 069 종착 본격 sync** (§0 + §1 + §2 + §4 + §6 + §7 — Phase 2/2.5/3 chain 30 세션 milestone 흡수)
+**다음 갱신**: Session 070+ — §3 Cat 9/10 누적 + §5 Devil's Advocate Ledger Phase 2/3 신규 TD + master-test-checklist v3
 **일자**: 2026-05-02 ~ 2026-05-12 KST
