@@ -7,8 +7,13 @@
  */
 
 import { useEffect, useState } from 'react';
+import { PASSWORD_MIN_LENGTH_RELAXED } from '@thepick/shared';
 
 const API_BASE: string = import.meta.env.PUBLIC_API_BASE_URL ?? 'http://localhost:8787';
+
+// Phase 2 default — env-based 정책은 서버에서 추가 enforcement (C-03).
+// 클라이언트는 floor만 hint, 실제 정책 미충족 시 서버가 422 응답.
+const PASSWORD_MIN_HINT = PASSWORD_MIN_LENGTH_RELAXED;
 
 type Mode = 'login' | 'register';
 type Phase = 'idle' | 'submitting' | 'error';
@@ -110,7 +115,7 @@ export function AuthForm() {
           <input
             type="password"
             required
-            minLength={4}
+            minLength={PASSWORD_MIN_HINT}
             autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}

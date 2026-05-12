@@ -43,7 +43,12 @@ import {
   type LoggerEnvironment,
 } from '@thepick/shared';
 import { D1_UNIQUE_CONSTRAINT_PATTERN, withRetry } from '../middleware/retry.js';
-import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from './constants.js';
+import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  getPasswordMinLength,
+  isHibpEnabled,
+} from './constants.js';
 import { performDummyVerify } from './dummy-verify.js';
 import { checkPwned } from './hibp.js';
 import { hashPassword, verifyPassword } from './password.js';
@@ -70,6 +75,12 @@ interface AuthBindings {
   readonly ENVIRONMENT?: string;
   readonly JWT_SECRET?: string;
   readonly IP_PEPPER?: string;
+  /** C-03 env 분기 — Phase 3 launch 직전 '8' toggle. 미설정 시 RELAXED(4). */
+  readonly PASSWORD_MIN_LENGTH?: string;
+  /** C-03 env 분기 — Phase 3 launch 직전 'true' toggle. 미설정 시 disabled. */
+  readonly HIBP_ENABLED?: string;
+  /** C-03 env 분기 — ADR-036 §"복원 의무" Phase 3 launch 직전 'Strict' toggle. */
+  readonly AUTH_COOKIE_SAMESITE?: 'Strict' | 'Lax' | 'None';
 }
 
 const KNOWN_ENVIRONMENTS: ReadonlySet<LoggerEnvironment> = new Set<LoggerEnvironment>([
@@ -92,6 +103,8 @@ function buildLogger(env: AuthBindings): Logger {
   }).child({ module: 'auth' });
 }
 
+// Zod 스키마는 정책 floor(`PASSWORD_MIN_LENGTH` = RELAXED)만 검증. 환경별 정책 추가 enforcement는
+// `enforcePasswordPolicy()` 로 분리 (C-03 env 분기 — Phase 3 launch 직전 '8' toggle 자동화).
 const registerSchema = z.object({
   email: z.string().email().max(254),
   password: z.string().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH),
@@ -102,6 +115,29 @@ const loginSchema = z.object({
   email: z.string().email().max(254),
   password: z.string().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH),
 });
+
+/**
+ * 환경 기반 password 정책 enforcement (C-03 env 분기).
+ *
+ * Zod 스키마 통과 후 env.PASSWORD_MIN_LENGTH 정책을 추가 검증.
+ * 미충족 시 Zod와 동일 형식의 422 `VALIDATION_ERROR` 응답을 위한 issue 반환.
+ *
+ * @returns `null` (통과) 또는 issue 객체 (정책 위반)
+ */
+function enforcePasswordPolicy(
+  password: string,
+  env: AuthBindings,
+): { code: 'too_small'; minimum: number; message: string } | null {
+  const minimum = getPasswordMinLength(env.PASSWORD_MIN_LENGTH);
+  if (password.length >= minimum) {
+    return null;
+  }
+  return {
+    code: 'too_small',
+    minimum,
+    message: `Password must contain at least ${minimum} character(s)`,
+  };
+}
 
 interface StoredUserRow {
   readonly id: string;
@@ -137,16 +173,25 @@ export function createAuthRoutes(): Hono<{ Bindings: AuthBindings }> {
     const { email, password, name } = parsed.data;
     const normalizedEmail = email.trim().toLowerCase();
 
+    // C-03 env 분기 — Zod floor 통과 후 환경별 정책 추가 검증.
+    const policyIssue = enforcePasswordPolicy(password, c.env);
+    if (policyIssue !== null) {
+      return c.json(
+        { error: 'VALIDATION_ERROR', issues: [{ path: ['password'], ...policyIssue }] },
+        422,
+      );
+    }
+
     const pwned = await checkPwned(password, logger);
-    // ★ Phase 2 Eval MVP 임시 — HIBP 'pwned' 분기 주석 처리 (ADR-034, Session 065 진산 명시 발화).
-    // 호출 + logging 보존 (audit trail), 'pwned' 응답이어도 register 통과.
-    // Phase 3 launch 직전 복원 의무: 아래 if 블록 주석 해제 + PASSWORD_PWNED 회귀 테스트 unskip.
-    // if (pwned.status === 'pwned') {
-    //   return c.json(
-    //     { error: 'PASSWORD_PWNED', message: AUTH_MESSAGES.REGISTER_PASSWORD_PWNED },
-    //     422,
-    //   );
-    // }
+    // C-03 env 분기 — HIBP 'pwned' 응답 처리 (ADR-034 §"복원 의무" 자동화).
+    //   - env.HIBP_ENABLED 미설정/'false' → 호출 + logging 보존, register 통과 (Phase 2 default)
+    //   - env.HIBP_ENABLED = 'true' → 'pwned' 응답 시 422 reject (Phase 3 toggle)
+    if (isHibpEnabled(c.env.HIBP_ENABLED) && pwned.status === 'pwned') {
+      return c.json(
+        { error: 'PASSWORD_PWNED', message: AUTH_MESSAGES.REGISTER_PASSWORD_PWNED },
+        422,
+      );
+    }
 
     let hashed;
     try {
@@ -515,14 +560,23 @@ function isSecureCookieEnv(environment: string | undefined): boolean {
 }
 
 /**
- * SameSite 환경별 분기 (ADR-036).
+ * SameSite 환경별 분기 (ADR-036 + C-03 env override).
  *
- * - production/staging: 'None' (cross-origin pages.dev ↔ workers.dev). Secure 강제.
- * - dev/test: 'Lax' (same-origin localhost, CSRF 방어 + GET top-level OK)
+ * 우선순위:
+ *   1. `env.AUTH_COOKIE_SAMESITE` (Strict|Lax|None) — Phase 3 launch 직전 toggle
+ *   2. 환경 기본값:
+ *      - production/staging: 'None' (cross-origin pages.dev ↔ workers.dev). Secure 강제.
+ *      - dev/test: 'Lax' (same-origin localhost, CSRF 방어 + GET top-level OK)
  *
- * Phase 3 launch 직전 custom domain 통합 시 'Strict'로 복원 의무 (ADR-005 정합).
+ * Phase 3 launch 직전 custom domain 통합 시 `AUTH_COOKIE_SAMESITE='Strict'` env 주입으로 복원 (ADR-036 §"복원 의무").
  */
-function authCookieSameSite(environment: string | undefined): 'Strict' | 'Lax' | 'None' {
+function authCookieSameSite(
+  environment: string | undefined,
+  override?: 'Strict' | 'Lax' | 'None',
+): 'Strict' | 'Lax' | 'None' {
+  if (override === 'Strict' || override === 'Lax' || override === 'None') {
+    return override;
+  }
   return isSecureCookieEnv(environment) ? 'None' : 'Lax';
 }
 
@@ -533,7 +587,7 @@ function setAuthCookies(
   environment: string | undefined,
 ): void {
   const secure = isSecureCookieEnv(environment);
-  const sameSite = authCookieSameSite(environment);
+  const sameSite = authCookieSameSite(environment, c.env.AUTH_COOKIE_SAMESITE);
   setCookie(c, ACCESS_TOKEN_COOKIE, accessToken, {
     httpOnly: true,
     secure,
@@ -552,7 +606,7 @@ function setAuthCookies(
 
 function clearAuthCookies(c: AuthContext, environment: string | undefined): void {
   const secure = isSecureCookieEnv(environment);
-  const sameSite = authCookieSameSite(environment);
+  const sameSite = authCookieSameSite(environment, c.env.AUTH_COOKIE_SAMESITE);
   deleteCookie(c, ACCESS_TOKEN_COOKIE, {
     path: ACCESS_TOKEN_COOKIE_PATH,
     secure,

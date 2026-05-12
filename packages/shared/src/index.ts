@@ -6,4 +6,5 @@ export * from './messages.js';
 export * from './constants/legal.js';
 export * from './constants/exam-ids.js';
 export * from './constants/auth.js';
+export * from './constants/password-policy.js';
 export * from './constants/claude-pricing.js';

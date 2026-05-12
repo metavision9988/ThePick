@@ -68,6 +68,31 @@ function buildFakeDb(): FakeDb {
           return stmt;
         },
         run: async () => {
+          if (/^INSERT INTO users/i.test(sql)) {
+            const [id, email, name, password_hash, password_salt, password_iterations] = bound as [
+              string,
+              string,
+              string | null,
+              string,
+              string,
+              number,
+            ];
+            void name;
+            for (const existing of users.values()) {
+              if (existing.email === email) {
+                throw new Error('UNIQUE constraint failed: users.email');
+              }
+            }
+            users.set(id, {
+              id,
+              email,
+              password_hash,
+              password_salt,
+              password_iterations,
+              status: 'active',
+            });
+            return { success: true, meta: { changes: 1 } };
+          }
           if (/^INSERT INTO sessions/i.test(sql)) {
             const [id, user_id, refresh_token_hash, expires_at, user_agent, ip_hash] = bound as [
               string,
@@ -174,6 +199,9 @@ interface EnvOverrides {
   readonly JWT_SECRET?: string;
   readonly IP_PEPPER?: string;
   readonly ENVIRONMENT?: string;
+  readonly PASSWORD_MIN_LENGTH?: string;
+  readonly HIBP_ENABLED?: string;
+  readonly AUTH_COOKIE_SAMESITE?: 'Strict' | 'Lax' | 'None';
 }
 
 function buildEnv(fake: FakeDb, overrides: EnvOverrides = {}) {
@@ -184,6 +212,9 @@ function buildEnv(fake: FakeDb, overrides: EnvOverrides = {}) {
     AUTH_RATE_LIMITER_EMAIL: allowAll,
     JWT_SECRET: 'JWT_SECRET' in overrides ? overrides.JWT_SECRET : VALID_JWT_SECRET,
     IP_PEPPER: 'IP_PEPPER' in overrides ? overrides.IP_PEPPER : IP_PEPPER,
+    PASSWORD_MIN_LENGTH: overrides.PASSWORD_MIN_LENGTH,
+    HIBP_ENABLED: overrides.HIBP_ENABLED,
+    AUTH_COOKIE_SAMESITE: overrides.AUTH_COOKIE_SAMESITE,
   };
 }
 
@@ -565,5 +596,80 @@ describe('POST /api/auth/refresh (Step 1-4 rotation + reuse detection)', () => {
       buildEnv(fake, { JWT_SECRET: undefined }),
     );
     expect(res.status).toBe(500);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// /register — Phase 3 launch chain C-03 env-based PASSWORD_MIN_LENGTH enforcement
+//
+// Pass 1 SURGEON 반론 R1 흡수 — env=8 toggle 시 enforce 회귀 차단 (integration gap).
+// ---------------------------------------------------------------------------
+
+describe('POST /api/auth/register → env-based password policy (C-03)', () => {
+  it('default env (Phase 2) — 4자 password 통과 (RELAXED 정책)', async () => {
+    const fake = buildFakeDb();
+    const app = createAuthRoutes();
+    const res = await app.request(
+      '/register',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'newuser@example.com', password: 'abcd' }),
+      },
+      buildEnv(fake), // PASSWORD_MIN_LENGTH undefined → RELAXED(4)
+    );
+    expect(res.status).toBe(201);
+  });
+
+  it('PASSWORD_MIN_LENGTH="8" toggle — 5자 password reject (Phase 3 정책)', async () => {
+    const fake = buildFakeDb();
+    const app = createAuthRoutes();
+    const res = await app.request(
+      '/register',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'newuser2@example.com', password: 'abcde' }),
+      },
+      buildEnv(fake, { PASSWORD_MIN_LENGTH: '8' }),
+    );
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as {
+      error: string;
+      issues?: Array<{ code: string; minimum: number }>;
+    };
+    expect(body.error).toBe('VALIDATION_ERROR');
+    expect(body.issues?.[0]?.code).toBe('too_small');
+    expect(body.issues?.[0]?.minimum).toBe(8);
+  });
+
+  it('PASSWORD_MIN_LENGTH="8" toggle — 8자 password 통과', async () => {
+    const fake = buildFakeDb();
+    const app = createAuthRoutes();
+    const res = await app.request(
+      '/register',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'newuser3@example.com', password: 'abcdefgh' }),
+      },
+      buildEnv(fake, { PASSWORD_MIN_LENGTH: '8' }),
+    );
+    expect(res.status).toBe(201);
+  });
+
+  it('PASSWORD_MIN_LENGTH 무효 입력 ("3") — RELAXED 폴백 (4자 통과)', async () => {
+    const fake = buildFakeDb();
+    const app = createAuthRoutes();
+    const res = await app.request(
+      '/register',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'newuser4@example.com', password: 'abcd' }),
+      },
+      buildEnv(fake, { PASSWORD_MIN_LENGTH: '3' }), // below floor → RELAXED(4) 폴백
+    );
+    expect(res.status).toBe(201);
   });
 });

@@ -31,6 +31,19 @@ WEBHOOK_HMAC_SECRET_TOSSPAYMENTS = "dev-toss-secret-do-not-use-in-production-v1"
 JWT_SECRET = "dev-jwt-secret-do-not-use-in-production-32chars+v1"
 IP_PEPPER = "dev-ip-pepper-do-not-use-in-production-32chars+v1"
 
+# ------------------------------------------------------------
+# Phase 3 launch chain (Session 068, C-03) — env-based password 정책 분기.
+# Phase 2 default: PASSWORD_MIN_LENGTH=4 / HIBP=false / SameSite=환경 분기 (None for prod).
+# Phase 3 launch 직전 toggle:
+#   - PASSWORD_MIN_LENGTH = "8"
+#   - HIBP_ENABLED        = "true"
+#   - AUTH_COOKIE_SAMESITE = "Strict" (custom domain 통합 후)
+# 출처: docs/plans/phase3-launch-chain.plan.md §3 Stage A, ADR-034/035/036 §"복원 의무".
+# ------------------------------------------------------------
+PASSWORD_MIN_LENGTH = "4"
+HIBP_ENABLED = "false"
+# AUTH_COOKIE_SAMESITE 미설정 → 환경 기본값 (dev='Lax', staging/prod='None')
+
 [[d1_databases]]
 binding = "DB"
 database_name = "thepick-db-dev"
@@ -110,6 +123,9 @@ name = "thepick-api-staging"
 [env.staging.vars]
 ENVIRONMENT = "staging"
 API_VERSION = "0.1.0"
+# C-03 — Phase 3 launch chain env 분기 (staging은 default Phase 2 정책 유지).
+PASSWORD_MIN_LENGTH = "4"
+HIBP_ENABLED = "false"
 
 [[env.staging.d1_databases]]
 binding = "DB"
@@ -164,6 +180,13 @@ name = "thepick-api-production"
 [env.production.vars]
 ENVIRONMENT = "production"
 API_VERSION = "0.1.0"
+# C-03 — Phase 3 launch chain env 분기 (production은 Phase 2 default, launch 직전 toggle).
+# Phase 3 launch checklist:
+#   - PASSWORD_MIN_LENGTH = "8"           ★ ADR-034 복원
+#   - HIBP_ENABLED = "true"               ★ ADR-034 복원
+#   - AUTH_COOKIE_SAMESITE = "Strict"     ★ ADR-036 복원 (custom domain 통합 후)
+PASSWORD_MIN_LENGTH = "4"
+HIBP_ENABLED = "false"
 
 [[env.production.d1_databases]]
 binding = "DB"
