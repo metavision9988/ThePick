@@ -27,6 +27,7 @@
       "@thepick/formula-engine": ["packages/formula-engine/src"],
       "@thepick/learning-modes": ["packages/learning-modes/src"],
       "@thepick/quality": ["packages/quality/src"],
+      "@thepick/srs": ["packages/srs/src"],
       "@thepick/study-material-generator": ["packages/study-material-generator/src"],
       "@modules/*": ["modules/*/src"]
     }
