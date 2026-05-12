@@ -3,39 +3,66 @@
 > **살아있는 문서** — Group A 잔여 2건 흡수 시 / Phase B 흡수 시 / BATCH-1 진입 시점에 갱신.
 > handoff-N+1 작성 시 본 문서 status 동기화 의무.
 
-작성일: 2026-05-02 ~22:00 KST (Session 035) → 2026-05-03 ~02:40 KST 갱신 (Session 039 종료)
+작성일: 2026-05-02 ~22:00 KST (Session 035) → 2026-05-03 ~02:40 KST 갱신 (Session 039 종료) → **2026-05-12 KST Session 069 종착 부분 sync (§0 Executive Summary + footer)**
+
+> ★★ **본 sync 범위 한정**: Session 040~069 (30 세션) 전체 reconstruction은 carry-over.
+> §1 WBS 트리 + §2 Gantt + §4 ~§6 detail은 Session 070+ 별도 chunk reconstruction 의무 (handoff-078 §"다음 세션 할 일" §4 정합).
+> 본 Session 069 sync는 §0 Executive Summary + Phase progression footer만 갱신.
+
 정합 출처:
 
-- `.jjokjipge/handoff-session-039.md` §0~§7 (Session 038 종료)
-- `.jjokjipge/handoff-session-038.md` `.jjokjipge/handoff-session-037.md` `.jjokjipge/handoff-session-036.md` `.jjokjipge/handoff-session-035.md`
-- `.claude/reviews/phase1-tech-debt-20260502-index.md` (5-페르소나 통합)
-- `.claude/reviews/review-20260502-group-a-4pass-index.md` (Group A 4-Pass)
-- `.claude/reviews/review-20260502-telemetry-client-pass1234-index.md` (Step 037 telemetry-client 4-Pass)
-- `.claude/reviews/review-20260502-admin-web-vitest-pass1234.md` (Step 037 admin-web 4-Pass)
-- **`.claude/reviews/review-20260503-step039-adr030-index.md` (Step 039 ADR-030 회귀 fix 4-Pass — CRIT 2건 흡수)**
+- **`.jjokjipge/handoff-session-078.md` (Session 069 종착 — Phase 3 launch 직전 production deploy chain 5/5)** ★ 본 sync 1순위
+- **`.jjokjipge/handoff-session-077.md` (Session 068 종착 — Phase 3 launch chain Stage A~E + 14 CRIT 5/5 + P5 CRIT 2건 + 메타 5-페르소나 7 CRIT)**
+- **`.claude/reports/production-migration-status.md` (production D1 0001~0031 적용 chain)**
+- `.claude/reviews/review-20260512-132500-phase3-launch-chain-5-persona-integrated.md` (Phase 3 5-페르소나 통합)
+- Session 040~066 핸드오프 26건 + 통합 리뷰 보고서 다수 (전체 reconstruction carry-over)
+- (이하 Phase 1 baseline 정합 출처는 §1 WBS reconstruction 시 재정렬)
+- `.jjokjipge/handoff-session-039.md` §0~§7 (Session 038 종료, Phase 1 closeout baseline)
+- `.claude/reviews/phase1-tech-debt-20260502-index.md` (5-페르소나 Phase 1 통합)
 - `scripts/verify-engine-contracts.ts` (자동 게이트 baseline)
-- `.claude/reports/sprint1-step5-5-verify-session-038-entry-run{1,2}.json` (Step 038 진입 실측, deterministic PASS)
-- `.claude/reports/sprint1-step5-5-verify-session-039-entry-run{1,2}.json` (Step 039 진입 — 회귀 -17 detection)
-- `.claude/reports/sprint1-step5-5-verify-session-039-postfix-run{1,2}.json` (Step 039 코드 fix 후 PASS)
-- `.claude/reports/sprint1-step5-5-verify-session-039-final-run{1,2}.json` (Step 039 CRIT 2건 흡수 후 영속 PASS)
 
 ---
 
 ## 0. Executive Summary
 
-| 항목                  | 값                                                                                                                            |
-| :-------------------- | :---------------------------------------------------------------------------------------------------------------------------- |
-| 현재 위치             | **Phase 1 closeout** (Sprint 1 §5.5 완료, Group A 7/7 + Step 039 ADR-030 회귀 4-Pass CRIT 2건 흡수)                           |
-| 누적 테스트 (실측)    | **모노레포 1200 / 1200 PASS** (overallStatus PASS, Step 039 진입 -17 회귀 → CRIT 2건 흡수 후 영속 회복)                       |
-| 자동 게이트           | **5 PASS / 1 SKIP / 0 FAIL** (Cat 5B Phase 2 SKIP)                                                                            |
-| 누적 commits          | main +135 commits (Session 038 +3: 14a3968 + b96b2c1 + 73426e9. Session 039 commit 후보 정리 중)                              |
-| 차단 게이트 (BATCH-1) | **🟢 해소됨** — Group A 7/7 + Step 039 ADR-030 4-Pass CRIT 2건 흡수 + dual-schema dormancy 부재                               |
-| 이월 MAJOR            | **83건 누적** (77 + Step 039 신규 6: Pass 1+2 잔여 + Pass 3 M-1/M-2 + Pass 4 MAJOR 1, 본 세션 PWA db.ts +1 흡수)              |
-| 이월 CRITICAL         | **0건** — Step 039 4-Pass dedup CRIT 2건 (SCENARIO_MIGRATIONS dual-schema + chapter/section misattribution) 모두 본 세션 흡수 |
+> ★★ **Session 069 종착 시점 (2026-05-12 KST) sync**. Phase 1 baseline 값은 §"Phase 1 closeout baseline (history)" 보존.
+
+| 항목                           | 값                                                                                                                                                                            |
+| :----------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 현재 위치                      | **Phase 3 launch 직전 production deploy chain 종착** (Session 069 Step 1-5: migration 0030/0031 apply + redeploy + smoke + ADR-034/035/036 retrofit)                          |
+| 모노레포 흐름                  | Phase 1 closeout (Session 039) → Phase 2 Eval MVP (Session 040~064) → 4-Pass + 5-Persona 9 에이전트 통합 (Session 065~066) → Phase 3 launch chain (Session 067~068) → 본 세션 |
+| 누적 테스트 (Stage E baseline) | **apps/api 502 PASS / 2 skip + packages/shared 64 PASS** (Stage E 종착 baseline 유지, Session 069 회귀 0)                                                                     |
+| 자동 게이트                    | **7 PASS / 1 SKIP / 0 FAIL** (Cat 8 SKIP carry-over, Cat 9 Table-as-Micro-KG + Cat 10 Drizzle/SQL enum 정합 추가 후)                                                          |
+| production D1 마이그레이션     | **0001 ~ 0031 31개 chain 모두 적용 완료** (0030 login_history + 0031 event_type Session 069 신규 — `.claude/reports/production-migration-status.md` 정합)                     |
+| production Worker              | Version `02267900-7171-4526-a73e-b6f42ce48737` (Session 069 redeploy, Phase 3 launch chain Stage A~E 5 commit 활성)                                                           |
+| production audit trail         | login_history 1 row (smoke test 검증) — event_type='login', ip_hash 정합, ISO 8601 + ms timestamp                                                                             |
+| 누적 commits                   | main `a5a8dac` HEAD (Session 069 종착) — Session 039~068 +N commits (정확치 reconstruction carry-over)                                                                        |
+| 이월 CRITICAL                  | **0건** — 14 CRIT 매트릭스 (Session 065 9 에이전트) 5/5 + P5 신규 CRIT 2건 (Stage D) + 메타 5-페르소나 7 CRIT (Stage E) 모두 흡수 완료                                        |
+| 이월 MAJOR                     | Phase 3 chain carry-over 16건 (5-페르소나 P-α/β/γ/δ/ε MINOR dedupe 매트릭스) + Phase 1 baseline 83건 (reconstruction carry-over)                                              |
+| Hard Rule 17 위반              | **0건** (Session 069 verify-engine-contracts PASS 정합)                                                                                                                       |
+
+### Session 069 본 회차 핵심 진척 (Phase 3 launch 직전 의무 5/5)
+
+1. ★ production migration **0030 (login_history) + 0031 (event_type 컬럼)** apply — Stage C C-12 audit trail + Stage E P-α refresh audit hole 봉합
+2. ★ apps/api production redeploy — Phase 3 chain Stage A~E 5 commit 활성화
+3. ★ smoke test PASS — production `/api/auth/login` 200 → login_history baseline 0 → 1 row 검증 (event_type='login', ip_hash 정합)
+4. ★ ADR-034/035/036 **Accepted → Accepted (temporary)** retrofit (ADR-037 §"Retrofit 가이드라인" 정합) — 4 의무 필드 (만료 deadline + 복원 chain + 자동화 toggle 위치 + Governance) 명시
+5. ★ `.claude/reports/production-migration-status.md` 0030/0031 entry + detail 영속
 
 ---
 
 ## 1. WBS (Work Breakdown Structure)
+
+> ★★ **Session 069 sync**: 아래 트리는 Phase 1 closeout (Session 039) baseline. **Phase 2 Eval MVP + Phase 3 launch chain progression sync는 carry-over** (handoff-078 §"다음 세션 할 일" §4).
+> 본 시점 실 status:
+>
+> - Phase 0 ✅ + Phase 1 ✅ closeout
+> - Phase 2 Eval MVP ✅ (Session 040~064, 진산님 G9 production browser 학습 검증 종착)
+> - Phase 2.5 인증 정책 chain ✅ (Session 065~066 9 에이전트 통합 + 14 CRIT 매트릭스)
+> - Phase 3 launch chain Stage A~E ✅ (Session 067~068)
+> - **Phase 3 launch 직전 production deploy chain Step 1-5 ✅** (Session 069 본 회차)
+> - Phase 3 launch ⚪ 후속 quarterly carry-over 6 항목 미흡수 (handoff-078 §"다음 세션 할 일" §1)
+> - 학습 UX plan ⚪ Phase 3 launch 1주 직전 신규 (memory `project_ux_north_star_phase3.md`)
 
 ```
 쪽집게 엔진 품질 검증
@@ -342,3 +369,56 @@ gantt
 - BATCH-1 적재 진입 시 → §1 + §2 + §6 + §7 갱신
 - handoff-N+1 작성 시 → 본 문서 status 동기화 의무 (handoff body 와 본 문서 sync)
 - Sprint 2 ledger 진입 시 → §3 카테고리별 + §5 Devil's Advocate ledger 갱신
+
+---
+
+## 9. ★★ Session 040~069 progression reconstruction carry-over (★ Session 070+ 의무)
+
+본 WBS는 Phase 1 closeout (Session 039) baseline. Session 040~069 30 세션 진척이 §0 Executive Summary에만 압축 반영. **§1 WBS 트리 / §2 Gantt / §4 4-Pass 매트릭스 / §6 memory 정합표** 본격 reconstruction은 Session 070+ chunk 분할 의무 (handoff-078 §"다음 세션 할 일" §4 정합).
+
+본격 reconstruction 시 다음 자료를 정합 출처로 흡수:
+
+### Phase 2 Eval MVP (Session 040~064)
+
+- 진산님 G9 production browser 학습 검증 chain
+- AuthForm 422/500 진단 → ADR-034/035/036 신설
+- /study/ 진입 + /api/study/next 401 redirect 진단 → SameSite cross-site 봉합
+- 평가 신호 4 type 식별 carry-over (진산 발화)
+
+### Phase 2.5 인증 정책 chain (Session 065~066)
+
+- 9 에이전트 통합 리뷰 (4-Pass × 3 + 5-페르소나 1회 직전 baseline)
+- 14 CRIT 매트릭스 (C-01 ~ C-14)
+- 5-페르소나 통합 리뷰 보고서 + 4-Pass index
+
+### Phase 3 launch chain Stage A~E (Session 067~068)
+
+- Stage A (commit 2395851): C-05 PASSWORD_MIN shared + C-03 env toggle 자동화 (ADR-034/035/036)
+- Stage B (5d85028): C-04 register email rate-limit + C-09 ADR-034 skip 자동 알람
+- Stage C (20e1ff5): C-12 login_history audit trail (migration 0030 + 14 CRIT 5/5 종결)
+- Stage D (630c0a6): 5-페르소나 P5 CRIT-P5-1/-2 흡수 (schema drift 감지)
+- Stage E (ec0f922): 메타 5-페르소나 7 CRIT 흡수 (timing oracle + refresh audit + PBKDF2 upgrade + ADR-037 governance + AuthForm 422 UX)
+- 21 CRIT 흡수 누적 (14 매트릭스 + 9 신규)
+
+### Phase 3 launch 직전 production deploy chain (Session 069 본 회차)
+
+- Step 1: migration 0030/0031 production apply
+- Step 2: production secret 검증
+- Step 3: apps/api production redeploy (Version 02267900)
+- Step 4: smoke test PASS (login_history 1 row 검증)
+- Step 5: ADR-034/035/036 retrofit + production-migration-status.md 영속 (commit a5a8dac)
+
+### Phase 3 launch 후속 quarterly carry-over (Session 070+)
+
+- `checkAdrTemporaryPolicyExpiry()` verify gate 신규
+- FakeDb → in-memory SQLite 전환
+- MAJ-5 hashIp 중복 호출 통합
+- users.lastLoginAt 폐기 마이그레이션 0032
+- admin login_history 조회 API
+- 5-페르소나 P-α/β/γ/δ/ε MINOR 16 dedupe 매트릭스
+
+---
+
+**작성**: Session 035 (Claude Opus 4.7 1M context) → Session 039 갱신 → **Session 069 종착 부분 sync** (Phase 3 launch 직전 production deploy chain Step 1-5)
+**다음 갱신**: Session 070+ chunk 분할 reconstruction (Session 040~069 30 세션 진척 §1~§7 본격 sync)
+**일자**: 2026-05-02 ~ 2026-05-12 KST
