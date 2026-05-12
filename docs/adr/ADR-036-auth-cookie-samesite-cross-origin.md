@@ -2,8 +2,13 @@
 
 ## 상태
 
-Accepted (Session 065, 2026-05-10) — ADR-005 §Addendum 일부 supersedes.
-**Phase 3 launch 직전 custom domain 통합 + SameSite=Strict 복원 의무**.
+**Accepted (temporary)** (Session 065, 2026-05-10 → Session 069 ADR-037 retrofit 2026-05-12) — ADR-005 §Addendum partial-supersedes.
+
+- **결정일:** 2026-05-10
+- **만료 deadline:** Phase 3 launch 직전 (custom domain 통합 후 즉시 — `project_custom_domain_thepick_app_collision` carry-over 동기)
+- **복원 chain:** 본 ADR §"Phase 3 launch 직전 복원 의무" 5 항목
+- **자동화 toggle 위치:** `apps/api/src/auth/routes.ts` 의 `authCookieSameSite(environment)` 환경별 분기 함수 (현 production='None' default). custom domain 통합 후 `wrangler.toml` `[env.production.vars]` 의 `AUTH_COOKIE_SAMESITE="Strict"` 설정으로 override 가능
+- **Governance:** ADR-037 §"Retrofit 가이드라인" 정합 (Session 069 Phase 3 launch chain Step 5)
 
 ## 컨텍스트
 

@@ -2,8 +2,13 @@
 
 ## 상태
 
-Accepted (Session 065, 2026-05-10) — ADR-005 supersedes 일부.
-**Phase 3 launch 직전 Argon2id 또는 외부 hash service 검토 의무**.
+**Accepted (temporary)** (Session 065, 2026-05-10 → Session 069 ADR-037 retrofit 2026-05-12) — ADR-005 partial-supersedes.
+
+- **결정일:** 2026-05-10
+- **만료 deadline:** Phase 3 launch 직전 1주 (Argon2id WASM / 외부 hash service 검토 후 결정)
+- **복원 chain:** 본 ADR §"Phase 3 launch 직전 검토 의무" 6 항목
+- **자동화 toggle 위치:** `apps/api/src/auth/constants.ts:35` `PBKDF2_ITERATIONS = 100000` (★ Cloudflare Workers Web Crypto API PBKDF2 cap 100,000 — 영구 runtime 제약. env toggle 불가. 600k 복원은 hash 알고리즘 자체 변경 필요)
+- **Governance:** ADR-037 §"Retrofit 가이드라인" 정합 (Session 069 Phase 3 launch chain Step 5)
 
 ## 컨텍스트
 

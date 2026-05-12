@@ -2,7 +2,13 @@
 
 ## 상태
 
-Accepted (Session 065, 2026-05-10) — 임시 정책. **Phase 3 launch 직전 복원 의무**.
+**Accepted (temporary)** (Session 065, 2026-05-10 → Session 069 ADR-037 retrofit 2026-05-12)
+
+- **결정일:** 2026-05-10
+- **만료 deadline:** Phase 3 launch 직전 1주 (`project_launch_legal_bundle_deferred` 동기)
+- **복원 chain:** 본 ADR §"Phase 3 launch 직전 복원 의무" 8 항목 (Stage A 자동화 완료 항목 포함)
+- **자동화 toggle 위치:** `apps/api/wrangler.toml` `[env.production.vars]` 의 `PASSWORD_MIN_LENGTH` ("4" → "8") + `HIBP_ENABLED` ("false" → "true") — Stage A C-03 env 분기 자동화 완료, 코드 변경 0 + `wrangler deploy --env=production`만으로 복원
+- **Governance:** ADR-037 §"Retrofit 가이드라인" 정합 (Session 069 Phase 3 launch chain Step 5)
 
 ## 컨텍스트
 
