@@ -6,6 +6,7 @@ import { createAuthRoutes } from './auth/routes.js';
 import { cachePolicyMiddleware } from './middleware/cache-policy.js';
 import { createProgressRoutes } from './progress/routes.js';
 import { purgeOldRateLimits } from './scheduled/rate-limit-gc.js';
+import { reportSilentFailures } from './scheduled/silent-failure-monitor.js';
 import { createTelemetryRoutes } from './telemetry/routes.js';
 import { createVectorizeRoutes, type VectorizeRouteBindings } from './vectorize/routes.js';
 import { createUserSearchRoutes } from './search/routes.js';
@@ -219,6 +220,16 @@ async function scheduled(
         console.error('[scheduled] rate_limits GC failed', err);
         // throw 재전파는 하지 않음 (waitUntil 은 throw 해도 Workers 가 재시도 안 함).
         // 운영 모니터링(Email Routing 등) 은 별도 인프라 TD 로 이월.
+      }
+
+      // ADR-043 (CRIT-DO-1 흡수) — silent_failure 임계 모니터.
+      // 직전 24h engine_telemetry에서 streak_silent_failure / weak_delta_silent_failure 카운트
+      // 집계 후 임계 초과 시 logger.error + console.error (Email Routing 활성은 ADR-043 §3 carry-over).
+      try {
+        await reportSilentFailures(env.DB, logger);
+      } catch (err) {
+        logger.error('silent_failure monitor failed', err);
+        console.error('[scheduled] silent_failure monitor failed', err);
       }
     })(),
   );
