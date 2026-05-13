@@ -37,7 +37,19 @@
 
 ## 4. 보정 / 추가 지시
 
-(없음 — Claude Code 권고 조합 안 그대로 채택)
+### 4.1 ADR-040 carry-over (2026-05-13 Session 071 4-Pass 리뷰 후속)
+
+본 LOCK §1의 다음 항목은 서버 endpoint 확장 의존 → ADR-040으로 carry-over 명시:
+
+- **SessionStart "일일 목표 progress"** — GET /api/study/mode 응답에 streak/dailyGoal block 부재. ADR-040 §"G-1" 정합 Step 3-UX-6c-2에서 처리.
+- **SessionSummary "약점 영역 변화"** — SessionCompleteResponse에 weak delta 필드 부재. ADR-040 §"G-2" 정합 Step 3-UX-6c-2에서 처리.
+- **세션 복원 (PWA 정합)** — GET /api/study/session/:id 엔드포인트 존재하나 클라이언트 미호출. ADR-040 §"G-3" 정합 Step 3-UX-6c-3 또는 별도 plan.
+
+본 carry-over는 LOCK §1 변경이 아닌 **데이터 surface 의무 보정**. UI 구조는 LOCK §1 영속.
+
+### 4.2 본 LOCK 외 진산 추가 지시
+
+(없음 — Claude Code 권고 조합 안 그대로 채택, ADR-040 carry-over는 4-Pass 리뷰 발견 자동 흡수)
 
 ---
 

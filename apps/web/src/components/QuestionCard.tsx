@@ -30,6 +30,8 @@ import type {
   GradeResponse,
   NextQuestion,
   NextResponse,
+  SessionProgress,
+  StreakSummary,
 } from '@/components/question/types';
 import { EMPTY_ANSWER } from '@/components/question/types';
 
@@ -39,6 +41,13 @@ const EXAM_ID = EXAM_IDS.SON_HAE_PYEONG_GA_SA;
 interface QuestionCardProps {
   readonly examType?: '1st' | '2nd';
   readonly sessionId?: string;
+  /** 채점 성공 시 fire. StudyFlow가 session.phase==='completed' 감지에 사용. */
+  readonly onGraded?: (info: {
+    readonly session: SessionProgress | null;
+    readonly streak: StreakSummary;
+  }) => void;
+  /** /next exhausted 시 fire. StudyFlow가 강제 summary 전환에 사용. */
+  readonly onExhausted?: () => void;
 }
 
 function formatExamReference(year: number, round: number | null, qNum: number | null): string {
@@ -55,7 +64,12 @@ function canSubmit(question: NextQuestion, answer: AnswerState): boolean {
   return answer.value.trim() !== '';
 }
 
-export function QuestionCard({ examType = '2nd', sessionId }: QuestionCardProps) {
+export function QuestionCard({
+  examType = '2nd',
+  sessionId,
+  onGraded,
+  onExhausted,
+}: QuestionCardProps) {
   const [phase, setPhase] = useState<AnswerPhase>('loading');
   const [question, setQuestion] = useState<NextQuestion | null>(null);
   const [answer, setAnswer] = useState<AnswerState>(EMPTY_ANSWER);
@@ -88,6 +102,7 @@ export function QuestionCard({ examType = '2nd', sessionId }: QuestionCardProps)
       const body = (await res.json()) as NextResponse;
       if (body.exhausted || body.questions.length === 0) {
         setPhase('exhausted');
+        if (onExhausted !== undefined) onExhausted();
         return;
       }
       setQuestion(body.questions[0]!);
@@ -97,7 +112,7 @@ export function QuestionCard({ examType = '2nd', sessionId }: QuestionCardProps)
       setPhase('error');
       setErrorMsg('네트워크 오류 — 잠시 후 다시 시도해 주세요.');
     }
-  }, [examType, sessionId]);
+  }, [examType, sessionId, onExhausted]);
 
   const submit = useCallback(async (): Promise<void> => {
     if (question === null || !canSubmit(question, answer)) return;
@@ -147,12 +162,15 @@ export function QuestionCard({ examType = '2nd', sessionId }: QuestionCardProps)
       const body = (await res.json()) as GradeResponse;
       setGradeResult(body);
       setPhase('graded');
+      if (onGraded !== undefined) {
+        onGraded({ session: body.session ?? null, streak: body.streak });
+      }
     } catch (err) {
       console.error('grade fetch failed', err);
       setPhase('error');
       setErrorMsg('네트워크 오류 — 잠시 후 다시 시도해 주세요.');
     }
-  }, [question, answer, sessionId]);
+  }, [question, answer, sessionId, onGraded]);
 
   useEffect(() => {
     void fetchNext();

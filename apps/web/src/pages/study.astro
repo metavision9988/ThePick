@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import { QuestionCard } from '@/components/QuestionCard';
+import { StudyFlow } from '@/components/StudyFlow';
 import { ProgressSummary } from '@/components/ProgressSummary';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
 ---
@@ -11,15 +11,15 @@ import { OfflineIndicator } from '@/components/OfflineIndicator';
       <h2 class="mb-3 text-xs font-medium uppercase tracking-wide text-gray-500">진도</h2>
       <ProgressSummary client:load />
       <p class="mt-6 text-[11px] leading-relaxed text-gray-400">
-        FSRS 간격반복은 Phase 2 carry-over.
+        FSRS 간격반복은 약점 복습 모드에서 surface된다.
       </p>
     </aside>
     <main class="flex-1 lg:max-w-[720px]">
       <header class="mb-6">
-        <h1 class="text-2xl font-medium text-gray-900">1차 학습</h1>
-        <p class="mt-1 text-sm text-gray-500">정답 입력 후 Ctrl+Enter — 다음 문제 Ctrl+N</p>
+        <h1 class="text-2xl font-medium text-gray-900">학습</h1>
+        <p class="mt-1 text-sm text-gray-500">학습 모드를 선택하면 세션이 시작된다.</p>
       </header>
-      <QuestionCard examType="1st" client:load />
+      <StudyFlow examType="1st" client:load />
     </main>
   </div>
   <OfflineIndicator client:load />

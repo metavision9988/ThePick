@@ -117,6 +117,58 @@
 
 ---
 
+### D. Step 3-UX-6c — ModeSelector + SessionStart + SessionSummary + StudyFlow 통합
+
+**진산 발화 "Step 3-UX-6c 진입" → 즉시 진행**. LOCK §1 A 단독 채택.
+
+**핵심 발견 — mode vs phase mismatch (CRITICAL RULE #1 보고)**:
+
+서버 LearningMode 5개 (`category`/`topic`/`confusion`/`weak`/`mixed`) vs RFP 4개 (`warmup`/`main`/`cooldown`/`review_weak` — 사실 SessionPhase 혼동). 진산 결정 "5 mode 채택" → `ADR-039` 영속 + AESTHETIC.md §3.3 정정.
+
+**신규 6 파일 + 수정 3 파일**:
+
+- 신규: `apps/web/src/lib/study-api.ts` (fetch wrapper + StudyApiError class, 6 error kind 매핑)
+- 신규: `apps/web/src/components/session/types.ts` (MODE_META 5 mode + pickRecommendedMode + ModeStatsResponse 외 4종)
+- 신규: `apps/web/src/components/session/ModeSelector.tsx` (5 mode 세로 stack + 좌측 2px 컬러 보더 + 추천 amber pill + group-hover chevron)
+- 신규: `apps/web/src/components/session/SessionStart.tsx` (cards 입력 clamp + streak flame icon + ADR-040 carry-over 명시)
+- 신규: `apps/web/src/components/session/SessionSummary.tsx` (정답률 hero text-3xl indigo-600 + streak 신기록 amber pill + ADR-040 carry-over 명시)
+- 신규: `apps/web/src/components/StudyFlow.tsx` (8 상태 state machine — init/mode-select/session-start/starting/questioning/completing/summary/error + finalizingRef race guard)
+- 수정: `apps/web/src/components/QuestionCard.tsx` (onGraded + onExhausted callback props 추가)
+- 수정: `apps/web/src/pages/study.astro` (QuestionCard → StudyFlow 교체)
+- 영속: `docs/adr/ADR-039` (mode contract 5 mode) + `docs/adr/ADR-040` (LOCK §1 vs 서버 contract 격차 carry-over)
+- 영속: `docs/design/AESTHETIC.md` §3.3a/3.3b 분리 (deprecated 4 mode + 현재 5 mode)
+- 영속: `docs/design/responses/step-3-ux-6-LOCK.md` §4.1 ADR-040 보정
+
+**4-Pass 독립 에이전트 리뷰 흡수**:
+
+| Pass     | 에이전트                  |  Crit |   Maj |   Min |
+| :------- | :------------------------ | ----: | ----: | ----: |
+| Pass 1+2 | feature-dev:code-reviewer |     0 |     4 |     3 |
+| Pass 3+4 | quality-engineer          |     2 |     4 |     5 |
+| **합계** | —                         | **2** | **8** | **8** |
+
+**Critical 2건 흡수 (ADR-040 carry-over)**:
+
+- C-1 SessionStart "일일 목표 progress" 미구현 → ADR-040 §"G-1" carry-over (서버 GET /mode 확장 후속)
+- C-2 SessionSummary "약점 영역 변화" 미구현 → ADR-040 §"G-2" carry-over (SessionCompleteResponse 확장 후속)
+
+**Major 핵심 4건 본 step fix**:
+
+- Maj-1 (P1): StudyFlow void recommended 데드 변수 제거
+- Maj-2 (P1): finalizeSession 이중 호출 race → `finalizingRef` guard
+- Maj-1 (P3): ModeSelector chevron `›` → inline SVG + group-hover indigo
+- Maj-1 (P4): borderLeftWidth 1px vs 2px → AESTHETIC §3.3b "2px" 정정 (모바일 retina 시인성)
+
+**Major carry-over 4건 (ADR-040 또는 후속 chunk)**:
+
+- Maj-3 (P2): fetchSessionDetail 미사용 (세션 복원) → ADR-040 §"G-3"
+- Maj-4 (P2): examType="1st" 하드코딩 (2차 진입점 부재) → 후속 chunk
+- Maj-2 (P3/P4): SessionStart streak 0/0 초기 fetch 부재 → ADR-040 §"G-1"
+
+**Minor 8건 carry-over (Step 3-UX-6e 또는 Phase 3 종료 정리)** — 2건 본 step 동시 fix (focus-visible 정합 + flame icon)
+
+**통합 리뷰 영속**: `.claude/reviews/review-20260513-141254-step-3-ux-6c-4pass-integrated.md`
+
 ### C. Step 3-UX-6b 4 input type 컴포넌트 분기 (LOCK 후 즉시 진입)
 
 **진산 LOCK 결정 영속 후 즉시 본 step 진행**. LOCK §1 권고 조합 안 (QuestionCard A+C / Mode A / Start A / Summary A / Progress A+C carry-over) 채택.

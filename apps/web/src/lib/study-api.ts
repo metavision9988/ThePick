@@ -1,0 +1,97 @@
+/**
+ * study-api — /api/study/* fetch wrapper.
+ * 모든 호출은 credentials: 'include' (Cookie 세션). 401 → 호출자가 redirect 결정.
+ *
+ * Hard Rule 17 정합: examId는 @thepick/shared EXAM_IDS 경유.
+ */
+
+import { EXAM_IDS } from '@thepick/shared';
+
+import type {
+  ExamType,
+  ModeStartRequest,
+  ModeStartResponse,
+  ModeStatsResponse,
+  SessionCompleteResponse,
+  SessionDetail,
+} from '@/components/session/types';
+
+const API_BASE: string = import.meta.env.PUBLIC_API_BASE_URL ?? 'http://localhost:8787';
+const EXAM_ID = EXAM_IDS.SON_HAE_PYEONG_GA_SA;
+
+export class StudyApiError extends Error {
+  readonly kind:
+    | 'unauthenticated'
+    | 'rate_limited'
+    | 'validation'
+    | 'forbidden'
+    | 'not_found'
+    | 'service_unavailable'
+    | 'network';
+  readonly status: number | null;
+  constructor(kind: StudyApiError['kind'], message: string, status: number | null = null) {
+    super(message);
+    this.name = 'StudyApiError';
+    this.kind = kind;
+    this.status = status;
+  }
+}
+
+function fromHttp(status: number): StudyApiError['kind'] {
+  if (status === 401) return 'unauthenticated';
+  if (status === 403) return 'forbidden';
+  if (status === 404) return 'not_found';
+  if (status === 422) return 'validation';
+  if (status === 429) return 'rate_limited';
+  if (status === 503) return 'service_unavailable';
+  return 'service_unavailable';
+}
+
+async function safeFetch<T>(url: string, init: RequestInit): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(url, { ...init, credentials: 'include' });
+  } catch (err) {
+    throw new StudyApiError('network', err instanceof Error ? err.message : 'fetch failed');
+  }
+  if (!res.ok) {
+    throw new StudyApiError(fromHttp(res.status), `HTTP ${res.status}`, res.status);
+  }
+  return (await res.json()) as T;
+}
+
+export async function fetchModeStats(examType: ExamType): Promise<ModeStatsResponse> {
+  const url = new URL(`${API_BASE}/api/study/mode`);
+  url.searchParams.set('examId', EXAM_ID);
+  url.searchParams.set('examType', examType);
+  return safeFetch<ModeStatsResponse>(url.toString(), { method: 'GET' });
+}
+
+export async function startMode(body: ModeStartRequest): Promise<ModeStartResponse> {
+  const url = new URL(`${API_BASE}/api/study/mode/start`);
+  url.searchParams.set('examId', EXAM_ID);
+  return safeFetch<ModeStartResponse>(url.toString(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function fetchSessionDetail(sessionId: string): Promise<SessionDetail> {
+  return safeFetch<SessionDetail>(`${API_BASE}/api/study/session/${sessionId}`, {
+    method: 'GET',
+  });
+}
+
+export async function completeSession(sessionId: string): Promise<SessionCompleteResponse> {
+  return safeFetch<SessionCompleteResponse>(`${API_BASE}/api/study/session/${sessionId}/complete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+/** 401 redirect 헬퍼 — 호출자가 catch 후 사용. */
+export function redirectToLogin(): void {
+  const next = encodeURIComponent(window.location.pathname + window.location.search);
+  window.location.href = `/auth/login?next=${next}`;
+}

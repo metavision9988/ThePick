@@ -123,18 +123,27 @@ memory `project_ux_north_star_phase3.md` + plan §6.5 정합:
 - **마스터 (정답률 추이)**: 표시 OK, sparkline 또는 막대 chart
 - **금지**: 랭킹 보드, leaderboard, 별점, 트로피, 배지 그리드 → **부정 강조 인상 → 시험 도메인 부적합**
 
-### 3.3 학습 모드 (4 mode) 시각 위계
+### 3.3 학습 모드 시각 위계
 
-`/api/study/mode`에서 반환되는 4 mode:
+#### 3.3a (deprecated, ADR-039 정합)
 
-| Mode          | 의미                        | 권고 색상 (1 mode 1 hint) |
-| :------------ | :-------------------------- | :------------------------ |
-| `warmup`      | 워밍업 (쉬운 카드 우선)     | gray (중성)               |
-| `main`        | 본 학습 (FSRS 큐)           | indigo-600 (주)           |
-| `cooldown`    | 쿨다운 (난이도 ↓ 회복)      | emerald (차분)            |
-| `review_weak` | 약점 복습 (weak_score 높음) | amber (주의)              |
+RFP/Claude Design 응답 작성 시 mode/phase 혼동으로 영속된 4 mode 표 (warmup/main/cooldown/review_weak)는 **SessionPhase 혼동**임. §3.4 phase 표로 의미 재해석. 본 영역의 색상 hint 매핑은 ModeSelector에 적용하지 않음.
 
-- Mode 카드 4개: 같은 카드 톤 + **좌측 1px 컬러 보더**로 mode 구분 (전체 배경 컬러 X)
+#### 3.3b 5 mode (현재, 서버 LearningMode contract 정합)
+
+`/api/study/mode` 서버 응답 LearningMode 5개:
+
+| Mode        | 한국어 라벨 | 의미                          | 좌측 1px 컬러 보더 hint          |
+| :---------- | :---------- | :---------------------------- | :------------------------------- |
+| `category`  | 과목별      | 과목 단위 학습                | `#9ca3af` (gray-400, 중립)       |
+| `topic`     | 주제별      | concept 단위 집중             | `#4f46e5` (indigo-600, 본격)     |
+| `confusion` | 헷갈림      | confusion_type 카드만         | `#f59e0b` (amber-500, 주의)      |
+| `weak`      | 약점 복습   | weak_score > 0 카드만 (FSRS)  | `#b45309` (amber-700, 주의 강화) |
+| `mixed`     | 통합 학습   | 모든 카드 혼합 (default 추천) | `#4b5563` (gray-600, 종합)       |
+
+- 카드 5개 세로 stack + 같은 카드 톤 + **좌측 2px 컬러 보더**로 mode 구분 (전체 배경 컬러 X — 모바일 retina 시인성 정합으로 2px 채택, ADR-039 정정)
+- 추천 표시는 amber pill "추천" (1페이지 1회 강조 원칙)
+- 클라이언트 추천 우선순위 (서버 측 추천 알고리즘은 carry-over): weak > confusion > mixed
 
 ### 3.4 학습 단계 (phase) 표현
 
