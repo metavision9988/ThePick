@@ -15,7 +15,6 @@ import {
   type ExamType,
   type ProgressResponse,
   StudyApiError,
-  fetchModeStats,
   fetchProgress,
   redirectToLogin,
 } from '@/lib/study-api';
@@ -25,11 +24,7 @@ const SUBJECT_LIMIT_FULL = 8;
 
 type State =
   | { readonly status: 'loading' }
-  | {
-      readonly status: 'ok';
-      readonly progress: ProgressResponse;
-      readonly streak: { current: number; longest: number; dailyGoalProgress: number };
-    }
+  | { readonly status: 'ok'; readonly progress: ProgressResponse }
   | { readonly status: 'error'; readonly message: string };
 
 interface ProgressVizFullProps {
@@ -54,12 +49,10 @@ export function ProgressVizFull({ examType = '1st' }: ProgressVizFullProps) {
     let cancelled = false;
     void (async () => {
       try {
-        const [progress, stats] = await Promise.all([
-          fetchProgress(examType, FULL_DAYS),
-          fetchModeStats(examType),
-        ]);
+        // C-P1 흡수 — /progress 응답에 streak 통합. 별도 /mode 호출 제거.
+        const progress = await fetchProgress(examType, FULL_DAYS);
         if (cancelled) return;
-        setState({ status: 'ok', progress, streak: stats.streak });
+        setState({ status: 'ok', progress });
       } catch (err) {
         if (cancelled) return;
         if (err instanceof StudyApiError && err.kind === 'unauthenticated') {
@@ -97,7 +90,8 @@ export function ProgressVizFull({ examType = '1st' }: ProgressVizFullProps) {
     );
   }
 
-  const { progress, streak } = state;
+  const { progress } = state;
+  const { streak } = progress;
   const todayCount = progress.daily.find((d) => d.isToday)?.cardsDistinct ?? 0;
   const remaining = Math.max(0, progress.dailyGoal - todayCount);
   const todayPct = Math.round((todayCount / Math.max(1, progress.dailyGoal)) * 100);

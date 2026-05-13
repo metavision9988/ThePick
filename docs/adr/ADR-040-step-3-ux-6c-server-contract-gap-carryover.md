@@ -148,7 +148,35 @@ SELECT COUNT(DISTINCT card_id) AS cnt FROM study_reviews
 - [x] Step 3-UX-6c-2 (server contract 확장) 완료 후 SessionStart 일일 목표 progress UI 영속 확인 (2026-05-13)
 - [x] Step 3-UX-6c-2 완료 후 SessionSummary 약점 영역 변화 UI 영속 확인 (2026-05-13)
 - [x] Step 3-UX-6c-3 결정 — 진산 옵션 A 채택 (sessionStorage + 자동 복원). 구현 완료 (2026-05-13)
-- [ ] Step 3-UX-6e 검증 chain에서 본 carry-over 모두 fix 확인 (4-Pass + 5-페르소나)
+- [x] Step 3-UX-6e 검증 chain 4-Pass + 5-페르소나 완료 (Session 072, 2026-05-13). 통합 보고서: `.claude/reviews/phase3-tech-debt-20260513-163000.md`
+
+### 5. Phase 3 launch toggle 차단 의무 매트릭스 (5-페르소나 흡수)
+
+★ Phase 3 launch toggle 전 의무 흡수 (총 ~25h, 1 sprint):
+
+| #   | 항목                                                                              | 비용 | Persona          | 위치                        |
+| :-- | :-------------------------------------------------------------------------------- | :--- | :--------------- | :-------------------------- |
+| 1   | apps/web vitest + jsdom 인프라                                                    | 6h   | quality C1       | `apps/web/vitest.config.ts` |
+| 2   | 4-Pass 흡수 결함 3건 회귀 차단망 (choices=null / NaN guard / weakDelta available) | 4h   | quality C3       | apps/web units              |
+| 3   | /mode + /progress + /session/:id rate-limit (DoS 차단)                            | 30분 | backend M-D1     | apps/api routes             |
+| 4   | streak_records timezone schema (KST/UTC mismatch 차단)                            | 1h   | backend C-D2     | migration 0038 + ADR        |
+| 5   | silent_failure telemetry alert path (Cron + Email Routing)                        | 3h   | devops CRIT-DO-1 | ADR-XXX-alert-routing       |
+| 6   | Worker rollback + D1 migration mismatch ADR (deploy ordering)                     | 2h   | devops CRIT-DO-2 | ADR-XXX-deploy-ordering     |
+| 7   | Playwright E2E 3 시나리오 (happy / restoration / 모바일 375px)                    | 8h   | quality M3 격상  | `apps/web/e2e/`             |
+
+☆ Phase 3 launch 후 30일 내:
+
+- secret rotation 분기 정책 (devops CRIT-DO-3) — 1h
+- master-dashboard.md v2 Phase 3 wire-up (devops MAJOR-DO-4) — 4h
+- /health/deep + synthetic check (devops MAJOR-DO-3) — 2h
+
+Year 2 / Phase 4 carry-over:
+
+- routes.ts 1962 LOC 분할 (refactoring R-C1) — 8h
+- /grade 480 LOC 분할 (refactoring R-C2) — 12h
+- /grade D1 batch API (performance C-P2) — telemetry 1주 측정 후 결정
+- study_reviews daily_aggregate (performance C-P4) — Year 2 진입 전
+- study_reviews.card_id polymorphic FK (backend C-D1) — 매년 교재 개정 시점
 
 ### 5. 위험 / 미해소 사항
 

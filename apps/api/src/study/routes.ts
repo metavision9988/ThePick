@@ -1542,10 +1542,15 @@ export function createStudyRoutes(): Hono<StudyEnv> {
     const endBounds = dayBoundsUtc(today);
 
     try {
+      // C-P1 흡수 — /progress 응답에 streak 통합 (이전 클라이언트가 /mode 별도 호출하던 부담 제거).
+      // 일일 KST 카운트는 daily 집계로부터 isToday entry로 산출 → 별도 today review 쿼리 불요.
       const [streakRow, dailyResult, subjectsResult] = await Promise.all([
-        c.env.DB.prepare(`SELECT daily_goal FROM streak_records WHERE user_id = ? LIMIT 1`)
+        c.env.DB.prepare(
+          `SELECT current_streak, longest_streak, daily_goal
+             FROM streak_records WHERE user_id = ? LIMIT 1`,
+        )
           .bind(userId)
-          .first<{ daily_goal: number }>(),
+          .first<{ current_streak: number; longest_streak: number; daily_goal: number }>(),
         // 일자별 DISTINCT card_id 카운트. reviewed_at은 ISO 8601 UTC, KST 기준 date 추출은
         // strftime + '+9 hours' offset 적용 (D1 SQLite 정합).
         c.env.DB.prepare(
@@ -1607,6 +1612,10 @@ export function createStudyRoutes(): Hono<StudyEnv> {
         masteryPct: row.total > 0 ? row.mastered / row.total : 0,
       }));
 
+      // C-P1 흡수 — streak block 응답에 포함 (오늘 KST DISTINCT는 daily isToday entry).
+      const todayCount = daily.find((d) => d.isToday)?.cardsDistinct ?? 0;
+      const dailyGoalProgress = dailyGoal > 0 ? Math.min(todayCount / dailyGoal, 1) : 0;
+
       return c.json({
         examId: examIdParam.examId,
         examType,
@@ -1614,6 +1623,11 @@ export function createStudyRoutes(): Hono<StudyEnv> {
         dailyGoal,
         daily,
         subjects,
+        streak: {
+          current: streakRow?.current_streak ?? 0,
+          longest: streakRow?.longest_streak ?? 0,
+          dailyGoalProgress,
+        },
       });
     } catch (err) {
       logger.error('progress query failed', err, { userId, examType, days: daysNum });

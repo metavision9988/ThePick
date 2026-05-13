@@ -14,6 +14,7 @@ import type {
   ModeStatsResponse,
   SessionCompleteResponse,
   SessionDetail,
+  StreakSummary,
 } from '@/components/session/types';
 
 export type { ExamType };
@@ -91,6 +92,8 @@ export interface ProgressResponse {
   readonly dailyGoal: number;
   readonly daily: ReadonlyArray<DailyEntry>;
   readonly subjects: ReadonlyArray<SubjectMastery>;
+  /** C-P1 흡수 — /progress 응답에 streak 통합 (이전 /mode 별도 호출 제거). */
+  readonly streak: StreakSummary;
 }
 
 export async function fetchProgress(examType: ExamType, days: number): Promise<ProgressResponse> {

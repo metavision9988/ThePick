@@ -79,6 +79,8 @@ const SCENARIO_MIGRATIONS = [
   '0035_study_sessions_streak.sql',
   // Step 3-UX-6c-2 4-Pass M-1 흡수 — computeWeakDelta `WHERE session_id = ? AND user_id = ?` 인덱스
   '0036_study_reviews_session_index.sql',
+  // Step 3-UX-6e 5-페르소나 performance C-P3 흡수 — exam_questions(exam_type,status,subject) partial index
+  '0037_exam_questions_active_subject_index.sql',
 ];
 
 export interface SqliteBackedD1 {

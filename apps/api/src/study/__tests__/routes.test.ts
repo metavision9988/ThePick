@@ -834,6 +834,7 @@ interface ProgressBody {
     mastered: number;
     masteryPct: number;
   }>;
+  readonly streak: { current: number; longest: number; dailyGoalProgress: number };
 }
 
 describe('GET /api/study/progress (Step 3-UX-6d)', () => {
@@ -845,7 +846,7 @@ describe('GET /api/study/progress (Step 3-UX-6d)', () => {
     expect(res.status).toBe(401);
   });
 
-  it('days 누락 → 기본 7일 + daily 7건 + subjects 빈 배열', async () => {
+  it('days 누락 → 기본 7일 + daily 7건 + subjects 빈 배열 + streak 통합', async () => {
     seedUser('u1', 'u1@test.com');
     const res = await fetchAs('u1', '/progress?examType=2nd');
     expect(res.status).toBe(200);
@@ -856,6 +857,30 @@ describe('GET /api/study/progress (Step 3-UX-6d)', () => {
     expect(body.daily[0].isToday).toBe(false);
     expect(body.dailyGoal).toBe(20);
     expect(body.subjects).toEqual([]);
+    // C-P1 흡수 — streak block 통합 응답.
+    expect(body.streak).toEqual({ current: 0, longest: 0, dailyGoalProgress: 0 });
+  });
+
+  it('streak — 오늘 review 시 dailyGoalProgress 비율 정확 + current/longest 영속값', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedStreakRecord({
+      userId: 'u1',
+      currentStreak: 3,
+      longestStreak: 5,
+      lastStudyDate: '2026-05-12',
+      dailyGoal: 10,
+    });
+    seedExamQuestion({ id: 'eq-pg1', examType: '2nd' });
+    seedExamQuestion({ id: 'eq-pg2', examType: '2nd' });
+    const sid = seedStudySession({ userId: 'u1', phase: 'main' });
+    seedStudyReview({ userId: 'u1', cardId: 'eq-pg1', sessionId: sid });
+    seedStudyReview({ userId: 'u1', cardId: 'eq-pg2', sessionId: sid });
+    const res = await fetchAs('u1', '/progress?examType=2nd');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ProgressBody;
+    expect(body.streak.current).toBe(3);
+    expect(body.streak.longest).toBe(5);
+    expect(body.streak.dailyGoalProgress).toBeCloseTo(0.2); // 2 distinct / 10 goal
   });
 
   it('days=30 → daily 30건 + 일자 오름차순', async () => {
