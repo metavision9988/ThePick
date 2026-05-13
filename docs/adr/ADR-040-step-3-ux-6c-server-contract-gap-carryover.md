@@ -135,7 +135,13 @@ SELECT COUNT(DISTINCT card_id) AS cnt FROM study_reviews
 - ☐ **useEffect cleanup / AbortController 패턴** (code-reviewer + silent M-1) — examType prop 변경 race 시 stale setState 가능. study-api safeFetch에 AbortSignal 확장 동반 필요 (변경 표면 큼).
 - ☐ **SessionDetail.examType 필드 추가** (code-reviewer Pass 2 M-4) — 서버 응답에 examType 포함하여 클라이언트 sessionStorage 외 D1-source 이중 검증. API 계약 변경 동반.
 - ☐ **Object.hasOwn / UUID v4 regex hardening** (silent m-2/m-3) — readActiveSession type guard 강화 (현재 prototype pollution 차단 OK, 추가 robustness).
-- ☐ **sessionStorage E2E Playwright 시나리오** (silent Devil's Advocate) — 학습 중 새로고침 / private mode / 다중 탭 / iOS Safari 탭 언로드 시나리오 자동 검증.
+- 🟡 **sessionStorage E2E Playwright 시나리오** (silent Devil's Advocate) — Step 3-UX-6g §5 #7 흡수로 **부분 영속** (2026-05-13):
+  - ✅ 학습 중 새로고침 → sessionStorage 복원 (`session-restoration.spec.ts`)
+  - ✅ examType mismatch 자동 정리
+  - ✅ completed phase fallback
+  - ☐ private mode (sessionStorage throws) — 별도 chunk carry-over
+  - ☐ 다중 탭 격리 — 별도 chunk carry-over
+  - ☐ iOS Safari 탭 언로드 / background unload — WebKit project 도입 의무 (P3 launch 후 30일 carry-over)
 
 ### 3. LOCK §1 보정 (본 ADR 동시 영속)
 
@@ -149,20 +155,21 @@ SELECT COUNT(DISTINCT card_id) AS cnt FROM study_reviews
 - [x] Step 3-UX-6c-2 완료 후 SessionSummary 약점 영역 변화 UI 영속 확인 (2026-05-13)
 - [x] Step 3-UX-6c-3 결정 — 진산 옵션 A 채택 (sessionStorage + 자동 복원). 구현 완료 (2026-05-13)
 - [x] Step 3-UX-6e 검증 chain 4-Pass + 5-페르소나 완료 (Session 072, 2026-05-13). 통합 보고서: `.claude/reviews/phase3-tech-debt-20260513-163000.md`
+- [x] **Step 3-UX-6g §5 #7 Playwright E2E 3 시나리오 흡수 (2026-05-13)** — `apps/web/e2e/` 7건 PASS (happy 1 + restoration 3 + mobile-375 3). 4-Pass 독립 리뷰 3 에이전트 (silent-failure-hunter / quality-engineer / system-architect) 병렬 — Critical 5건 + Major 13건 흡수. 통합 보고서: `.claude/reviews/review-20260513-step-3-ux-6g-4pass-integrated.md`
 
 ### 5. Phase 3 launch toggle 차단 의무 매트릭스 (5-페르소나 흡수)
 
 ★ Phase 3 launch toggle 전 의무 흡수 (총 ~25h, 1 sprint):
 
-| #   | 항목                                                                              | 비용 | Persona          | 위치                        |
-| :-- | :-------------------------------------------------------------------------------- | :--- | :--------------- | :-------------------------- |
-| 1   | apps/web vitest + jsdom 인프라                                                    | 6h   | quality C1       | `apps/web/vitest.config.ts` |
-| 2   | 4-Pass 흡수 결함 3건 회귀 차단망 (choices=null / NaN guard / weakDelta available) | 4h   | quality C3       | apps/web units              |
-| 3   | /mode + /progress + /session/:id rate-limit (DoS 차단)                            | 30분 | backend M-D1     | apps/api routes             |
-| 4   | streak_records timezone schema (KST/UTC mismatch 차단)                            | 1h   | backend C-D2     | migration 0038 + ADR        |
-| 5   | silent_failure telemetry alert path (Cron + Email Routing)                        | 3h   | devops CRIT-DO-1 | ADR-XXX-alert-routing       |
-| 6   | Worker rollback + D1 migration mismatch ADR (deploy ordering)                     | 2h   | devops CRIT-DO-2 | ADR-XXX-deploy-ordering     |
-| 7   | Playwright E2E 3 시나리오 (happy / restoration / 모바일 375px)                    | 8h   | quality M3 격상  | `apps/web/e2e/`             |
+| #   | 항목                                                                              | 비용 | Persona          | 위치                        | 진척                          |
+| :-- | :-------------------------------------------------------------------------------- | :--- | :--------------- | :-------------------------- | :---------------------------- |
+| 1   | apps/web vitest + jsdom 인프라                                                    | 6h   | quality C1       | `apps/web/vitest.config.ts` | ✅ Session 073 흡수           |
+| 2   | 4-Pass 흡수 결함 3건 회귀 차단망 (choices=null / NaN guard / weakDelta available) | 4h   | quality C3       | apps/web units              | ✅ Session 073 흡수           |
+| 3   | /mode + /progress + /session/:id rate-limit (DoS 차단)                            | 30분 | backend M-D1     | apps/api routes             | ✅ a403cb9 흡수               |
+| 4   | streak_records timezone schema (KST/UTC mismatch 차단)                            | 1h   | backend C-D2     | migration 0038 + ADR-041    | ✅ a403cb9 흡수               |
+| 5   | silent_failure telemetry alert path (Cron + Email Routing)                        | 3h   | devops CRIT-DO-1 | ADR-043                     | ✅ 1050247 흡수               |
+| 6   | Worker rollback + D1 migration mismatch ADR (deploy ordering)                     | 2h   | devops CRIT-DO-2 | ADR-042                     | ✅ 1050247 흡수               |
+| 7   | Playwright E2E 3 시나리오 (happy / restoration / 모바일 375px)                    | 8h   | quality M3 격상  | `apps/web/e2e/`             | ✅ Session 074 (3-UX-6g) 흡수 |
 
 ☆ Phase 3 launch 후 30일 내:
 
@@ -182,6 +189,22 @@ Year 2 / Phase 4 carry-over:
 
 - **D1 study_sessions 고아 row** — 사용자가 questioning 중 새로고침 시 ended_at = NULL phase != 'completed' 레코드 영속. 운영 dashboard에서 가시화 의무 (memory `project_engine_observability` 정합).
 - **클라이언트 fallback streak 표시 "0일 · 최장 0"** — 첫 grade 응답 전에는 사용자에게 부정확한 streak 표시. SessionStart UX 손상. 본 ADR carry-over로 후속 처리.
+
+### 6. Step 3-UX-6g §5 #7 흡수 후 carry-over (2026-05-13, Session 074)
+
+본 step 4-Pass 독립 리뷰 (3 에이전트 병렬) 결과 Major 흡수 후 잔여 carry-over:
+
+- ☐ **error path E2E 시나리오** (quality MAJOR-A2 + silent M-2) — `/api/study/grade` HTTP 429 / 422 / 503 + 네트워크 fail 분기 별도 spec (`apps/web/e2e/api-errors.spec.ts`). 사용자 빈도 1순위 분기 회귀 차단망.
+- ☐ **silent_failure surface E2E** (quality MAJOR-A3) — `weakDelta.available=false` SessionSummary "데이터 일시 불가" 안내 UI 회귀 차단망.
+- ☐ **schema-drift contract layer** (architect P2-M1) — `packages/shared/src/contracts/study-api.ts`에 client/server/mock 공통 type 단일 source. mock fixture가 frozen snapshot 되는 silent risk 차단.
+- ☐ **WebKit (iOS Safari) project 추가** (quality MAJOR-A6) — 실 모바일 95%+ 환경 검증. `pnpm exec playwright install webkit` (~150MB) + mobile-375 project에 webkit 동시 추가. Phase 3 launch 후 30일 내.
+- ☐ **CI 통합** (quality MAJOR-A5) — `.github/workflows/ci.yml`에 `pnpm --filter @thepick/web test:e2e` job 추가 + `~/.cache/ms-playwright` cache + Playwright HTML report artifact upload. **본 carry-over는 회귀 차단망 발동 의무** — PR마다 자동 실행되지 않으면 8h 투자 효용 0.
+- ☐ **production preview E2E** (architect P2-M2/M4) — `astro preview` 기반 production build에서 동일 시나리오 검증. dev artifact (toolbar / Tailwind purge 차이) silent miss 차단.
+- ☐ **mock sessionId-aware progression** (quality Devil's Advocate 1) — restoration 후 다음 미응답 문제 노출 검증. 현 mock은 counters.next 단순 increment → 복원 직후 동일 문제 silent re-show 검출 불가.
+- ☐ **CORS Allow-Origin baseURL 동적 산출** (architect P2-M3) — `installApiMock(page, { allowedOrigin })` 옵션화. staging/preview baseURL 변경 시 cross-origin block 차단.
+- ☐ **webServer.command 모노레포 cwd 안전** (silent M-5 + architect P2-M2) — `pnpm --filter @thepick/web dev` 명시 또는 `cwd` 옵션. monorepo root에서 호출 시 turbo race 회피.
+- ☐ **AESTHETIC.md §3.5 input 요소 44px+ 의무 명시** (contract P4-M2) — 현 mobile-375 spec이 input.height ≥ 44를 검증하나 AESTHETIC 본문은 button/a/label만 명시. 양방향 동기.
+- ☐ **ADR-040 §5 진척 컬럼 dashboard 확장** (contract P4-m3) — §5 매트릭스 진척 컬럼이 본 step 신규 추가. 향후 ADR carry-over 매트릭스 패턴 표준화 (별도 chunk).
 
 ---
 

@@ -11,6 +11,11 @@ dist/
 # Test coverage
 coverage/
 
+# Playwright (ADR-040 §5 #7)
+playwright-report/
+test-results/
+.playwright/
+
 # Environment files
 .env
 .env.local
