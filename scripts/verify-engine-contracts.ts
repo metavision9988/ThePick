@@ -34,7 +34,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 type GateStatus = 'PASS' | 'FAIL' | 'SKIP';
@@ -80,6 +80,25 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, '..');
 const JSON_ONLY = process.argv.includes('--json');
+
+/**
+ * Migrations 디렉토리 경로 — `MIGRATIONS_DIR` env 로 override 가능.
+ *
+ * 일반 실행: `REPO_ROOT/migrations` (env 미설정).
+ * 격리 테스트 (verify-cat9-mutation.test.ts): tmpdir 복사본 주입 — 실 마이그레이션 파일
+ * mutation 회피 + turbo 병렬 (apps/api ↔ packages/quality) race 차단.
+ *
+ * ⚠️ Pass 2 MAJOR-A2 (env 이름 collision 주의):
+ *   `apps/api/src/__tests__/helpers/d1-from-sqlite.ts:32`,
+ *   `apps/batch/__tests__/d1-trigger-verify.test.ts`의 로컬 const `MIGRATIONS_DIR`은
+ *   **본 env와 무관** — 절대경로 직접 계산 (__dirname 기반). 본 env override는 verify
+ *   subprocess 단일 consumer. 다른 모듈이 `process.env.MIGRATIONS_DIR ?? LOCAL_DEFAULT`
+ *   패턴 도입 시 mutation test가 실 migrations로 다시 빠져 apps/api race 회귀 위험.
+ */
+const MIGRATIONS_BASE =
+  process.env.MIGRATIONS_DIR !== undefined && process.env.MIGRATIONS_DIR !== ''
+    ? process.env.MIGRATIONS_DIR
+    : join(REPO_ROOT, 'migrations');
 
 // === 위험 키워드 토큰 분할 결합 (security hook false-positive 회피) ===
 // 본 스크립트 코드 자체에 단일 토큰 'eval(' / 'new Function(' / 'innerHTML' 이 등장하면
@@ -356,8 +375,7 @@ function checkInnerHtmlUsage(): BooleanMetric {
 function countMigrations(): NumericMetric {
   let count = 0;
   try {
-    const dir = join(REPO_ROOT, 'migrations');
-    count = readdirSync(dir).filter((f) => /^\d{4}_.+\.sql$/.test(f)).length;
+    count = readdirSync(MIGRATIONS_BASE).filter((f) => /^\d{4}_.+\.sql$/.test(f)).length;
   } catch {
     count = 0;
   }
@@ -514,7 +532,7 @@ function buildTableKgCategory(): CategoryReport {
   );
 
   // 7. 마이그레이션 0021 파일 존재
-  const migrPath = join(REPO_ROOT, 'migrations/0021_table_as_micro_kg.sql');
+  const migrPath = join(MIGRATIONS_BASE, '0021_table_as_micro_kg.sql');
   const migrExists = existsSync(migrPath);
   booleans.push(
     passBoolean(
@@ -525,7 +543,7 @@ function buildTableKgCategory(): CategoryReport {
   );
 
   // 7b. 마이그레이션 0022 파일 존재 (ADR-032 D-PHASE2-1=α)
-  const migr22Path = join(REPO_ROOT, 'migrations/0022_table_structures_update_guard.sql');
+  const migr22Path = join(MIGRATIONS_BASE, '0022_table_structures_update_guard.sql');
   const migr22Exists = existsSync(migr22Path);
   booleans.push(
     passBoolean(
@@ -536,7 +554,7 @@ function buildTableKgCategory(): CategoryReport {
   );
 
   // 7c. 마이그레이션 0023 파일 존재 (ADR-032 D-PHASE2-7=α 패턴-H)
-  const migr23Path = join(REPO_ROOT, 'migrations/0023_table_cells_pattern_h.sql');
+  const migr23Path = join(MIGRATIONS_BASE, '0023_table_cells_pattern_h.sql');
   const migr23Exists = existsSync(migr23Path);
   booleans.push(
     passBoolean(
@@ -547,7 +565,7 @@ function buildTableKgCategory(): CategoryReport {
   );
 
   // 7d. 마이그레이션 0024 파일 존재 + content H_nested 포함 (ADR-032 D-PHASE2-8=α Session 052 CRIT-A)
-  const migr24Path = join(REPO_ROOT, 'migrations/0024_table_structures_pattern_h.sql');
+  const migr24Path = join(MIGRATIONS_BASE, '0024_table_structures_pattern_h.sql');
   const migr24Exists = existsSync(migr24Path);
   let migr24HasHnested = false;
   let migr24HasTriggerRecreation = false;
@@ -587,7 +605,7 @@ function buildTableKgCategory(): CategoryReport {
   );
 
   // 7e. 마이그레이션 0025 + 0026 파일 존재 (Session 052 5-Persona PE-C1 + BA-C2 흡수)
-  const migr25Path = join(REPO_ROOT, 'migrations/0025_table_cells_partial_index.sql');
+  const migr25Path = join(MIGRATIONS_BASE, '0025_table_cells_partial_index.sql');
   const migr25Exists = existsSync(migr25Path);
   booleans.push(
     passBoolean(
@@ -597,7 +615,7 @@ function buildTableKgCategory(): CategoryReport {
     ),
   );
 
-  const migr26Path = join(REPO_ROOT, 'migrations/0026_table_subordinate_update_guards.sql');
+  const migr26Path = join(MIGRATIONS_BASE, '0026_table_subordinate_update_guards.sql');
   const migr26Exists = existsSync(migr26Path);
   let migr26HasAllTriggers = false;
   if (migr26Exists) {
@@ -758,7 +776,12 @@ function buildEnumSyncCategory(): CategoryReport {
 
   for (const pair of ENUM_SYNC_PAIRS) {
     const drizzleValues = extractDrizzleEnumValues(schemaContent, pair.drizzleConstName);
-    const sqlPath = join(REPO_ROOT, pair.migrationFile);
+    // MIGRATIONS_BASE 정합 — pair.migrationFile은 display 용 "migrations/..." prefix 유지,
+    // 실 파일 경로는 basename 후 MIGRATIONS_BASE 결합 (env override 정합).
+    // ★ Pass 2 MINOR-A1 — pair.migrationFile은 flat 단일 segment 가정. nested 경로
+    //   (예: 'migrations/sub/X.sql') 도입 시 tmpdir copy 로직(verify-cat9-mutation.test.ts:152)도
+    //   재설계 필요 (현재 readdirSync non-recursive).
+    const sqlPath = join(MIGRATIONS_BASE, basename(pair.migrationFile));
     let sqlContent = '';
     try {
       sqlContent = readFileSync(sqlPath, 'utf8');
