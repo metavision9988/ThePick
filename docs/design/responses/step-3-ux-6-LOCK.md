@@ -43,7 +43,7 @@
 
 - ✅ **SessionStart "일일 목표 progress"** — GET /api/study/mode 응답에 streak/dailyGoal block 부재. ADR-040 §"G-1" 정합 Step 3-UX-6c-2에서 처리. **완료 — Session 072 (2026-05-13)**.
 - ✅ **SessionSummary "약점 영역 변화"** — SessionCompleteResponse에 weak delta 필드 부재. ADR-040 §"G-2" 정합 Step 3-UX-6c-2에서 처리. **완료 — Session 072 (2026-05-13)**. 라벨 정정: "약점 영역 변화" → **"약점 잔존"** (before 스냅샷 부재 정직성 정합, ADR-040 §2.1 채택 사유 영속).
-- ☐ **세션 복원 (PWA 정합)** — GET /api/study/session/:id 엔드포인트 존재하나 클라이언트 미호출. ADR-040 §"G-3" 정합 Step 3-UX-6c-3 또는 별도 plan.
+- ✅ **세션 복원 (PWA 정합)** — GET /api/study/session/:id 엔드포인트 존재하나 클라이언트 미호출. ADR-040 §"G-3" 정합 Step 3-UX-6c-3에서 처리. **완료 — Session 072 (2026-05-13)**. 진산 옵션 A 채택: sessionStorage + 자동 복원 (volatile 미채택). baselineLongest 동반 영속으로 신기록 hero UX 정합.
 
 본 carry-over는 LOCK §1 변경이 아닌 **데이터 surface 의무 보정**. UI 구조는 LOCK §1 영속.
 

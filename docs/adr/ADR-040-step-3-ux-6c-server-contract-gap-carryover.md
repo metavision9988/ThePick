@@ -1,9 +1,9 @@
 # ADR-040: Step 3-UX-6c LOCK §1 vs 서버 contract 격차 carry-over
 
-- **상태:** Partially Resolved (G-1 + G-2 흡수, G-3 carry-over 유지)
-- **결정일:** 2026-05-13 (Session 071 carry-over) → 2026-05-13 Step 3-UX-6c-2에서 G-1/G-2 흡수
-- **결정자:** Claude Opus 4.7 (4-Pass 독립 리뷰 발견) + 진산 (carry-over 채택 → 우선순위 진행 위임)
-- **관련 영역:** SessionStart "일일 목표 progress" (✅ 완료) + SessionSummary "약점 영역 변화" (✅ 완료) + 세션 복원 (☐ G-3 carry-over)
+- **상태:** Fully Resolved (G-1 + G-2 + G-3 모두 흡수)
+- **결정일:** 2026-05-13 (Session 071 carry-over) → 2026-05-13 Step 3-UX-6c-2 G-1/G-2 흡수 → 2026-05-13 Step 3-UX-6c-3 G-3 흡수
+- **결정자:** Claude Opus 4.7 (4-Pass 독립 리뷰 발견) + 진산 (carry-over 채택 → 우선순위 진행 위임 → G-3 옵션 A 채택)
+- **관련 영역:** SessionStart "일일 목표 progress" (✅ 완료) + SessionSummary "약점 영역 변화" (✅ 완료) + 세션 복원 (✅ sessionStorage + 자동 복원 채택)
 
 ---
 
@@ -81,8 +81,13 @@ Critical 2건 (LOCK §1 위반) carry-over 명시로 흡수 — 본 step에서�
   - ☑ apps/web ModeStatsResponse + SessionCompleteResponse type 갱신 + StreakSummary 단일 재사용
   - ☑ SessionStart 일일 목표 progress bar (NaN 가드 포함) 영속
   - ☑ SessionSummary 약점 잔존 bySubject 5건 list + silent failure 안내 영속
-- ☐ **Step 3-UX-6c-3 (session 복원)** — sessionStorage / URL hash 영속 + 복원 (carry-over 유지)
-- ☑ **streak 일관성** — loadModes 시 stats.streak 으로 초기화 (Session 072)
+- ☑ **Step 3-UX-6c-3 (session 복원)** — sessionStorage + 자동 복원 채택. **완료 (Session 072, 2026-05-13)** — 진산 옵션 A 결정.
+  - ☑ `ACTIVE_SESSION_KEY = 'thepick:active-session'` + PersistedSession (sessionId/examType/baselineLongest) 영속
+  - ☑ loadModes 진입 시 GET /session/:id → phase !== 'completed' 시 questioning 복원, completed/401/403/404/network graceful fallback
+  - ☑ handleStart 성공 시 영속, finalizeSession 성공 시 정리 (실패 시 의도적 유지 — 재시도 path 보존)
+  - ☑ baselineLongest 영속 → 신기록 hero UX 정합 (4-Pass M-3 흡수)
+  - ☑ readActiveSession JSON.parse 실패 시 dev 로깅 + 자동 정리 (4-Pass M-2 흡수)
+- ☑ **streak 일관성** — loadModes 시 stats.streak 으로 초기화 + 복원 시 sessionStorage baselineLongest 적용 (Session 072)
 
 ### 2.1 Step 3-UX-6c-2 실구현 채택 사유 영속 (4-Pass M-3 흡수)
 
@@ -114,7 +119,9 @@ SELECT COUNT(DISTINCT card_id) AS cnt FROM study_reviews
 
 ### 2.2 4-Pass 리뷰 carry-over 항목 (다음 step 이월)
 
-본 step (3-UX-6c-2) 4-Pass 독립 에이전트 리뷰 결과 carry-over (Step 3-UX-6e 검증 chain 또는 별도 ADR):
+본 step (3-UX-6c-2 + 3-UX-6c-3) 4-Pass 독립 에이전트 리뷰 결과 carry-over (Step 3-UX-6e 검증 chain 또는 별도 ADR):
+
+**Step 3-UX-6c-2 carry-over:**
 
 - ☐ **/mode 503 영향 면적** (silent M-1) — Promise.allSettled 도입으로 streak 부분 실패 시 graceful degradation. 본 step은 7 쿼리 fail-fast 유지.
 - ☐ **subject NULL 데이터 노출 정책** (silent M-5) — exam_questions.subject NULL 카드가 사용자에게 "미분류" 라벨 surface. 데이터 품질 게이트 추가 또는 UI 분리 표시.
@@ -122,6 +129,13 @@ SELECT COUNT(DISTINCT card_id) AS cnt FROM study_reviews
 - ☐ **ModeStatsResponse runtime validation** (silent Mi-3) — Zod 또는 manual guard로 서버 응답 shape 검증.
 - ☐ **AESTHETIC §2.2 emerald-500 토큰 등록** (quality m-1) — progress 달성 색 토큰화.
 - ☐ **text-[11px] 비표준 토큰 사용** (quality m-2) — SessionStart/SessionSummary 미세 텍스트 토큰화 또는 text-xs 통일.
+
+**Step 3-UX-6c-3 carry-over:**
+
+- ☐ **useEffect cleanup / AbortController 패턴** (code-reviewer + silent M-1) — examType prop 변경 race 시 stale setState 가능. study-api safeFetch에 AbortSignal 확장 동반 필요 (변경 표면 큼).
+- ☐ **SessionDetail.examType 필드 추가** (code-reviewer Pass 2 M-4) — 서버 응답에 examType 포함하여 클라이언트 sessionStorage 외 D1-source 이중 검증. API 계약 변경 동반.
+- ☐ **Object.hasOwn / UUID v4 regex hardening** (silent m-2/m-3) — readActiveSession type guard 강화 (현재 prototype pollution 차단 OK, 추가 robustness).
+- ☐ **sessionStorage E2E Playwright 시나리오** (silent Devil's Advocate) — 학습 중 새로고침 / private mode / 다중 탭 / iOS Safari 탭 언로드 시나리오 자동 검증.
 
 ### 3. LOCK §1 보정 (본 ADR 동시 영속)
 
@@ -133,7 +147,7 @@ SELECT COUNT(DISTINCT card_id) AS cnt FROM study_reviews
 
 - [x] Step 3-UX-6c-2 (server contract 확장) 완료 후 SessionStart 일일 목표 progress UI 영속 확인 (2026-05-13)
 - [x] Step 3-UX-6c-2 완료 후 SessionSummary 약점 영역 변화 UI 영속 확인 (2026-05-13)
-- [ ] Step 3-UX-6c-3 결정 (복원 구현 or 의도적 volatile 정책 ADR) — 진산 결정 대기
+- [x] Step 3-UX-6c-3 결정 — 진산 옵션 A 채택 (sessionStorage + 자동 복원). 구현 완료 (2026-05-13)
 - [ ] Step 3-UX-6e 검증 chain에서 본 carry-over 모두 fix 확인 (4-Pass + 5-페르소나)
 
 ### 5. 위험 / 미해소 사항

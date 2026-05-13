@@ -29,9 +29,87 @@ import {
   StudyApiError,
   completeSession,
   fetchModeStats,
+  fetchSessionDetail,
   redirectToLogin,
   startMode,
 } from '@/lib/study-api';
+
+/**
+ * Step 3-UX-6c-3 (ADR-040 G-3) — sessionStorage key.
+ *
+ * 진행 중 세션을 sessionStorage에 영속하여 새로고침 시 자동 복원.
+ * sessionStorage (not localStorage) — 탭 종료 시 자동 정리. 다중 탭 격리.
+ */
+const ACTIVE_SESSION_KEY = 'thepick:active-session';
+
+interface PersistedSession {
+  readonly sessionId: string;
+  readonly examType: '1st' | '2nd';
+  /** session 시작 시점 longest snapshot — 신기록 hero UX 복원 정합 (4-Pass M-3 흡수). */
+  readonly baselineLongest: number;
+}
+
+function persistActiveSession(value: PersistedSession): void {
+  try {
+    sessionStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(value));
+  } catch (err) {
+    // private mode / quota exceeded — 복원 미동작 trade-off. CLAUDE.md Rule 3 정합 dev 로깅.
+    console.warn('[StudyFlow] sessionStorage write failed (private mode?)', err);
+  }
+}
+
+function clearActiveSession(): void {
+  try {
+    sessionStorage.removeItem(ACTIVE_SESSION_KEY);
+  } catch (err) {
+    // 동일 fallback. private mode에서는 read도 0건이므로 영향 없음.
+    console.warn('[StudyFlow] sessionStorage clear failed', err);
+  }
+}
+
+function readActiveSession(): PersistedSession | null {
+  let raw: string | null;
+  try {
+    raw = sessionStorage.getItem(ACTIVE_SESSION_KEY);
+  } catch (err) {
+    console.warn('[StudyFlow] sessionStorage read failed (private mode?)', err);
+    return null;
+  }
+  if (raw === null) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      parsed === null ||
+      typeof parsed !== 'object' ||
+      !('sessionId' in parsed) ||
+      !('examType' in parsed)
+    ) {
+      // schema 변경 또는 외부 조작 — silent corruption 차단 후 정리.
+      clearActiveSession();
+      return null;
+    }
+    const obj = parsed as Record<string, unknown>;
+    if (
+      typeof obj.sessionId !== 'string' ||
+      obj.sessionId.length === 0 ||
+      (obj.examType !== '1st' && obj.examType !== '2nd')
+    ) {
+      clearActiveSession();
+      return null;
+    }
+    // baselineLongest는 신규 필드 — 구 schema 호환성: 누락 시 0 fallback (신기록 hero만 약간 손상).
+    const baselineLongest =
+      typeof obj.baselineLongest === 'number' && Number.isFinite(obj.baselineLongest)
+        ? obj.baselineLongest
+        : 0;
+    return { sessionId: obj.sessionId, examType: obj.examType, baselineLongest };
+  } catch (err) {
+    // JSON.parse 실패 — schema 변경 또는 외부 조작. CLAUDE.md Rule 3 정합 dev 로깅 + 정리.
+    console.warn('[StudyFlow] readActiveSession parse error, clearing', err);
+    clearActiveSession();
+    return null;
+  }
+}
 
 type FlowState =
   | { readonly status: 'init' }
@@ -118,6 +196,42 @@ export function StudyFlow({ examType = '1st' }: StudyFlowProps) {
         dailyGoalProgress: stats.streak.dailyGoalProgress,
         dailyGoal: stats.dailyGoal,
       });
+
+      // Step 3-UX-6c-3 (ADR-040 G-3) — 진행 중 세션 자동 복원.
+      // sessionStorage에 활성 세션이 영속되어 있고 examType이 일치하면 GET /session/:id로 phase 확인.
+      // phase !== 'completed' 시 questioning 복원, 그 외 (completed/404/403/401) graceful fallback.
+      const persisted = readActiveSession();
+      if (persisted !== null && persisted.examType === examType) {
+        try {
+          const detail = await fetchSessionDetail(persisted.sessionId);
+          if (detail.phase !== 'completed') {
+            finalizingRef.current = false;
+            // 신기록 hero UX 정합 (4-Pass M-3 흡수) — 세션 시작 시점 longest 복원.
+            setStreak((prev) => ({ ...prev, baselineLongest: persisted.baselineLongest }));
+            setState({
+              status: 'questioning',
+              stats,
+              sessionId: detail.id,
+              mode: detail.mode,
+              cardsPlanned: detail.cardsPlanned,
+            });
+            return;
+          }
+          // 이미 종료된 세션 → 영속 정리 후 mode-select.
+          clearActiveSession();
+        } catch (restoreErr) {
+          // 401/403/404/네트워크 — 정합 fallback. 인증만 redirect 전파.
+          if (restoreErr instanceof StudyApiError && restoreErr.kind === 'unauthenticated') {
+            redirectToLogin();
+            return;
+          }
+          clearActiveSession();
+        }
+      } else if (persisted !== null) {
+        // examType mismatch — 다른 시험으로 전환된 경우, 영속 정리.
+        clearActiveSession();
+      }
+
       setState({ status: 'mode-select', stats });
     } catch (err) {
       if (err instanceof StudyApiError && err.kind === 'unauthenticated') {
@@ -158,7 +272,15 @@ export function StudyFlow({ examType = '1st' }: StudyFlowProps) {
       try {
         const res = await startMode({ mode: state.mode, cardsPlanned });
         finalizingRef.current = false;
-        setStreak((prev) => ({ ...prev, baselineLongest: prev.longest }));
+        const startBaseline = streak.longest;
+        setStreak((prev) => ({ ...prev, baselineLongest: startBaseline }));
+        // Step 3-UX-6c-3 — 진행 중 세션 영속 (새로고침 복원 source).
+        // baselineLongest 동반 영속 — 신기록 hero UX 정합 (4-Pass M-3 흡수).
+        persistActiveSession({
+          sessionId: res.sessionId,
+          examType,
+          baselineLongest: startBaseline,
+        });
         setState({
           status: 'questioning',
           stats: state.stats,
@@ -185,12 +307,18 @@ export function StudyFlow({ examType = '1st' }: StudyFlowProps) {
       setState({ status: 'completing', sessionId, mode });
       try {
         const result = await completeSession(sessionId);
+        // Step 3-UX-6c-3 — 세션 종료 시 sessionStorage 영속 정리.
+        clearActiveSession();
         setState({ status: 'summary', result });
       } catch (err) {
         if (err instanceof StudyApiError && err.kind === 'unauthenticated') {
           redirectToLogin();
           return;
         }
+        // 4-Pass M-1 흡수 — finalize 실패 시 sessionStorage는 의도적으로 유지.
+        // 서버 측 트랜잭션 상태(complete 성공 vs 부분 실패)가 불명확하므로 클라이언트 자가 정리하면
+        // 재시도 경로가 끊긴다. 사용자가 "다시 시도" → loadModes() → readActiveSession() →
+        // fetchSessionDetail() phase 검사로 자가 치유 (completed면 정리, !=completed면 복원).
         setState({ status: 'error', message: formatApiError(err) });
       } finally {
         finalizingRef.current = false;
