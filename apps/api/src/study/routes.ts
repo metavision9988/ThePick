@@ -21,9 +21,10 @@
  *   progress 라우트 (node_id 기반) 와 분리되어 동일 user_progress 테이블 공유.
  */
 
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import {
+  EXAM_IDS,
   createLogger,
   isValidExamId,
   type ExamId,
@@ -32,16 +33,24 @@ import {
 } from '@thepick/shared';
 import {
   INPUT_TYPES,
+  LEARNING_MODES,
+  computeStreakUpdate,
+  dayBoundsUtc,
   gradeCalc,
   gradeEssay,
   gradeFillBlank,
   gradeMultipleChoice,
   multipleChoiceAnswerToIndex,
+  resolveLearningMode as resolveLearningModeBase,
+  resolveSessionPhase as resolveSessionPhaseBase,
   shuffleChoices,
   todayDateString,
   type EssaySelfRating,
   type FsrsRating,
   type InputType,
+  type LearningMode,
+  type NarrowingFallback,
+  type SessionPhase,
   type ShuffledChoice,
 } from '@thepick/learning-modes';
 import {
@@ -52,6 +61,7 @@ import {
   type FsrsCardState,
 } from '@thepick/srs';
 import { requireAuth, type RequireAuthVariables } from '../auth/middleware/require-auth.js';
+import { writeTelemetryEvent } from '../telemetry/write-helper.js';
 import { D1_UNIQUE_CONSTRAINT_PATTERN, withRetry } from '../middleware/retry.js';
 import {
   checkAndIncrementRateLimit,
@@ -112,6 +122,18 @@ const examTypeSchema = z.enum(['1st', '2nd']);
 
 const ESSAY_SELF_RATINGS = ['correct', 'partial', 'incorrect'] as const;
 
+// PHASE_THRESHOLD_* + computePhaseFromProgress + computeStreakUpdate + resolveSessionPhase +
+// resolveLearningMode + isOneDayApart + todayDateString은 packages/learning-modes/session-progress.ts
+// 단일 source. 본 파일은 import 경유 사용 (Engine-First 정합 + Golden Test 110건 packages 위임).
+
+/** Step 3-UX-5c — streak_records.daily_goal default (plan §13 D5 lock). */
+const DEFAULT_DAILY_GOAL = 20;
+
+/** Step 3-UX-5c — /mode weak 영역 surface top N + cards_planned 상한. */
+const WEAK_TOP_LIMIT = 5;
+const MAX_CARDS_PLANNED = 200;
+const MIN_CARDS_PLANNED = 1;
+
 const gradeSchema = z.object({
   questionId: z.string().min(1).max(128),
   /** 객관식: 셔플 라벨 ('A' ~ 'E') / 단답+계산: 자유 텍스트 / 서술: 사용자 작성 답안. */
@@ -122,6 +144,17 @@ const gradeSchema = z.object({
   selfRating: z.enum(ESSAY_SELF_RATINGS).optional(),
   /** Step 3-UX-5b — calc tolerance (default 0). 소수점 비교 허용 폭. */
   calcTolerance: z.number().min(0).max(1).optional(),
+  /** Step 3-UX-5c — 세션 진척 추적용. 미제공 시 study_reviews.session_id NULL (backward-compat). */
+  sessionId: z.string().uuid().optional(),
+});
+
+/** Step 3-UX-5c — POST /mode/start 요청 schema. */
+const modeStartSchema = z.object({
+  mode: z.enum(LEARNING_MODES),
+  /** mode 별 추가 파라미터. category={subject}, topic={conceptId}, confusion={confusionType}. */
+  modeParams: z.record(z.string(), z.unknown()).optional(),
+  /** 세션 계획 카드 수. cards_planned 도달 시 자동 phase='completed'. */
+  cardsPlanned: z.number().int().min(MIN_CARDS_PLANNED).max(MAX_CARDS_PLANNED),
 });
 
 interface ExamQuestionRow {
@@ -201,6 +234,29 @@ function decideFsrsRating(isCorrect: boolean, selfRating: EssaySelfRating | unde
   return isCorrect ? 'good' : 'again';
 }
 
+/** Step 3-UX-5c — study_sessions row shape. */
+interface StudySessionRow {
+  readonly id: string;
+  readonly user_id: string;
+  readonly started_at: string;
+  readonly ended_at: string | null;
+  readonly mode: string;
+  readonly mode_params: string | null;
+  readonly phase: string;
+  readonly cards_planned: number;
+  readonly cards_completed: number;
+  readonly correct_count: number;
+}
+
+/** Step 3-UX-5c — streak_records row shape. */
+interface StreakRecordRow {
+  readonly user_id: string;
+  readonly current_streak: number;
+  readonly longest_streak: number;
+  readonly last_study_date: string | null;
+  readonly daily_goal: number;
+}
+
 interface RelatedNodeOut {
   readonly id: string;
   readonly name: string;
@@ -245,6 +301,30 @@ interface NextQuestionOut {
   readonly calcVariables: Record<string, number> | null;
 }
 
+/** Step 3-UX-5c — /next 응답 envelope. sessionId 제공 시 session block 포함. */
+interface NextResponseSession {
+  readonly id: string;
+  readonly mode: LearningMode;
+  readonly phase: SessionPhase;
+}
+
+/** Step 3-UX-5c — /grade 응답 streak summary (plan §9.2 GradeResponse.streak). */
+interface StreakSummaryOut {
+  readonly current: number;
+  readonly longest: number;
+  /** 0~1, dailyGoal 대비 오늘 누적 review 비율. 정확도는 todayCount/dailyGoal cap. */
+  readonly dailyGoalProgress: number;
+}
+
+/** Step 3-UX-5c — /grade 응답 session 진척 summary. */
+interface SessionProgressOut {
+  readonly id: string;
+  readonly phase: SessionPhase;
+  readonly cardsCompleted: number;
+  readonly cardsPlanned: number;
+  readonly correctCount: number;
+}
+
 interface GradeResultOut {
   readonly isCorrect: boolean;
   readonly correctAnswer: string;
@@ -253,6 +333,10 @@ interface GradeResultOut {
   readonly relatedNodes: ReadonlyArray<RelatedNodeOut>;
   /** 객관식만 — 채점 후 셔플 라벨 노출 (사전 노출 0). */
   readonly correctLabel?: string;
+  /** Step 3-UX-5c — streak 누적 (plan §13 D5 lock). */
+  readonly streak: StreakSummaryOut;
+  /** Step 3-UX-5c — sessionId 제공 시 세션 진척 surface. */
+  readonly session?: SessionProgressOut;
 }
 
 type StudyEnv = {
@@ -435,6 +519,166 @@ function buildSourceCitations(
   };
 }
 
+/**
+ * Step 3-UX-5c — DB schema drift narrowing 콜백 (silent fallback 차단, devops 5-페르소나 흡수).
+ *
+ * 잘못된 phase/mode 값이 DB에서 surface될 시 warn 로깅 (운영자가 admin-web에서 trace 가능).
+ * Production에서 drift 발견 시 즉시 마이그레이션 또는 데이터 정합 작업 진행 의무.
+ */
+function makeNarrowingFallback(logger: Logger, kind: 'phase' | 'mode'): NarrowingFallback {
+  return (value, expected) => {
+    logger.warn(`schema drift narrowing fallback (${kind})`, {
+      kind,
+      receivedValue: value === null ? 'NULL' : value === undefined ? 'UNDEFINED' : value,
+      expectedValues: expected,
+    });
+  };
+}
+
+/** routes.ts 내 호출 정합 wrapper (logger 미주입 시 silent fallback). */
+function resolveSessionPhase(value: string | null | undefined, logger?: Logger): SessionPhase {
+  return resolveSessionPhaseBase(
+    value,
+    logger ? makeNarrowingFallback(logger, 'phase') : undefined,
+  );
+}
+
+function resolveLearningMode(value: string | null | undefined, logger?: Logger): LearningMode {
+  return resolveLearningModeBase(value, logger ? makeNarrowingFallback(logger, 'mode') : undefined);
+}
+
+/**
+ * Step 3-UX-5c — study_sessions row → SessionProgressOut (응답 매핑).
+ */
+function rowToSessionProgress(row: StudySessionRow, logger?: Logger): SessionProgressOut {
+  return {
+    id: row.id,
+    phase: resolveSessionPhase(row.phase, logger),
+    cardsCompleted: row.cards_completed,
+    cardsPlanned: row.cards_planned,
+    correctCount: row.correct_count,
+  };
+}
+
+/**
+ * Step 3-UX-5c — 4 input type 분기 채점 (refactoring 5-페르소나 흡수).
+ *
+ * /grade orchestrator 단일 책임 압박 완화 — 채점 로직 추출.
+ * 본격 step 함수 5개 분리 (validateAndLookup / persistProgress / appendStudyReview /
+ * advanceSession / bumpStreak) 는 phase 3 안정화 후 carry-over.
+ *
+ * 반환:
+ *   - isCorrect: 정답 여부
+ *   - correctLabel: 객관식 정답 라벨 (채점 후 노출 OK, 사전 노출 0)
+ *   - shuffleSeedForAudit: study_reviews.shuffle_seed audit (정답 위치 telemetry 미노출)
+ */
+async function gradeAnswerByType(params: {
+  readonly question: ExamQuestionRow;
+  readonly userAnswer: string;
+  readonly inputType: InputType;
+  readonly userId: string;
+  readonly selfRating: EssaySelfRating | undefined;
+  readonly calcTolerance: number | undefined;
+  readonly logger: Logger;
+}): Promise<{
+  isCorrect: boolean;
+  correctLabel: string | undefined;
+  shuffleSeedForAudit: string | null;
+}> {
+  const { question, userAnswer, inputType, userId, selfRating, calcTolerance, logger } = params;
+  // question.answer 검증은 호출 측에서 (QUESTION_HAS_NO_ANSWER 422).
+  // 본 함수는 answer != null 전제.
+  const expectedAnswer = question.answer as string;
+  let isCorrect = false;
+  let correctLabel: string | undefined;
+  let shuffleSeedForAudit: string | null = null;
+
+  if (inputType === 'multiple_choice') {
+    // 객관식: 셔플 재생성 후 originalIndex 역추적 → answer 매칭.
+    const shuffled = await buildShuffledChoices(userId, question, logger);
+    if (shuffled === null) {
+      // distractors 부재 또는 parse 실패 → fill_blank fallback (backward-compat).
+      isCorrect = gradeFillBlank({ expected: expectedAnswer, userAnswer }).isCorrect;
+    } else {
+      const correctOriginalIndex = multipleChoiceAnswerToIndex(expectedAnswer);
+      const result = gradeMultipleChoice({
+        submittedLabel: userAnswer,
+        shuffledChoices: shuffled,
+        correctOriginalIndex,
+      });
+      isCorrect = result.isCorrect;
+      correctLabel = result.correctLabel;
+      // study_reviews.shuffle_seed audit — 정답 위치 telemetry 미노출, seed만 기록.
+      shuffleSeedForAudit = todayDateString();
+    }
+  } else if (inputType === 'fill_blank') {
+    isCorrect = gradeFillBlank({ expected: expectedAnswer, userAnswer }).isCorrect;
+  } else if (inputType === 'essay') {
+    // selfRating 미주입 시 정답 string 매칭 fallback (backward-compat).
+    if (selfRating !== undefined) {
+      isCorrect = gradeEssay({ userAnswer, selfRating }).isCorrect;
+    } else {
+      isCorrect = gradeFillBlank({ expected: expectedAnswer, userAnswer }).isCorrect;
+    }
+  } else if (inputType === 'calc') {
+    // calc 자동 채점 불가 시 fill_blank fallback (backward-compat).
+    const calcResult = gradeCalc({
+      expectedValue: expectedAnswer,
+      userValue: userAnswer,
+      tolerance: calcTolerance ?? 0,
+    });
+    isCorrect = calcResult.autoGraded
+      ? calcResult.isCorrect
+      : gradeFillBlank({ expected: expectedAnswer, userAnswer }).isCorrect;
+  }
+
+  return { isCorrect, correctLabel, shuffleSeedForAudit };
+}
+
+/**
+ * Step 3-UX-5c — learning_slo 게이지 emit (devops 5-페르소나 흡수).
+ *
+ * Phase 3 launch 후 admin-web 학습 활동 가시성 확보 (engine_telemetry 8 게이지 중 learning_slo).
+ * best-effort: ctx.waitUntil로 비동기 (응답 latency 영향 0), 실패 시 warn 로깅.
+ *
+ * 호출 시점:
+ *   - /grade: event='grade' (isCorrect + inputType + sessionId)
+ *   - /grade streak 실패: event='streak_silent_failure' (운영자 alert candidate)
+ *   - /grade session 실패: event='session_update_failure' (동시 race candidate)
+ *   - /mode/start: event='mode_start' (mode + cardsPlanned)
+ *   - /session/:id/complete: event='session_complete' (correctRate + duration)
+ */
+function emitLearningTelemetry(
+  c: Context<StudyEnv>,
+  examId: ExamId,
+  metricJson: Record<string, unknown>,
+  logger: Logger,
+): void {
+  const promise = writeTelemetryEvent(
+    {
+      examId,
+      gaugeName: 'learning_slo',
+      metricValue: 1,
+      metricJson,
+    },
+    { db: c.env.DB, logger },
+  ).catch((err: unknown) => {
+    // telemetry 실패는 silent (학습 응답 영향 0). warn 로깅으로 trace 보존.
+    logger.warn('learning_slo telemetry emit failed', {
+      err: err instanceof Error ? err.message : String(err),
+      event: typeof metricJson.event === 'string' ? metricJson.event : 'unknown',
+    });
+  });
+  // executionCtx는 Workers runtime에서 자동 주입. test 환경에서는 getter 자체가 throw.
+  // try-catch로 안전 fallback — fire-and-forget (응답에 영향 0).
+  try {
+    c.executionCtx.waitUntil(promise);
+  } catch {
+    // test/dev 환경 — 이미 catch 핸들러 attached, await 없이 종료
+    void promise;
+  }
+}
+
 export function createStudyRoutes(): Hono<StudyEnv> {
   const router = new Hono<StudyEnv>();
 
@@ -479,6 +723,53 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       );
     }
 
+    // Step 3-UX-5c — sessionId optional. 제공 시 user 소유 + 미종료 검증.
+    // 응답에 session block(id/mode/phase) 포함 + mode 별 ORDER BY 분기 (weak: weak_score DESC).
+    const sessionIdRaw = c.req.query('sessionId');
+    let nextSessionRow: StudySessionRow | null = null;
+    if (sessionIdRaw !== undefined && sessionIdRaw !== '') {
+      try {
+        nextSessionRow = await c.env.DB.prepare(
+          `SELECT id, user_id, started_at, ended_at, mode, mode_params, phase,
+                  cards_planned, cards_completed, correct_count
+             FROM study_sessions
+            WHERE id = ?
+            LIMIT 1`,
+        )
+          .bind(sessionIdRaw)
+          .first<StudySessionRow>();
+      } catch (err) {
+        logger.error('session lookup failed (next)', err, { userId, sessionId: sessionIdRaw });
+        c.header('Retry-After', '5');
+        return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
+      }
+      if (nextSessionRow === null) {
+        return c.json({ error: 'SESSION_NOT_FOUND' }, 404);
+      }
+      if (nextSessionRow.user_id !== userId) {
+        return c.json({ error: 'SESSION_FORBIDDEN' }, 403);
+      }
+      if (nextSessionRow.phase === 'completed' || nextSessionRow.ended_at !== null) {
+        return c.json({ error: 'SESSION_ALREADY_COMPLETED' }, 409);
+      }
+    }
+
+    // Step 3-UX-5c — mode 별 ORDER BY 분기.
+    // weak mode: weak_score DESC (D2 lock 정합) + 미시도 우선
+    // 기타 (category/topic/confusion/mixed): 기존 정책 (미시도 우선 + correct_count ASC)
+    const nextMode: LearningMode | null =
+      nextSessionRow !== null ? resolveLearningMode(nextSessionRow.mode) : null;
+    const orderClause =
+      nextMode === 'weak'
+        ? `ORDER BY (up.id IS NULL) DESC,
+                COALESCE(up.weak_score, 0) DESC,
+                COALESCE(up.correct_count, 0) ASC,
+                eq.id ASC`
+        : `ORDER BY (up.id IS NULL) DESC,
+                COALESCE(up.correct_count, 0) ASC,
+                COALESCE(up.total_reviews, 0) ASC,
+                eq.id ASC`;
+
     let questions: ReadonlyArray<ExamQuestionRow>;
     try {
       const result = await c.env.DB.prepare(
@@ -492,10 +783,7 @@ export function createStudyRoutes(): Hono<StudyEnv> {
             AND up.card_type = 'exam'
           WHERE eq.status = 'active'
             AND eq.exam_type = ?
-          ORDER BY (up.id IS NULL) DESC,
-                   COALESCE(up.correct_count, 0) ASC,
-                   COALESCE(up.total_reviews, 0) ASC,
-                   eq.id ASC
+          ${orderClause}
           LIMIT ?`,
       )
         .bind(userId, examType, countNum)
@@ -507,8 +795,22 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
     }
 
+    // session block 영속 (응답 surface).
+    const sessionBlock: NextResponseSession | null =
+      nextSessionRow !== null && nextMode !== null
+        ? {
+            id: nextSessionRow.id,
+            mode: nextMode,
+            phase: resolveSessionPhase(nextSessionRow.phase),
+          }
+        : null;
+
     if (questions.length === 0) {
-      return c.json({ exhausted: true, questions: [] });
+      return c.json({
+        exhausted: true,
+        questions: [],
+        ...(sessionBlock !== null ? { session: sessionBlock } : {}),
+      });
     }
 
     // ★ Session 066 5-Persona C-07 흡수 — N+1 직렬 enrichment → Promise.all 병렬.
@@ -547,7 +849,11 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       }),
     );
 
-    return c.json({ exhausted: false, questions: enriched });
+    return c.json({
+      exhausted: false,
+      questions: enriched,
+      ...(sessionBlock !== null ? { session: sessionBlock } : {}),
+    });
   });
 
   router.post('/grade', async (c) => {
@@ -588,7 +894,43 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       inputType: requestedInputType,
       selfRating: requestedSelfRating,
       calcTolerance: requestedCalcTolerance,
+      sessionId: requestedSessionId,
     } = parsed.data;
+
+    // Step 3-UX-5c — sessionId 제공 시 user 소유 + 미종료 검증.
+    // 잘못된 sessionId (다른 user 또는 없는 id 또는 completed)는 404 / 403 / 409.
+    // sessionId 미제공 시 session 통합 비활성 (backward-compat).
+    let sessionRow: StudySessionRow | null = null;
+    if (requestedSessionId !== undefined) {
+      try {
+        sessionRow = await c.env.DB.prepare(
+          `SELECT id, user_id, started_at, ended_at, mode, mode_params, phase,
+                  cards_planned, cards_completed, correct_count
+             FROM study_sessions
+            WHERE id = ?
+            LIMIT 1`,
+        )
+          .bind(requestedSessionId)
+          .first<StudySessionRow>();
+      } catch (err) {
+        logger.error('session lookup failed', err, { userId, sessionId: requestedSessionId });
+        c.header('Retry-After', '5');
+        return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
+      }
+      if (sessionRow === null) {
+        return c.json({ error: 'SESSION_NOT_FOUND' }, 404);
+      }
+      if (sessionRow.user_id !== userId) {
+        return c.json({ error: 'SESSION_FORBIDDEN' }, 403);
+      }
+      if (sessionRow.phase === 'completed' || sessionRow.ended_at !== null) {
+        return c.json({ error: 'SESSION_ALREADY_COMPLETED' }, 409);
+      }
+    }
+
+    // Step 3-UX-5c — streak + session 응답 자료 (UPSERT 실패 시 fallback 영역).
+    let streakOut: StreakSummaryOut = { current: 0, longest: 0, dailyGoalProgress: 0 };
+    let sessionOut: SessionProgressOut | undefined = undefined;
 
     let question: ExamQuestionRow | null;
     try {
@@ -616,60 +958,17 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       return c.json({ error: 'QUESTION_HAS_NO_ANSWER', questionId }, 422);
     }
 
-    // Step 3-UX-5a — input_type 분기 채점.
-    // 클라이언트 request inputType 우선 (체크), 없으면 question.input_type 사용.
+    // === Step A: input_type 분기 채점 (gradeAnswerByType 추출, 5-페르소나 흡수) ===
     const inputType: InputType = resolveInputType(requestedInputType ?? question.input_type);
-    let isCorrect = false;
-    let correctLabel: string | undefined;
-    let shuffleSeedForAudit: string | null = null;
-
-    if (inputType === 'multiple_choice') {
-      // 객관식: 셔플 재생성 후 originalIndex 역추적 → answer 매칭.
-      const shuffled = await buildShuffledChoices(userId, question, logger);
-      if (shuffled === null) {
-        // distractors 부재 또는 parse 실패 → fill_blank fallback (backward-compat)
-        const result = gradeFillBlank({ expected: question.answer, userAnswer });
-        isCorrect = result.isCorrect;
-      } else {
-        const correctOriginalIndex = multipleChoiceAnswerToIndex(question.answer);
-        const result = gradeMultipleChoice({
-          submittedLabel: userAnswer,
-          shuffledChoices: shuffled,
-          correctOriginalIndex,
-        });
-        isCorrect = result.isCorrect;
-        correctLabel = result.correctLabel;
-        // study_reviews.shuffle_seed audit — 정답 위치 telemetry 미노출, seed만 기록.
-        shuffleSeedForAudit = todayDateString();
-      }
-    } else if (inputType === 'fill_blank') {
-      const result = gradeFillBlank({ expected: question.answer, userAnswer });
-      isCorrect = result.isCorrect;
-    } else if (inputType === 'essay') {
-      // Step 3-UX-5b — essay self-grade.
-      // selfRating 미주입 시 정답 string 매칭 fallback (backward-compat).
-      if (requestedSelfRating !== undefined) {
-        const result = gradeEssay({ userAnswer, selfRating: requestedSelfRating });
-        isCorrect = result.isCorrect;
-      } else {
-        const result = gradeFillBlank({ expected: question.answer, userAnswer });
-        isCorrect = result.isCorrect;
-      }
-    } else if (inputType === 'calc') {
-      // Step 3-UX-5b — calc numeric 비교 (tolerance 허용).
-      // 자동 채점 불가 시 fill_blank fallback (backward-compat).
-      const calcResult = gradeCalc({
-        expectedValue: question.answer,
-        userValue: userAnswer,
-        tolerance: requestedCalcTolerance ?? 0,
-      });
-      if (calcResult.autoGraded) {
-        isCorrect = calcResult.isCorrect;
-      } else {
-        const result = gradeFillBlank({ expected: question.answer, userAnswer });
-        isCorrect = result.isCorrect;
-      }
-    }
+    const { isCorrect, correctLabel, shuffleSeedForAudit } = await gradeAnswerByType({
+      question,
+      userAnswer,
+      inputType,
+      userId,
+      selfRating: requestedSelfRating,
+      calcTolerance: requestedCalcTolerance,
+      logger,
+    });
 
     const relatedNodes = await enrichRelatedNodes(c.env.DB, question.related_nodes, logger);
     const sourceCitations = buildSourceCitations(question, relatedNodes);
@@ -801,14 +1100,14 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       }
 
       // Step 3-UX-5b — study_reviews INSERT (review 이력 trace, Migration 0034 정합).
-      // packages/srs.replayReviews source. session_id는 Step 3-UX-5c carry-over (현 NULL).
+      // Step 3-UX-5c — session_id 활성 (sessionRow 있으면 채움).
       try {
         await withRetry(() =>
           c.env.DB.prepare(
             `INSERT INTO study_reviews
                (id, user_id, card_id, card_type, reviewed_at, rating,
                 interval_days, stability_before, stability_after, shuffle_seed, session_id)
-             VALUES (?, ?, ?, 'exam', ?, ?, ?, ?, ?, ?, NULL)`,
+             VALUES (?, ?, ?, 'exam', ?, ?, ?, ?, ?, ?, ?)`,
           )
             .bind(
               crypto.randomUUID(),
@@ -820,6 +1119,7 @@ export function createStudyRoutes(): Hono<StudyEnv> {
               reviewResult.review.stabilityBefore,
               reviewResult.review.stabilityAfter,
               shuffleSeedForAudit,
+              sessionRow?.id ?? null,
             )
             .run(),
         );
@@ -832,6 +1132,157 @@ export function createStudyRoutes(): Hono<StudyEnv> {
           questionId,
         });
       }
+
+      // Step 3-UX-5c (5-페르소나 흡수) — study_sessions UPDATE 원자성 강화.
+      //   - SQL식 증분 (cards_completed + 1) → race 시 둘 다 +1 적용 (quality CRIT-3 흡수)
+      //   - phase + ended_at도 SQL CASE로 atomic (memory 계산 race 차단)
+      //   - WHERE phase != 'completed' guard 유지 (cards_planned 도달 시 idempotent)
+      //   - UPDATE RETURNING으로 응답값 fetch (SELECT 추가 round-trip 절감)
+      //   - 실패 시 sessionOut은 직전 state로 fallback (warn 로깅, devops 흡수)
+      if (sessionRow !== null) {
+        try {
+          const updated = await withRetry(() =>
+            c.env.DB.prepare(
+              `UPDATE study_sessions
+                  SET cards_completed = cards_completed + 1,
+                      correct_count = correct_count + ?,
+                      phase = CASE
+                        WHEN (cards_completed + 1) >= cards_planned THEN 'completed'
+                        WHEN (cards_completed + 1) * 1.0 / cards_planned >= 0.8 THEN 'cooldown'
+                        WHEN (cards_completed + 1) * 1.0 / cards_planned >= 0.2 THEN 'main'
+                        ELSE 'warmup'
+                      END,
+                      ended_at = CASE
+                        WHEN (cards_completed + 1) >= cards_planned AND ended_at IS NULL THEN ?
+                        ELSE ended_at
+                      END
+                WHERE id = ?
+                  AND user_id = ?
+                  AND phase != 'completed'
+                RETURNING cards_completed, correct_count, phase, cards_planned`,
+            )
+              .bind(isCorrect ? 1 : 0, nowIso, sessionRow.id, userId)
+              .first<{
+                cards_completed: number;
+                correct_count: number;
+                phase: string;
+                cards_planned: number;
+              }>(),
+          );
+          if (updated.value !== null) {
+            sessionOut = {
+              id: sessionRow.id,
+              phase: resolveSessionPhase(updated.value.phase, logger),
+              cardsCompleted: updated.value.cards_completed,
+              cardsPlanned: updated.value.cards_planned,
+              correctCount: updated.value.correct_count,
+            };
+          } else {
+            // WHERE phase != 'completed' 매칭 실패 (race로 다른 호출이 먼저 completed 진입)
+            // 정상 시나리오 — 직전 state로 fallback (UI에는 이미 phase 표시됨)
+            sessionOut = rowToSessionProgress(sessionRow, logger);
+          }
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          logger.warn('study_sessions UPDATE failed (progress fallback)', {
+            err: errMsg,
+            sessionId: sessionRow.id,
+            userId,
+            event: 'session_silent_failure',
+          });
+          emitLearningTelemetry(
+            c,
+            examIdParam.examId,
+            {
+              event: 'session_update_failure',
+              sessionId: sessionRow.id,
+              userId,
+              error: errMsg,
+            },
+            logger,
+          );
+          sessionOut = rowToSessionProgress(sessionRow, logger);
+        }
+      }
+
+      // Step 3-UX-5c (5-페르소나 흡수) — streak_records UPSERT 원자성 강화.
+      //   - SELECT + INSERT/UPDATE → 단일 INSERT ON CONFLICT DO UPDATE WHERE (backend CRIT-2 흡수)
+      //   - WHERE last_study_date != excluded.last_study_date 절로 same-day idempotent
+      //   - daily_goal는 excluded.daily_goal로 덮지 않음 (사용자 설정 보존)
+      //   - today COUNT: substr → reviewed_at >= ? AND < ? range scan (perf CRIT-5 흡수)
+      try {
+        const today = todayDateString();
+        const todayBounds = dayBoundsUtc(today);
+        const streakExisting = await c.env.DB.prepare(
+          `SELECT user_id, current_streak, longest_streak, last_study_date, daily_goal
+             FROM streak_records
+            WHERE user_id = ?
+            LIMIT 1`,
+        )
+          .bind(userId)
+          .first<StreakRecordRow>();
+
+        const previousStreak = {
+          lastStudyDate: streakExisting?.last_study_date ?? null,
+          currentStreak: streakExisting?.current_streak ?? 0,
+          longestStreak: streakExisting?.longest_streak ?? 0,
+        };
+        const updated = computeStreakUpdate(previousStreak, today);
+        const dailyGoal = streakExisting?.daily_goal ?? DEFAULT_DAILY_GOAL;
+
+        await withRetry(() =>
+          c.env.DB.prepare(
+            `INSERT INTO streak_records
+               (user_id, current_streak, longest_streak, last_study_date, daily_goal)
+             VALUES (?, ?, ?, ?, ?)
+             ON CONFLICT(user_id) DO UPDATE SET
+               current_streak = excluded.current_streak,
+               longest_streak = excluded.longest_streak,
+               last_study_date = excluded.last_study_date
+             WHERE streak_records.last_study_date IS NOT excluded.last_study_date`,
+          )
+            .bind(
+              userId,
+              updated.currentStreak,
+              updated.longestStreak,
+              updated.lastStudyDate,
+              dailyGoal,
+            )
+            .run(),
+        );
+
+        // dailyGoalProgress — KST today 범위 (UTC ISO 8601) 인덱스 range scan.
+        const todayCountRow = await c.env.DB.prepare(
+          `SELECT COUNT(*) AS cnt
+             FROM study_reviews
+            WHERE user_id = ?
+              AND reviewed_at >= ?
+              AND reviewed_at < ?`,
+        )
+          .bind(userId, todayBounds.startUtc, todayBounds.endUtc)
+          .first<{ cnt: number }>();
+        const todayCount = todayCountRow?.cnt ?? 0;
+        const progress = dailyGoal > 0 ? Math.min(todayCount / dailyGoal, 1) : 0;
+
+        streakOut = {
+          current: updated.currentStreak,
+          longest: updated.longestStreak,
+          dailyGoalProgress: progress,
+        };
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        logger.warn('streak_records UPSERT failed (fallback to defaults)', {
+          err: errMsg,
+          userId,
+          event: 'streak_silent_failure',
+        });
+        emitLearningTelemetry(
+          c,
+          examIdParam.examId,
+          { event: 'streak_silent_failure', userId, error: errMsg },
+          logger,
+        );
+      }
     } catch (err) {
       if (err instanceof Error && D1_UNIQUE_CONSTRAINT_PATTERN.test(err.message)) {
         return c.json({ error: 'CONCURRENT_UPDATE' }, 409);
@@ -841,15 +1292,381 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
     }
 
+    // Step 3-UX-5c — learning_slo telemetry emit (devops 5-페르소나 흡수).
+    emitLearningTelemetry(
+      c,
+      examIdParam.examId,
+      {
+        event: 'grade',
+        isCorrect,
+        inputType,
+        sessionId: sessionRow?.id ?? null,
+        dailyGoalProgress: streakOut.dailyGoalProgress,
+        currentStreak: streakOut.current,
+      },
+      logger,
+    );
+
     const result: GradeResultOut = {
       isCorrect,
       correctAnswer: question.answer,
       explanation: question.explanation,
       sourceCitations,
       relatedNodes,
+      streak: streakOut,
       ...(correctLabel !== undefined ? { correctLabel } : {}),
+      ...(sessionOut !== undefined ? { session: sessionOut } : {}),
     };
     return c.json(result);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Step 3-UX-5c — /mode + /session endpoint (plan §9.3 + §9.4)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * GET /api/study/mode?examId=...&examType=1st|2nd
+   *
+   * 5 mode 별 available 카드 수 + 약점 영역 surface + confusion type breakdown.
+   * UI ModeSelector + WeakAreaPanel surface 자료.
+   */
+  router.get('/mode', async (c) => {
+    const logger = buildLogger(c.env).child({ route: 'mode-stats' });
+    const userId = c.var.userId;
+
+    const examIdParam = requireExamId(c.req.query('examId'));
+    if (examIdParam.error || !examIdParam.examId) {
+      return c.json(
+        { error: 'VALIDATION_ERROR', message: examIdParam.error ?? 'examId required' },
+        422,
+      );
+    }
+    void examIdParam.examId;
+
+    const examTypeRaw = c.req.query('examType') ?? '1st';
+    const examTypeParsed = examTypeSchema.safeParse(examTypeRaw);
+    if (!examTypeParsed.success) {
+      return c.json(
+        { error: 'VALIDATION_ERROR', message: `Invalid examType: ${examTypeRaw}` },
+        422,
+      );
+    }
+    const examType = examTypeParsed.data;
+
+    try {
+      const [totalRow, confusionRow, weakRow, weakTopResult, confusionBreakdownResult] =
+        await Promise.all([
+          c.env.DB.prepare(
+            `SELECT COUNT(*) AS cnt FROM exam_questions WHERE status = 'active' AND exam_type = ?`,
+          )
+            .bind(examType)
+            .first<{ cnt: number }>(),
+          c.env.DB.prepare(
+            `SELECT COUNT(*) AS cnt FROM exam_questions
+              WHERE status = 'active'
+                AND exam_type = ?
+                AND confusion_type IS NOT NULL`,
+          )
+            .bind(examType)
+            .first<{ cnt: number }>(),
+          c.env.DB.prepare(
+            `SELECT COUNT(*) AS cnt FROM user_progress up
+               JOIN exam_questions eq ON eq.id = up.card_id AND eq.status = 'active' AND eq.exam_type = ?
+              WHERE up.user_id = ?
+                AND up.card_type = 'exam'
+                AND up.weak_score > 0`,
+          )
+            .bind(examType, userId)
+            .first<{ cnt: number }>(),
+          c.env.DB.prepare(
+            `SELECT eq.id AS card_id, eq.subject, up.weak_score
+               FROM user_progress up
+               JOIN exam_questions eq ON eq.id = up.card_id AND eq.status = 'active' AND eq.exam_type = ?
+              WHERE up.user_id = ?
+                AND up.card_type = 'exam'
+                AND up.weak_score > 0
+              ORDER BY up.weak_score DESC
+              LIMIT ?`,
+          )
+            .bind(examType, userId, WEAK_TOP_LIMIT)
+            .all<{ card_id: string; subject: string | null; weak_score: number }>(),
+          c.env.DB.prepare(
+            `SELECT confusion_type AS type, COUNT(*) AS cnt
+               FROM exam_questions
+              WHERE status = 'active'
+                AND exam_type = ?
+                AND confusion_type IS NOT NULL
+              GROUP BY confusion_type
+              ORDER BY cnt DESC`,
+          )
+            .bind(examType)
+            .all<{ type: string; cnt: number }>(),
+        ]);
+
+      const total = totalRow?.cnt ?? 0;
+      const confusion = confusionRow?.cnt ?? 0;
+      const weak = weakRow?.cnt ?? 0;
+
+      return c.json({
+        examId: examIdParam.examId,
+        examType,
+        modes: [
+          { mode: 'category', available: total },
+          { mode: 'topic', available: total },
+          { mode: 'confusion', available: confusion },
+          { mode: 'weak', available: weak },
+          { mode: 'mixed', available: total },
+        ] satisfies ReadonlyArray<{ mode: LearningMode; available: number }>,
+        weakTop: weakTopResult.results.map((row) => ({
+          cardId: row.card_id,
+          subject: row.subject,
+          weakScore: row.weak_score,
+        })),
+        confusionTypes: confusionBreakdownResult.results.map((row) => ({
+          type: row.type,
+          count: row.cnt,
+        })),
+      });
+    } catch (err) {
+      logger.error('mode stats query failed', err, { userId, examType });
+      c.header('Retry-After', '5');
+      return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
+    }
+  });
+
+  /**
+   * POST /api/study/mode/start
+   *
+   * 학습 세션 생성. mode + cardsPlanned 정책으로 study_sessions INSERT.
+   * 응답: 생성된 sessionId + 초기 phase='warmup'.
+   */
+  router.post('/mode/start', async (c) => {
+    const logger = buildLogger(c.env).child({ route: 'mode-start' });
+    const userId = c.var.userId;
+
+    const examIdParam = requireExamId(c.req.query('examId'));
+    if (examIdParam.error || !examIdParam.examId) {
+      return c.json(
+        { error: 'VALIDATION_ERROR', message: examIdParam.error ?? 'examId required' },
+        422,
+      );
+    }
+    void examIdParam.examId;
+
+    const parsed = modeStartSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) {
+      return c.json({ error: 'VALIDATION_ERROR', issues: parsed.error.issues }, 422);
+    }
+    const { mode, modeParams, cardsPlanned } = parsed.data;
+
+    const sessionId = crypto.randomUUID();
+    const nowIso = new Date().toISOString();
+    const modeParamsJson =
+      modeParams !== undefined && modeParams !== null ? JSON.stringify(modeParams) : null;
+
+    try {
+      const insertResult = await withRetry(() =>
+        c.env.DB.prepare(
+          `INSERT INTO study_sessions
+             (id, user_id, started_at, ended_at, mode, mode_params, phase,
+              cards_planned, cards_completed, correct_count)
+           VALUES (?, ?, ?, NULL, ?, ?, 'warmup', ?, 0, 0)`,
+        )
+          .bind(sessionId, userId, nowIso, mode, modeParamsJson, cardsPlanned)
+          .run(),
+      );
+      if (!insertResult.value.success) {
+        throw new Error('D1_INSERT_FAILED');
+      }
+    } catch (err) {
+      logger.error('study_sessions INSERT failed', err, { userId, mode, cardsPlanned });
+      c.header('Retry-After', '5');
+      return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
+    }
+
+    emitLearningTelemetry(
+      c,
+      examIdParam.examId,
+      { event: 'mode_start', sessionId, mode, cardsPlanned },
+      logger,
+    );
+
+    return c.json({
+      sessionId,
+      mode,
+      phase: 'warmup' as SessionPhase,
+      cardsPlanned,
+      cardsCompleted: 0,
+      correctCount: 0,
+      startedAt: nowIso,
+    });
+  });
+
+  /**
+   * GET /api/study/session/:id
+   *
+   * 세션 진척 추적. user 소유 검증 + 모든 필드 surface.
+   */
+  router.get('/session/:id', async (c) => {
+    const logger = buildLogger(c.env).child({ route: 'session-get' });
+    const userId = c.var.userId;
+    const sessionId = c.req.param('id');
+
+    if (sessionId === undefined || sessionId === '') {
+      return c.json({ error: 'VALIDATION_ERROR', message: 'sessionId required' }, 422);
+    }
+
+    let row: StudySessionRow | null;
+    try {
+      row = await c.env.DB.prepare(
+        `SELECT id, user_id, started_at, ended_at, mode, mode_params, phase,
+                cards_planned, cards_completed, correct_count
+           FROM study_sessions
+          WHERE id = ?
+          LIMIT 1`,
+      )
+        .bind(sessionId)
+        .first<StudySessionRow>();
+    } catch (err) {
+      logger.error('session lookup failed', err, { userId, sessionId });
+      c.header('Retry-After', '5');
+      return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
+    }
+
+    if (row === null) {
+      return c.json({ error: 'SESSION_NOT_FOUND' }, 404);
+    }
+    if (row.user_id !== userId) {
+      return c.json({ error: 'SESSION_FORBIDDEN' }, 403);
+    }
+
+    let modeParams: Record<string, unknown> | null = null;
+    if (row.mode_params !== null) {
+      try {
+        const parsed: unknown = JSON.parse(row.mode_params);
+        if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          modeParams = parsed as Record<string, unknown>;
+        }
+      } catch (err) {
+        logger.warn('mode_params JSON parse failed', {
+          err: err instanceof Error ? err.message : String(err),
+          sessionId,
+        });
+      }
+    }
+
+    return c.json({
+      id: row.id,
+      mode: resolveLearningMode(row.mode),
+      modeParams,
+      phase: resolveSessionPhase(row.phase),
+      cardsPlanned: row.cards_planned,
+      cardsCompleted: row.cards_completed,
+      correctCount: row.correct_count,
+      startedAt: row.started_at,
+      endedAt: row.ended_at,
+    });
+  });
+
+  /**
+   * POST /api/study/session/:id/complete
+   *
+   * 세션 종료. phase='completed' + ended_at 설정 + 요약 응답.
+   * 이미 종료된 세션 재호출 → idempotent (현재 state 응답).
+   */
+  router.post('/session/:id/complete', async (c) => {
+    const logger = buildLogger(c.env).child({ route: 'session-complete' });
+    const userId = c.var.userId;
+    const sessionId = c.req.param('id');
+
+    if (sessionId === undefined || sessionId === '') {
+      return c.json({ error: 'VALIDATION_ERROR', message: 'sessionId required' }, 422);
+    }
+
+    let row: StudySessionRow | null;
+    try {
+      row = await c.env.DB.prepare(
+        `SELECT id, user_id, started_at, ended_at, mode, mode_params, phase,
+                cards_planned, cards_completed, correct_count
+           FROM study_sessions
+          WHERE id = ?
+          LIMIT 1`,
+      )
+        .bind(sessionId)
+        .first<StudySessionRow>();
+    } catch (err) {
+      logger.error('session lookup failed (complete)', err, { userId, sessionId });
+      c.header('Retry-After', '5');
+      return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
+    }
+
+    if (row === null) {
+      return c.json({ error: 'SESSION_NOT_FOUND' }, 404);
+    }
+    if (row.user_id !== userId) {
+      return c.json({ error: 'SESSION_FORBIDDEN' }, 403);
+    }
+
+    const nowIso = new Date().toISOString();
+    const endedAt = row.ended_at ?? nowIso;
+    const alreadyCompleted = row.phase === 'completed' && row.ended_at !== null;
+
+    if (!alreadyCompleted) {
+      try {
+        await withRetry(() =>
+          c.env.DB.prepare(
+            `UPDATE study_sessions
+                SET phase = 'completed',
+                    ended_at = COALESCE(ended_at, ?)
+              WHERE id = ?
+                AND user_id = ?`,
+          )
+            .bind(nowIso, sessionId, userId)
+            .run(),
+        );
+      } catch (err) {
+        logger.error('session UPDATE complete failed', err, { userId, sessionId });
+        c.header('Retry-After', '5');
+        return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
+      }
+    }
+
+    const correctRate = row.cards_completed > 0 ? row.correct_count / row.cards_completed : 0;
+    const startedMs = Date.parse(row.started_at);
+    const endedMs = Date.parse(endedAt);
+    const durationMinutes =
+      Number.isFinite(startedMs) && Number.isFinite(endedMs)
+        ? Math.max(0, (endedMs - startedMs) / 60_000)
+        : 0;
+
+    // Step 3-UX-5c — learning_slo telemetry emit (admin-web 세션 완료 추적).
+    emitLearningTelemetry(
+      c,
+      EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+      {
+        event: 'session_complete',
+        sessionId,
+        mode: resolveLearningMode(row.mode),
+        cardsCompleted: row.cards_completed,
+        cardsPlanned: row.cards_planned,
+        correctRate,
+        durationMinutes,
+      },
+      logger,
+    );
+
+    return c.json({
+      id: row.id,
+      mode: resolveLearningMode(row.mode),
+      phase: 'completed' as SessionPhase,
+      cardsPlanned: row.cards_planned,
+      cardsCompleted: row.cards_completed,
+      correctCount: row.correct_count,
+      correctRate,
+      startedAt: row.started_at,
+      endedAt,
+      durationMinutes,
+    });
   });
 
   return router;

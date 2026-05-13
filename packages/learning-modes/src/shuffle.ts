@@ -21,10 +21,9 @@ export interface ShuffleSeedInput {
   readonly date: string;
 }
 
-/** UTC 기준 YYYY-MM-DD. Phase 3 launch 시점에 timezone 정책 별도 검토 carry-over. */
-export function todayDateString(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+// todayDateString은 packages/learning-modes/session-progress.ts로 이전 (KST 기본 — 한국 사용자 100%).
+// 본 모듈 import 정합 위해 re-export.
+export { todayDateString } from './session-progress.js';
 
 /**
  * SHA-256(userId || questionId || date) → hex 문자열.

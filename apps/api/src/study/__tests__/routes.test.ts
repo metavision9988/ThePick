@@ -113,13 +113,14 @@ function seedExamQuestion(params: {
   examType?: '1st' | '2nd';
   relatedNodes?: string[] | null;
   status?: 'active' | 'historical';
+  confusionType?: string | null;
 }): void {
   ctx.raw
     .prepare(
       `INSERT INTO exam_questions
          (id, year, round, question_number, subject, content, answer, explanation,
-          related_nodes, status, exam_type)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          related_nodes, status, exam_type, confusion_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       params.id,
@@ -133,6 +134,7 @@ function seedExamQuestion(params: {
       params.relatedNodes ? JSON.stringify(params.relatedNodes) : null,
       params.status ?? 'active',
       params.examType ?? '2nd',
+      params.confusionType ?? null,
     );
 }
 
@@ -141,13 +143,14 @@ function seedProgressForQuestion(params: {
   questionId: string;
   totalReviews?: number;
   correctCount?: number;
+  weakScore?: number;
 }): void {
   ctx.raw
     .prepare(
       `INSERT INTO user_progress
          (id, user_id, node_id, card_id, card_type, fsrs_difficulty, fsrs_stability, fsrs_interval,
-          fsrs_next_review, total_reviews, correct_count)
-       VALUES (?, ?, NULL, ?, 'exam', 0.3, 1.0, 1, NULL, ?, ?)`,
+          fsrs_next_review, total_reviews, correct_count, weak_score)
+       VALUES (?, ?, NULL, ?, 'exam', 0.3, 1.0, 1, NULL, ?, ?, ?)`,
     )
     .run(
       crypto.randomUUID(),
@@ -155,6 +158,64 @@ function seedProgressForQuestion(params: {
       params.questionId,
       params.totalReviews ?? 0,
       params.correctCount ?? 0,
+      params.weakScore ?? 0,
+    );
+}
+
+/** Step 3-UX-5c — study_sessions seed helper. */
+function seedStudySession(params: {
+  id?: string;
+  userId: string;
+  mode?: 'category' | 'topic' | 'confusion' | 'weak' | 'mixed';
+  phase?: 'warmup' | 'main' | 'cooldown' | 'completed';
+  cardsPlanned?: number;
+  cardsCompleted?: number;
+  correctCount?: number;
+  startedAt?: string;
+  endedAt?: string | null;
+}): string {
+  const id = params.id ?? crypto.randomUUID();
+  ctx.raw
+    .prepare(
+      `INSERT INTO study_sessions
+         (id, user_id, started_at, ended_at, mode, mode_params, phase,
+          cards_planned, cards_completed, correct_count)
+       VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?)`,
+    )
+    .run(
+      id,
+      params.userId,
+      params.startedAt ?? new Date().toISOString(),
+      params.endedAt ?? null,
+      params.mode ?? 'mixed',
+      params.phase ?? 'warmup',
+      params.cardsPlanned ?? 20,
+      params.cardsCompleted ?? 0,
+      params.correctCount ?? 0,
+    );
+  return id;
+}
+
+/** Step 3-UX-5c — streak_records seed helper. */
+function seedStreakRecord(params: {
+  userId: string;
+  currentStreak?: number;
+  longestStreak?: number;
+  lastStudyDate?: string | null;
+  dailyGoal?: number;
+}): void {
+  ctx.raw
+    .prepare(
+      `INSERT INTO streak_records
+         (user_id, current_streak, longest_streak, last_study_date, daily_goal)
+       VALUES (?, ?, ?, ?, ?)`,
+    )
+    .run(
+      params.userId,
+      params.currentStreak ?? 0,
+      params.longestStreak ?? 0,
+      params.lastStudyDate ?? null,
+      params.dailyGoal ?? 20,
     );
 }
 
@@ -545,5 +606,724 @@ describe('POST /api/study/grade', () => {
       .prepare(`SELECT total_reviews FROM user_progress WHERE user_id='u2' AND card_id='eq-1'`)
       .get() as { total_reviews: number };
     expect(u2Row.total_reviews).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Step 3-UX-5c — /mode + /session + /grade streak/session 통합 테스트
+// ---------------------------------------------------------------------------
+
+interface StreakBody {
+  readonly current: number;
+  readonly longest: number;
+  readonly dailyGoalProgress: number;
+}
+
+interface SessionProgressBody {
+  readonly id: string;
+  readonly phase: 'warmup' | 'main' | 'cooldown' | 'completed';
+  readonly cardsCompleted: number;
+  readonly cardsPlanned: number;
+  readonly correctCount: number;
+}
+
+interface GradeResponseBody extends StudyResponseBody {
+  readonly streak?: StreakBody;
+  readonly session?: SessionProgressBody;
+  readonly correctLabel?: string;
+}
+
+interface ModeStatsBody {
+  readonly examId: string;
+  readonly examType: '1st' | '2nd';
+  readonly modes: ReadonlyArray<{ mode: string; available: number }>;
+  readonly weakTop: ReadonlyArray<{ cardId: string; subject: string | null; weakScore: number }>;
+  readonly confusionTypes: ReadonlyArray<{ type: string; count: number }>;
+}
+
+interface ModeStartBody {
+  readonly sessionId: string;
+  readonly mode: string;
+  readonly phase: 'warmup' | 'main' | 'cooldown' | 'completed';
+  readonly cardsPlanned: number;
+  readonly cardsCompleted: number;
+  readonly correctCount: number;
+  readonly startedAt: string;
+}
+
+interface SessionBody {
+  readonly id: string;
+  readonly mode: string;
+  readonly modeParams: Record<string, unknown> | null;
+  readonly phase: 'warmup' | 'main' | 'cooldown' | 'completed';
+  readonly cardsPlanned: number;
+  readonly cardsCompleted: number;
+  readonly correctCount: number;
+  readonly startedAt: string;
+  readonly endedAt: string | null;
+}
+
+interface SessionCompleteBody extends SessionBody {
+  readonly correctRate: number;
+  readonly durationMinutes: number;
+}
+
+interface NextWithSessionBody extends StudyResponseBody {
+  readonly session?: { id: string; mode: string; phase: string };
+}
+
+describe('GET /api/study/mode', () => {
+  it('미인증 → 401', async () => {
+    const res = await createStudyRoutes().fetch(
+      new Request(`http://test.local${withExamId('/mode')}`),
+      env(),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it('examId 누락 → 422', async () => {
+    seedUser('u1', 'u1@test.com');
+    const token = await accessToken('u1');
+    const res = await createStudyRoutes().fetch(
+      new Request('http://test.local/mode', {
+        headers: { Cookie: `${ACCESS_TOKEN_COOKIE}=${token}` },
+      }),
+      env(),
+    );
+    expect(res.status).toBe(422);
+  });
+
+  it('빈 데이터 → 5 mode 모두 available=0, weakTop 빈 배열', async () => {
+    seedUser('u1', 'u1@test.com');
+    const res = await fetchAs('u1', '/mode?examType=2nd');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ModeStatsBody;
+    expect(body.modes).toHaveLength(5);
+    expect(body.modes.map((m) => m.mode).sort()).toEqual([
+      'category',
+      'confusion',
+      'mixed',
+      'topic',
+      'weak',
+    ]);
+    for (const m of body.modes) expect(m.available).toBe(0);
+    expect(body.weakTop).toEqual([]);
+    expect(body.confusionTypes).toEqual([]);
+  });
+
+  it('exam_type 필터 + weak top + confusion breakdown', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-c1', examType: '2nd', confusionType: 'numeric' });
+    seedExamQuestion({ id: 'eq-c2', examType: '2nd', confusionType: 'numeric' });
+    seedExamQuestion({ id: 'eq-other', examType: '1st' }); // 다른 examType 제외
+    // user_progress weak_score
+    seedProgressForQuestion({ userId: 'u1', questionId: 'eq-c1', weakScore: 0.7 });
+    seedProgressForQuestion({ userId: 'u1', questionId: 'eq-c2', weakScore: 0.3 });
+
+    const res = await fetchAs('u1', '/mode?examType=2nd');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ModeStatsBody;
+    const category = body.modes.find((m) => m.mode === 'category');
+    expect(category?.available).toBe(2); // 2nd 만
+    const weak = body.modes.find((m) => m.mode === 'weak');
+    expect(weak?.available).toBe(2);
+    const confusion = body.modes.find((m) => m.mode === 'confusion');
+    expect(confusion?.available).toBe(2);
+    // weakTop 정렬 검증 (DESC)
+    expect(body.weakTop).toHaveLength(2);
+    expect(body.weakTop[0].cardId).toBe('eq-c1');
+    expect(body.weakTop[0].weakScore).toBeCloseTo(0.7);
+    expect(body.weakTop[1].cardId).toBe('eq-c2');
+    // confusionTypes
+    expect(body.confusionTypes).toEqual([{ type: 'numeric', count: 2 }]);
+  });
+});
+
+describe('POST /api/study/mode/start', () => {
+  it('mode + cardsPlanned 정상 → sessionId 생성', async () => {
+    seedUser('u1', 'u1@test.com');
+    const res = await fetchAs('u1', '/mode/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'weak', cardsPlanned: 20 }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ModeStartBody;
+    expect(body.mode).toBe('weak');
+    expect(body.phase).toBe('warmup');
+    expect(body.cardsPlanned).toBe(20);
+    expect(body.cardsCompleted).toBe(0);
+    expect(typeof body.sessionId).toBe('string');
+    expect(body.sessionId.length).toBeGreaterThan(0);
+    // DB 영속 검증
+    const row = ctx.raw
+      .prepare(`SELECT * FROM study_sessions WHERE id = ?`)
+      .get(body.sessionId) as { user_id: string; mode: string; cards_planned: number };
+    expect(row.user_id).toBe('u1');
+    expect(row.mode).toBe('weak');
+    expect(row.cards_planned).toBe(20);
+  });
+
+  it('잘못된 mode → 422', async () => {
+    seedUser('u1', 'u1@test.com');
+    const res = await fetchAs('u1', '/mode/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'invalid', cardsPlanned: 10 }),
+    });
+    expect(res.status).toBe(422);
+  });
+
+  it('cardsPlanned 0 → 422', async () => {
+    seedUser('u1', 'u1@test.com');
+    const res = await fetchAs('u1', '/mode/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'mixed', cardsPlanned: 0 }),
+    });
+    expect(res.status).toBe(422);
+  });
+
+  it('cardsPlanned 201 → 422 (상한 초과)', async () => {
+    seedUser('u1', 'u1@test.com');
+    const res = await fetchAs('u1', '/mode/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'mixed', cardsPlanned: 201 }),
+    });
+    expect(res.status).toBe(422);
+  });
+
+  it('modeParams JSON 영속', async () => {
+    seedUser('u1', 'u1@test.com');
+    const res = await fetchAs('u1', '/mode/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'topic',
+        modeParams: { conceptId: 'CONCEPT-001' },
+        cardsPlanned: 10,
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ModeStartBody;
+    const row = ctx.raw
+      .prepare(`SELECT mode_params FROM study_sessions WHERE id = ?`)
+      .get(body.sessionId) as { mode_params: string };
+    expect(JSON.parse(row.mode_params)).toEqual({ conceptId: 'CONCEPT-001' });
+  });
+});
+
+describe('GET /api/study/session/:id', () => {
+  it('미존재 → 404', async () => {
+    seedUser('u1', 'u1@test.com');
+    const res = await fetchAs('u1', '/session/00000000-0000-0000-0000-000000000000');
+    expect(res.status).toBe(404);
+  });
+
+  it('다른 user → 403', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedUser('u2', 'u2@test.com');
+    const sid = seedStudySession({ userId: 'u2', mode: 'weak', cardsPlanned: 10 });
+    const res = await fetchAs('u1', `/session/${sid}`);
+    expect(res.status).toBe(403);
+  });
+
+  it('소유자 → 200 + 정상 fields', async () => {
+    seedUser('u1', 'u1@test.com');
+    const sid = seedStudySession({
+      userId: 'u1',
+      mode: 'mixed',
+      phase: 'main',
+      cardsPlanned: 20,
+      cardsCompleted: 5,
+      correctCount: 3,
+    });
+    const res = await fetchAs('u1', `/session/${sid}`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as SessionBody;
+    expect(body.id).toBe(sid);
+    expect(body.mode).toBe('mixed');
+    expect(body.phase).toBe('main');
+    expect(body.cardsPlanned).toBe(20);
+    expect(body.cardsCompleted).toBe(5);
+    expect(body.correctCount).toBe(3);
+  });
+});
+
+describe('POST /api/study/session/:id/complete', () => {
+  it('미존재 → 404', async () => {
+    seedUser('u1', 'u1@test.com');
+    const res = await fetchAs('u1', '/session/00000000-0000-0000-0000-000000000000/complete', {
+      method: 'POST',
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it('다른 user → 403', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedUser('u2', 'u2@test.com');
+    const sid = seedStudySession({ userId: 'u2' });
+    const res = await fetchAs('u1', `/session/${sid}/complete`, { method: 'POST' });
+    expect(res.status).toBe(403);
+  });
+
+  it('정상 → phase=completed + ended_at 설정 + summary', async () => {
+    seedUser('u1', 'u1@test.com');
+    const startedAt = new Date(Date.now() - 30 * 60_000).toISOString();
+    const sid = seedStudySession({
+      userId: 'u1',
+      mode: 'weak',
+      phase: 'main',
+      cardsPlanned: 20,
+      cardsCompleted: 12,
+      correctCount: 9,
+      startedAt,
+    });
+    const res = await fetchAs('u1', `/session/${sid}/complete`, { method: 'POST' });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as SessionCompleteBody;
+    expect(body.phase).toBe('completed');
+    expect(body.endedAt).not.toBeNull();
+    expect(body.correctRate).toBeCloseTo(9 / 12);
+    expect(body.durationMinutes).toBeGreaterThan(0);
+    // DB 영속 검증
+    const row = ctx.raw
+      .prepare(`SELECT phase, ended_at FROM study_sessions WHERE id = ?`)
+      .get(sid) as { phase: string; ended_at: string | null };
+    expect(row.phase).toBe('completed');
+    expect(row.ended_at).not.toBeNull();
+  });
+
+  it('이미 completed 세션 → idempotent (200 + 기존 ended_at 보존)', async () => {
+    seedUser('u1', 'u1@test.com');
+    const endedAt = new Date(Date.now() - 60_000).toISOString();
+    const sid = seedStudySession({
+      userId: 'u1',
+      phase: 'completed',
+      cardsCompleted: 10,
+      cardsPlanned: 10,
+      endedAt,
+    });
+    const res = await fetchAs('u1', `/session/${sid}/complete`, { method: 'POST' });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as SessionCompleteBody;
+    expect(body.endedAt).toBe(endedAt); // 기존 값 보존
+  });
+});
+
+describe('POST /api/study/grade — Step 3-UX-5c streak + session 통합', () => {
+  it('streak null → current=1, dailyGoalProgress > 0', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-streak-1', answer: '1' });
+    const res = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-streak-1', userAnswer: '1' }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as GradeResponseBody;
+    expect(body.streak?.current).toBe(1);
+    expect(body.streak?.longest).toBe(1);
+    expect(body.streak?.dailyGoalProgress).toBeGreaterThan(0);
+    // DB 영속
+    const row = ctx.raw
+      .prepare(`SELECT current_streak, longest_streak FROM streak_records WHERE user_id='u1'`)
+      .get() as { current_streak: number; longest_streak: number };
+    expect(row.current_streak).toBe(1);
+  });
+
+  it('streak 어제 → current 누적', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-streak-2', answer: '1' });
+    // 어제 last_study_date
+    const yesterday = new Date(Date.now() - 86400_000).toISOString().substring(0, 10);
+    seedStreakRecord({
+      userId: 'u1',
+      currentStreak: 3,
+      longestStreak: 5,
+      lastStudyDate: yesterday,
+    });
+    const res = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-streak-2', userAnswer: '1' }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as GradeResponseBody;
+    expect(body.streak?.current).toBe(4); // 3 + 1
+    expect(body.streak?.longest).toBe(5); // unchanged (4 < 5)
+  });
+
+  it('streak gap (2일 이상 공백) → current reset to 1', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-streak-3', answer: '1' });
+    const twoDaysAgo = new Date(Date.now() - 86400_000 * 2).toISOString().substring(0, 10);
+    seedStreakRecord({
+      userId: 'u1',
+      currentStreak: 7,
+      longestStreak: 10,
+      lastStudyDate: twoDaysAgo,
+    });
+    const res = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-streak-3', userAnswer: '1' }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as GradeResponseBody;
+    expect(body.streak?.current).toBe(1); // reset
+    expect(body.streak?.longest).toBe(10); // 보존
+  });
+
+  it('sessionId 통합 → cards_completed += 1 + correct_count += 1', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-sess-1', answer: '1' });
+    const sid = seedStudySession({ userId: 'u1', mode: 'mixed', cardsPlanned: 20 });
+    const res = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-sess-1', userAnswer: '1', sessionId: sid }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as GradeResponseBody;
+    expect(body.session?.cardsCompleted).toBe(1);
+    expect(body.session?.correctCount).toBe(1);
+    expect(body.session?.phase).toBe('warmup'); // 1/20 = 5% < 20%
+  });
+
+  it('sessionId 다른 user → 403', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedUser('u2', 'u2@test.com');
+    seedExamQuestion({ id: 'eq-sess-2', answer: '1' });
+    const sid = seedStudySession({ userId: 'u2' });
+    const res = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-sess-2', userAnswer: '1', sessionId: sid }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it('sessionId completed → 409', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-sess-3', answer: '1' });
+    const sid = seedStudySession({
+      userId: 'u1',
+      phase: 'completed',
+      endedAt: new Date().toISOString(),
+    });
+    const res = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-sess-3', userAnswer: '1', sessionId: sid }),
+    });
+    expect(res.status).toBe(409);
+  });
+
+  it('phase 자동 진행 — main threshold 도달', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-phase-1', answer: '1' });
+    // cardsPlanned=10, cardsCompleted=1 → 다음 grade로 2/10=20% → main
+    const sid = seedStudySession({
+      userId: 'u1',
+      mode: 'mixed',
+      cardsPlanned: 10,
+      cardsCompleted: 1,
+    });
+    const res = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-phase-1', userAnswer: '1', sessionId: sid }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as GradeResponseBody;
+    expect(body.session?.phase).toBe('main');
+    expect(body.session?.cardsCompleted).toBe(2);
+  });
+
+  it('phase 자동 진행 — cards_planned 도달 시 completed + ended_at', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-phase-2', answer: '1' });
+    const sid = seedStudySession({
+      userId: 'u1',
+      mode: 'mixed',
+      cardsPlanned: 2,
+      cardsCompleted: 1,
+    });
+    const res = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-phase-2', userAnswer: '1', sessionId: sid }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as GradeResponseBody;
+    expect(body.session?.phase).toBe('completed');
+    expect(body.session?.cardsCompleted).toBe(2);
+    const row = ctx.raw
+      .prepare(`SELECT phase, ended_at FROM study_sessions WHERE id = ?`)
+      .get(sid) as { phase: string; ended_at: string | null };
+    expect(row.phase).toBe('completed');
+    expect(row.ended_at).not.toBeNull();
+  });
+
+  it('study_reviews.session_id FK 채워짐 (sessionId 제공 시)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-fk-1', answer: '1' });
+    const sid = seedStudySession({ userId: 'u1', mode: 'mixed', cardsPlanned: 5 });
+    await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-fk-1', userAnswer: '1', sessionId: sid }),
+    });
+    const row = ctx.raw
+      .prepare(`SELECT session_id FROM study_reviews WHERE user_id='u1' AND card_id='eq-fk-1'`)
+      .get() as { session_id: string | null };
+    expect(row.session_id).toBe(sid);
+  });
+});
+
+describe('GET /api/study/next — Step 3-UX-5c sessionId session block', () => {
+  it('sessionId 미제공 → session block 미포함 (backward-compat)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-next-1', examType: '2nd' });
+    const res = await fetchAs('u1', '/next?examType=2nd');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as NextWithSessionBody;
+    expect(body.session).toBeUndefined();
+  });
+
+  it('sessionId 제공 → session block (id/mode/phase) 포함', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-next-2', examType: '2nd' });
+    const sid = seedStudySession({ userId: 'u1', mode: 'weak', cardsPlanned: 20 });
+    const res = await fetchAs('u1', `/next?examType=2nd&sessionId=${sid}`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as NextWithSessionBody;
+    expect(body.session?.id).toBe(sid);
+    expect(body.session?.mode).toBe('weak');
+    expect(body.session?.phase).toBe('warmup');
+  });
+
+  it('sessionId 다른 user → 403', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedUser('u2', 'u2@test.com');
+    const sid = seedStudySession({ userId: 'u2' });
+    const res = await fetchAs('u1', `/next?examType=2nd&sessionId=${sid}`);
+    expect(res.status).toBe(403);
+  });
+
+  it('weak mode → weak_score DESC ORDER (높은 weak 카드 먼저)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-w-low', examType: '2nd' });
+    seedExamQuestion({ id: 'eq-w-high', examType: '2nd' });
+    seedExamQuestion({ id: 'eq-w-mid', examType: '2nd' });
+    // 모두 user_progress 영속 (미시도 우선 차단 위해)
+    seedProgressForQuestion({
+      userId: 'u1',
+      questionId: 'eq-w-low',
+      totalReviews: 1,
+      correctCount: 1,
+      weakScore: 0.1,
+    });
+    seedProgressForQuestion({
+      userId: 'u1',
+      questionId: 'eq-w-high',
+      totalReviews: 1,
+      correctCount: 0,
+      weakScore: 0.9,
+    });
+    seedProgressForQuestion({
+      userId: 'u1',
+      questionId: 'eq-w-mid',
+      totalReviews: 1,
+      correctCount: 1,
+      weakScore: 0.5,
+    });
+    const sid = seedStudySession({ userId: 'u1', mode: 'weak', cardsPlanned: 20 });
+    const res = await fetchAs('u1', `/next?examType=2nd&sessionId=${sid}&count=3`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as NextWithSessionBody;
+    expect(body.questions).toHaveLength(3);
+    expect(body.questions![0].id).toBe('eq-w-high');
+    expect(body.questions![1].id).toBe('eq-w-mid');
+    expect(body.questions![2].id).toBe('eq-w-low');
+  });
+
+  it('exhausted (questions 0건) + sessionId → session block 응답 유지', async () => {
+    seedUser('u1', 'u1@test.com');
+    // exam_questions 0건
+    const sid = seedStudySession({ userId: 'u1', mode: 'mixed', cardsPlanned: 10 });
+    const res = await fetchAs('u1', `/next?examType=2nd&sessionId=${sid}`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as NextWithSessionBody;
+    expect(body.exhausted).toBe(true);
+    expect(body.questions).toEqual([]);
+    expect(body.session?.id).toBe(sid);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Step 3-UX-5c follow-up (5-페르소나 흡수) — 경계값 + race + 누락 시나리오
+// ---------------------------------------------------------------------------
+
+describe('phase 경계값 — 0.2 main / 0.8 cooldown / 1.0 completed', () => {
+  it('★ cooldown 진입 — 8/10 (정확 0.8 경계) → cooldown', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-cool-1', answer: '1' });
+    // cards_completed=7 → 다음 grade로 8/10=80% (cooldown 경계)
+    const sid = seedStudySession({
+      userId: 'u1',
+      mode: 'mixed',
+      cardsPlanned: 10,
+      cardsCompleted: 7,
+    });
+    const res = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-cool-1', userAnswer: '1', sessionId: sid }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as GradeResponseBody;
+    expect(body.session?.phase).toBe('cooldown');
+    expect(body.session?.cardsCompleted).toBe(8);
+  });
+
+  it('★ cooldown 유지 — 9/10 (between 0.8 and 1.0) → cooldown', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-cool-2', answer: '1' });
+    const sid = seedStudySession({
+      userId: 'u1',
+      mode: 'mixed',
+      cardsPlanned: 10,
+      cardsCompleted: 8,
+    });
+    const res = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-cool-2', userAnswer: '1', sessionId: sid }),
+    });
+    const body = (await res.json()) as GradeResponseBody;
+    expect(body.session?.phase).toBe('cooldown');
+    expect(body.session?.cardsCompleted).toBe(9);
+  });
+
+  it('★ completed boundary — 99/100 → 100/100 정확히 completed', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-comp-100', answer: '1' });
+    const sid = seedStudySession({
+      userId: 'u1',
+      mode: 'mixed',
+      cardsPlanned: 100,
+      cardsCompleted: 99,
+    });
+    const res = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-comp-100', userAnswer: '1', sessionId: sid }),
+    });
+    const body = (await res.json()) as GradeResponseBody;
+    expect(body.session?.phase).toBe('completed');
+    expect(body.session?.cardsCompleted).toBe(100);
+    const row = ctx.raw
+      .prepare(`SELECT phase, ended_at FROM study_sessions WHERE id = ?`)
+      .get(sid) as { phase: string; ended_at: string | null };
+    expect(row.phase).toBe('completed');
+    expect(row.ended_at).not.toBeNull();
+  });
+});
+
+describe('동시 grade race — SQL식 증분 + UPSERT atomic 검증', () => {
+  it('★ 동시 2 grade — cards_completed += 2 (race-safe SQL 증분)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-race-1', answer: '1' });
+    seedExamQuestion({ id: 'eq-race-2', answer: '1' });
+    const sid = seedStudySession({
+      userId: 'u1',
+      mode: 'mixed',
+      cardsPlanned: 100,
+      cardsCompleted: 0,
+    });
+    // Promise.all 2 grade 동시 호출 — SQL식 증분이라 둘 다 +1 적용
+    await Promise.all([
+      fetchAs('u1', '/grade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId: 'eq-race-1', userAnswer: '1', sessionId: sid }),
+      }),
+      fetchAs('u1', '/grade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId: 'eq-race-2', userAnswer: '1', sessionId: sid }),
+      }),
+    ]);
+    const row = ctx.raw
+      .prepare(`SELECT cards_completed, correct_count FROM study_sessions WHERE id = ?`)
+      .get(sid) as { cards_completed: number; correct_count: number };
+    expect(row.cards_completed).toBe(2);
+    expect(row.correct_count).toBe(2);
+  });
+
+  it('★ 동시 2 grade same-day — streak idempotent (WHERE 절 no-op)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-streak-race-1', answer: '1' });
+    seedExamQuestion({ id: 'eq-streak-race-2', answer: '1' });
+    await Promise.all([
+      fetchAs('u1', '/grade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId: 'eq-streak-race-1', userAnswer: '1' }),
+      }),
+      fetchAs('u1', '/grade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId: 'eq-streak-race-2', userAnswer: '1' }),
+      }),
+    ]);
+    // 둘 다 첫 학습이고 today 동일이므로 current_streak는 1 (idempotent)
+    const row = ctx.raw
+      .prepare(`SELECT current_streak, longest_streak FROM streak_records WHERE user_id='u1'`)
+      .get() as { current_streak: number; longest_streak: number };
+    expect(row.current_streak).toBe(1);
+    expect(row.longest_streak).toBe(1);
+  });
+
+  it('★ daily_goal 사용자 설정 보존 — UPSERT가 default 20으로 덮지 않음', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-goal-1', answer: '1' });
+    // user가 daily_goal=50 설정한 상태
+    seedStreakRecord({
+      userId: 'u1',
+      currentStreak: 0,
+      longestStreak: 0,
+      lastStudyDate: null,
+      dailyGoal: 50,
+    });
+    await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-goal-1', userAnswer: '1' }),
+    });
+    const row = ctx.raw
+      .prepare(`SELECT daily_goal, current_streak FROM streak_records WHERE user_id='u1'`)
+      .get() as { daily_goal: number; current_streak: number };
+    expect(row.daily_goal).toBe(50); // 보존
+    expect(row.current_streak).toBe(1); // 정상 갱신
+  });
+});
+
+describe('weak user 격리 — /mode weakTop이 다른 user 데이터 누설 X', () => {
+  it('★ u1 weakTop에 u2의 weak 카드 부재', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedUser('u2', 'u2@test.com');
+    seedExamQuestion({ id: 'eq-iso-1', examType: '2nd' });
+    seedExamQuestion({ id: 'eq-iso-2', examType: '2nd' });
+    seedProgressForQuestion({ userId: 'u1', questionId: 'eq-iso-1', weakScore: 0.3 });
+    seedProgressForQuestion({ userId: 'u2', questionId: 'eq-iso-2', weakScore: 0.9 });
+    const res = await fetchAs('u1', '/mode?examType=2nd');
+    const body = (await res.json()) as ModeStatsBody;
+    expect(body.weakTop).toHaveLength(1);
+    expect(body.weakTop[0].cardId).toBe('eq-iso-1');
+    expect(body.weakTop.find((w) => w.cardId === 'eq-iso-2')).toBeUndefined();
   });
 });

@@ -56,3 +56,19 @@ export {
 } from './input-types/essay.js';
 
 export { gradeCalc, type CalcGradeInput, type CalcGradeResult } from './input-types/calc.js';
+
+export {
+  KST_OFFSET_HOURS,
+  PHASE_THRESHOLD_WARMUP,
+  PHASE_THRESHOLD_COOLDOWN,
+  computePhaseFromProgress,
+  computeStreakUpdate,
+  dayBoundsUtc,
+  isOneDayApart,
+  resolveLearningMode,
+  resolveSessionPhase,
+  type DayBoundsUtc,
+  type NarrowingFallback,
+  type StreakInput,
+  type StreakUpdate,
+} from './session-progress.js';

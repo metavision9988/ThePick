@@ -49,6 +49,7 @@ import {
 } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import type { TransitionStatus, TransitionTargetType } from '@thepick/shared';
+import { LEARNING_MODES } from '@thepick/learning-modes';
 
 // --- Enum values (must match SQL CHECK constraints + shared/types.ts) ---
 
@@ -147,7 +148,8 @@ const INPUT_TYPES = ['multiple_choice', 'fill_blank', 'essay', 'calc'] as const;
 const FSRS_STATES = ['new', 'learning', 'review', 'relearning'] as const;
 const FSRS_RATINGS = ['again', 'hard', 'good', 'easy'] as const;
 const STUDY_REVIEW_CARD_TYPES = ['exam', 'concept'] as const;
-const SESSION_MODES = ['category', 'topic', 'confusion', 'weak', 'mixed'] as const;
+// SESSION_MODES (5 학습 모드) + SESSION_PHASES (4 phase)는 @thepick/learning-modes가 단일 source.
+// schema.ts CHECK constraint와 Drizzle enum이 packages export로 동기 — Hard Rule 17 정신 정합.
 const SESSION_PHASES = ['warmup', 'main', 'cooldown', 'completed'] as const;
 
 // ---------------------------------------------------------------------------
@@ -424,7 +426,7 @@ export const studySessions = sqliteTable('study_sessions', {
     .notNull()
     .default(sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`),
   endedAt: text('ended_at'),
-  mode: text('mode', { enum: SESSION_MODES }).notNull(),
+  mode: text('mode', { enum: LEARNING_MODES }).notNull(),
   modeParams: text('mode_params'), // JSON
   phase: text('phase', { enum: SESSION_PHASES }).notNull().default('warmup'),
   cardsPlanned: integer('cards_planned').notNull(),
