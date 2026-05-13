@@ -196,6 +196,32 @@ function seedStudySession(params: {
   return id;
 }
 
+/** Step 3-UX-6c-2 — study_reviews seed helper (weakDelta 테스트용). */
+function seedStudyReview(params: {
+  userId: string;
+  cardId: string;
+  sessionId: string;
+  reviewedAt?: string;
+  rating?: 'again' | 'hard' | 'good' | 'easy';
+  intervalDays?: number;
+}): void {
+  ctx.raw
+    .prepare(
+      `INSERT INTO study_reviews
+         (id, user_id, card_id, card_type, reviewed_at, rating, interval_days, session_id)
+       VALUES (?, ?, ?, 'exam', ?, ?, ?, ?)`,
+    )
+    .run(
+      crypto.randomUUID(),
+      params.userId,
+      params.cardId,
+      params.reviewedAt ?? new Date().toISOString(),
+      params.rating ?? 'good',
+      params.intervalDays ?? 1,
+      params.sessionId,
+    );
+}
+
 /** Step 3-UX-5c — streak_records seed helper. */
 function seedStreakRecord(params: {
   userId: string;
@@ -639,6 +665,8 @@ interface ModeStatsBody {
   readonly modes: ReadonlyArray<{ mode: string; available: number }>;
   readonly weakTop: ReadonlyArray<{ cardId: string; subject: string | null; weakScore: number }>;
   readonly confusionTypes: ReadonlyArray<{ type: string; count: number }>;
+  readonly streak: { current: number; longest: number; dailyGoalProgress: number };
+  readonly dailyGoal: number;
 }
 
 interface ModeStartBody {
@@ -663,9 +691,21 @@ interface SessionBody {
   readonly endedAt: string | null;
 }
 
+interface WeakDeltaBody {
+  readonly available: boolean;
+  readonly cardsReviewed: number;
+  readonly stillWeakCount: number;
+  readonly bySubject: ReadonlyArray<{
+    subject: string | null;
+    reviewed: number;
+    stillWeak: number;
+  }>;
+}
+
 interface SessionCompleteBody extends SessionBody {
   readonly correctRate: number;
   readonly durationMinutes: number;
+  readonly weakDelta: WeakDeltaBody;
 }
 
 interface NextWithSessionBody extends StudyResponseBody {
@@ -709,6 +749,49 @@ describe('GET /api/study/mode', () => {
     for (const m of body.modes) expect(m.available).toBe(0);
     expect(body.weakTop).toEqual([]);
     expect(body.confusionTypes).toEqual([]);
+  });
+
+  it('streak_records 부재 → streak {0, 0, 0} + dailyGoal 20 (Step 3-UX-6c-2 ADR-040 G-1)', async () => {
+    seedUser('u1', 'u1@test.com');
+    const res = await fetchAs('u1', '/mode?examType=2nd');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ModeStatsBody;
+    expect(body.streak).toEqual({ current: 0, longest: 0, dailyGoalProgress: 0 });
+    expect(body.dailyGoal).toBe(20);
+  });
+
+  it('streak_records 존재 → streak 영속값 + dailyGoalProgress 0 (today review 0)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedStreakRecord({
+      userId: 'u1',
+      currentStreak: 5,
+      longestStreak: 7,
+      lastStudyDate: '2026-05-12',
+      dailyGoal: 30,
+    });
+    const res = await fetchAs('u1', '/mode?examType=2nd');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ModeStatsBody;
+    expect(body.streak.current).toBe(5);
+    expect(body.streak.longest).toBe(7);
+    expect(body.streak.dailyGoalProgress).toBe(0);
+    expect(body.dailyGoal).toBe(30);
+  });
+
+  it('dailyGoalProgress — 같은 카드 N회 review = 1장 학습 (DISTINCT card_id, 4-Pass M-3 흡수)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-dg', examType: '2nd' });
+    seedStreakRecord({ userId: 'u1', dailyGoal: 10 });
+    // 같은 카드 5회 review (today)
+    const sid = seedStudySession({ userId: 'u1', phase: 'main' });
+    for (let i = 0; i < 5; i++) {
+      seedStudyReview({ userId: 'u1', cardId: 'eq-dg', sessionId: sid });
+    }
+    const res = await fetchAs('u1', '/mode?examType=2nd');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ModeStatsBody;
+    // 5회 review가 100%(5/10×2)가 아닌 10%(1/10)로 surface → 정직성 정합.
+    expect(body.streak.dailyGoalProgress).toBeCloseTo(0.1);
   });
 
   it('exam_type 필터 + weak top + confusion breakdown', async () => {
@@ -893,6 +976,66 @@ describe('POST /api/study/session/:id/complete', () => {
       .get(sid) as { phase: string; ended_at: string | null };
     expect(row.phase).toBe('completed');
     expect(row.ended_at).not.toBeNull();
+  });
+
+  it('weakDelta — 세션 review 0건 → available=true + empty bySubject (Step 3-UX-6c-2 ADR-040 G-2)', async () => {
+    seedUser('u1', 'u1@test.com');
+    const sid = seedStudySession({ userId: 'u1', phase: 'main' });
+    const res = await fetchAs('u1', `/session/${sid}/complete`, { method: 'POST' });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as SessionCompleteBody;
+    expect(body.weakDelta).toEqual({
+      available: true,
+      cardsReviewed: 0,
+      stillWeakCount: 0,
+      bySubject: [],
+    });
+  });
+
+  it('weakDelta — subject 단위 reviewed/stillWeak 집계 + 중복 카드 dedupe', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-w1', examType: '2nd', subject: '보험 일반' });
+    seedExamQuestion({ id: 'eq-w2', examType: '2nd', subject: '보험 일반' });
+    seedExamQuestion({ id: 'eq-w3', examType: '2nd', subject: '농작물재해보험' });
+    seedExamQuestion({ id: 'eq-w4', examType: '2nd', subject: '농작물재해보험' });
+    // w1, w2: 약점 잔존 (weak_score > 0). w3: 약점 해소 (weak_score = 0). w4: progress 없음.
+    seedProgressForQuestion({ userId: 'u1', questionId: 'eq-w1', weakScore: 0.5 });
+    seedProgressForQuestion({ userId: 'u1', questionId: 'eq-w2', weakScore: 0.2 });
+    seedProgressForQuestion({ userId: 'u1', questionId: 'eq-w3', weakScore: 0 });
+
+    const sid = seedStudySession({ userId: 'u1', phase: 'main', cardsCompleted: 5 });
+    // eq-w1 두 번 review (dedupe 검증) + 나머지 1회씩.
+    seedStudyReview({ userId: 'u1', cardId: 'eq-w1', sessionId: sid });
+    seedStudyReview({ userId: 'u1', cardId: 'eq-w1', sessionId: sid });
+    seedStudyReview({ userId: 'u1', cardId: 'eq-w2', sessionId: sid });
+    seedStudyReview({ userId: 'u1', cardId: 'eq-w3', sessionId: sid });
+    seedStudyReview({ userId: 'u1', cardId: 'eq-w4', sessionId: sid });
+
+    const res = await fetchAs('u1', `/session/${sid}/complete`, { method: 'POST' });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as SessionCompleteBody;
+    expect(body.weakDelta.available).toBe(true);
+    expect(body.weakDelta.cardsReviewed).toBe(4); // dedupe (eq-w1 두 번 → 1회)
+    expect(body.weakDelta.stillWeakCount).toBe(2); // eq-w1, eq-w2
+    const 보험 = body.weakDelta.bySubject.find((s) => s.subject === '보험 일반');
+    expect(보험).toEqual({ subject: '보험 일반', reviewed: 2, stillWeak: 2 });
+    const 농작물 = body.weakDelta.bySubject.find((s) => s.subject === '농작물재해보험');
+    expect(농작물).toEqual({ subject: '농작물재해보험', reviewed: 2, stillWeak: 0 });
+  });
+
+  it('weakDelta — 다른 사용자 세션 review 격리 (user_id 필터)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedUser('u2', 'u2@test.com');
+    seedExamQuestion({ id: 'eq-iso', examType: '2nd', subject: '격리테스트' });
+    seedProgressForQuestion({ userId: 'u2', questionId: 'eq-iso', weakScore: 0.9 });
+    const sid = seedStudySession({ userId: 'u1', phase: 'main' });
+    // u2의 review를 동일 session_id로 영속 (FK 검증 우회 시뮬레이션)
+    seedStudyReview({ userId: 'u2', cardId: 'eq-iso', sessionId: sid });
+
+    const res = await fetchAs('u1', `/session/${sid}/complete`, { method: 'POST' });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as SessionCompleteBody;
+    expect(body.weakDelta.cardsReviewed).toBe(0); // u1 review 0건
   });
 
   it('이미 completed 세션 → idempotent (200 + 기존 ended_at 보존)', async () => {

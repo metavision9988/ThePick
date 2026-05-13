@@ -1251,9 +1251,10 @@ export function createStudyRoutes(): Hono<StudyEnv> {
             .run(),
         );
 
-        // dailyGoalProgress — KST today 범위 (UTC ISO 8601) 인덱스 range scan.
+        // dailyGoalProgress — DISTINCT card_id 누적 / dailyGoal (Step 3-UX-6c-2 4-Pass M-3 흡수).
+        // 같은 카드 N회 review = N%가 아닌 1장 학습으로 카운트 → /mode 응답과 일관성 + 진척 정직성.
         const todayCountRow = await c.env.DB.prepare(
-          `SELECT COUNT(*) AS cnt
+          `SELECT COUNT(DISTINCT card_id) AS cnt
              FROM study_reviews
             WHERE user_id = ?
               AND reviewed_at >= ?
@@ -1328,7 +1329,11 @@ export function createStudyRoutes(): Hono<StudyEnv> {
    * GET /api/study/mode?examId=...&examType=1st|2nd
    *
    * 5 mode 별 available 카드 수 + 약점 영역 surface + confusion type breakdown.
-   * UI ModeSelector + WeakAreaPanel surface 자료.
+   * Step 3-UX-6c-2 (ADR-040 G-1) — streak / dailyGoal block 포함:
+   *   - streak.current / streak.longest: streak_records 영속값 (없으면 0)
+   *   - streak.dailyGoalProgress: 오늘 KST review 누적 / dailyGoal (0~1 cap)
+   *   - dailyGoal: streak_records.daily_goal (없으면 DEFAULT_DAILY_GOAL)
+   * UI ModeSelector + SessionStart surface 자료.
    */
   router.get('/mode', async (c) => {
     const logger = buildLogger(c.env).child({ route: 'mode-stats' });
@@ -1353,33 +1358,43 @@ export function createStudyRoutes(): Hono<StudyEnv> {
     }
     const examType = examTypeParsed.data;
 
+    const today = todayDateString();
+    const todayBounds = dayBoundsUtc(today);
+
     try {
-      const [totalRow, confusionRow, weakRow, weakTopResult, confusionBreakdownResult] =
-        await Promise.all([
-          c.env.DB.prepare(
-            `SELECT COUNT(*) AS cnt FROM exam_questions WHERE status = 'active' AND exam_type = ?`,
-          )
-            .bind(examType)
-            .first<{ cnt: number }>(),
-          c.env.DB.prepare(
-            `SELECT COUNT(*) AS cnt FROM exam_questions
+      const [
+        totalRow,
+        confusionRow,
+        weakRow,
+        weakTopResult,
+        confusionBreakdownResult,
+        streakRow,
+        todayReviewRow,
+      ] = await Promise.all([
+        c.env.DB.prepare(
+          `SELECT COUNT(*) AS cnt FROM exam_questions WHERE status = 'active' AND exam_type = ?`,
+        )
+          .bind(examType)
+          .first<{ cnt: number }>(),
+        c.env.DB.prepare(
+          `SELECT COUNT(*) AS cnt FROM exam_questions
               WHERE status = 'active'
                 AND exam_type = ?
                 AND confusion_type IS NOT NULL`,
-          )
-            .bind(examType)
-            .first<{ cnt: number }>(),
-          c.env.DB.prepare(
-            `SELECT COUNT(*) AS cnt FROM user_progress up
+        )
+          .bind(examType)
+          .first<{ cnt: number }>(),
+        c.env.DB.prepare(
+          `SELECT COUNT(*) AS cnt FROM user_progress up
                JOIN exam_questions eq ON eq.id = up.card_id AND eq.status = 'active' AND eq.exam_type = ?
               WHERE up.user_id = ?
                 AND up.card_type = 'exam'
                 AND up.weak_score > 0`,
-          )
-            .bind(examType, userId)
-            .first<{ cnt: number }>(),
-          c.env.DB.prepare(
-            `SELECT eq.id AS card_id, eq.subject, up.weak_score
+        )
+          .bind(examType, userId)
+          .first<{ cnt: number }>(),
+        c.env.DB.prepare(
+          `SELECT eq.id AS card_id, eq.subject, up.weak_score
                FROM user_progress up
                JOIN exam_questions eq ON eq.id = up.card_id AND eq.status = 'active' AND eq.exam_type = ?
               WHERE up.user_id = ?
@@ -1387,25 +1402,48 @@ export function createStudyRoutes(): Hono<StudyEnv> {
                 AND up.weak_score > 0
               ORDER BY up.weak_score DESC
               LIMIT ?`,
-          )
-            .bind(examType, userId, WEAK_TOP_LIMIT)
-            .all<{ card_id: string; subject: string | null; weak_score: number }>(),
-          c.env.DB.prepare(
-            `SELECT confusion_type AS type, COUNT(*) AS cnt
+        )
+          .bind(examType, userId, WEAK_TOP_LIMIT)
+          .all<{ card_id: string; subject: string | null; weak_score: number }>(),
+        c.env.DB.prepare(
+          `SELECT confusion_type AS type, COUNT(*) AS cnt
                FROM exam_questions
               WHERE status = 'active'
                 AND exam_type = ?
                 AND confusion_type IS NOT NULL
               GROUP BY confusion_type
               ORDER BY cnt DESC`,
-          )
-            .bind(examType)
-            .all<{ type: string; cnt: number }>(),
-        ]);
+        )
+          .bind(examType)
+          .all<{ type: string; cnt: number }>(),
+        c.env.DB.prepare(
+          `SELECT current_streak, longest_streak, daily_goal
+             FROM streak_records
+            WHERE user_id = ?
+            LIMIT 1`,
+        )
+          .bind(userId)
+          .first<{ current_streak: number; longest_streak: number; daily_goal: number }>(),
+        c.env.DB.prepare(
+          `SELECT COUNT(DISTINCT card_id) AS cnt
+             FROM study_reviews
+            WHERE user_id = ?
+              AND reviewed_at >= ?
+              AND reviewed_at < ?`,
+        )
+          .bind(userId, todayBounds.startUtc, todayBounds.endUtc)
+          .first<{ cnt: number }>(),
+      ]);
 
       const total = totalRow?.cnt ?? 0;
       const confusion = confusionRow?.cnt ?? 0;
       const weak = weakRow?.cnt ?? 0;
+
+      const dailyGoal = streakRow?.daily_goal ?? DEFAULT_DAILY_GOAL;
+      // dailyGoalProgress — DISTINCT card_id 누적 / dailyGoal (4-Pass silent M-3 흡수).
+      // 같은 카드 N회 review = N%가 아닌 1장 학습으로 카운트 → 진척 surface 정직성.
+      const todayCount = todayReviewRow?.cnt ?? 0;
+      const dailyGoalProgress = dailyGoal > 0 ? Math.min(todayCount / dailyGoal, 1) : 0;
 
       return c.json({
         examId: examIdParam.examId,
@@ -1426,6 +1464,12 @@ export function createStudyRoutes(): Hono<StudyEnv> {
           type: row.type,
           count: row.cnt,
         })),
+        streak: {
+          current: streakRow?.current_streak ?? 0,
+          longest: streakRow?.longest_streak ?? 0,
+          dailyGoalProgress,
+        },
+        dailyGoal,
       });
     } catch (err) {
       logger.error('mode stats query failed', err, { userId, examType });
@@ -1569,10 +1613,91 @@ export function createStudyRoutes(): Hono<StudyEnv> {
   });
 
   /**
+   * 세션 종료 시 약점 영역 잔존 산출 (ADR-040 G-2).
+   *
+   * 본 세션에서 본 카드 각각에 대해 현 user_progress.weak_score를 조회 후
+   * subject 단위 reviewed / stillWeak 누적. weak_score > 0 = "약점 잔존" (`/mode` weak
+   * available 임계값과 정합). "before" 스냅샷은 보유하지 않으므로 단순 delta(개선치)는
+   * 산출하지 않는다 — 현재 잔존 약점 수와 reviewed 수를 함께 노출하여 사용자가 직접
+   * 비교 가능 (ADR-040 §"결정 §1 G-2 채택 사유" 정합).
+   *
+   * Hard Rule 16: examId 시그니처 의무 (Year 2 zero-cost 전환 시 본 함수에서
+   * `AND eq.exam_id = ?` 절 주입 — 본 step 흡수).
+   */
+  async function computeWeakDelta(
+    db: D1Database,
+    userId: string,
+    sessionId: string,
+    examId: ExamId,
+    logger: Logger,
+  ): Promise<{
+    available: boolean;
+    cardsReviewed: number;
+    stillWeakCount: number;
+    bySubject: ReadonlyArray<{ subject: string | null; reviewed: number; stillWeak: number }>;
+  }> {
+    void examId; // Year 1 단일 시험. Year 2에 WHERE eq.exam_id = ? 절 활성화.
+    try {
+      // GROUP BY sr.card_id — DISTINCT 가 (card_id, subject, weak_score) 3-tuple 기준이라
+      // user_progress 중복 row 발생 시 dedupe 실패 가능 (4-Pass silent M-4 흡수).
+      // 단일 row per card 보장 → cardsReviewed = distinct card 수.
+      const result = await db
+        .prepare(
+          `SELECT sr.card_id AS card_id,
+                  MIN(eq.subject) AS subject,
+                  MAX(COALESCE(up.weak_score, 0)) AS weak_score
+             FROM study_reviews sr
+             JOIN exam_questions eq ON eq.id = sr.card_id
+             LEFT JOIN user_progress up
+                   ON up.user_id = sr.user_id
+                  AND up.card_id = sr.card_id
+                  AND up.card_type = 'exam'
+                  AND up.node_id IS NULL
+            WHERE sr.session_id = ?
+              AND sr.user_id = ?
+            GROUP BY sr.card_id`,
+        )
+        .bind(sessionId, userId)
+        .all<{ card_id: string; subject: string | null; weak_score: number }>();
+
+      const subjectMap = new Map<string | null, { reviewed: number; stillWeak: number }>();
+      let cardsReviewed = 0;
+      let stillWeakCount = 0;
+      for (const row of result.results) {
+        cardsReviewed++;
+        const weak = Number(row.weak_score ?? 0);
+        const isStillWeak = weak > 0;
+        if (isStillWeak) stillWeakCount++;
+        const key = row.subject ?? null;
+        const entry = subjectMap.get(key) ?? { reviewed: 0, stillWeak: 0 };
+        entry.reviewed++;
+        if (isStillWeak) entry.stillWeak++;
+        subjectMap.set(key, entry);
+      }
+      const bySubject = Array.from(subjectMap.entries())
+        .map(([subject, agg]) => ({ subject, reviewed: agg.reviewed, stillWeak: agg.stillWeak }))
+        .sort((a, b) => b.reviewed - a.reviewed);
+      return { available: true, cardsReviewed, stillWeakCount, bySubject };
+    } catch (err) {
+      // C-1 흡수 — silent failure를 정상 0건과 구분하는 `available: false` flag +
+      // streak silent failure 패턴 정합 telemetry emit.
+      const errMsg = err instanceof Error ? err.message : String(err);
+      logger.warn('weakDelta query failed (fallback to unavailable)', {
+        err: errMsg,
+        userId,
+        sessionId,
+        event: 'weak_delta_silent_failure',
+      });
+      return { available: false, cardsReviewed: 0, stillWeakCount: 0, bySubject: [] };
+    }
+  }
+
+  /**
    * POST /api/study/session/:id/complete
    *
    * 세션 종료. phase='completed' + ended_at 설정 + 요약 응답.
    * 이미 종료된 세션 재호출 → idempotent (현재 state 응답).
+   * Step 3-UX-6c-2 (ADR-040 G-2) — weakDelta 포함 (subject 단위 reviewed / stillWeak).
    */
   router.post('/session/:id/complete', async (c) => {
     const logger = buildLogger(c.env).child({ route: 'session-complete' });
@@ -1655,6 +1780,25 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       logger,
     );
 
+    // Step 3-UX-6c-2 (ADR-040 G-2) — 본 세션 distinct card 의 현재 weak_score를 subject 단위 집계.
+    const weakDelta = await computeWeakDelta(
+      c.env.DB,
+      userId,
+      sessionId,
+      EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+      logger,
+    );
+
+    if (!weakDelta.available) {
+      // C-1 흡수 — silent failure를 운영 측에서 추적 가능하도록 telemetry emit.
+      emitLearningTelemetry(
+        c,
+        EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+        { event: 'weak_delta_silent_failure', sessionId, userId },
+        logger,
+      );
+    }
+
     return c.json({
       id: row.id,
       mode: resolveLearningMode(row.mode),
@@ -1666,6 +1810,7 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       startedAt: row.started_at,
       endedAt,
       durationMinutes,
+      weakDelta,
     });
   });
 

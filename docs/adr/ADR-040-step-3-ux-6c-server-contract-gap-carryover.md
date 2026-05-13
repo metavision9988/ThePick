@@ -1,9 +1,9 @@
 # ADR-040: Step 3-UX-6c LOCK §1 vs 서버 contract 격차 carry-over
 
-- **상태:** Accepted (carry-over)
-- **결정일:** 2026-05-13 (Session 071)
-- **결정자:** Claude Opus 4.7 (4-Pass 독립 리뷰 발견) + 진산 (carry-over 채택)
-- **관련 영역:** SessionStart "일일 목표 progress" + SessionSummary "약점 영역 변화" + 세션 복원
+- **상태:** Partially Resolved (G-1 + G-2 흡수, G-3 carry-over 유지)
+- **결정일:** 2026-05-13 (Session 071 carry-over) → 2026-05-13 Step 3-UX-6c-2에서 G-1/G-2 흡수
+- **결정자:** Claude Opus 4.7 (4-Pass 독립 리뷰 발견) + 진산 (carry-over 채택 → 우선순위 진행 위임)
+- **관련 영역:** SessionStart "일일 목표 progress" (✅ 완료) + SessionSummary "약점 영역 변화" (✅ 완료) + 세션 복원 (☐ G-3 carry-over)
 
 ---
 
@@ -75,14 +75,53 @@ Critical 2건 (LOCK §1 위반) carry-over 명시로 흡수 — 본 step에서�
 
 ### 2. carry-over (본 ADR-040)
 
-- ☐ **Step 3-UX-6c-2 (server contract)** — GET /mode + SessionCompleteResponse 확장
-  - apps/api/src/study/routes.ts:1410 GET /mode 응답 streak/dailyGoal 추가
-  - apps/api/src/study/routes.ts:1658 SessionCompleteResponse weakDelta 추가
-  - apps/web ModeStatsResponse + SessionCompleteResponse type 갱신
-  - SessionStart 일일 목표 progress UI 추가
-  - SessionSummary 약점 영역 변화 UI 추가
-- ☐ **Step 3-UX-6c-3 (session 복원)** — sessionStorage / URL hash 영속 + 복원
-- ☐ **streak 일관성** — INITIAL_STREAK 대신 서버 fetch 의존
+- ☑ **Step 3-UX-6c-2 (server contract)** — GET /mode + SessionCompleteResponse 확장 **— 완료 (Session 072, 2026-05-13)**
+  - ☑ apps/api/src/study/routes.ts GET /mode 응답 `streak: {current, longest, dailyGoalProgress}` + `dailyGoal: number` 추가
+  - ☑ apps/api/src/study/routes.ts SessionCompleteResponse `weakDelta: {available, cardsReviewed, stillWeakCount, bySubject}` 추가
+  - ☑ apps/web ModeStatsResponse + SessionCompleteResponse type 갱신 + StreakSummary 단일 재사용
+  - ☑ SessionStart 일일 목표 progress bar (NaN 가드 포함) 영속
+  - ☑ SessionSummary 약점 잔존 bySubject 5건 list + silent failure 안내 영속
+- ☐ **Step 3-UX-6c-3 (session 복원)** — sessionStorage / URL hash 영속 + 복원 (carry-over 유지)
+- ☑ **streak 일관성** — loadModes 시 stats.streak 으로 초기화 (Session 072)
+
+### 2.1 Step 3-UX-6c-2 실구현 채택 사유 영속 (4-Pass M-3 흡수)
+
+**G-2 weakDelta 응답 shape 채택 사유** — 본 ADR §"결정 §1" 옵션 (`{beforeAvg, afterAvg, deltaCount}` 또는 `weakBreakdown {subject, before, after}`)이 아닌 **제3 옵션** 채택:
+
+```ts
+weakDelta: {
+  available: boolean,             // silent failure를 정상 0건과 구분 (4-Pass C-1 흡수)
+  cardsReviewed: number,          // 본 세션 distinct card 수 (GROUP BY card_id)
+  stillWeakCount: number,         // weak_score > 0 잔존 카드 수
+  bySubject: [{subject, reviewed, stillWeak}]
+}
+```
+
+근거: **before 스냅샷 부재**. 본 시스템은 weak_score를 user_progress.weak_score 단일 row로 영속하므로 "session 시작 시점 weak_score" 스냅샷이 보유되지 않는다. 단순 delta(개선치)는 산출 불가 — 거짓 delta 산출보다 **잔존 약점 surface로 사용자가 직접 reviewed 대비 stillWeak 비교** 가능하게 한다 (정직성 우선).
+
+**dailyGoalProgress 산식 채택** — DISTINCT card_id COUNT (4-Pass M-3 흡수):
+
+```sql
+SELECT COUNT(DISTINCT card_id) AS cnt FROM study_reviews
+ WHERE user_id = ? AND reviewed_at >= ? AND reviewed_at < ?
+```
+
+근거: 같은 카드 N회 review = N% 진척이 아닌 1장 학습 진척. 사용자 진척 정직성 정합. /mode + /grade 두 endpoint 동일 식.
+
+**dailyGoalProgress examType 무필터 결정** — 본 쿼리는 user_id + reviewed_at만 필터링하며 examType 무관 (1차+2차 통합 일일 목표 진척). 수험생 입장 "오늘 학습량"은 시험 구분 없이 통합 표현이 자연스러우며, Year 2 멀티시험 확장 시 별도 ADR로 재결정.
+
+**streak 표시 시점** — GET /mode 응답은 streak_records 영속값 그대로 반환. 사용자가 어제 학습 후 오늘 첫 grade 전이면 어제 시점 current_streak 표시. /grade 응답에서 today 기준 갱신값으로 자동 surface. ADR 명시 의무 영속 (4-Pass M-7).
+
+### 2.2 4-Pass 리뷰 carry-over 항목 (다음 step 이월)
+
+본 step (3-UX-6c-2) 4-Pass 독립 에이전트 리뷰 결과 carry-over (Step 3-UX-6e 검증 chain 또는 별도 ADR):
+
+- ☐ **/mode 503 영향 면적** (silent M-1) — Promise.allSettled 도입으로 streak 부분 실패 시 graceful degradation. 본 step은 7 쿼리 fail-fast 유지.
+- ☐ **subject NULL 데이터 노출 정책** (silent M-5) — exam_questions.subject NULL 카드가 사용자에게 "미분류" 라벨 surface. 데이터 품질 게이트 추가 또는 UI 분리 표시.
+- ☐ **SessionStart 빈 입력 silent ignore** (silent Mi-1) — `Number.parseInt('abc')` 시 사용자 시각 피드백 부재.
+- ☐ **ModeStatsResponse runtime validation** (silent Mi-3) — Zod 또는 manual guard로 서버 응답 shape 검증.
+- ☐ **AESTHETIC §2.2 emerald-500 토큰 등록** (quality m-1) — progress 달성 색 토큰화.
+- ☐ **text-[11px] 비표준 토큰 사용** (quality m-2) — SessionStart/SessionSummary 미세 텍스트 토큰화 또는 text-xs 통일.
 
 ### 3. LOCK §1 보정 (본 ADR 동시 영속)
 
@@ -92,9 +131,9 @@ Critical 2건 (LOCK §1 위반) carry-over 명시로 흡수 — 본 step에서�
 
 ### 4. 게이트 / 검증 (Step 3-UX-6 종료 의무)
 
-- [ ] Step 3-UX-6c-2 (server contract 확장) 완료 후 SessionStart 일일 목표 progress UI 영속 확인
-- [ ] Step 3-UX-6c-2 완료 후 SessionSummary 약점 영역 변화 UI 영속 확인
-- [ ] Step 3-UX-6c-3 결정 (복원 구현 or 의도적 volatile 정책 ADR)
+- [x] Step 3-UX-6c-2 (server contract 확장) 완료 후 SessionStart 일일 목표 progress UI 영속 확인 (2026-05-13)
+- [x] Step 3-UX-6c-2 완료 후 SessionSummary 약점 영역 변화 UI 영속 확인 (2026-05-13)
+- [ ] Step 3-UX-6c-3 결정 (복원 구현 or 의도적 volatile 정책 ADR) — 진산 결정 대기
 - [ ] Step 3-UX-6e 검증 chain에서 본 carry-over 모두 fix 확인 (4-Pass + 5-페르소나)
 
 ### 5. 위험 / 미해소 사항

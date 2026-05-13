@@ -5,7 +5,7 @@
  * AESTHETIC.md §3.3b mode 색상 hint 적용.
  */
 
-import type { LearningMode } from './types';
+import type { LearningMode, WeakDelta } from './types';
 import { MODE_META } from './types';
 
 interface SessionSummaryProps {
@@ -18,9 +18,13 @@ interface SessionSummaryProps {
   readonly streakCurrent: number;
   readonly streakLongest: number;
   readonly streakDelta: number;
+  /** Step 3-UX-6c-2 (ADR-040 G-2) — 본 세션 약점 영역 잔존 surface. */
+  readonly weakDelta: WeakDelta;
   readonly onContinue: () => void;
   readonly onExit: () => void;
 }
+
+const WEAK_BREAKDOWN_LIMIT = 5;
 
 function formatDuration(min: number): string {
   if (min < 1) return '1분 미만';
@@ -40,12 +44,18 @@ export function SessionSummary({
   streakCurrent,
   streakLongest,
   streakDelta,
+  weakDelta,
   onContinue,
   onExit,
 }: SessionSummaryProps) {
   const meta = MODE_META[mode];
   const pct = Math.round(correctRate * 100);
   const newRecord = streakDelta > 0 && streakCurrent === streakLongest;
+  const weakBySubject = weakDelta.bySubject.slice(0, WEAK_BREAKDOWN_LIMIT);
+  const weakRemainder = Math.max(0, weakDelta.bySubject.length - WEAK_BREAKDOWN_LIMIT);
+  // 4-Pass C-1 흡수 — silent failure(available=false)를 정상 0건과 구분.
+  const weakDeltaUnavailable = !weakDelta.available;
+  const weakDeltaHasReviews = weakDelta.available && weakDelta.cardsReviewed > 0;
 
   return (
     <div>
@@ -109,10 +119,55 @@ export function SessionSummary({
             </p>
           </div>
         </div>
-        <p className="mt-2 text-[11px] text-gray-400">
-          약점 영역 변화는 다음 chunk에서 surface된다 (ADR-040 carry-over).
-        </p>
       </section>
+
+      {weakDeltaUnavailable && (
+        <section className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-5 py-3">
+          <p className="text-xs text-amber-900">
+            약점 영역 집계를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.
+          </p>
+        </section>
+      )}
+
+      {weakDeltaHasReviews && (
+        <section className="mb-6 rounded-lg border border-gray-200 bg-white px-5 py-4">
+          <div className="flex items-baseline justify-between">
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">약점 잔존</p>
+            <p className="text-xs tabular-nums text-gray-500">
+              <span className="font-medium text-gray-900">
+                {weakDelta.stillWeakCount} / {weakDelta.cardsReviewed}
+              </span>
+              <span className="ml-1.5 text-gray-400">검토한 카드 기준</span>
+            </p>
+          </div>
+          {weakBySubject.length > 0 ? (
+            <ul className="mt-3 space-y-1.5">
+              {weakBySubject.map((entry) => {
+                const label = entry.subject ?? '미분류';
+                const cleared = entry.stillWeak === 0;
+                return (
+                  <li
+                    key={label}
+                    className="flex items-baseline justify-between text-xs tabular-nums"
+                  >
+                    <span className="truncate text-gray-700">{label}</span>
+                    <span className={cleared ? 'text-emerald-700' : 'text-gray-500'}>
+                      {cleared
+                        ? `${entry.reviewed}건 약점 해소`
+                        : `약점 ${entry.stillWeak} / ${entry.reviewed}`}
+                    </span>
+                  </li>
+                );
+              })}
+              {weakRemainder > 0 && (
+                <li className="text-[11px] text-gray-400">+{weakRemainder}개 과목 더</li>
+              )}
+            </ul>
+          ) : (
+            <p className="mt-2 text-[11px] text-gray-400">과목 분류 없음.</p>
+          )}
+        </section>
+      )}
 
       <div className="flex items-center gap-3">
         <button

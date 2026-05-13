@@ -15,6 +15,10 @@ interface SessionStartProps {
   readonly available: number;
   readonly streakCurrent: number;
   readonly streakLongest: number;
+  /** Step 3-UX-6c-2 (ADR-040 G-1) — 일일 목표 카드 수 (streak_records.daily_goal). */
+  readonly dailyGoal: number;
+  /** Step 3-UX-6c-2 — 오늘 누적 review / dailyGoal (0~1 cap). */
+  readonly dailyGoalProgress: number;
   readonly disabled: boolean;
   readonly onStart: (cardsPlanned: number) => void;
   readonly onCancel: () => void;
@@ -33,6 +37,8 @@ export function SessionStart({
   available,
   streakCurrent,
   streakLongest,
+  dailyGoal,
+  dailyGoalProgress,
   disabled,
   onStart,
   onCancel,
@@ -40,6 +46,15 @@ export function SessionStart({
   const meta = MODE_META[mode];
   const cappedDefault = Math.min(DEFAULT_CARDS, available);
   const [cardsPlanned, setCardsPlanned] = useState<number>(cappedDefault);
+
+  // 4-Pass C-2 흡수 — NaN/Infinity/음수 가드 (Math.min/max는 인자에 NaN 시 NaN 반환).
+  const safeProgress = Number.isFinite(dailyGoalProgress)
+    ? Math.max(0, Math.min(1, dailyGoalProgress))
+    : 0;
+  const safeDailyGoal = Number.isFinite(dailyGoal) && dailyGoal > 0 ? dailyGoal : 0;
+  const progressPct = Math.round(safeProgress * 100);
+  const goalDone = progressPct >= 100;
+  const goalDoneCount = Math.round(safeProgress * safeDailyGoal);
 
   function handleChange(raw: string): void {
     const num = Number.parseInt(raw, 10);
@@ -113,9 +128,29 @@ export function SessionStart({
             <span className="text-gray-400">· 최장 {streakLongest}</span>
           </p>
         </div>
-        <p className="mt-2 text-[11px] text-gray-400">
-          일일 목표 progress는 첫 채점 후 surface된다 (ADR-040 carry-over).
-        </p>
+
+        <div className="mt-3 flex items-baseline justify-between">
+          <p className="text-[11px] text-gray-500">오늘 목표</p>
+          <p className="text-[11px] tabular-nums text-gray-500">
+            <span className="font-medium text-gray-900">
+              {goalDoneCount} / {safeDailyGoal}
+            </span>
+            <span className="ml-1.5 text-gray-400">{progressPct}%</span>
+          </p>
+        </div>
+        <div
+          role="progressbar"
+          aria-label="오늘 목표 진척"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progressPct}
+          className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-100"
+        >
+          <div
+            className={`h-full rounded-full transition-[width] duration-300 ${goalDone ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
       </section>
 
       <div className="flex items-center gap-3">

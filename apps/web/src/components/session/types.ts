@@ -9,9 +9,9 @@
  * ADR-039 정합 — 5 mode (category/topic/confusion/weak/mixed) contract.
  */
 
-import type { LearningMode, SessionPhase } from '@/components/question/types';
+import type { LearningMode, SessionPhase, StreakSummary } from '@/components/question/types';
 
-export type { LearningMode, SessionPhase };
+export type { LearningMode, SessionPhase, StreakSummary };
 
 export type ExamType = '1st' | '2nd';
 
@@ -41,6 +41,10 @@ export interface ModeStatsResponse {
   readonly modes: ReadonlyArray<ModeAvailability>;
   readonly weakTop: ReadonlyArray<WeakTopEntry>;
   readonly confusionTypes: ReadonlyArray<ConfusionTypeEntry>;
+  /** Step 3-UX-6c-2 — 진입 시 streak / 일일 목표 progress surface. */
+  readonly streak: StreakSummary;
+  /** Step 3-UX-6c-2 — streak_records.daily_goal (사용자 설정값 또는 기본 20). */
+  readonly dailyGoal: number;
 }
 
 /** POST /api/study/mode/start 요청 body */
@@ -74,6 +78,26 @@ export interface SessionDetail {
   readonly endedAt: string | null;
 }
 
+/** Step 3-UX-6c-2 (ADR-040 G-2) — subject 단위 약점 잔존 누적. */
+export interface WeakDeltaSubject {
+  readonly subject: string | null;
+  readonly reviewed: number;
+  readonly stillWeak: number;
+}
+
+/**
+ * Step 3-UX-6c-2 (ADR-040 G-2) — 세션 종료 시 약점 영역 surface.
+ *
+ * `available=false` → 서버 쿼리 실패 (silent failure를 정상 0건과 구분, 4-Pass C-1 흡수).
+ * UI는 "집계 실패 — 잠시 후 다시 확인" 안내. telemetry `weak_delta_silent_failure` emit.
+ */
+export interface WeakDelta {
+  readonly available: boolean;
+  readonly cardsReviewed: number;
+  readonly stillWeakCount: number;
+  readonly bySubject: ReadonlyArray<WeakDeltaSubject>;
+}
+
 /** POST /api/study/session/:id/complete 응답 */
 export interface SessionCompleteResponse {
   readonly id: string;
@@ -86,6 +110,8 @@ export interface SessionCompleteResponse {
   readonly startedAt: string;
   readonly endedAt: string;
   readonly durationMinutes: number;
+  /** Step 3-UX-6c-2 — 세션 종료 후 본 세션 distinct card subject 단위 약점 잔존. */
+  readonly weakDelta: WeakDelta;
 }
 
 /** mode 한국어 라벨 + 설명 + 좌측 1px 컬러 보더 hint (ADR-039 §"결정" 정합) */

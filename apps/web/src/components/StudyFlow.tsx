@@ -67,9 +67,19 @@ interface StreakState {
   readonly longest: number;
   /** session 진입 직전 longest snapshot — 신기록 비교용. */
   readonly baselineLongest: number;
+  /** Step 3-UX-6c-2 — GET /mode 응답의 일일 목표 progress (0~1). */
+  readonly dailyGoalProgress: number;
+  /** Step 3-UX-6c-2 — streak_records.daily_goal 사용자 설정 (없으면 20). */
+  readonly dailyGoal: number;
 }
 
-const INITIAL_STREAK: StreakState = { current: 0, longest: 0, baselineLongest: 0 };
+const INITIAL_STREAK: StreakState = {
+  current: 0,
+  longest: 0,
+  baselineLongest: 0,
+  dailyGoalProgress: 0,
+  dailyGoal: 20,
+};
 
 function formatApiError(err: unknown): string {
   if (err instanceof StudyApiError) {
@@ -101,6 +111,13 @@ export function StudyFlow({ examType = '1st' }: StudyFlowProps) {
     setState({ status: 'init' });
     try {
       const stats = await fetchModeStats(examType);
+      setStreak({
+        current: stats.streak.current,
+        longest: stats.streak.longest,
+        baselineLongest: stats.streak.longest,
+        dailyGoalProgress: stats.streak.dailyGoalProgress,
+        dailyGoal: stats.dailyGoal,
+      });
       setState({ status: 'mode-select', stats });
     } catch (err) {
       if (err instanceof StudyApiError && err.kind === 'unauthenticated') {
@@ -188,6 +205,8 @@ export function StudyFlow({ examType = '1st' }: StudyFlowProps) {
         current: info.streak.current,
         longest: info.streak.longest,
         baselineLongest: prev.baselineLongest,
+        dailyGoalProgress: info.streak.dailyGoalProgress,
+        dailyGoal: prev.dailyGoal,
       }));
       if (state.status === 'questioning' && info.session?.phase === 'completed') {
         void finalizeSession(state.sessionId, state.mode);
@@ -249,6 +268,8 @@ export function StudyFlow({ examType = '1st' }: StudyFlowProps) {
         available={available}
         streakCurrent={streak.current}
         streakLongest={streak.longest}
+        dailyGoal={streak.dailyGoal}
+        dailyGoalProgress={streak.dailyGoalProgress}
         disabled={state.status === 'starting'}
         onStart={(c) => void handleStart(c)}
         onCancel={handleCancelStart}
@@ -293,6 +314,7 @@ export function StudyFlow({ examType = '1st' }: StudyFlowProps) {
         streakCurrent={streak.current}
         streakLongest={streak.longest}
         streakDelta={streakDelta}
+        weakDelta={result.weakDelta}
         onContinue={handleContinue}
         onExit={() => {
           window.location.href = '/';
