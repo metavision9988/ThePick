@@ -193,6 +193,46 @@ memory `project_ux_north_star_phase3.md` + plan §6.5 정합:
 
 혼자 있는 1안 제출 금지.
 
+## 5.5 Step 3-UX-6b LOCK 채택 신규 패턴 (2026-05-13)
+
+LOCK 안 채택 후 신규 발견 / 영속 패턴:
+
+### 5.5.1 ContextStrip — 본문 위 inline 출처 strip (C variant 통합)
+
+- 위치: `<header>` 와 본문 `<div px-6 py-6>` 사이
+- 토큰: `flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-gray-100 px-6 pb-2 text-[11px] text-gray-500`
+- 항목 구분: `<span className="text-gray-300">·</span>` middot
+- 최대 3개 항목 (기출 + 교재 + 법조문 우선)
+- **북극성 정합**: 출처를 footer/결과로 밀어내지 않고 학습 시점에도 항상 surface
+
+### 5.5.2 자기 채점 라디오 그룹 (Essay)
+
+- pattern: `<button type="button" aria-pressed={selected}>` (semantic radio 대신 toggle button group)
+- 선택 시: `border-indigo-600 bg-indigo-50 text-indigo-700`
+- 비선택: `border-gray-300 bg-white text-gray-900 hover:bg-gray-50`
+- 44px touch + `disabled:cursor-not-allowed disabled:opacity-60`
+
+### 5.5.3 Calc 변수 surface (산식 변수 dl)
+
+- 위치: 본문과 input 사이 보조 dl
+- 토큰: `rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs`
+- dt: `font-medium uppercase tracking-wide text-gray-500`
+- dd: 변수 키-값 row 반복, 값은 `font-mono tabular-nums text-gray-900`
+- 빈 값 (variables === null 또는 빈 객체) 시 렌더링 생략
+
+### 5.5.4 객관식 선택 카드
+
+- 라디오 input은 `sr-only` (시각 hidden + 접근성 유지)
+- 컬러 hint: 선택 시 `border-indigo-300 bg-indigo-50/40`
+- 좌측 번호 원: `inline-flex h-5 w-5 rounded-full border` — 선택 시 `border-indigo-600 text-indigo-600`
+- 1-5 단축키는 컴포넌트 내부 keydown 처리 (input/textarea focus 상태 회피 조건 필수)
+
+### 5.5.5 결과 영역의 inputType별 사용자 답안 표시
+
+- multiple_choice: 단일 라벨 (`A`~`E`) 그대로 표시
+- fill_blank / calc: 입력값 그대로
+- essay: `${ratingLabel} · ${userAnswer.length}자` (자기 채점 결과 + 글자수)
+
 ## 6. 갱신 규칙
 
 - 본 파일은 누적만. 기존 항목 삭제 금지 (글로벌 규칙 상속).

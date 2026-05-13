@@ -1,91 +1,80 @@
 /**
- * QuestionCard — Phase 2 Eval MVP /study 페이지 코어 컴포넌트.
+ * QuestionCard — Phase 3 학습 UX 코어 컴포넌트 (Step 3-UX-6b).
  *
- * plan §5 디자인 A 채택: Linear-style 1단 카드 + Ctrl+Enter / Ctrl+N 단축키 (B 차용).
- * plan §6.4 알고리즘 구현. memory `project_source_citation_requirement.md` 정합 — 출처 surface.
+ * LOCK 채택 안 (A 기본 + C의 context strip 통합):
+ *   - A: Phase 2 baseline chrome (rounded-lg border-gray-200, header/body/result, Ctrl+Enter/Ctrl+N)
+ *   - C: 본문 위 inline 출처 strip (ContextStrip) — 북극성 출처 surface 1급 정합 강화
  *
- * 흐름: loading → answering → graded (Ctrl+N) → answering ...
- *      또는 exhausted (모든 문제 시도) / error (인증/네트워크).
+ * 분기:
+ *   inputType 'multiple_choice' → MultipleChoice (라디오 + 1-5 단축키)
+ *   inputType 'fill_blank'      → FillBlank (단일 input + Enter)
+ *   inputType 'essay'           → Essay (textarea + self-grade 라디오)
+ *   inputType 'calc'            → Calc (number input + 단위)
+ *
+ * 흐름: loading → answering → graded (Ctrl+N) → answering ... 또는 exhausted / error.
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { EXAM_IDS } from '@thepick/shared';
 
+import { Calc } from '@/components/question/Calc';
+import { ContextStrip } from '@/components/question/ContextStrip';
+import { Essay } from '@/components/question/Essay';
+import { FillBlank } from '@/components/question/FillBlank';
+import { MultipleChoice } from '@/components/question/MultipleChoice';
+import { ResultSection } from '@/components/question/ResultSection';
+import type {
+  AnswerPhase,
+  AnswerState,
+  EssaySelfRating,
+  GradeResponse,
+  NextQuestion,
+  NextResponse,
+} from '@/components/question/types';
+import { EMPTY_ANSWER } from '@/components/question/types';
+
 const API_BASE: string = import.meta.env.PUBLIC_API_BASE_URL ?? 'http://localhost:8787';
 const EXAM_ID = EXAM_IDS.SON_HAE_PYEONG_GA_SA;
 
-interface RelatedNode {
-  readonly id: string;
-  readonly name: string;
-  readonly nodeType: string;
-  readonly bookPage: number | null;
-  readonly pageRef: string | null;
-}
-
-interface SourceCitations {
-  readonly examReferences: ReadonlyArray<{
-    readonly year: number;
-    readonly round: number | null;
-    readonly questionNumber: number | null;
-  }>;
-  readonly manualPages: ReadonlyArray<number>;
-  readonly lawArticles: ReadonlyArray<string>;
-}
-
-interface NextQuestion {
-  readonly id: string;
-  readonly year: number;
-  readonly round: number | null;
-  readonly questionNumber: number | null;
-  readonly subject: string | null;
-  readonly content: string;
-  readonly examType: string | null;
-  readonly relatedNodes: ReadonlyArray<RelatedNode>;
-  readonly sourceCitations: SourceCitations;
-}
-
-interface NextResponse {
-  readonly exhausted: boolean;
-  readonly questions: ReadonlyArray<NextQuestion>;
-}
-
-interface GradeResponse {
-  readonly isCorrect: boolean;
-  readonly correctAnswer: string;
-  readonly explanation: string | null;
-  readonly sourceCitations: SourceCitations;
-  readonly relatedNodes: ReadonlyArray<RelatedNode>;
-}
-
-type Phase = 'loading' | 'answering' | 'graded' | 'exhausted' | 'error';
-
 interface QuestionCardProps {
   readonly examType?: '1st' | '2nd';
+  readonly sessionId?: string;
 }
 
-function formatExamReference(ref: SourceCitations['examReferences'][number]): string {
-  const round = ref.round !== null ? `제${ref.round}회` : '';
-  const num = ref.questionNumber !== null ? `제${ref.questionNumber}문` : '';
-  return `${ref.year}년 ${round} ${num}`.trim().replace(/\s+/g, ' ');
+function formatExamReference(year: number, round: number | null, qNum: number | null): string {
+  const r = round !== null ? `제${round}회` : '';
+  const n = qNum !== null ? `제${qNum}문` : '';
+  return `${year}년 ${r} ${n}`.trim().replace(/\s+/g, ' ');
 }
 
-export function QuestionCard({ examType = '2nd' }: QuestionCardProps) {
-  const [phase, setPhase] = useState<Phase>('loading');
+function canSubmit(question: NextQuestion, answer: AnswerState): boolean {
+  if (question.inputType === 'multiple_choice') return answer.value !== '';
+  if (question.inputType === 'essay') {
+    return answer.value.trim() !== '' && answer.selfRating !== null;
+  }
+  return answer.value.trim() !== '';
+}
+
+export function QuestionCard({ examType = '2nd', sessionId }: QuestionCardProps) {
+  const [phase, setPhase] = useState<AnswerPhase>('loading');
   const [question, setQuestion] = useState<NextQuestion | null>(null);
-  const [userAnswer, setUserAnswer] = useState<string>('');
+  const [answer, setAnswer] = useState<AnswerState>(EMPTY_ANSWER);
   const [gradeResult, setGradeResult] = useState<GradeResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const fetchNext = useCallback(async (): Promise<void> => {
     setPhase('loading');
-    setUserAnswer('');
+    setAnswer(EMPTY_ANSWER);
     setGradeResult(null);
     setErrorMsg(null);
     try {
-      const res = await fetch(
-        `${API_BASE}/api/study/next?examId=${EXAM_ID}&examType=${examType}&count=1`,
-        { credentials: 'include' },
-      );
+      const url = new URL(`${API_BASE}/api/study/next`);
+      url.searchParams.set('examId', EXAM_ID);
+      url.searchParams.set('examType', examType);
+      url.searchParams.set('count', '1');
+      if (sessionId !== undefined) url.searchParams.set('sessionId', sessionId);
+
+      const res = await fetch(url.toString(), { credentials: 'include' });
       if (res.status === 401) {
         const next = encodeURIComponent(window.location.pathname);
         window.location.href = `/auth/login?next=${next}`;
@@ -108,27 +97,42 @@ export function QuestionCard({ examType = '2nd' }: QuestionCardProps) {
       setPhase('error');
       setErrorMsg('네트워크 오류 — 잠시 후 다시 시도해 주세요.');
     }
-  }, [examType]);
+  }, [examType, sessionId]);
 
   const submit = useCallback(async (): Promise<void> => {
-    if (question === null || userAnswer.trim() === '') return;
+    if (question === null || !canSubmit(question, answer)) return;
     try {
+      const payload: Record<string, unknown> = {
+        questionId: question.id,
+        userAnswer: answer.value,
+        inputType: question.inputType,
+      };
+      if (question.inputType === 'essay' && answer.selfRating !== null) {
+        payload.selfRating = answer.selfRating;
+      }
+      if (sessionId !== undefined) payload.sessionId = sessionId;
+
       const res = await fetch(`${API_BASE}/api/study/grade?examId=${EXAM_ID}`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questionId: question.id, userAnswer }),
+        body: JSON.stringify(payload),
       });
       if (res.status === 401) {
         const next = encodeURIComponent(window.location.pathname);
         window.location.href = `/auth/login?next=${next}`;
         return;
       }
+      if (res.status === 429) {
+        setPhase('error');
+        setErrorMsg('연속 채점 요청이 많습니다. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
       if (res.status === 422) {
-        const body = (await res.json()) as { error?: string };
-        if (body.error === 'QUESTION_HAS_NO_ANSWER') {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        if (body?.error === 'QUESTION_HAS_NO_ANSWER') {
           setPhase('error');
-          setErrorMsg('이 문제는 약술/계산형으로 자동 채점이 불가합니다 (Phase 2 carry-over).');
+          setErrorMsg('이 문제는 정답이 등록되지 않았습니다.');
           return;
         }
         setPhase('error');
@@ -148,34 +152,40 @@ export function QuestionCard({ examType = '2nd' }: QuestionCardProps) {
       setPhase('error');
       setErrorMsg('네트워크 오류 — 잠시 후 다시 시도해 주세요.');
     }
-  }, [question, userAnswer]);
+  }, [question, answer, sessionId]);
 
   useEffect(() => {
     void fetchNext();
   }, [fetchNext]);
 
-  // Ctrl+Enter — answering phase 에서 채점 / graded phase 에서 다음 문제
-  // Ctrl+N — graded phase 에서 다음 문제
+  // Ctrl+Enter — answering phase 채점 / graded phase 다음 문제
+  // Ctrl+N — graded phase 또는 choicesMissing 시 다음 문제
+  const choicesMissingForShortcut =
+    question !== null && question.inputType === 'multiple_choice' && question.choices === null;
   useEffect(() => {
     function onKey(e: KeyboardEvent): void {
       const isCmd = e.ctrlKey || e.metaKey;
       if (isCmd && e.key === 'Enter') {
-        if (phase === 'answering') {
+        if (phase === 'answering' && !choicesMissingForShortcut) {
           e.preventDefault();
           void submit();
-        } else if (phase === 'graded') {
+        } else if (phase === 'graded' || (phase === 'answering' && choicesMissingForShortcut)) {
           e.preventDefault();
           void fetchNext();
         }
       }
-      if (isCmd && e.key.toLowerCase() === 'n' && phase === 'graded') {
+      if (
+        isCmd &&
+        e.key.toLowerCase() === 'n' &&
+        (phase === 'graded' || (phase === 'answering' && choicesMissingForShortcut))
+      ) {
         e.preventDefault();
         void fetchNext();
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [phase, submit, fetchNext]);
+  }, [phase, choicesMissingForShortcut, submit, fetchNext]);
 
   if (phase === 'loading') {
     return (
@@ -200,6 +210,7 @@ export function QuestionCard({ examType = '2nd' }: QuestionCardProps) {
           type="button"
           onClick={() => void fetchNext()}
           className="rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-900 hover:bg-red-100"
+          style={{ minHeight: 44 }}
         >
           다시 시도
         </button>
@@ -220,20 +231,24 @@ export function QuestionCard({ examType = '2nd' }: QuestionCardProps) {
 
   if (question === null) return null;
 
-  const examRef = question.sourceCitations.examReferences[0];
+  const isGraded = phase === 'graded';
+  const submitDisabled = !canSubmit(question, answer) || isGraded;
+  const choicesMissing = question.inputType === 'multiple_choice' && question.choices === null;
 
   return (
-    <article className="rounded-lg border border-gray-200 bg-white">
-      <header className="border-b border-gray-100 px-6 py-4">
-        <div className="flex items-center gap-3 text-xs text-gray-500">
-          {examRef !== undefined && <span>{formatExamReference(examRef)}</span>}
-          {question.subject !== null && question.subject !== '' && (
-            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-700">
-              {question.subject}
-            </span>
-          )}
+    <article className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+      <header className="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-4">
+        <div className="text-xs text-gray-500">
+          {formatExamReference(question.year, question.round, question.questionNumber)}
         </div>
+        {question.subject !== null && question.subject !== '' && (
+          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+            {question.subject}
+          </span>
+        )}
       </header>
+
+      <ContextStrip sourceCitations={question.sourceCitations} />
 
       <div className="px-6 py-6">
         <p className="whitespace-pre-wrap text-base leading-relaxed text-gray-900">
@@ -242,35 +257,67 @@ export function QuestionCard({ examType = '2nd' }: QuestionCardProps) {
       </div>
 
       <div className="border-t border-gray-100 px-6 py-5">
-        <label htmlFor="study-answer" className="mb-2 block text-sm font-medium text-gray-700">
-          정답 입력
-        </label>
-        <textarea
-          id="study-answer"
-          value={userAnswer}
-          onChange={(e) => setUserAnswer(e.target.value)}
-          disabled={phase === 'graded'}
-          rows={3}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm leading-relaxed text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:bg-gray-50 disabled:text-gray-500"
-          placeholder="정답을 입력하세요 (① / 1 / 1번 모두 동일 처리)"
-        />
+        {choicesMissing && (
+          <div
+            role="alert"
+            className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          >
+            이 문제는 보기 정보가 누락되어 채점할 수 없습니다. 다음 문제로 이동하세요.
+          </div>
+        )}
+        {question.inputType === 'multiple_choice' && question.choices !== null && (
+          <MultipleChoice
+            choices={question.choices}
+            value={answer.value}
+            disabled={isGraded}
+            onChange={(label) => setAnswer({ value: label, selfRating: null })}
+          />
+        )}
+        {question.inputType === 'fill_blank' && (
+          <FillBlank
+            value={answer.value}
+            disabled={isGraded}
+            onChange={(v) => setAnswer({ value: v, selfRating: null })}
+          />
+        )}
+        {question.inputType === 'essay' && (
+          <Essay
+            value={answer.value}
+            selfRating={answer.selfRating}
+            disabled={isGraded}
+            onChange={(v) => setAnswer((prev) => ({ value: v, selfRating: prev.selfRating }))}
+            onSelfRate={(rating: EssaySelfRating) =>
+              setAnswer((prev) => ({ value: prev.value, selfRating: rating }))
+            }
+          />
+        )}
+        {question.inputType === 'calc' && (
+          <Calc
+            value={answer.value}
+            disabled={isGraded}
+            onChange={(v) => setAnswer({ value: v, selfRating: null })}
+            variables={question.calcVariables}
+          />
+        )}
 
         <div className="mt-4 flex items-center gap-3">
-          {phase === 'answering' && (
+          {phase === 'answering' && !choicesMissing && (
             <button
               type="button"
               onClick={() => void submit()}
-              disabled={userAnswer.trim() === ''}
+              disabled={submitDisabled}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+              style={{ minHeight: 44 }}
             >
               채점 (Ctrl+Enter)
             </button>
           )}
-          {phase === 'graded' && (
+          {(isGraded || choicesMissing) && (
             <button
               type="button"
               onClick={() => void fetchNext()}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+              style={{ minHeight: 44 }}
             >
               다음 문제 (Ctrl+N)
             </button>
@@ -278,72 +325,13 @@ export function QuestionCard({ examType = '2nd' }: QuestionCardProps) {
         </div>
       </div>
 
-      {phase === 'graded' && gradeResult !== null && (
-        <section aria-label="채점 결과" className="border-t border-gray-100 bg-gray-50 px-6 py-5">
-          <div className="mb-3 flex items-center gap-2">
-            {gradeResult.isCorrect ? (
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-900">
-                정답
-              </span>
-            ) : (
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
-                오답
-              </span>
-            )}
-            <span className="text-xs text-gray-500">
-              내 답: <span className="text-gray-900">{userAnswer}</span>
-            </span>
-          </div>
-
-          <dl className="space-y-3 text-sm">
-            <div>
-              <dt className="text-xs font-medium text-gray-500">정답</dt>
-              <dd className="mt-1 text-gray-900">{gradeResult.correctAnswer}</dd>
-            </div>
-            {gradeResult.explanation !== null && gradeResult.explanation !== '' && (
-              <div>
-                <dt className="text-xs font-medium text-gray-500">해설</dt>
-                <dd className="mt-1 whitespace-pre-wrap leading-relaxed text-gray-900">
-                  {gradeResult.explanation}
-                </dd>
-              </div>
-            )}
-            {gradeResult.sourceCitations.manualPages.length > 0 && (
-              <div>
-                <dt className="text-xs font-medium text-gray-500">교재 출처</dt>
-                <dd className="mt-1 text-gray-900">
-                  {gradeResult.sourceCitations.manualPages.map((p) => `p.${p}`).join(' · ')}
-                </dd>
-              </div>
-            )}
-            {gradeResult.sourceCitations.lawArticles.length > 0 && (
-              <div>
-                <dt className="text-xs font-medium text-gray-500">법조문</dt>
-                <dd className="mt-1 text-gray-900">
-                  {gradeResult.sourceCitations.lawArticles.join(' · ')}
-                </dd>
-              </div>
-            )}
-            {gradeResult.relatedNodes.length > 0 && (
-              <div>
-                <dt className="text-xs font-medium text-gray-500">관련 자료</dt>
-                <dd className="mt-2 space-y-1">
-                  {gradeResult.relatedNodes.map((n) => (
-                    <div key={n.id} className="text-xs text-gray-700">
-                      <span className="rounded bg-gray-200 px-1.5 py-0.5 font-mono text-gray-700">
-                        {n.nodeType}
-                      </span>{' '}
-                      <span className="text-gray-900">{n.name}</span>
-                      {n.bookPage !== null && (
-                        <span className="text-gray-500"> · p.{n.bookPage}</span>
-                      )}
-                    </div>
-                  ))}
-                </dd>
-              </div>
-            )}
-          </dl>
-        </section>
+      {isGraded && gradeResult !== null && (
+        <ResultSection
+          grade={gradeResult}
+          inputType={question.inputType}
+          userAnswer={answer.value}
+          selfRating={answer.selfRating}
+        />
       )}
     </article>
   );

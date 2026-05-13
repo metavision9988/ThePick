@@ -117,13 +117,56 @@
 
 ---
 
+### C. Step 3-UX-6b 4 input type 컴포넌트 분기 (LOCK 후 즉시 진입)
+
+**진산 LOCK 결정 영속 후 즉시 본 step 진행**. LOCK §1 권고 조합 안 (QuestionCard A+C / Mode A / Start A / Summary A / Progress A+C carry-over) 채택.
+
+**신규 8 파일 (apps/web/src/components/question/ 디렉토리)**:
+
+- `types.ts` — InputType / EssaySelfRating / LearningMode / SessionPhase / RelatedNode / SourceCitations / Choice / NextQuestion / StreakSummary / SessionProgress / GradeResponse / NextResponseSession / NextResponse / AnswerPhase / AnswerState + flattenSourceCitations 헬퍼
+- `ContextStrip.tsx` — LOCK C 통합. 본문 위 inline 출처 strip (기출 / 교재 / 법조문 최대 3개)
+- `MultipleChoice.tsx` — 라디오 5개 + 1-5 단축키 + focus-within ring (WCAG AA)
+- `FillBlank.tsx` — 단답형 단일 input
+- `Essay.tsx` — textarea (maxLength=2000) + 글자 수 카운터 + 자기 채점 라디오 (correct/partial/incorrect)
+- `Calc.tsx` — 수치 input + 산식 변수 surface (dl-dt-dd)
+- `ResultSection.tsx` — 정답/해설/출처 always-on + 관련 자료 `<details>` 토글
+
+**수정 파일**:
+
+- `apps/web/src/components/QuestionCard.tsx` — Phase 2 baseline + LOCK A+C 정합 분기 컴포넌트 (350 → 322 lines, sub-components 위임)
+
+**4-Pass 독립 에이전트 리뷰 흡수 (auto-review-protocol §"규칙 0" 정합)**:
+
+| Pass     | 에이전트                  |  Crit |   Maj |   Min |
+| :------- | :------------------------ | ----: | ----: | ----: |
+| Pass 1+2 | feature-dev:code-reviewer |     1 |     3 |     3 |
+| Pass 3+4 | quality-engineer          |     0 |     1 |     6 |
+| **합계** | —                         | **1** | **4** | **9** |
+
+**Critical + Major 5건 모두 본 step 안에서 fix**:
+
+- C-1 (Pass 2): NextResponseSession.mode 타입 `string` → `LearningMode` 좁힘
+- M1 (Pass 1): Essay textarea maxLength=2000 + 글자 수 카운터
+- M2 (Pass 1): FillBlank/Calc 안내 "Enter 채점" → "Ctrl+Enter 채점" 정정
+- M3 (Pass 2): multiple_choice + choices=null 탈출 불가 → 안내 alert + "다음 문제" 버튼 + Ctrl+N 단축키 라우팅
+- M4 (Pass 3): MultipleChoice sr-only radio focus-within ring 추가 (WCAG 2.1 §2.4.7 Level AA Focus Visible 정합)
+
+**Minor 9건 carry-over** (Step 3-UX-6e 또는 Phase 3 종료 정리 chain)
+
+**통합 리뷰 영속**: `.claude/reviews/review-20260513-132414-step-3-ux-6b-4pass-integrated.md`
+
+---
+
 ## 게이트 상태 (Session 071 종착)
 
-- 코드 변경 0: tests/typecheck/lint 회귀 0 (apps/api 539 PASS / 2 skip + learning-modes 116 + srs 35 + shared 64 유지)
+- apps/web typecheck ✅ PASS / lint ✅ PASS / build ✅ PASS (QuestionCard 14.70 kB / gzip 4.57 kB)
+- apps/api typecheck ✅ PASS / lint ✅ PASS (회귀 0)
+- packages/learning-modes test ✅ 116/116 PASS (회귀 0)
 - production Worker: 변경 0 — Version 390a7eb7-93d9-421e-b979-4d4b96cef5f4 유지 (Session 070 종착 baseline)
 - production D1: 변경 0 — 35 마이그레이션 적용 유지
-- Hard Rule 17 위반: 0건 (디자인 문서만 영속)
-- ADR-038 영속 + plan §10 sub-step 분해 본격화 + Claude Design 응답 영속 + 검토 영속
+- Hard Rule 17 위반: 0건 (`grep 'son-hae-pyeong-ga-sa' apps/web/src` → 0건)
+- AESTHETIC §4 안티패턴: 0건 위반 (gradient/별/트로피/폭죽/모드슬라이더/SNS/프리미엄 띠 모두 grep 0건)
+- ADR-038 + LOCK A+C 영속 + plan §10 Step 3-UX-6a/6b ✅ 마킹
 
 ---
 

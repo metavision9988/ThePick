@@ -612,13 +612,13 @@ mode 별 메타데이터 + 카드 풀 통계:
 
 **Step 3-UX-6 sub-step 분해 (Session 071 영속, ADR-038 정합)**:
 
-| Sub-step            | 작업                                               | 의존                                   | 산출물                                                                                                                                                               |
-| :------------------ | :------------------------------------------------- | :------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 3-UX-6a (★ 진행 중) | 디자인 lock 워크플로우 영속                        | 없음                                   | `docs/design/AESTHETIC.md` + `docs/design/rfp-step-3-ux-6.md` + ADR-038. 진산 Claude Design 응답 수령 + LOCK 결정 영속 (`docs/design/responses/step-3-ux-6-LOCK.md`) |
-| 3-UX-6b             | 4 input type 컴포넌트 분기 (QuestionCard 리팩토링) | 6a LOCK                                | `MultipleChoice` / `FillBlank` / `Essay` / `Calc` 4 컴포넌트 + QuestionCard 분기                                                                                     |
-| 3-UX-6c             | ModeSelector + SessionStart + SessionSummary       | 6a LOCK + `/api/study/mode` 매핑 layer | 3 신규 컴포넌트 + study.astro 통합                                                                                                                                   |
-| 3-UX-6d             | ProgressVisualization                              | 6a LOCK                                | streak / 일일 / 마스터 chart 컴포넌트                                                                                                                                |
-| 3-UX-6e             | 검증 (Playwright + 4-Pass + 5-페르소나)            | 6b-d 완료                              | 모바일 80% 통과 + CRIT 0건                                                                                                                                           |
+| Sub-step        | 작업                                               | 의존                                   | 산출물                                                                                                                                                    |
+| :-------------- | :------------------------------------------------- | :------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3-UX-6a ✅ 완료 | 디자인 lock 워크플로우 영속                        | 없음                                   | `docs/design/AESTHETIC.md` + `docs/design/rfp-step-3-ux-6.md` + ADR-038 + LOCK (`docs/design/responses/step-3-ux-6-LOCK.md` A+C 채택) — Session 071       |
+| 3-UX-6b ✅ 완료 | 4 input type 컴포넌트 분기 (QuestionCard 리팩토링) | 6a LOCK                                | `types.ts` + `MultipleChoice` / `FillBlank` / `Essay` / `Calc` + `ContextStrip` + `ResultSection` 6 신규 파일 + `QuestionCard.tsx` 리팩토링 — Session 071 |
+| 3-UX-6c         | ModeSelector + SessionStart + SessionSummary       | 6a LOCK + `/api/study/mode` 매핑 layer | 3 신규 컴포넌트 + study.astro 통합                                                                                                                        |
+| 3-UX-6d         | ProgressVisualization                              | 6a LOCK                                | streak / 일일 / 마스터 chart 컴포넌트                                                                                                                     |
+| 3-UX-6e         | 검증 (Playwright + 4-Pass + 5-페르소나)            | 6b-d 완료                              | 모바일 80% 통과 + CRIT 0건                                                                                                                                |
 
 ### Step 3-UX-7 — distractor BATCH 보강 (§13 D1 결정 후)
 
