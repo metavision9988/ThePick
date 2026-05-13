@@ -751,6 +751,49 @@ describe('GET /api/study/mode', () => {
     expect(body.confusionTypes).toEqual([]);
   });
 
+  // Step 3-UX-6e backend M-D1 흡수 — study-read group rate-limit 60/min.
+  // /mode + /progress + /session/:id + /session/:id/complete 4 endpoint 공유 카운터.
+  // /grade와 분리 (userId:study-read suffix) — 학습 정상 흐름 보장.
+  it('study-read rate-limit: /mode 60/min 초과 시 429 + Retry-After', async () => {
+    seedUser('u1', 'u1@test.com');
+    // 60회 정상 시도
+    for (let i = 0; i < 60; i++) {
+      const res = await fetchAs('u1', '/mode?examType=2nd');
+      expect([200, 429]).toContain(res.status);
+    }
+    // 61회째 — 429 RATE_LIMIT_EXCEEDED + Retry-After
+    const blocked = await fetchAs('u1', '/mode?examType=2nd');
+    expect(blocked.status).toBe(429);
+    const body = (await blocked.json()) as StudyResponseBody;
+    expect(body.error).toBe('RATE_LIMIT_EXCEEDED');
+    expect(blocked.headers.get('Retry-After')).not.toBeNull();
+  });
+
+  it('study-read rate-limit: /grade와 /mode 카운터 분리 (group suffix)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-rl-sep', answer: '1', examType: '2nd' });
+    // /grade 20회 (분당 20 cap 도달)
+    for (let i = 0; i < 20; i++) {
+      const res = await fetchAs('u1', '/grade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId: 'eq-rl-sep', userAnswer: '1' }),
+      });
+      expect([200, 404]).toContain(res.status);
+    }
+    // /grade 21회째 — 429 (기존 패턴)
+    const gradeBlocked = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-rl-sep', userAnswer: '1' }),
+    });
+    expect(gradeBlocked.status).toBe(429);
+
+    // /mode는 별도 group이므로 정상 200
+    const modeOk = await fetchAs('u1', '/mode?examType=2nd');
+    expect(modeOk.status).toBe(200);
+  });
+
   it('streak_records 부재 → streak {0, 0, 0} + dailyGoal 20 (Step 3-UX-6c-2 ADR-040 G-1)', async () => {
     seedUser('u1', 'u1@test.com');
     const res = await fetchAs('u1', '/mode?examType=2nd');

@@ -134,6 +134,22 @@ const WEAK_TOP_LIMIT = 5;
 const MAX_CARDS_PLANNED = 200;
 const MIN_CARDS_PLANNED = 1;
 
+/**
+ * Step 3-UX-6e (5-페르소나 backend M-D1 흡수) — study read endpoint group rate-limit.
+ *
+ * /grade는 user_id 기반 분당 20 cap (enumeration oracle 차단). read endpoint 4종
+ * (/mode, /progress, /session/:id, /session/:id/complete)은 별도 group으로 분리하여
+ * /grade 카운터와 독립적으로 동작.
+ *
+ * rate_limits 테이블 PK `(user_id, bucket_minute)` 정합 — 마이그레이션 0건. userId
+ * suffix `:study-read`로 group 분리.
+ *
+ * 분당 60 cap = 1 RPS. 정상 사용자 (/study 페이지 진입 + 학습 흐름)는 분당 5~10회.
+ * DoS / scraping은 즉시 429 차단.
+ */
+const STUDY_READ_LIMIT_PER_MINUTE = 60;
+const STUDY_READ_RATE_GROUP_SUFFIX = ':study-read';
+
 const gradeSchema = z.object({
   questionId: z.string().min(1).max(128),
   /** 객관식: 셔플 라벨 ('A' ~ 'E') / 단답+계산: 자유 텍스트 / 서술: 사용자 작성 답안. */
@@ -679,6 +695,39 @@ function emitLearningTelemetry(
   }
 }
 
+/**
+ * Step 3-UX-6e backend M-D1 흡수 — study read endpoint group rate-limit helper.
+ *
+ * 인증된 사용자가 /mode + /progress + /session/:id + /session/:id/complete를
+ * 무제한 호출 시 D1 비용 폭증 / DoS / scraping 위협. user_id + ':study-read' suffix로
+ * 별도 카운터 group → /grade와 독립.
+ *
+ * 분당 60 cap 초과 시 429 + Retry-After + sleepJitter (타이밍 oracle 방어).
+ * 카운터 자체 실패 (D1 transient) 시 503 + Retry-After.
+ * 반환값 null은 통과, Response 객체는 호출자가 즉시 return.
+ */
+async function enforceStudyReadRateLimit(
+  c: Context<StudyEnv>,
+  userId: string,
+  logger: Logger,
+): Promise<Response | null> {
+  try {
+    await checkAndIncrementRateLimit(c.env.DB, `${userId}${STUDY_READ_RATE_GROUP_SUFFIX}`, {
+      limitPerMinute: STUDY_READ_LIMIT_PER_MINUTE,
+    });
+    return null;
+  } catch (err) {
+    if (err instanceof RateLimitExceeded) {
+      await sleepJitter();
+      c.header('Retry-After', String(err.retryAfterSeconds));
+      return c.json({ error: 'RATE_LIMIT_EXCEEDED' }, 429);
+    }
+    logger.error('study-read rate-limit check failed', err, { userId });
+    c.header('Retry-After', '5');
+    return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
+  }
+}
+
 export function createStudyRoutes(): Hono<StudyEnv> {
   const router = new Hono<StudyEnv>();
 
@@ -1210,6 +1259,8 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       //   - WHERE last_study_date != excluded.last_study_date 절로 same-day idempotent
       //   - daily_goal는 excluded.daily_goal로 덮지 않음 (사용자 설정 보존)
       //   - today COUNT: substr → reviewed_at >= ? AND < ? range scan (perf CRIT-5 흡수)
+      // ★ ADR-041 (KST-only) — `todayDateString()` / `dayBoundsUtc()` 모두 default KST.
+      //   last_study_date는 KST YYYY-MM-DD 영속. Year 2 멀티시험 시 ADR-041 §3 재평가.
       try {
         const today = todayDateString();
         const todayBounds = dayBoundsUtc(today);
@@ -1338,6 +1389,9 @@ export function createStudyRoutes(): Hono<StudyEnv> {
   router.get('/mode', async (c) => {
     const logger = buildLogger(c.env).child({ route: 'mode-stats' });
     const userId = c.var.userId;
+
+    const rateLimitResp = await enforceStudyReadRateLimit(c, userId, logger);
+    if (rateLimitResp !== null) return rateLimitResp;
 
     const examIdParam = requireExamId(c.req.query('examId'));
     if (examIdParam.error || !examIdParam.examId) {
@@ -1500,6 +1554,9 @@ export function createStudyRoutes(): Hono<StudyEnv> {
     const logger = buildLogger(c.env).child({ route: 'progress' });
     const userId = c.var.userId;
 
+    const rateLimitResp = await enforceStudyReadRateLimit(c, userId, logger);
+    if (rateLimitResp !== null) return rateLimitResp;
+
     const examIdParam = requireExamId(c.req.query('examId'));
     if (examIdParam.error || !examIdParam.examId) {
       return c.json(
@@ -1646,6 +1703,9 @@ export function createStudyRoutes(): Hono<StudyEnv> {
     const logger = buildLogger(c.env).child({ route: 'mode-start' });
     const userId = c.var.userId;
 
+    const rateLimitResp = await enforceStudyReadRateLimit(c, userId, logger);
+    if (rateLimitResp !== null) return rateLimitResp;
+
     const examIdParam = requireExamId(c.req.query('examId'));
     if (examIdParam.error || !examIdParam.examId) {
       return c.json(
@@ -1713,6 +1773,9 @@ export function createStudyRoutes(): Hono<StudyEnv> {
     const logger = buildLogger(c.env).child({ route: 'session-get' });
     const userId = c.var.userId;
     const sessionId = c.req.param('id');
+
+    const rateLimitResp = await enforceStudyReadRateLimit(c, userId, logger);
+    if (rateLimitResp !== null) return rateLimitResp;
 
     if (sessionId === undefined || sessionId === '') {
       return c.json({ error: 'VALIDATION_ERROR', message: 'sessionId required' }, 422);
@@ -1861,6 +1924,9 @@ export function createStudyRoutes(): Hono<StudyEnv> {
     const logger = buildLogger(c.env).child({ route: 'session-complete' });
     const userId = c.var.userId;
     const sessionId = c.req.param('id');
+
+    const rateLimitResp = await enforceStudyReadRateLimit(c, userId, logger);
+    if (rateLimitResp !== null) return rateLimitResp;
 
     if (sessionId === undefined || sessionId === '') {
       return c.json({ error: 'VALIDATION_ERROR', message: 'sessionId required' }, 422);

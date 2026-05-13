@@ -438,7 +438,10 @@ export const streakRecords = sqliteTable('streak_records', {
   userId: text('user_id').primaryKey(),
   currentStreak: integer('current_streak').notNull().default(0),
   longestStreak: integer('longest_streak').notNull().default(0),
-  lastStudyDate: text('last_study_date'), // YYYY-MM-DD UTC
+  // ★ ADR-041 (KST-only 정책) — last_study_date는 **KST YYYY-MM-DD**.
+  // todayDateString() default offsetHours=9 (packages/learning-modes/session-progress.ts).
+  // Year 2 멀티시험 확장 시 ADR-041 §3 재평가 trigger.
+  lastStudyDate: text('last_study_date'),
   dailyGoal: integer('daily_goal').notNull().default(20),
 });
 
