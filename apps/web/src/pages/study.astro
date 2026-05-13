@@ -1,18 +1,23 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { StudyFlow } from '@/components/StudyFlow';
-import { ProgressSummary } from '@/components/ProgressSummary';
+import { ProgressViz } from '@/components/progress/ProgressViz';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
 ---
 
 <BaseLayout title="학습 — 쪽집게">
   <div class="mx-auto max-w-[1280px] px-4 py-8 lg:flex lg:gap-8">
-    <aside class="mb-6 flex-shrink-0 lg:mb-0 lg:w-[180px]">
-      <h2 class="mb-3 text-xs font-medium uppercase tracking-wide text-gray-500">진도</h2>
-      <ProgressSummary client:load />
-      <p class="mt-6 text-[11px] leading-relaxed text-gray-400">
-        FSRS 간격반복은 약점 복습 모드에서 surface된다.
-      </p>
+    <aside class="mb-6 flex-shrink-0 lg:mb-0 lg:w-[260px]">
+      <div class="mb-3 flex items-baseline justify-between">
+        <h2 class="text-xs font-medium uppercase tracking-wide text-gray-500">진도</h2>
+        <a
+          href="/study/progress"
+          class="text-[11px] text-indigo-600 hover:text-indigo-700"
+        >
+          30일 보기 →
+        </a>
+      </div>
+      <ProgressViz examType="1st" client:load />
     </aside>
     <main class="flex-1 lg:max-w-[720px]">
       <header class="mb-6">

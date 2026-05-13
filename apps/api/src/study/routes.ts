@@ -1479,6 +1479,150 @@ export function createStudyRoutes(): Hono<StudyEnv> {
   });
 
   /**
+   * GET /api/study/progress?examId=...&examType=1st|2nd&days=N
+   *
+   * Step 3-UX-6d ProgressVisualization 자료. LOCK §1 sidebar A (오늘+7일+마스터) +
+   * full page C (30일 dot strip) source. examId 시그니처 (Hard Rule 16).
+   *
+   * 응답:
+   *   - daily: 최근 N일 학습량 — KST 일자별 DISTINCT card_id 카운트 + 오늘 여부
+   *   - subjects: 과목별 마스터 — mastered_at NOT NULL count / 전체 user_progress count
+   *   - dailyGoal: 사용자 설정 (없으면 DEFAULT_DAILY_GOAL)
+   *
+   * N 상한 30 (full page C 30일 dot strip 정합). N < 1 또는 N > 30 → 422.
+   */
+  const PROGRESS_DAYS_MIN = 1;
+  const PROGRESS_DAYS_MAX = 30;
+  // sidebar A는 상위 5건 slice / full page C는 상위 8건 slice. 서버는 max 8 영속 (4-Pass I-2 흡수).
+  const SUBJECT_MASTERY_LIMIT = 8;
+
+  router.get('/progress', async (c) => {
+    const logger = buildLogger(c.env).child({ route: 'progress' });
+    const userId = c.var.userId;
+
+    const examIdParam = requireExamId(c.req.query('examId'));
+    if (examIdParam.error || !examIdParam.examId) {
+      return c.json(
+        { error: 'VALIDATION_ERROR', message: examIdParam.error ?? 'examId required' },
+        422,
+      );
+    }
+    void examIdParam.examId;
+
+    const examTypeRaw = c.req.query('examType') ?? '1st';
+    const examTypeParsed = examTypeSchema.safeParse(examTypeRaw);
+    if (!examTypeParsed.success) {
+      // 4-Pass M-2 흡수 — raw echo 차단. enum 후보 명시.
+      return c.json({ error: 'VALIDATION_ERROR', message: 'examType must be 1st or 2nd' }, 422);
+    }
+    const examType = examTypeParsed.data;
+
+    const daysRaw = c.req.query('days') ?? '7';
+    const daysNum = Number(daysRaw);
+    if (!Number.isInteger(daysNum) || daysNum < PROGRESS_DAYS_MIN || daysNum > PROGRESS_DAYS_MAX) {
+      return c.json(
+        {
+          error: 'VALIDATION_ERROR',
+          message: `days must be integer in [${PROGRESS_DAYS_MIN}, ${PROGRESS_DAYS_MAX}]`,
+        },
+        422,
+      );
+    }
+
+    // KST 기준 today + N일 전까지의 일자 배열 생성.
+    const today = todayDateString();
+    const startDate = (() => {
+      // today에서 days-1일 빼서 시작 날짜 산출 (today 포함).
+      const [y, m, d] = today.split('-').map(Number);
+      const dt = new Date(Date.UTC(y ?? 0, (m ?? 1) - 1, d ?? 0));
+      dt.setUTCDate(dt.getUTCDate() - (daysNum - 1));
+      return dt.toISOString().slice(0, 10);
+    })();
+    const startBounds = dayBoundsUtc(startDate);
+    const endBounds = dayBoundsUtc(today);
+
+    try {
+      const [streakRow, dailyResult, subjectsResult] = await Promise.all([
+        c.env.DB.prepare(`SELECT daily_goal FROM streak_records WHERE user_id = ? LIMIT 1`)
+          .bind(userId)
+          .first<{ daily_goal: number }>(),
+        // 일자별 DISTINCT card_id 카운트. reviewed_at은 ISO 8601 UTC, KST 기준 date 추출은
+        // strftime + '+9 hours' offset 적용 (D1 SQLite 정합).
+        c.env.DB.prepare(
+          `SELECT strftime('%Y-%m-%d', reviewed_at, '+9 hours') AS date,
+                  COUNT(DISTINCT card_id) AS cnt
+             FROM study_reviews
+            WHERE user_id = ?
+              AND reviewed_at >= ?
+              AND reviewed_at < ?
+            GROUP BY date
+            ORDER BY date ASC`,
+        )
+          .bind(userId, startBounds.startUtc, endBounds.endUtc)
+          .all<{ date: string; cnt: number }>(),
+        // 과목별 마스터 — exam_questions JOIN user_progress, GROUP BY subject.
+        // mastered_at NOT NULL = 마스터 도달, total = active 카드 수 (탐색 가능 모수).
+        c.env.DB.prepare(
+          `SELECT eq.subject AS subject,
+                  COUNT(*) AS total,
+                  SUM(CASE WHEN up.mastered_at IS NOT NULL THEN 1 ELSE 0 END) AS mastered
+             FROM exam_questions eq
+             LEFT JOIN user_progress up
+                   ON up.card_id = eq.id
+                  AND up.user_id = ?
+                  AND up.card_type = 'exam'
+                  AND up.node_id IS NULL
+            WHERE eq.status = 'active'
+              AND eq.exam_type = ?
+              AND eq.subject IS NOT NULL
+            GROUP BY eq.subject
+            ORDER BY total DESC
+            LIMIT ?`,
+        )
+          .bind(userId, examType, SUBJECT_MASTERY_LIMIT)
+          .all<{ subject: string; total: number; mastered: number }>(),
+      ]);
+
+      const dailyGoal = streakRow?.daily_goal ?? DEFAULT_DAILY_GOAL;
+      const dailyMap = new Map(dailyResult.results.map((r) => [r.date, r.cnt]));
+
+      // 클라이언트 표시 순서 보장 — startDate부터 today까지 N개 일자 영속.
+      const daily: Array<{ date: string; cardsDistinct: number; isToday: boolean }> = [];
+      const [sy, sm, sd] = startDate.split('-').map(Number);
+      const cursor = new Date(Date.UTC(sy ?? 0, (sm ?? 1) - 1, sd ?? 0));
+      for (let i = 0; i < daysNum; i++) {
+        const date = cursor.toISOString().slice(0, 10);
+        daily.push({
+          date,
+          cardsDistinct: dailyMap.get(date) ?? 0,
+          isToday: date === today,
+        });
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
+      }
+
+      const subjects = subjectsResult.results.map((row) => ({
+        subject: row.subject,
+        total: row.total,
+        mastered: row.mastered,
+        masteryPct: row.total > 0 ? row.mastered / row.total : 0,
+      }));
+
+      return c.json({
+        examId: examIdParam.examId,
+        examType,
+        days: daysNum,
+        dailyGoal,
+        daily,
+        subjects,
+      });
+    } catch (err) {
+      logger.error('progress query failed', err, { userId, examType, days: daysNum });
+      c.header('Retry-After', '5');
+      return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
+    }
+  });
+
+  /**
    * POST /api/study/mode/start
    *
    * 학습 세션 생성. mode + cardsPlanned 정책으로 study_sessions INSERT.

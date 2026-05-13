@@ -58,7 +58,7 @@
 
 - `max-w-[1280px]` — 본문 컨테이너 최대 너비
 - `mx-auto px-4 py-8` — 외곽 패딩
-- 데스크탑 사이드바: `lg:w-[180px]` (글로벌 권고 220px보다 좁게 — 학습 페이지는 진도 surface만)
+- 데스크탑 사이드바: `lg:w-[260px]` (Step 3-UX-6d 진입 시 180px → 260px 확장. ProgressViz A 3 카드 stack: 88px ring + 일일 목표 텍스트 우측 정합 + 7일 dot strip + 5 HBar 시인성 정합. 4-Pass §"Important I-1" 흡수 후 토큰 영속, 2026-05-13 Session 072)
 - 본문 영역: `lg:max-w-[720px]` (행당 한글 ~40자 보장)
 - 모서리: `rounded-lg` (rx=8) 또는 `rounded-full` (pill). **그 외 (rounded-xl/2xl) 금지**.
 

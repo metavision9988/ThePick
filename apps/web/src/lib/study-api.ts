@@ -16,6 +16,8 @@ import type {
   SessionDetail,
 } from '@/components/session/types';
 
+export type { ExamType };
+
 const API_BASE: string = import.meta.env.PUBLIC_API_BASE_URL ?? 'http://localhost:8787';
 const EXAM_ID = EXAM_IDS.SON_HAE_PYEONG_GA_SA;
 
@@ -65,6 +67,38 @@ export async function fetchModeStats(examType: ExamType): Promise<ModeStatsRespo
   url.searchParams.set('examId', EXAM_ID);
   url.searchParams.set('examType', examType);
   return safeFetch<ModeStatsResponse>(url.toString(), { method: 'GET' });
+}
+
+/** Step 3-UX-6d ProgressVisualization — daily + subjects + dailyGoal source. */
+export interface DailyEntry {
+  readonly date: string; // YYYY-MM-DD (KST)
+  readonly cardsDistinct: number;
+  readonly isToday: boolean;
+}
+
+export interface SubjectMastery {
+  readonly subject: string;
+  readonly total: number;
+  readonly mastered: number;
+  /** 0~1, mastered / total. */
+  readonly masteryPct: number;
+}
+
+export interface ProgressResponse {
+  readonly examId: string;
+  readonly examType: ExamType;
+  readonly days: number;
+  readonly dailyGoal: number;
+  readonly daily: ReadonlyArray<DailyEntry>;
+  readonly subjects: ReadonlyArray<SubjectMastery>;
+}
+
+export async function fetchProgress(examType: ExamType, days: number): Promise<ProgressResponse> {
+  const url = new URL(`${API_BASE}/api/study/progress`);
+  url.searchParams.set('examId', EXAM_ID);
+  url.searchParams.set('examType', examType);
+  url.searchParams.set('days', String(days));
+  return safeFetch<ProgressResponse>(url.toString(), { method: 'GET' });
 }
 
 export async function startMode(body: ModeStartRequest): Promise<ModeStartResponse> {

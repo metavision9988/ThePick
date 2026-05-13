@@ -1,0 +1,22 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { ProgressVizFull } from '@/components/progress/ProgressVizFull';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
+---
+
+<BaseLayout title="진도 — 쪽집게">
+  <div class="mx-auto max-w-[720px] px-4 py-8">
+    <header class="mb-6">
+      <a
+        href="/study"
+        class="text-xs text-indigo-600 hover:text-indigo-700"
+      >
+        ← 학습으로 돌아가기
+      </a>
+      <h1 class="mt-2 text-2xl font-medium text-gray-900">진도</h1>
+      <p class="mt-1 text-sm text-gray-500">30일 학습 일관성과 과목별 마스터 추세.</p>
+    </header>
+    <ProgressVizFull examType="1st" client:load />
+  </div>
+  <OfflineIndicator client:load />
+</BaseLayout>

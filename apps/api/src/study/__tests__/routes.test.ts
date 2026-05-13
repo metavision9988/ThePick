@@ -822,6 +822,145 @@ describe('GET /api/study/mode', () => {
   });
 });
 
+interface ProgressBody {
+  readonly examId: string;
+  readonly examType: '1st' | '2nd';
+  readonly days: number;
+  readonly dailyGoal: number;
+  readonly daily: ReadonlyArray<{ date: string; cardsDistinct: number; isToday: boolean }>;
+  readonly subjects: ReadonlyArray<{
+    subject: string;
+    total: number;
+    mastered: number;
+    masteryPct: number;
+  }>;
+}
+
+describe('GET /api/study/progress (Step 3-UX-6d)', () => {
+  it('미인증 → 401', async () => {
+    const res = await createStudyRoutes().fetch(
+      new Request(`http://test.local${withExamId('/progress')}`),
+      env(),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it('days 누락 → 기본 7일 + daily 7건 + subjects 빈 배열', async () => {
+    seedUser('u1', 'u1@test.com');
+    const res = await fetchAs('u1', '/progress?examType=2nd');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ProgressBody;
+    expect(body.days).toBe(7);
+    expect(body.daily).toHaveLength(7);
+    expect(body.daily[body.daily.length - 1].isToday).toBe(true); // 마지막은 오늘
+    expect(body.daily[0].isToday).toBe(false);
+    expect(body.dailyGoal).toBe(20);
+    expect(body.subjects).toEqual([]);
+  });
+
+  it('days=30 → daily 30건 + 일자 오름차순', async () => {
+    seedUser('u1', 'u1@test.com');
+    const res = await fetchAs('u1', '/progress?examType=2nd&days=30');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ProgressBody;
+    expect(body.days).toBe(30);
+    expect(body.daily).toHaveLength(30);
+    // 일자 단조 증가
+    for (let i = 1; i < body.daily.length; i++) {
+      expect(body.daily[i].date > body.daily[i - 1].date).toBe(true);
+    }
+  });
+
+  it('days=0 → 422', async () => {
+    seedUser('u1', 'u1@test.com');
+    const res = await fetchAs('u1', '/progress?examType=2nd&days=0');
+    expect(res.status).toBe(422);
+  });
+
+  it('days=31 → 422 (상한 초과)', async () => {
+    seedUser('u1', 'u1@test.com');
+    const res = await fetchAs('u1', '/progress?examType=2nd&days=31');
+    expect(res.status).toBe(422);
+  });
+
+  it('subjects 마스터 집계 + DESC ORDER (총 카드 수)', async () => {
+    seedUser('u1', 'u1@test.com');
+    // 보험 일반: 3 카드, 2 마스터. 농작물재해보험: 2 카드, 1 마스터. 미분류 (subject NULL): 제외.
+    seedExamQuestion({ id: 'eq-s1', examType: '2nd', subject: '보험 일반' });
+    seedExamQuestion({ id: 'eq-s2', examType: '2nd', subject: '보험 일반' });
+    seedExamQuestion({ id: 'eq-s3', examType: '2nd', subject: '보험 일반' });
+    seedExamQuestion({ id: 'eq-s4', examType: '2nd', subject: '농작물재해보험' });
+    seedExamQuestion({ id: 'eq-s5', examType: '2nd', subject: '농작물재해보험' });
+    seedExamQuestion({ id: 'eq-s6', examType: '2nd', subject: null }); // 제외
+    // mastered_at은 seedProgressForQuestion helper에 없어 raw INSERT.
+    const insertMastered = (cardId: string, masteredAt: string | null): void => {
+      ctx.raw
+        .prepare(
+          `INSERT INTO user_progress
+             (id, user_id, node_id, card_id, card_type, fsrs_difficulty, fsrs_stability,
+              fsrs_interval, fsrs_next_review, total_reviews, correct_count, weak_score,
+              mastered_at)
+           VALUES (?, ?, NULL, ?, 'exam', 0.3, 30.0, 30, NULL, 5, 5, 0, ?)`,
+        )
+        .run(crypto.randomUUID(), 'u1', cardId, masteredAt);
+    };
+    insertMastered('eq-s1', '2026-05-01T00:00:00Z');
+    insertMastered('eq-s2', '2026-05-02T00:00:00Z');
+    // eq-s3은 progress 없음 (un-mastered, count는 active 모수)
+    insertMastered('eq-s4', '2026-05-03T00:00:00Z');
+    // eq-s5는 progress 없음
+
+    const res = await fetchAs('u1', '/progress?examType=2nd&days=7');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ProgressBody;
+    expect(body.subjects).toHaveLength(2); // NULL subject 제외
+    const 보험 = body.subjects.find((s) => s.subject === '보험 일반');
+    expect(보험).toEqual({
+      subject: '보험 일반',
+      total: 3,
+      mastered: 2,
+      masteryPct: 2 / 3,
+    });
+    const 농작물 = body.subjects.find((s) => s.subject === '농작물재해보험');
+    expect(농작물).toEqual({
+      subject: '농작물재해보험',
+      total: 2,
+      mastered: 1,
+      masteryPct: 0.5,
+    });
+    // total DESC ORDER 검증
+    expect(body.subjects[0].total).toBeGreaterThanOrEqual(body.subjects[1].total);
+  });
+
+  it('daily — 같은 카드 N회 review = 1장 학습 (DISTINCT card_id 정합)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-d1', examType: '2nd' });
+    const sid = seedStudySession({ userId: 'u1', phase: 'main' });
+    // 같은 카드 3회 review (오늘)
+    for (let i = 0; i < 3; i++) {
+      seedStudyReview({ userId: 'u1', cardId: 'eq-d1', sessionId: sid });
+    }
+    const res = await fetchAs('u1', '/progress?examType=2nd&days=7');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ProgressBody;
+    const todayEntry = body.daily.find((d) => d.isToday);
+    expect(todayEntry?.cardsDistinct).toBe(1); // 3회 review가 1장으로 dedupe
+  });
+
+  it('사용자 격리 (u2 review가 u1 daily 미반영)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedUser('u2', 'u2@test.com');
+    seedExamQuestion({ id: 'eq-iso-p', examType: '2nd' });
+    const sid = seedStudySession({ userId: 'u2' });
+    seedStudyReview({ userId: 'u2', cardId: 'eq-iso-p', sessionId: sid });
+    const res = await fetchAs('u1', '/progress?examType=2nd&days=7');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ProgressBody;
+    const todayEntry = body.daily.find((d) => d.isToday);
+    expect(todayEntry?.cardsDistinct).toBe(0);
+  });
+});
+
 describe('POST /api/study/mode/start', () => {
   it('mode + cardsPlanned 정상 → sessionId 생성', async () => {
     seedUser('u1', 'u1@test.com');
