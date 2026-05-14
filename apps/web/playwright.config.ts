@@ -20,7 +20,12 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   forbidOnly: CI,
-  retries: CI ? 2 : 0,
+  // 5-페르소나 devops C-D2 / perf M-P1 흡수 (Session 076, 진산 결정 C-2 (a)) — retries 2→1 강등.
+  // 본 chunk에서 mobile-webkit SessionStart가 retry로 silent green되는 실 사례 발견 →
+  // retry cushion이 race condition을 가린다는 가설 fact 확정. fail-loud 원칙 (Hard Rule +
+  // production-quality.md "빈 catch 금지" 동일 맥락) + Year 2 확장 reference로 fail-loud
+  // 기본값 확정. 진짜 transient flaky 분리는 ADR-040 §6 M5 carry-over에서 별도 처리.
+  retries: CI ? 1 : 0,
   workers: CI ? 1 : undefined,
   reporter: CI ? [['list'], ['github']] : 'list',
   timeout: 30_000,

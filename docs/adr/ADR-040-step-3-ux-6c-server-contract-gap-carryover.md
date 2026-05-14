@@ -240,11 +240,14 @@ Year 2 / Phase 4 carry-over:
 - ✅ **B-4 gradeSequence empty fail-loud** (quality C3): `seq.length === 0` 시점에 console.error + 422 fulfill. 의도-동작 mismatch (reset vs ignore) 차단. `override({})`이 reset 정확 패턴임을 console message로 surface.
 - ✅ **C-1 `.gitignore .claude/scheduled_tasks.lock`** (devops C-D1): 머신 간 PID/procStart 의미가 다른 세션-로컬 mutex가 우연 add → stale lock 영구 cron 차단 위험. .gitignore 영속.
 
-**진산 결정 필요 (전략 갈림길) — 본 chunk 미흡수 carry-over:**
+**진산 결정 갈림길 3건 — 2026-05-14 결정 완료 (Session 076):**
 
-- ☐ **A-3 mutable singleton `overrides.current` 안전성 구조 강제** (refactor C-2) — 현재 page-scoped라 safe하나 향후 worker-shared 이전 시 silent shared-state bug. (a) 즉시 `Map<Page, Overrides>` refactor / (b) `ApiMock.resetOverrides()` 추가 / (c) carry-over. **진산 결정 갈림길.**
-- ☐ **B-1 WebKit QuestionCard 시나리오 영구 skip silent miss** (quality C1) — 실 사용자 95%+ iOS Safari의 핵심 progress action(채점→다음 문제) 회귀 차단망 webkit project에서 사실상 0건. ADR-040 §6 "차단망 14건"은 chromium 한정 측정임을 명시. (a) launch 전 cross-origin proxy 도입 (Astro middleware `/api/*` proxy) / (b) carry-over + Phase 3 launch dead line. **진산 결정 갈림길.**
-- ☐ **C-2 `retries: 2` silent flaky cushion 강등** (devops C-D2 ≡ perf M-P1) — 본 Session 076 examId fail-loud 검증 중 mobile-webkit SessionStart가 retry로 silent green되는 실 사례 발견. ADR-040 §6 M5 우선순위 상향 필요. (a) 2→1 즉시 강등 / (b) retry warning surface + GitHub Actions `::warning::` / (c) carry-over. **진산 결정 갈림길.**
+- 🟡 **A-3 mutable singleton `overrides.current` 안전성 구조 강제** (refactor C-2) — **진산 결정 (a) carry-over 채택**. 현재 page-scoped라 safe + Year 2 reusable foundation은 production 코드 (학습 엔진/Graph RAG/Formula Engine/사용자 앱 골격)이고 E2E mock-api 자체는 다른 시험 프로젝트에서 각자 별도 mock 패턴이 예상되므로 우선순위 낮음. refactor M-1 (mock-api 348줄 SRP 분리) chunk에서 state machine 패턴과 함께 통합 결정.
+- 🟡 **B-1 WebKit QuestionCard 시나리오 영구 skip silent miss** (quality C1) — **진산 결정 (a) carry-over + ADR 보강 + 다음 chunk 최우선 등재 채택**. 본 ADR §7에 다음 fact 명시 영속:
+  - **"본 ADR §6 회귀 차단망 14건 측정은 chromium 한정"** — mobile-webkit project가 실제로 cover하는 시나리오는 ModeSelector + SessionStart (GET 응답만) 2건. QuestionCard 핵심 progress action (채점 → 다음 문제 버튼) cover 0건.
+  - **Phase 3 launch 차단 잠재 위험 등급** — 실 사용자 95%+ iOS Safari (모바일 80% × Safari 95%+)의 핵심 진행 path가 회귀 검출 없이 production 노출. `position: sticky` / `100vh` viewport / scroll bounce / virtual keyboard overlay 등 iOS-specific 회귀가 chromium에서 PASS + production에서만 발현 가능.
+  - **다음 chunk 최우선 등재** — Astro dev middleware `/api/*` → `localhost:8787` same-origin proxy 도입 (옵션 b). 추정 ~2시간. 3 WebKit 시나리오 전부 PASS 회복 + cross-origin POST preflight 호환성 issue 본질 해소 + Year 2 모든 자격시험 reusable foundation 완성. 옵션 c (Allow-Headers enumeration 복원)는 해결 보장 X + ITP root cause 가능성 + 향후 custom header 동기화 부담으로 폐기.
+- ✅ **C-2 `retries: 2` silent flaky cushion 강등** (devops C-D2 ≡ perf M-P1) — **진산 결정 (a) 2→1 즉시 강등 채택, Session 076 흡수**. `playwright.config.ts:23` `retries: CI ? 2 : 0` → `retries: CI ? 1 : 0` 1줄 변경. 본 Session 076 examId fail-loud 검증 중 mobile-webkit SessionStart가 retry로 silent green되는 실 사례 검증된 fact 영속 차단. fail-loud 원칙 (Hard Rule + production-quality.md "빈 catch 금지" 동일 맥락) + Year 2 확장 reference로 fail-loud 기본값 확정. false positive mitigation은 ADR §6 M5 (flaky retry silent green detection) 우선순위 상향 carry-over에서 retry 시계열 추적 + 진짜 transient 분리 별도 처리.
 
 **신규 carry-over 12건 등재 (다음 chunk 또는 phase 종료 정리):**
 
