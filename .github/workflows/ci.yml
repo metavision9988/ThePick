@@ -121,13 +121,13 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('apps/web/package.json') }}
 
-      - name: Install Playwright chromium (cache miss only)
+      - name: Install Playwright chromium + webkit (cache miss only)
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter @thepick/web exec playwright install --with-deps chromium
+        run: pnpm --filter @thepick/web exec playwright install --with-deps chromium webkit
 
       - name: Install system deps (cache hit — browser exists)
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: pnpm --filter @thepick/web exec playwright install-deps chromium
+        run: pnpm --filter @thepick/web exec playwright install-deps chromium webkit
 
       - name: Run Playwright tests
         env:

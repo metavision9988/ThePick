@@ -201,7 +201,18 @@ Year 2 / Phase 4 carry-over:
 - ☐ **CORS_HEADERS 헬퍼 export** (quality MINOR-AD2 일부) — `api-errors.spec.ts` network abort 시나리오가 CORS_HEADERS를 inline 복제. mock-api에서 export하여 DRY.
 - ☐ **Retry-After 헤더 mock** (quality MINOR-AD3) — 429 시나리오에서 실 서버 contract는 `Retry-After` 헤더 반환. 클라이언트가 헤더 기반 retry 로직 도입 시 mock-api도 동시 정합 필요.
 - ☐ **schema-drift contract layer** (architect P2-M1) — `packages/shared/src/contracts/study-api.ts`에 client/server/mock 공통 type 단일 source. mock fixture가 frozen snapshot 되는 silent risk 차단.
-- ☐ **WebKit (iOS Safari) project 추가** (quality MAJOR-A6) — 실 모바일 95%+ 환경 검증. `pnpm exec playwright install webkit` (~150MB) + mobile-375 project에 webkit 동시 추가. Phase 3 launch 후 30일 내.
+- 🟡 **WebKit (iOS Safari) project 부분 도입 — Session 075 (2026-05-14)** (quality MAJOR-A6): `mobile-webkit` project 신규 (devices.iPhone SE = webkit + 375x667 + iOS UA + touch). CI ci.yml e2e job `--with-deps chromium webkit` 동시 설치. CORS_HEADERS `Access-Control-Allow-Headers: '*'` + Max-Age 제거로 WebKit 정합 강화 시도.
+
+  | 시나리오                                            | webkit 상태          | 비고                                  |
+  | :-------------------------------------------------- | :------------------- | :------------------------------------ |
+  | ModeSelector — overflow + 모드 버튼 44px+           | ✅ PASS              | iOS UA + touch + GET preflight 통과   |
+  | SessionStart — overflow + 시작/뒤로/입력 44px+      | ✅ PASS              | iOS UA + touch + GET preflight 통과   |
+  | QuestionCard — overflow + 채점/라벨/다음 문제 44px+ | 🟡 skip (carry-over) | cross-origin POST preflight 처리 차이 |
+
+- ☐ **WebKit cross-origin POST preflight 호환성 (QuestionCard scenario)** (Session 075 carry-over) — `page.route().fulfill()` cross-origin POST preflight 처리가 chromium과 다름.
+  - **root cause 후보 1 (가장 유력)**: fetch spec WD-2024 — `Access-Control-Allow-Headers: '*'` + `Allow-Credentials: true` 조합은 credentialed request에서 wildcard 무효화. chromium은 spec보다 관대해 통과, WebKit은 엄격 enforce. 명시 enumeration `'Content-Type, Authorization, Cookie, X-Requested-With'` 복원으로 해소 가능성.
+  - **root cause 후보 2**: WebKit ITP (Intelligent Tracking Prevention)가 cross-origin POST + credentials 차단. 클라이언트 `credentials: 'include'` 동작 차이.
+  - **별도 chunk 흡수 path**: (a) ACA-Headers 명시 enumeration 복원 → 재시도, 또는 (b) `PUBLIC_API_BASE_URL=` empty (same-origin) E2E 모드, 또는 (c) Astro dev middleware로 `/api/*` proxy.
 - ✅ **CI 통합 — Session 075 (2026-05-14) 흡수** (quality MAJOR-A5): `.github/workflows/ci.yml`에 신규 `e2e` job 추가 (`pnpm --filter @thepick/web exec playwright test`) + `~/.cache/ms-playwright` cache (key: `hashFiles('apps/web/package.json')` — Playwright 버전 회전 자동 invalidate) + `playwright-report/` artifact (always 14일) + `test-results/` artifact (failure 시 7일, trace/video/screenshot 보존). quality-gate test filter에도 `--filter @thepick/web` 추가 (vitest 16건 회귀 차단). PR마다 자동 실행 발동.
   - 4-Pass 독립 리뷰 (devops-architect): Critical 1건 + Major 6건 + Minor 3건. 2건 즉시 흡수 (M2 webServer.command `--filter @thepick/web dev` 명시 + M3 timeout 60→120s + m2 CI 시 stdout pipe). 잔여 7건 carry-over:
 - ☐ **C1 — `e2e` job `needs: quality-gate` 결정** (architect Pass 2 Critical) — 진산 결정 위임: 옵션 A 병렬 유지(빠른 피드백, 현재) vs 옵션 B 직렬 전환(typecheck fail 시 e2e 부팅 비용 절감). ADR-040 §6 명세 외 운영 trade-off. 본 carry-over 등재 후 진산 결정.

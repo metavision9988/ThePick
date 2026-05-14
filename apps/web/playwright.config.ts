@@ -39,7 +39,6 @@ export default defineConfig({
     },
     {
       // chromium + 375x667 viewport + 터치 — ADR-040 §5 #7 명세 (모바일 375px).
-      // devices['iPhone SE']는 webkit 기본이라 별도 install 필요 → chromium으로 통일.
       name: 'mobile-375',
       use: {
         ...devices['Desktop Chrome'],
@@ -48,6 +47,15 @@ export default defineConfig({
         hasTouch: true,
         defaultBrowserType: 'chromium',
       },
+      testMatch: /mobile-375\.spec\.ts$/,
+    },
+    {
+      // WebKit + 375x667 — ADR-040 §6 carry-over MAJOR-A6 흡수 (Session 075).
+      // 실 iOS Safari 95%+ 사용자 환경. devices['iPhone SE']는 webkit 기본 + iOS UA + touch.
+      // mobile-375.spec.ts 동일 시나리오를 webkit에서도 검증 → scroll bounce / position:sticky /
+      // 100vh viewport / sessionStorage private mode 등 chromium과 다른 동작 silent miss 차단.
+      name: 'mobile-webkit',
+      use: { ...devices['iPhone SE'] },
       testMatch: /mobile-375\.spec\.ts$/,
     },
   ],

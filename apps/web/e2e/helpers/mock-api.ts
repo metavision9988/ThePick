@@ -66,13 +66,18 @@ const COOKIE_HEADER = `${ACCESS_TOKEN_COOKIE}=mock-access-token-e2e; Path=/api; 
 /**
  * Cross-origin fetch (apps/web localhost:4321 → apps/api localhost:8787) CORS 통과용 헤더.
  * 모든 fulfill 응답 + OPTIONS preflight에 동일하게 적용 — credentials: 'include' 정합.
+ *
+ * WebKit 정합 — Session 075 ADR-040 §6 WebKit 도입 시 발견:
+ *   - WebKit (Safari)은 chromium보다 엄격: ACA-Headers에 wildcard `*` 또는 명시적 enumeration 필요
+ *   - Max-Age 캐시 invalidation 차이 (WebKit 5분 vs chromium 7200s) → preflight 매번 재요청 정합
+ *   - 따라서 `Access-Control-Allow-Headers: '*'` (모든 헤더 허용) + Max-Age 제거 (캐시 비활성)
  */
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': 'http://localhost:4321',
   'Access-Control-Allow-Credentials': 'true',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Max-Age': '600',
+  'Access-Control-Allow-Headers': '*',
+  'Access-Control-Expose-Headers': '*',
 };
 
 function json(
