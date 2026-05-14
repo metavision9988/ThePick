@@ -194,8 +194,12 @@ Year 2 / Phase 4 carry-over:
 
 본 step 4-Pass 독립 리뷰 (3 에이전트 병렬) 결과 Major 흡수 후 잔여 carry-over:
 
-- ☐ **error path E2E 시나리오** (quality MAJOR-A2 + silent M-2) — `/api/study/grade` HTTP 429 / 422 / 503 + 네트워크 fail 분기 별도 spec (`apps/web/e2e/api-errors.spec.ts`). 사용자 빈도 1순위 분기 회귀 차단망.
-- ☐ **silent_failure surface E2E** (quality MAJOR-A3) — `weakDelta.available=false` SessionSummary "데이터 일시 불가" 안내 UI 회귀 차단망.
+- ✅ **error path E2E 시나리오 — Session 075 (2026-05-14) 흡수** (quality MAJOR-A2 + silent M-2): `apps/web/e2e/api-errors.spec.ts` 5 시나리오 (HTTP 429 rate-limit + role=alert + 다시 시도 → 다음 문제 회복 풀체인, HTTP 422 QUESTION_HAS_NO_ANSWER, HTTP 422 generic validation, HTTP 503 service unavailable, network error fetch abort). mock-api에 `gradeSequence` override 추가 (status + body 시퀀스) + payload 가드. 사용자 빈도 1순위 분기 회귀 차단망 발동.
+- ✅ **silent_failure surface E2E — Session 075 (2026-05-14) 흡수** (quality MAJOR-A3): `apps/web/e2e/silent-failure-surface.spec.ts` 3 시나리오 (`weakDelta.available=false` "약점 영역 집계를 불러오지 못했습니다" 안내 + 정상 happy path 비교 + cardsReviewed=0 정상 0건 구분). mock-api에 `completeResponse` override 추가. SessionSummary 4-Pass C-1 흡수 영속 회귀 차단.
+  - 4-Pass 독립 리뷰 (quality-engineer): Critical 0건 + Major 4건 + Minor 5건. 4건 즉시 흡수 (MAJOR-S1+AD1 회복 path 풀체인 + MAJOR-A1 payload 가드 + MINOR-A2 import 순서 + MINOR-AD2 role=alert). 잔여 carry-over:
+- ☐ **gradeSequence body type union (schema drift 차단)** (quality MAJOR-C1) — 현 `body: Record<string, unknown>`이 임의 shape 허용. happy response sequence 추가 시 GradeResponse type 변경 silent drift. discriminated union `{status: 200, body: GradeResponse} | {status: number, body: ErrorBody}` 도입 권고.
+- ☐ **CORS_HEADERS 헬퍼 export** (quality MINOR-AD2 일부) — `api-errors.spec.ts` network abort 시나리오가 CORS_HEADERS를 inline 복제. mock-api에서 export하여 DRY.
+- ☐ **Retry-After 헤더 mock** (quality MINOR-AD3) — 429 시나리오에서 실 서버 contract는 `Retry-After` 헤더 반환. 클라이언트가 헤더 기반 retry 로직 도입 시 mock-api도 동시 정합 필요.
 - ☐ **schema-drift contract layer** (architect P2-M1) — `packages/shared/src/contracts/study-api.ts`에 client/server/mock 공통 type 단일 source. mock fixture가 frozen snapshot 되는 silent risk 차단.
 - ☐ **WebKit (iOS Safari) project 추가** (quality MAJOR-A6) — 실 모바일 95%+ 환경 검증. `pnpm exec playwright install webkit` (~150MB) + mobile-375 project에 webkit 동시 추가. Phase 3 launch 후 30일 내.
 - ✅ **CI 통합 — Session 075 (2026-05-14) 흡수** (quality MAJOR-A5): `.github/workflows/ci.yml`에 신규 `e2e` job 추가 (`pnpm --filter @thepick/web exec playwright test`) + `~/.cache/ms-playwright` cache (key: `hashFiles('apps/web/package.json')` — Playwright 버전 회전 자동 invalidate) + `playwright-report/` artifact (always 14일) + `test-results/` artifact (failure 시 7일, trace/video/screenshot 보존). quality-gate test filter에도 `--filter @thepick/web` 추가 (vitest 16건 회귀 차단). PR마다 자동 실행 발동.

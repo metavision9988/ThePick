@@ -49,6 +49,14 @@ export interface ApiMockOverrides {
   readonly sessionDetailResponse?: () => Record<string, unknown>;
   /** /next 응답 시퀀스를 직접 제공 (3건 + exhausted 기본값 대체). */
   readonly nextSequence?: ReadonlyArray<Record<string, unknown>>;
+  /**
+   * /grade 응답 시퀀스 (status + body). N번째 grade 호출 시 sequence[N-1] 적용.
+   * body는 status code에 의미 있는 shape (예: 422 → `{ error: 'QUESTION_HAS_NO_ANSWER' }`).
+   * payload validation (questionId/userAnswer/inputType) 전 override 우선 적용.
+   */
+  readonly gradeSequence?: ReadonlyArray<{ status: number; body: Record<string, unknown> }>;
+  /** /complete 응답 임의 교체 (silent_failure surface 시나리오에서 weakDelta.available=false 주입). */
+  readonly completeResponse?: () => Record<string, unknown>;
 }
 
 // Pass 2 P2-C1 흡수 — 실제 서버 contract와 cookie 이름 sync (apps/api/src/auth/routes.ts:717,724).
@@ -156,7 +164,8 @@ export async function installApiMock(page: Page): Promise<ApiMock> {
   await page.route('**/api/study/session/*/complete', async (route) => {
     if (await handlePreflight(route)) return;
     record('sessionComplete');
-    await json(route, makeCompleteResponse());
+    const body = overrides.current.completeResponse?.() ?? makeCompleteResponse();
+    await json(route, body);
   });
 
   await page.route('**/api/study/next**', async (route) => {
@@ -178,6 +187,28 @@ export async function installApiMock(page: Page): Promise<ApiMock> {
 
   await page.route('**/api/study/grade**', async (route) => {
     if (await handlePreflight(route)) return;
+
+    // gradeSequence override (api-errors 시나리오) — 1-indexed (N번째 호출 = sequence[N-1]).
+    // 시퀀스 초과 시 마지막 항목 반복.
+    // Pass 2 MAJOR-A1 흡수 — override path도 payload 존재만 최소 검증 (contract drift 1차 차단).
+    const seq = overrides.current.gradeSequence;
+    if (seq !== undefined && seq.length > 0) {
+      let hasPayload = false;
+      try {
+        hasPayload = route.request().postDataJSON() !== null;
+      } catch {
+        hasPayload = false;
+      }
+      if (!hasPayload) {
+        console.error('[mock-api] grade override path: postData null — payload contract drift');
+      }
+      record('grade');
+      const idx = Math.min(counters.grade - 1, seq.length - 1);
+      const entry = seq[idx]!;
+      await json(route, entry.body, entry.status);
+      return;
+    }
+
     // Pass 1 C-5 흡수 — payload contract drift 차단.
     // 실제 server는 questionId/userAnswer/inputType 누락 시 422. mock도 동일 fail-loud.
     let payload: Record<string, unknown> | null = null;
