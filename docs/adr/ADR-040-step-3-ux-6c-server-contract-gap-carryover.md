@@ -356,16 +356,16 @@ Access-Control-Expose-Headers: Retry-After, Content-Type, Content-Length
 
 **진산 결정 위임 (전략 갈림길) — 다음 chunk 우선순위 매트릭스:**
 
-| #   | 항목                                                                          | Persona                      | 비용       | 위험 등급                                      |
-| :-- | :---------------------------------------------------------------------------- | :--------------------------- | :--------- | :--------------------------------------------- |
-| 1   | **production CORS sync** (`packages/shared/src/constants/cors.ts` 신설)       | backend C1+C2 + refactor M-1 | 1-2h       | ★ production 첫 배포 cross-origin block 잠재   |
-| 2   | **payload required drift** (mock `inputType` required vs production optional) | backend M2                   | 30분       | ★ production에서 통과할 payload가 mock에서 422 |
-| 3   | **`workers: 1` local 강제** OR multi-tenant `X-Test-Session` 격상             | quality Q2 + perf M-P5       | 30분 OR 4h | ☆ local dev flaky silent miss                  |
-| 4   | **e2e/ ESLint scope 확장** + floating-promises rule                           | quality Q3+Q4                | 1h         | ☆ `await api.override(...)` 누락 silent race   |
-| 5   | **page.on('response') listener cleanup** (`page.on('close', off)`)            | perf PE-M1                   | 10분       | ☆ Phase 3 spec 50건+ 시 listener leak          |
-| 6   | **webServer timeout 통일 + log artifact 분리**                                | devops DO-1+DO-2             | 1h         | ☆ CI flaky / on-call 디버깅 단서 부재          |
-| 7   | **SameSite=None + Secure production HTTPS profile E2E**                       | backend M1                   | 30분       | ★ Phase 3 launch 직전 의무 (carry-over)        |
-| 8   | **mock-server admin endpoint negative regression test**                       | backend M3                   | 15분       | ☆ production binding `__mock` prefix 부재 검증 |
+| #   | 항목                                                                          | Persona                      | 비용       | 위험 등급                                      | 진척               |
+| :-- | :---------------------------------------------------------------------------- | :--------------------------- | :--------- | :--------------------------------------------- | :----------------- |
+| 1   | **production CORS sync** (`packages/shared/src/constants/cors.ts` 신설)       | backend C1+C2 + refactor M-1 | 1-2h       | ★ production 첫 배포 cross-origin block 잠재   | ☑ Session 077 흡수 |
+| 2   | **payload required drift** (mock `inputType` required vs production optional) | backend M2                   | 30분       | ★ production에서 통과할 payload가 mock에서 422 | ☑ Session 077 흡수 |
+| 3   | **`workers: 1` local 강제** OR multi-tenant `X-Test-Session` 격상             | quality Q2 + perf M-P5       | 30분 OR 4h | ☆ local dev flaky silent miss                  |                    |
+| 4   | **e2e/ ESLint scope 확장** + floating-promises rule                           | quality Q3+Q4                | 1h         | ☆ `await api.override(...)` 누락 silent race   |                    |
+| 5   | **page.on('response') listener cleanup** (`page.on('close', off)`)            | perf PE-M1                   | 10분       | ☆ Phase 3 spec 50건+ 시 listener leak          |                    |
+| 6   | **webServer timeout 통일 + log artifact 분리**                                | devops DO-1+DO-2             | 1h         | ☆ CI flaky / on-call 디버깅 단서 부재          |                    |
+| 7   | **SameSite=None + Secure production HTTPS profile E2E**                       | backend M1                   | 30분       | ★ Phase 3 launch 직전 의무 (carry-over)        |                    |
+| 8   | **mock-server admin endpoint negative regression test**                       | backend M3                   | 15분       | ☆ production binding `__mock` prefix 부재 검증 |                    |
 
 **Year 2 carry-over:**
 
@@ -373,6 +373,40 @@ Access-Control-Expose-Headers: Retry-After, Content-Type, Content-Length
 - fixture per-exam 분리 (`fixtures/{examId}/`) — ADR-009 멀티시험 정합 (backend Mi2)
 - multi-tenant `X-Test-Session` mock-server isolation — fully-parallel 4-worker로 24.8s → 6-10s 단축 (refactor/perf carry-over)
 - mock-server vs apps/api endpoint 추가 시 자동 sync (M-1 contract drift) — single contract source가 본 chunk 외 별도 PR
+
+### 8.2 다음 chunk #1+#2 흡수 — production CORS sync + payload required (2026-05-14, Session 077)
+
+진산 결정 위임 매트릭스 #1, #2 동시 흡수. 5-페르소나 backend C1+C2 Critical 3건 + backend M2 Major 1건 root cause 해소.
+
+**채택 결과:**
+
+- ✅ `packages/shared/src/constants/cors.ts` 신설 — single source 단일 origin.
+  - `CORS_ALLOWED_METHODS` (GET/POST/OPTIONS) — Temporal Graph INSERT+SUPERSEDES 정합으로 PUT/DELETE 미허용
+  - `CORS_ALLOWED_HEADERS_BASE` (Content-Type, Authorization) — 인증/학습/공개 라우트 공통
+  - `CORS_ALLOWED_HEADERS_ADMIN_TOKEN` (+ X-Admin-Token) — `/telemetry`, `/admin/vectorize` 라우트
+  - `CORS_EXPOSED_HEADERS` (Retry-After) — 429 client retry/back-off 대비
+  - `CORS_MAX_AGE_SECONDS` (600) — production preflight 캐시
+- ✅ `packages/shared/src/index.ts` re-export 추가.
+- ✅ `apps/api/src/index.ts` buildCorsOptions → 신설 상수 import + `/telemetry` + `/admin/vectorize` override 정합.
+- ✅ `apps/web/e2e/mock-server/server.ts` cors middleware → 동일 상수 import (drift 0).
+- ✅ `apps/web/e2e/helpers/mock-api.ts` CORS_HEADERS → 동일 상수 기반 `.join(', ')` 재구성.
+- ✅ `apps/web/e2e/mock-server/server.ts` grade payload required `['questionId', 'userAnswer', 'inputType']` → `['questionId', 'userAnswer']`. production zod schema (`apps/api/src/study/routes.ts:158` `inputType.optional()`) 정합.
+
+**검증 게이트:**
+
+- ✅ `pnpm --filter @thepick/api typecheck` PASS
+- ✅ `pnpm --filter @thepick/api lint` PASS
+- ✅ `pnpm --filter @thepick/api test` — vitest 566 PASS + 2 skip (35 files / 12s)
+- ✅ `pnpm --filter @thepick/web typecheck` PASS
+- ✅ `pnpm --filter @thepick/web lint` PASS
+- ✅ `pnpm --filter @thepick/web exec playwright test` — 18 PASS (24.8s 전수)
+
+**해소 root cause:**
+
+- **C1+C2** (CORS allowHeaders/allowMethods drift) — 양쪽 리터럴 분리 → `packages/shared/src/constants/cors.ts` 단일 source 도입으로 drift 영구 차단. 향후 추가/제거는 상수 한 곳만 수정.
+- **M2** (payload required drift) — mock이 production보다 strict → production 통과 payload가 mock에서 422 silent miss 차단.
+
+**잔여 carry-over (매트릭스 #3~#8):** 진산 다음 chunk 결정 위임.
 
 ---
 

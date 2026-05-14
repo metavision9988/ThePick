@@ -20,6 +20,9 @@ import type { Page, Route } from '@playwright/test';
 import {
   ACCESS_TOKEN_COOKIE,
   ACCESS_TOKEN_COOKIE_PATH,
+  CORS_ALLOWED_HEADERS_BASE,
+  CORS_ALLOWED_METHODS,
+  CORS_EXPOSED_HEADERS,
   REFRESH_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE_PATH,
 } from '@thepick/shared';
@@ -71,17 +74,15 @@ const MOCK_SERVER_BASE = 'http://localhost:8787';
  * mock-api 일반 흐름은 mock server CORS middleware가 직접 응답하므로 본 상수 사용 불요.
  * spec이 page.route() 직접 사용 (network abort 등 의도된 시나리오) 시 fulfill에 inline 복제 차단용.
  *
- * Session 077 trace 분석에서 발견 — fetch spec WD-2024: credentialed request에서
- *   `Access-Control-Allow-Headers: '*'` + `Allow-Credentials: true` 조합 wildcard 무효 → 명시 enumeration.
- *   page.route() 인터셉트 응답도 동일 강제 (chromium spec strict — page.route 우회 효과 X).
- * mock-server/server.ts CORS middleware와 동기 유지 의무.
+ * 5-페르소나 backend C1+C2 흡수 (Session 077 다음 chunk) — packages/shared/src/constants/cors.ts
+ * 단일 source. apps/api/src/index.ts buildCorsOptions + mock-server/server.ts와 동일 enumeration → drift 0.
  */
 export const CORS_HEADERS: Readonly<Record<string, string>> = Object.freeze({
   'Access-Control-Allow-Origin': 'http://localhost:4321',
   'Access-Control-Allow-Credentials': 'true',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cookie, X-Requested-With, Accept',
-  'Access-Control-Expose-Headers': 'Retry-After, Content-Type, Content-Length',
+  'Access-Control-Allow-Methods': CORS_ALLOWED_METHODS.join(', '),
+  'Access-Control-Allow-Headers': CORS_ALLOWED_HEADERS_BASE.join(', '),
+  'Access-Control-Expose-Headers': CORS_EXPOSED_HEADERS.join(', '),
 });
 
 /** spec이 page.route() 사용 시 OPTIONS preflight 자동 처리 — abort/fulfill 시나리오 정합. */

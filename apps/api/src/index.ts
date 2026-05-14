@@ -1,6 +1,14 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { createLogger, type LoggerEnvironment } from '@thepick/shared';
+import {
+  CORS_ALLOWED_HEADERS_ADMIN_TOKEN,
+  CORS_ALLOWED_HEADERS_BASE,
+  CORS_ALLOWED_METHODS,
+  CORS_EXPOSED_HEADERS,
+  CORS_MAX_AGE_SECONDS,
+  createLogger,
+  type LoggerEnvironment,
+} from '@thepick/shared';
 import type { RateLimiter } from './auth/rate-limit.js';
 import { createAuthRoutes } from './auth/routes.js';
 import { cachePolicyMiddleware } from './middleware/cache-policy.js';
@@ -70,7 +78,8 @@ function resolveLoggerEnv(envName: string | undefined): LoggerEnvironment {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// CORS — Level 3 감사 M-A4 해소 (2026-04-22) + Step 1-5 (나) Pass 1 C-1 확장 (2026-04-23)
+// CORS — Level 3 감사 M-A4 해소 (2026-04-22) + Step 1-5 (나) Pass 1 C-1 확장 (2026-04-23) +
+// Session 077 5-페르소나 backend C1+C2 흡수 (2026-05-14) — packages/shared/src/constants/cors.ts 단일 source.
 // 인증 쿠키 기반 보호 라우트 전체에 적용. webhook 은 서버→서버라 CORS 불필요.
 // credentials=true: tp_access / tp_refresh 쿠키 전송 필수.
 function buildCorsOptions() {
@@ -80,10 +89,10 @@ function buildCorsOptions() {
       return CORS_ALLOWED_ORIGINS.includes(origin) ? origin : null;
     },
     credentials: true,
-    allowHeaders: ['Content-Type', 'Authorization'],
-    allowMethods: ['GET', 'POST', 'OPTIONS'],
-    exposeHeaders: ['Retry-After'],
-    maxAge: 600,
+    allowHeaders: [...CORS_ALLOWED_HEADERS_BASE],
+    allowMethods: [...CORS_ALLOWED_METHODS],
+    exposeHeaders: [...CORS_EXPOSED_HEADERS],
+    maxAge: CORS_MAX_AGE_SECONDS,
   };
 }
 app.use('/api/auth/*', cors(buildCorsOptions()));
@@ -97,13 +106,13 @@ app.use('/api/study/*', cors(buildCorsOptions()));
 //   allowHeaders 에서 X-Admin-Token 유지 — server-to-server / curl / BATCH wire-up fallback.
 app.use(
   '/api/telemetry/*',
-  cors({ ...buildCorsOptions(), allowHeaders: ['Content-Type', 'X-Admin-Token'] }),
+  cors({ ...buildCorsOptions(), allowHeaders: [...CORS_ALLOWED_HEADERS_ADMIN_TOKEN] }),
 );
 // Pass 3 ADVOCATE C1 흡수 (Session 056) — admin/vectorize CSRF preflight 강제.
 // X-Admin-Token 커스텀 헤더 사용으로 OPTIONS preflight 의무 → CORS 미설정 시 simple-request CSRF 시나리오.
 app.use(
   '/api/admin/vectorize/*',
-  cors({ ...buildCorsOptions(), allowHeaders: ['Content-Type', 'X-Admin-Token'] }),
+  cors({ ...buildCorsOptions(), allowHeaders: [...CORS_ALLOWED_HEADERS_ADMIN_TOKEN] }),
 );
 // Phase 2A Step 3 (Session 058) — public user search route (인증 0, MVP).
 // rate-limit 별도 step (P3-m1 carry-over). user_session 인증 별도 step.

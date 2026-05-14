@@ -27,6 +27,9 @@ import { cors } from 'hono/cors';
 import {
   ACCESS_TOKEN_COOKIE,
   ACCESS_TOKEN_COOKIE_PATH,
+  CORS_ALLOWED_HEADERS_BASE,
+  CORS_ALLOWED_METHODS,
+  CORS_EXPOSED_HEADERS,
   REFRESH_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE_PATH,
 } from '@thepick/shared';
@@ -52,22 +55,21 @@ export const app = new Hono();
 /**
  * CORS — credentials: 'include' 정합 (cookie 기반 auth).
  *
- * Session 077 ADR-040 §7 B-1 trace 분석에서 발견 — fetch spec WD-2024:
- *   credentialed request에서 `Access-Control-Allow-Headers: '*'` + `Allow-Credentials: true` 조합은
- *   wildcard 무효. 명시 enumeration 필수 (chromium도 spec strict, page.route() 인터셉트 우회 효과 X).
+ * 5-페르소나 backend C1+C2 흡수 (Session 077 다음 chunk) — packages/shared/src/constants/cors.ts
+ * 단일 source. apps/api/src/index.ts buildCorsOptions와 동일 상수 import → drift 0.
  *
- * `exposeHeaders`도 동일 — wildcard 무효 → 명시 enumeration.
- * Retry-After는 429 시나리오에서 client retry/back-off 로직 도입 시 필요 (현 QuestionCard는 status만
- * 보고 헤더 무시 — ADR-040 §6 carry-over).
+ * mock 한정 차이:
+ *   - `origin`: production은 동적 echo (CORS_ALLOWED_ORIGINS includes), mock은 정적 (localhost:4321).
+ *   - `maxAge`: production CORS_MAX_AGE_SECONDS (600s) vs mock 0 (캐시 비활성, spec 격리).
  */
 app.use(
   '*',
   cors({
     origin: FRONT_ORIGIN,
     credentials: true,
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept'],
-    exposeHeaders: ['Retry-After', 'Content-Type', 'Content-Length'],
+    allowMethods: [...CORS_ALLOWED_METHODS],
+    allowHeaders: [...CORS_ALLOWED_HEADERS_BASE],
+    exposeHeaders: [...CORS_EXPOSED_HEADERS],
     maxAge: 0,
   }),
 );
@@ -220,13 +222,16 @@ app.post('/api/study/grade', async (c) => {
   }
 
   // 기본 path — payload contract drift 차단 (Pass 1 C-5 정합).
+  // 5-페르소나 backend M2 흡수 (Session 077 다음 chunk) — inputType은 production zod schema
+  // (apps/api/src/study/routes.ts:158) `optional()` 정합. mock에서만 strict required 강제 시
+  // production 통과 payload가 mock에서 422 → contract drift silent miss.
   let payload: Record<string, unknown> | null = null;
   try {
     payload = (await c.req.json()) as Record<string, unknown>;
   } catch {
     payload = null;
   }
-  const required = ['questionId', 'userAnswer', 'inputType'] as const;
+  const required = ['questionId', 'userAnswer'] as const;
   const missing = payload === null ? required.slice() : required.filter((k) => !(k in payload));
   if (missing.length > 0) {
     console.error(`[mock-server] grade payload missing fields: ${missing.join(', ')}`);
