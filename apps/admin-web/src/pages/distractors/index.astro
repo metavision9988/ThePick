@@ -1,0 +1,100 @@
+---
+/**
+ * Step 3-UX-7a — distractor 검수 페이지 (mock).
+ *
+ * 5지선다 오답 후보 BATCH 보강 진산 검수 워크플로우 UI.
+ * mock seed 표시 — 실 API fetch는 Step 3-UX-7c chunk에서 도입.
+ *
+ * 근거: docs/plans/phase3-learning-ux-modes.plan.md §6.3 + §13 D1 + Step 3-UX-7.
+ */
+
+import { DistractorQueue } from '../../components/DistractorQueue';
+import { MOCK_DISTRACTOR_ITEMS } from '../../types/distractor';
+---
+
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>ThePick Admin — Distractors</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        background: #f1f5f9;
+        color: #0f172a;
+      }
+      .nav {
+        background: #0f172a;
+        color: #f8fafc;
+        padding: 12px 24px;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+      .nav h1 {
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .nav a {
+        color: #cbd5e1;
+        text-decoration: none;
+        font-size: 13px;
+      }
+      .nav a:hover {
+        color: #fff;
+      }
+      .nav .spacer {
+        flex: 1;
+      }
+      .nav .badge {
+        font-size: 11px;
+        background: #475569;
+        padding: 2px 8px;
+        border-radius: 4px;
+      }
+      .container {
+        padding: 16px;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+      .container > header {
+        margin-bottom: 16px;
+      }
+      .container > header h2 {
+        font-size: 20px;
+        font-weight: 600;
+        color: #0f172a;
+      }
+      .container > header p {
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="nav">
+      <h1>ThePick Admin</h1>
+      <a href="/">Graph</a>
+      <a href="/telemetry">Telemetry</a>
+      <a href="/distractors">Distractors</a>
+      <span class="spacer"></span>
+      <span class="badge">Step 3-UX-7a mock</span>
+    </div>
+    <div class="container">
+      <header>
+        <h2>객관식 오답 후보 (distractor) 검수</h2>
+        <p>
+          기출 원문 5지선다 BATCH 추출 결과를 진산 검수 후 승인합니다. 신뢰도 낮은 항목부터 우선
+          검수하세요. (mock 데이터 — Step 3-UX-7c에서 실 API 연동 예정)
+        </p>
+      </header>
+      <DistractorQueue items={MOCK_DISTRACTOR_ITEMS} client:only="react" />
+    </div>
+  </body>
+</html>
