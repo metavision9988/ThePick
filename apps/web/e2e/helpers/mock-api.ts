@@ -11,6 +11,8 @@
 import type { Page, Route } from '@playwright/test';
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from '@thepick/shared';
 
+import type { GradeResponse } from '../../src/components/question/types';
+
 import {
   makeCompleteResponse,
   makeGradeResponse,
@@ -44,17 +46,37 @@ export interface ApiMock {
   override(handler: ApiMockOverrides): void;
 }
 
+/**
+ * /grade override 응답 — status code 기반 discriminated union (MAJOR-C1 흡수, Session 076).
+ *
+ * 200 → server contract `GradeResponse` 강제 (happy response 추가 시 schema drift silent block).
+ * 4xx/5xx → `{ error: string }` 강제 (QuestionCard.tsx:147 body shape 정합).
+ *
+ * `headers`는 Retry-After (429) / 임의 contract 헤더 주입용 (MINOR-AD3 흡수).
+ */
+export type GradeResponseEntry =
+  | {
+      readonly status: 200;
+      readonly body: GradeResponse;
+      readonly headers?: Readonly<Record<string, string>>;
+    }
+  | {
+      readonly status: 400 | 401 | 403 | 422 | 429 | 500 | 502 | 503;
+      readonly body: { readonly error: string } & Readonly<Record<string, unknown>>;
+      readonly headers?: Readonly<Record<string, string>>;
+    };
+
 export interface ApiMockOverrides {
   /** session detail 응답을 임의로 교체 (restoration 시나리오에서 phase 변경). */
   readonly sessionDetailResponse?: () => Record<string, unknown>;
   /** /next 응답 시퀀스를 직접 제공 (3건 + exhausted 기본값 대체). */
   readonly nextSequence?: ReadonlyArray<Record<string, unknown>>;
   /**
-   * /grade 응답 시퀀스 (status + body). N번째 grade 호출 시 sequence[N-1] 적용.
-   * body는 status code에 의미 있는 shape (예: 422 → `{ error: 'QUESTION_HAS_NO_ANSWER' }`).
+   * /grade 응답 시퀀스 (status + body + 선택 headers). N번째 grade 호출 시 sequence[N-1] 적용.
+   * body shape는 status로 discriminate (200 → GradeResponse, 4xx/5xx → `{ error }`).
    * payload validation (questionId/userAnswer/inputType) 전 override 우선 적용.
    */
-  readonly gradeSequence?: ReadonlyArray<{ status: number; body: Record<string, unknown> }>;
+  readonly gradeSequence?: ReadonlyArray<GradeResponseEntry>;
   /** /complete 응답 임의 교체 (silent_failure surface 시나리오에서 weakDelta.available=false 주입). */
   readonly completeResponse?: () => Record<string, unknown>;
 }
@@ -72,19 +94,21 @@ const COOKIE_HEADER = `${ACCESS_TOKEN_COOKIE}=mock-access-token-e2e; Path=/api; 
  *   - Max-Age 캐시 invalidation 차이 (WebKit 5분 vs chromium 7200s) → preflight 매번 재요청 정합
  *   - 따라서 `Access-Control-Allow-Headers: '*'` (모든 헤더 허용) + Max-Age 제거 (캐시 비활성)
  */
-const CORS_HEADERS: Record<string, string> = {
+// MINOR-AD2 흡수 (Session 076) — export하여 spec에서 직접 inline 복제 제거 (DRY).
+// `Readonly`로 외부에서 mutation 차단 (defensive — `as Record<string, string>` cast 방지).
+export const CORS_HEADERS: Readonly<Record<string, string>> = Object.freeze({
   'Access-Control-Allow-Origin': 'http://localhost:4321',
   'Access-Control-Allow-Credentials': 'true',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': '*',
   'Access-Control-Expose-Headers': '*',
-};
+});
 
 function json(
   route: Route,
   body: unknown,
   status = 200,
-  extraHeaders: Record<string, string> = {},
+  extraHeaders: Readonly<Record<string, string>> = {},
 ) {
   return route.fulfill({
     status,
@@ -94,9 +118,10 @@ function json(
   });
 }
 
-async function handlePreflight(route: Route): Promise<boolean> {
+// MINOR-AD2 흡수 (Session 076) — export하여 spec route override가 직접 사용 (DRY).
+export async function handlePreflight(route: Route): Promise<boolean> {
   if (route.request().method() !== 'OPTIONS') return false;
-  await route.fulfill({ status: 204, headers: CORS_HEADERS, body: '' });
+  await route.fulfill({ status: 204, headers: { ...CORS_HEADERS }, body: '' });
   return true;
 }
 
@@ -196,6 +221,7 @@ export async function installApiMock(page: Page): Promise<ApiMock> {
     // gradeSequence override (api-errors 시나리오) — 1-indexed (N번째 호출 = sequence[N-1]).
     // 시퀀스 초과 시 마지막 항목 반복.
     // Pass 2 MAJOR-A1 흡수 — override path도 payload 존재만 최소 검증 (contract drift 1차 차단).
+    // MINOR-AD3 흡수 (Session 076) — entry.headers (Retry-After 등) `json()` extraHeaders로 위임.
     const seq = overrides.current.gradeSequence;
     if (seq !== undefined && seq.length > 0) {
       let hasPayload = false;
@@ -210,7 +236,7 @@ export async function installApiMock(page: Page): Promise<ApiMock> {
       record('grade');
       const idx = Math.min(counters.grade - 1, seq.length - 1);
       const entry = seq[idx]!;
-      await json(route, entry.body, entry.status);
+      await json(route, entry.body, entry.status, entry.headers ?? {});
       return;
     }
 

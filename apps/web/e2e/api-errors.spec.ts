@@ -15,13 +15,24 @@
 
 import { expect, test } from '@playwright/test';
 
+import { handlePreflight } from './helpers/mock-api';
 import { selectFirstChoice, startSessionToFirstQuestion } from './helpers/study-flow';
 
 test.describe('/api/study/grade 에러 path', () => {
   test('HTTP 429 rate-limit → 안내 메시지 + 다시 시도 → 다음 문제 회복', async ({ page }) => {
     const api = await startSessionToFirstQuestion(page);
+    // MINOR-AD3 흡수 (Session 076) — 실 서버 contract Retry-After 헤더 정합.
+    // 클라이언트가 헤더 기반 retry/back-off 로직 도입 시 mock도 contract drift 없이 정합.
+    let retryAfterHeader: string | null = null;
+    page.on('response', (res) => {
+      if (res.url().includes('/api/study/grade') && res.status() === 429) {
+        retryAfterHeader = res.headers()['retry-after'] ?? null;
+      }
+    });
     api.override({
-      gradeSequence: [{ status: 429, body: { error: 'RATE_LIMITED' } }],
+      gradeSequence: [
+        { status: 429, body: { error: 'RATE_LIMITED' }, headers: { 'Retry-After': '30' } },
+      ],
     });
 
     await selectFirstChoice(page);
@@ -31,6 +42,8 @@ test.describe('/api/study/grade 에러 path', () => {
     const alert = page.getByRole('alert');
     await expect(alert).toContainText('연속 채점 요청이 많습니다. 잠시 후 다시 시도해 주세요.');
     expect(api.counters.grade).toBe(1);
+    // Retry-After 헤더 contract 회귀 차단 — 클라이언트가 향후 헤더 활용 시 silent miss 방지.
+    expect(retryAfterHeader).toBe('30');
 
     // MAJOR-S1+AD1 흡수 — "다시 시도" 버튼은 fetchNext()를 호출 (QuestionCard.tsx:229).
     // 클릭 → /api/study/next 호출 → mock 두번째 문제 응답 → answering phase 복귀 검증.
@@ -83,20 +96,9 @@ test.describe('/api/study/grade 에러 path', () => {
     await startSessionToFirstQuestion(page);
 
     // gradeSequence override 대신 직접 grade route abort. mock-api는 LIFO이므로 새 등록이 우선.
+    // MINOR-AD2 흡수 — handlePreflight 공통 helper 사용 (CORS inline 복제 제거).
     await page.route('**/api/study/grade**', async (route) => {
-      if (route.request().method() === 'OPTIONS') {
-        await route.fulfill({
-          status: 204,
-          headers: {
-            'Access-Control-Allow-Origin': 'http://localhost:4321',
-            'Access-Control-Allow-Credentials': 'true',
-            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          },
-          body: '',
-        });
-        return;
-      }
+      if (await handlePreflight(route)) return;
       await route.abort('failed');
     });
 

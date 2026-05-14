@@ -114,12 +114,17 @@ jobs:
 
       # Playwright 브라우저 binary cache — `apps/web/package.json` 변경 (Playwright 버전 회전) 시
       # 자동 invalidate. ~113MB chromium-headless-shell 다운로드 cache hit 시 ~5s 절약.
+      # M1 흡수 (devops Pass 1, Session 076) — `restore-keys` partial fallback 추가.
+      # Playwright 무관 devDep 추가/변경으로 exact-match 실패해도 직전 버전 cache 재사용
+      # → 평균 ~50% 다운로드 절감. `install` 시 동일 버전 검증 후 skip하므로 회귀 위험 0.
       - name: Cache Playwright browsers
         id: playwright-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('apps/web/package.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
 
       - name: Install Playwright chromium + webkit (cache miss only)
         if: steps.playwright-cache.outputs.cache-hit != 'true'
