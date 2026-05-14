@@ -125,6 +125,33 @@ export async function handlePreflight(route: Route): Promise<boolean> {
   return true;
 }
 
+/**
+ * 5-페르소나 backend C2 흡수 (Session 076) — Hard Rule 16 위반 차단.
+ *
+ * 실 서버 (apps/api/src/study/routes.ts:105-119 `requireExamId`)는 모든 study endpoint에서
+ * examId query param 필수. 누락 시 422 `{error: 'VALIDATION_ERROR', message: 'examId required'}`.
+ *
+ * mock이 검증을 skip하면 client가 examId 누락 fetch를 작성해도 spec 통과 → production 첫
+ * 배포 시 모든 endpoint 422 폭격. spec 수준 last line of defense.
+ *
+ * @returns true: examId 검증 통과 (caller 계속 진행) / false: 422 fulfill 완료 (caller early return)
+ */
+async function requireExamId(route: Route): Promise<boolean> {
+  const examId = new URL(route.request().url()).searchParams.get('examId');
+  if (examId === null || examId === '') {
+    console.error(
+      `[mock-api] Hard Rule 16 violation: examId missing on ${route.request().method()} ${route.request().url()}`,
+    );
+    await json(
+      route,
+      { error: 'VALIDATION_ERROR', message: 'examId query parameter required (Hard Rule 16)' },
+      422,
+    );
+    return false;
+  }
+  return true;
+}
+
 export async function installApiMock(page: Page): Promise<ApiMock> {
   const counters: ApiCallCounters = {
     authLogin: 0,
@@ -152,6 +179,7 @@ export async function installApiMock(page: Page): Promise<ApiMock> {
 
   await page.route('**/api/study/mode**', async (route) => {
     if (await handlePreflight(route)) return;
+    if (!(await requireExamId(route))) return;
     const url = route.request().url();
     // /mode/start는 POST, /mode 단독은 GET — method로 분기
     if (route.request().method() === 'POST' && url.includes('/mode/start')) {
@@ -173,6 +201,7 @@ export async function installApiMock(page: Page): Promise<ApiMock> {
 
   await page.route('**/api/study/progress**', async (route) => {
     if (await handlePreflight(route)) return;
+    if (!(await requireExamId(route))) return;
     record('progress');
     const url = new URL(route.request().url());
     const days = Number.parseInt(url.searchParams.get('days') ?? '7', 10);
@@ -183,6 +212,8 @@ export async function installApiMock(page: Page): Promise<ApiMock> {
   // Pass 1 C-1 흡수 — route 등록 순서를 LIFO 매칭 정합으로 명시.
   // Playwright는 마지막 등록 핸들러 먼저 매칭 → /complete 같은 specific 패턴을 NACHHER 등록.
   // (구버전: /complete 먼저 등록 후 /session/* 핸들러에서 endsWith fallback. 동작은 동일하나 fragile.)
+  // 실 서버 routes.ts:1772-1782 정합 — /session/:id는 sessionId가 globally unique하므로
+  // examId 검증 0건. mock도 동일 정합 (requireExamId 제외).
   await page.route('**/api/study/session/*', async (route) => {
     if (await handlePreflight(route)) return;
     record('sessionDetail');
@@ -191,6 +222,7 @@ export async function installApiMock(page: Page): Promise<ApiMock> {
   });
 
   // specific 패턴 (LIFO 매칭 우선) — /session/:id/complete를 sessionDetail보다 먼저 catch.
+  // 실 서버 routes.ts:1923 정합 — /session/:id/complete도 sessionId path-based (examId 무관).
   await page.route('**/api/study/session/*/complete', async (route) => {
     if (await handlePreflight(route)) return;
     record('sessionComplete');
@@ -200,6 +232,7 @@ export async function installApiMock(page: Page): Promise<ApiMock> {
 
   await page.route('**/api/study/next**', async (route) => {
     if (await handlePreflight(route)) return;
+    if (!(await requireExamId(route))) return;
     record('next');
     const sequence = overrides.current.nextSequence;
     if (sequence !== undefined) {
@@ -217,13 +250,35 @@ export async function installApiMock(page: Page): Promise<ApiMock> {
 
   await page.route('**/api/study/grade**', async (route) => {
     if (await handlePreflight(route)) return;
+    if (!(await requireExamId(route))) return;
 
     // gradeSequence override (api-errors 시나리오) — 1-indexed (N번째 호출 = sequence[N-1]).
-    // 시퀀스 초과 시 마지막 항목 반복.
     // Pass 2 MAJOR-A1 흡수 — override path도 payload 존재만 최소 검증 (contract drift 1차 차단).
     // MINOR-AD3 흡수 (Session 076) — entry.headers (Retry-After 등) `json()` extraHeaders로 위임.
+    //
+    // 5-페르소나 quality C2/C3 흡수 (Session 076):
+    //   - seq.length === 0 (empty) → silent fall-through 차단, console.error + 422
+    //   - counters.grade > seq.length (overflow) → silent 마지막 항목 반복 차단, console.error
     const seq = overrides.current.gradeSequence;
-    if (seq !== undefined && seq.length > 0) {
+    if (seq !== undefined) {
+      if (seq.length === 0) {
+        console.error(
+          '[mock-api] gradeSequence empty array — silent fall-through 차단. ' +
+            '의도: override 해제 시 override({}) 사용 / 의도: 호출 금지면 length 0 유지 + 본 422 surface.',
+        );
+        await json(
+          route,
+          { error: 'VALIDATION_ERROR', message: 'gradeSequence empty (mock contract violation)' },
+          422,
+        );
+        return;
+      }
+      if (counters.grade >= seq.length) {
+        console.error(
+          `[mock-api] gradeSequence overflow: ${counters.grade + 1}번째 호출, sequence length=${seq.length}. ` +
+            '마지막 항목 silent 반복 차단 — 회귀 가능성 surface. 의도된 동작이면 sequence를 길이 충분히 확장.',
+        );
+      }
       let hasPayload = false;
       try {
         hasPayload = route.request().postDataJSON() !== null;

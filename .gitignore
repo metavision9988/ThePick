@@ -60,3 +60,8 @@ docs/measurements/raw/
 
 # BATCH pipeline checkpoints (recover/snapshot 산출물 — Step 11.5)
 .checkpoint/
+
+# Claude Code scheduled task mutex — 세션-로컬 PID/procStart 잠금 파일.
+# 머신 간 PID 의미가 다르므로 (linux jiffies 기반) 커밋 시 stale lock으로 cron 영구 차단 위험.
+# 5-페르소나 리뷰 devops C-D1 흡수 (Session 076).
+.claude/scheduled_tasks.lock

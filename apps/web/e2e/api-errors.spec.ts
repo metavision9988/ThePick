@@ -21,17 +21,22 @@ import { selectFirstChoice, startSessionToFirstQuestion } from './helpers/study-
 test.describe('/api/study/grade 에러 path', () => {
   test('HTTP 429 rate-limit → 안내 메시지 + 다시 시도 → 다음 문제 회복', async ({ page }) => {
     const api = await startSessionToFirstQuestion(page);
-    // MINOR-AD3 흡수 (Session 076) — 실 서버 contract Retry-After 헤더 정합.
-    // 클라이언트가 헤더 기반 retry/back-off 로직 도입 시 mock도 contract drift 없이 정합.
-    let retryAfterHeader: string | null = null;
-    page.on('response', (res) => {
-      if (res.url().includes('/api/study/grade') && res.status() === 429) {
-        retryAfterHeader = res.headers()['retry-after'] ?? null;
-      }
-    });
     api.override({
       gradeSequence: [
-        { status: 429, body: { error: 'RATE_LIMITED' }, headers: { 'Retry-After': '30' } },
+        // 5-페르소나 backend C1 흡수 (Session 076) — 실 서버 contract 정합.
+        // apps/api/src/study/routes.ts:723,929의 'RATE_LIMIT_EXCEEDED' literal과 sync.
+        // 향후 client가 error code 분기 시 mock/server drift silent miss 차단.
+        //
+        // Retry-After 헤더는 mock에만 inject (실 서버 contract: routes.ts:928 String(retryAfterSeconds)).
+        // 5-페르소나 refactor C-1 / quality M1 흡수 — 헤더 존재 자체 assertion은 mock 자기검증
+        // tautology (client QuestionCard.tsx:141-144는 status만 보고 헤더 무시). 향후 client가
+        // 헤더 기반 retry/back-off 도입 시 그 시점에 setTimeout/retry path 검증 추가 의무
+        // (mock impl 동결 금지).
+        {
+          status: 429,
+          body: { error: 'RATE_LIMIT_EXCEEDED' },
+          headers: { 'Retry-After': '30' },
+        },
       ],
     });
 
@@ -42,8 +47,6 @@ test.describe('/api/study/grade 에러 path', () => {
     const alert = page.getByRole('alert');
     await expect(alert).toContainText('연속 채점 요청이 많습니다. 잠시 후 다시 시도해 주세요.');
     expect(api.counters.grade).toBe(1);
-    // Retry-After 헤더 contract 회귀 차단 — 클라이언트가 향후 헤더 활용 시 silent miss 방지.
-    expect(retryAfterHeader).toBe('30');
 
     // MAJOR-S1+AD1 흡수 — "다시 시도" 버튼은 fetchNext()를 호출 (QuestionCard.tsx:229).
     // 클릭 → /api/study/next 호출 → mock 두번째 문제 응답 → answering phase 복귀 검증.

@@ -227,6 +227,40 @@ Year 2 / Phase 4 carry-over:
 - ☐ **AESTHETIC.md §3.5 input 요소 44px+ 의무 명시** (contract P4-M2) — 현 mobile-375 spec이 input.height ≥ 44를 검증하나 AESTHETIC 본문은 button/a/label만 명시. 양방향 동기.
 - ☐ **ADR-040 §5 진척 컬럼 dashboard 확장** (contract P4-m3) — §5 매트릭스 진척 컬럼이 본 step 신규 추가. 향후 ADR carry-over 매트릭스 패턴 표준화 (별도 chunk).
 
+### 7. 5-페르소나 자가 편향 감사 후 흡수 (2026-05-14, Session 076)
+
+진산 직접 지시 — 직전 code-reviewer 단일 에이전트 0/0/0 판정이 자가 확인 편향 의심. refactoring-expert + performance-engineer + quality-engineer + backend-architect + devops-architect 5개 독립 병렬 페르소나 심층 점검 결과 **unique Critical 7건 발견** (5-페르소나 통합 보고서: `.claude/reviews/review-20260514-110702-5persona-step3-ux-6f-bias-audit.md`).
+
+**즉시 자율 흡수 6건 (Session 076):**
+
+- ✅ **A-1 RATE_LIMIT_EXCEEDED 실 서버 contract 정합** (backend C1): `api-errors.spec.ts:34` literal을 `'RATE_LIMITED'` → `'RATE_LIMIT_EXCEEDED'` (실 서버 `routes.ts:723,929` truth와 sync). 본 PR 신규 도입 위험 즉시 차단 — 향후 client error code 분기 시 mock/server silent divergence 0.
+- ✅ **A-2 Retry-After tautology 제거** (refactor C-1 / quality M1): `expect(retryAfterHeader).toBe('30')` + `page.on('response')` listener 삭제. mock 자기 inject 헤더 자기 검증 = client(QuestionCard.tsx:141-144 헤더 무시) 회귀 차단 가치 0. mock impl 동결 차단 + listener leak 차단. 헤더 자체는 mock에 유지 + TODO 주석으로 client retry/back-off 도입 시 setTimeout/retry path 검증 의무 명시.
+- ✅ **B-2 examId fail-loud 전수** (backend C2 / Hard Rule 16): mock-api에 `requireExamId(route)` helper + `/mode`, `/progress`, `/next`, `/grade` 모든 라우트에 `if (!(await requireExamId(route))) return` 가드. 누락 시 console.error + 422 `VALIDATION_ERROR`. 실 서버 `routes.ts:105-119` 정합. session 라우트(path-based, examId 불요)는 예외 명시. **Hard Rule 16 위반 spec 수준 last line of defense 영속.**
+- ✅ **B-3 gradeSequence overflow fail-loud** (quality C2): `counters.grade >= seq.length` 시점에 console.error로 N번째 호출 + sequence length surface. 마지막 항목 silent 반복은 유지하되 회귀 가능성 명시. `fetchNext` → `submit` 오타 silent pass 차단.
+- ✅ **B-4 gradeSequence empty fail-loud** (quality C3): `seq.length === 0` 시점에 console.error + 422 fulfill. 의도-동작 mismatch (reset vs ignore) 차단. `override({})`이 reset 정확 패턴임을 console message로 surface.
+- ✅ **C-1 `.gitignore .claude/scheduled_tasks.lock`** (devops C-D1): 머신 간 PID/procStart 의미가 다른 세션-로컬 mutex가 우연 add → stale lock 영구 cron 차단 위험. .gitignore 영속.
+
+**진산 결정 필요 (전략 갈림길) — 본 chunk 미흡수 carry-over:**
+
+- ☐ **A-3 mutable singleton `overrides.current` 안전성 구조 강제** (refactor C-2) — 현재 page-scoped라 safe하나 향후 worker-shared 이전 시 silent shared-state bug. (a) 즉시 `Map<Page, Overrides>` refactor / (b) `ApiMock.resetOverrides()` 추가 / (c) carry-over. **진산 결정 갈림길.**
+- ☐ **B-1 WebKit QuestionCard 시나리오 영구 skip silent miss** (quality C1) — 실 사용자 95%+ iOS Safari의 핵심 progress action(채점→다음 문제) 회귀 차단망 webkit project에서 사실상 0건. ADR-040 §6 "차단망 14건"은 chromium 한정 측정임을 명시. (a) launch 전 cross-origin proxy 도입 (Astro middleware `/api/*` proxy) / (b) carry-over + Phase 3 launch dead line. **진산 결정 갈림길.**
+- ☐ **C-2 `retries: 2` silent flaky cushion 강등** (devops C-D2 ≡ perf M-P1) — 본 Session 076 examId fail-loud 검증 중 mobile-webkit SessionStart가 retry로 silent green되는 실 사례 발견. ADR-040 §6 M5 우선순위 상향 필요. (a) 2→1 즉시 강등 / (b) retry warning surface + GitHub Actions `::warning::` / (c) carry-over. **진산 결정 갈림길.**
+
+**신규 carry-over 12건 등재 (다음 chunk 또는 phase 종료 정리):**
+
+- ☐ **refactor M-1 mock-api.ts 348줄 SRP 분리** — `helpers/mock-api/{cors,routes,state}.ts` + `helpers/playwright/{hydration,dev-toolbar}.ts` + `helpers/auth.ts`. 600줄 임계 도달 전 분리 권고.
+- ☐ **refactor M-2 `Object.freeze` + `Readonly<T>` 이중 가드 일관성** — `as const` 또는 freeze 제거. cargo-cult 확산 차단.
+- ☐ **refactor M-5 CI cache restore-keys silent contamination 검증** — `actions/cache@v4` partial restore + `playwright install` skip 동작 가정 미검증. version mismatch silent 우려.
+- ☐ **perf M-P2 cache key Playwright 버전 단독화** — `hashFiles('apps/web/package.json')` → `@playwright/test` 버전만 hash. devDep 무관 invalidation 차단.
+- ☐ **perf M-P3 HTML report 조건부 upload** — `if: always()` → `if: failure()` 또는 retention 14d → 3d. GitHub Actions storage budget 임박 시.
+- ☐ **devops M-D2 `cancel-in-progress: true` + `retries: 2` 비용 곱셈** — e2e job에서는 cancel 비용 vs 회수 trade-off 검토.
+- ☐ **devops M-D3 e2e `needs: quality-gate` ADR 종결** — 진산 결정 위임 carry-over의 ADR 영속화 의무 (현 §6 C1 항목과 통합).
+- ☐ **quality M2 401 redirect spec 누락** — production critical (token 만료 30분 주기). `api-errors.spec.ts` 401 시나리오 1건 추가.
+- ☐ **quality M4 sessionId-aware mock progression** — restoration 후 동일 문제 silent re-show 검출 (§6 기존 carry-over 우선순위 상향).
+- ☐ **backend M2 4xx body type 풍부화** — `GradeErrorBody` discriminated union으로 `VALIDATION_ERROR{issues}` / `QUESTION_HAS_NO_ANSWER{questionId}` / `CONCURRENT_UPDATE` (409 신규) 등 실 서버 풍부 shape 반영.
+- ☐ **backend M3 cookie Secure flag profile sync** — production HTTPS 환경에서 `Secure` 필수. `seedAuthCookie`에 `secure: baseURL.startsWith('https')` 추가.
+- ☐ **m-D7 gitleaks mock token false-positive 방지** — `.gitleaks.toml` allowlist에 `mock-(access|refresh)-token-e2e` 사전 등록.
+
 ---
 
 ## 관련 문서
