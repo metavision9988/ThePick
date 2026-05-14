@@ -408,6 +408,45 @@ Access-Control-Expose-Headers: Retry-After, Content-Type, Content-Length
 
 **잔여 carry-over (매트릭스 #3~#8):** 진산 다음 chunk 결정 위임.
 
+### 8.3 잔여 chunk #3~#8 흡수 — fail-loud 강화 묶음 (2026-05-14, Session 078)
+
+진산 결정 "ADR-040 §8.1 carry-over 흡수" (Session 078 진입) 채택. 6개 chunk를 단일 묶음으로 흡수 — 작은 부채부터 큰 부채 순서.
+
+**채택 결과:**
+
+- ✅ **#5 page.on('response') listener cleanup** — `apps/web/e2e/helpers/mock-api.ts` installApiMock에 `page.once('close', () => page.off(...))` 추가. 사유: listener가 counters/callLog 배열 closure capture → Phase 3 spec 50건+ 누적 시 page emitter ref chain GC root에 묶이는 leak 경로. 명시 detach로 차단.
+- ✅ **#8 mock-server admin endpoint negative regression test** — `apps/api/src/__tests__/no-mock-routes.test.ts` 신설. `apps/api/src` 트리 전체에 `__mock` 문자열 0건 정적 검증. mock-server admin endpoint (`/__mock/health`, `/__mock/state`, `/__mock/reset`, `/__mock/override`)가 production 번들에 누출 시 외부 공격 표면 생성 → 회귀 fail-loud.
+- ✅ **#3 workers:1 local 강제** — `apps/web/playwright.config.ts` `workers: CI ? 1 : undefined` → `workers: 1`. 사유: mock-server in-memory state가 process-scoped → workers>1 시 cross-test pollution. local에서 silent green되고 CI(workers=1)에서만 빨개지는 flake 경로 차단. multi-tenant `X-Test-Session` 격상(4h, 정공법)은 별도 carry-over 유지.
+- ✅ **#7 SameSite=None + Secure production HTTPS profile E2E** — `apps/api/src/auth/__tests__/routes.test.ts` 신규 4 테스트. (a) production login: tp_access + tp_refresh 모두 `SameSite=None; Secure`. (b) staging 동일. (c) `AUTH_COOKIE_SAMESITE=Strict` override → `Strict + Secure` (Phase 3 launch toggle). (d) production logout: clear cookies도 `SameSite=None; Secure` 유지. 이전 routes.test.ts:297은 `/Secure/`만 검증 → `SameSite=None` 누락 silent regression 차단.
+- ✅ **#4 e2e/ ESLint scope 확장 + floating-promises rule** — `apps/web/e2e/tsconfig.json` 신설 (extends parent + types: @playwright/test, node). `apps/web/.eslintrc.json` 신설 (overrides files: `e2e/**/*.ts` + `parserOptions.project: true` (auto-detect nearest tsconfig, lint-staged cwd 독립) + `@typescript-eslint/no-floating-promises` + `await-thenable`). `apps/web/package.json` lint script `src e2e` 확장. 검증: 임시로 `await api.override(...)`에서 await 제거 → ESLint error 정상 검출 → 복원 → 0건. `await api.override(...)` 누락 silent race 영구 차단.
+  - 부수 흡수 (lint scope 확장으로 surface된 사전 type 위반): `ApiMockOverrides` 콜백 반환 타입을 `() => Record<string, unknown>`에서 `() => Readonly<object>`로 완화 (typed fixture interface 호환). `SerializedOverrides` readonly 필드 가변 할당 → object literal spread로 변경. `silent-failure-surface.spec.ts` 의 `makeCompleteResponse({...})` 호출 정합.
+- ✅ **#6 webServer timeout 통일 + log artifact 분리** — `apps/web/playwright.config.ts` `WEB_SERVER_TIMEOUT_MS = 120_000` 상수 hoist. astro dev + mock-server 양쪽 동일 timeout. log artifact는 stdout/stderr 'pipe'(CI) → Playwright HTML reporter가 server 단위 분리 캡처 + GitHub Actions step별 분리. 별도 tee 회피 (cross-platform).
+
+**검증 게이트:**
+
+- ✅ `pnpm --filter @thepick/api typecheck` PASS
+- ✅ `pnpm --filter @thepick/api lint` PASS
+- ✅ `pnpm --filter @thepick/api test` — vitest 571 PASS + 2 skip (36 files / 11.94s) — 이전 566 + 신규 5건 (SameSite contract 4 + admin negative 1)
+- ✅ `pnpm --filter @thepick/web typecheck` PASS
+- ✅ `pnpm --filter @thepick/web lint` PASS — src + e2e 통합 scope, floating-promises rule 활성
+- ✅ `CI=1 playwright test --project=chromium` — 12 PASS (15.4s)
+
+**해소 root cause:**
+
+- **#5** (listener leak) — Phase 3 spec 50건+ scale-out 시 page-scoped resource ref chain GC 압박 잠재. 명시 detach로 제거.
+- **#8** (admin endpoint 누출) — production 번들에 mock route 섞이는 회귀 vector. 정적 grep으로 fail-loud.
+- **#3** (workers > 1 flake) — mock-server in-memory state가 worker간 race condition으로 silent green/red 분기 → 1 worker로 결정성 확보.
+- **#7** (SameSite=None silent regression) — production cookie 정책 contract drift 회귀 fail-loud. Phase 3 launch 직전 의무 일부 선행 흡수.
+- **#4** (floating Promise silent race) — type-aware ESLint로 `await api.override(...)` 누락 검출. 작성 시점에 fail-loud.
+- **#6** (CI flaky 디버깅 단서 부재) — webServer timeout drift 차단 + reporter 단위 log 분리.
+
+**잔여 Year 2 carry-over:**
+
+- multi-tenant `X-Test-Session` mock-server isolation — fully-parallel 4-worker 24.8s → 6-10s 단축 (carry-over 유지, #3 local workers:1로 fail-loud는 확보)
+- `requireExamId` 화이트리스트 검증 logic을 `packages/shared/exam-adapter.ts`로 추출 (backend Mi1)
+- fixture per-exam 분리 (`fixtures/{examId}/`) — ADR-009 멀티시험 정합 (backend Mi2)
+- mock-server vs apps/api endpoint 자동 sync (M-1 contract drift) — CORS는 단일 source 확보, endpoint 자체 contract single source는 별도 PR
+
 ---
 
 ## 관련 문서

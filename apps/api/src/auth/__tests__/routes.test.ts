@@ -313,6 +313,119 @@ describe('POST /api/auth/login → Set-Cookie (Step 1-4)', () => {
     expect(setCookie).toMatch(/Secure/);
   });
 
+  // ADR-040 §8.1 #7 흡수 (Session 078, 2026-05-14) — SameSite=None + Secure production contract.
+  // 사유: 기존 'production 환경은 Set-Cookie 에 Secure 플래그 주입' 테스트는 /Secure/만 검증.
+  //   SameSite=None 누락 시 cross-origin pages.dev ↔ workers.dev 쿠키 전송 차단 silent regression.
+  //   본 블록은 production/staging/override 분기 + login/logout 양면 + 두 쿠키(access/refresh)
+  //   모두를 검증하여 Phase 3 launch 직전 contract drift 회귀 차단.
+  describe('SameSite=None + Secure production contract (ADR-040 §8.1 #7)', () => {
+    it('production login: tp_access + tp_refresh 모두 SameSite=None; Secure', async () => {
+      const fake = buildFakeDb();
+      await seedUser(fake, 'cross-site@example.com', TEST_PASSWORD);
+      const app = createAuthRoutes();
+
+      const res = await app.request(
+        '/login',
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email: 'cross-site@example.com', password: TEST_PASSWORD }),
+        },
+        buildEnv(fake, { ENVIRONMENT: 'production' }),
+      );
+      expect(res.status).toBe(200);
+      // Hono setCookie는 다중 Set-Cookie 헤더 발급 → getSetCookie() 또는 raw header 전체 검사.
+      const setCookieHeader = res.headers.get('Set-Cookie') ?? '';
+      // tp_access entry
+      expect(setCookieHeader).toMatch(/tp_access=[^;]+;[^,]*SameSite=None/i);
+      expect(setCookieHeader).toMatch(/tp_access=[^;]+;[^,]*Secure/i);
+      // tp_refresh entry
+      expect(setCookieHeader).toMatch(/tp_refresh=[^;]+;[^,]*SameSite=None/i);
+      expect(setCookieHeader).toMatch(/tp_refresh=[^;]+;[^,]*Secure/i);
+    });
+
+    it('staging 환경도 production과 동일 (SameSite=None; Secure)', async () => {
+      const fake = buildFakeDb();
+      await seedUser(fake, 'staging@example.com', TEST_PASSWORD);
+      const app = createAuthRoutes();
+
+      const res = await app.request(
+        '/login',
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email: 'staging@example.com', password: TEST_PASSWORD }),
+        },
+        buildEnv(fake, { ENVIRONMENT: 'staging' }),
+      );
+      expect(res.status).toBe(200);
+      const setCookieHeader = res.headers.get('Set-Cookie') ?? '';
+      expect(setCookieHeader).toMatch(/SameSite=None/i);
+      expect(setCookieHeader).toMatch(/Secure/i);
+    });
+
+    it('AUTH_COOKIE_SAMESITE=Strict override → Strict + Secure (Phase 3 launch toggle)', async () => {
+      const fake = buildFakeDb();
+      await seedUser(fake, 'launch@example.com', TEST_PASSWORD);
+      const app = createAuthRoutes();
+
+      const res = await app.request(
+        '/login',
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email: 'launch@example.com', password: TEST_PASSWORD }),
+        },
+        buildEnv(fake, { ENVIRONMENT: 'production', AUTH_COOKIE_SAMESITE: 'Strict' }),
+      );
+      expect(res.status).toBe(200);
+      const setCookieHeader = res.headers.get('Set-Cookie') ?? '';
+      expect(setCookieHeader).toMatch(/SameSite=Strict/i);
+      expect(setCookieHeader).not.toMatch(/SameSite=None/i);
+      expect(setCookieHeader).toMatch(/Secure/i);
+    });
+
+    it('production logout: clear cookies도 SameSite=None; Secure 유지', async () => {
+      const fake = buildFakeDb();
+      await seedUser(fake, 'logout@example.com', TEST_PASSWORD);
+      const app = createAuthRoutes();
+
+      // 로그인으로 쿠키 확보.
+      const loginRes = await app.request(
+        '/login',
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email: 'logout@example.com', password: TEST_PASSWORD }),
+        },
+        buildEnv(fake, { ENVIRONMENT: 'production' }),
+      );
+      expect(loginRes.status).toBe(200);
+      const loginCookie = loginRes.headers.get('Set-Cookie') ?? '';
+      const accessToken = parseCookie(loginCookie, 'tp_access');
+      const refreshToken = parseCookie(loginCookie, 'tp_refresh');
+      expect(accessToken).not.toBeNull();
+      expect(refreshToken).not.toBeNull();
+
+      const logoutRes = await app.request(
+        '/logout',
+        {
+          method: 'POST',
+          headers: {
+            cookie: `tp_access=${accessToken}; tp_refresh=${refreshToken}`,
+          },
+        },
+        buildEnv(fake, { ENVIRONMENT: 'production' }),
+      );
+      // /logout은 204 No Content (apps/api/src/auth/routes.ts 정합).
+      expect(logoutRes.status).toBe(204);
+      const logoutCookie = logoutRes.headers.get('Set-Cookie') ?? '';
+      // deleteCookie도 sameSite+secure 속성을 같이 emit (routes.ts:734-735 정합).
+      expect(logoutCookie).toMatch(/SameSite=None/i);
+      expect(logoutCookie).toMatch(/Secure/i);
+    });
+  });
+
   it('JWT_SECRET 미설정 시 500 AUTH_NOT_CONFIGURED', async () => {
     const fake = buildFakeDb();
     await seedUser(fake, 'charlie@example.com', TEST_PASSWORD);

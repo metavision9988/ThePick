@@ -16,7 +16,7 @@
  *   - spec 4건 (session-restoration, api-errors, silent-failure-surface)은 `await api.override(...)` 의무
  */
 
-import type { Page, Route } from '@playwright/test';
+import type { Page, Response, Route } from '@playwright/test';
 import {
   ACCESS_TOKEN_COOKIE,
   ACCESS_TOKEN_COOKIE_PATH,
@@ -51,11 +51,16 @@ export type GradeResponseEntry = ServerGradeResponseEntry;
  * stateful 동적 응답 (호출마다 다른 결과)이 필요해지면 별도 admin endpoint 또는 multi-response sequence로
  * carry-over (ADR §8).
  */
+/**
+ * spec-side callback 시그니처는 typed fixture (SessionCompleteResponse 등 interface) 직접 반환을
+ * 허용해야 한다. `Record<string, unknown>`은 index signature 부재 interface 거부 → typed fixture
+ * 호출 거부 회귀 (ADR-040 §8.1 #4 흡수, Session 078). serialization 경계 (override())에서 cast.
+ */
 export interface ApiMockOverrides {
-  readonly sessionDetailResponse?: () => Record<string, unknown>;
-  readonly nextSequence?: ReadonlyArray<Record<string, unknown>>;
+  readonly sessionDetailResponse?: () => Readonly<object>;
+  readonly nextSequence?: ReadonlyArray<Readonly<object>>;
   readonly gradeSequence?: ReadonlyArray<GradeResponseEntry>;
-  readonly completeResponse?: () => Record<string, unknown>;
+  readonly completeResponse?: () => Readonly<object>;
 }
 
 export interface ApiMock {
@@ -128,31 +133,47 @@ export async function installApiMock(page: Page): Promise<ApiMock> {
   // 2. 로컬 미러 (counters / callLog) — spec 시그니처 호환.
   // page.on('response')는 모든 navigated/fetched response (cross-origin 포함) emit.
   // OPTIONS preflight는 mapToEndpointKey에서 null 반환으로 자동 제외.
+  //
+  // ADR-040 §8.1 #5 흡수 (Session 078) — page.once('close', off) cleanup.
+  // 사유: listener는 counters/callLog 배열을 closure capture. Phase 3 spec 50건+ 누적 시
+  // 각 page 컨텍스트마다 listener + 배열 reference가 GC root에 묶이는 잠재 leak.
+  // page.off()로 명시 detach → page emitter 참조 chain 끊고 GC 가능 상태로.
+  // page 'close' 이벤트는 단발이므로 once 사용 (중복 등록 방지).
   const counters = emptyCounters();
   const callLog: EndpointKey[] = [];
 
-  page.on('response', (response) => {
+  const responseListener = (response: Response): void => {
     const key = mapToEndpointKey(response.request().method(), response.url());
     if (key === null) return;
     counters[key] += 1;
     callLog.push(key);
+  };
+  page.on('response', responseListener);
+  page.once('close', () => {
+    page.off('response', responseListener);
   });
 
   // 3. override 메서드 — callback 즉시 실행 → 결과 객체 admin POST.
+  //
+  // ADR-040 §8.1 #4 흡수 (Session 078) — SerializedOverrides 필드는 readonly. 가변 할당 대신 object
+  // literal spread로 구성. ESLint type-aware mode (no-floating-promises 도입 chain) 활성화로 surface된
+  // 사전 위반. spec strict 모드에서 silent fail 잠재.
   async function override(handler: ApiMockOverrides): Promise<void> {
-    const serialized: SerializedOverrides = {};
-    if (handler.sessionDetailResponse !== undefined) {
-      serialized.sessionDetailResponse = handler.sessionDetailResponse();
-    }
-    if (handler.completeResponse !== undefined) {
-      serialized.completeResponse = handler.completeResponse();
-    }
-    if (handler.nextSequence !== undefined) {
-      serialized.nextSequence = handler.nextSequence;
-    }
-    if (handler.gradeSequence !== undefined) {
-      serialized.gradeSequence = handler.gradeSequence;
-    }
+    // ApiMockOverrides callbacks return `object` (typed fixture compat). Serialization 경계에서
+    // `Record<string, unknown>` cast — JSON 직렬화에서 이미 동등. SerializedOverrides는 server-side
+    // 직렬화 후 receive shape이므로 strict record type 유지.
+    const serialized: SerializedOverrides = {
+      ...(handler.sessionDetailResponse !== undefined && {
+        sessionDetailResponse: handler.sessionDetailResponse() as Record<string, unknown>,
+      }),
+      ...(handler.completeResponse !== undefined && {
+        completeResponse: handler.completeResponse() as Record<string, unknown>,
+      }),
+      ...(handler.nextSequence !== undefined && {
+        nextSequence: handler.nextSequence as ReadonlyArray<Record<string, unknown>>,
+      }),
+      ...(handler.gradeSequence !== undefined && { gradeSequence: handler.gradeSequence }),
+    };
     const overrideResponse = await page.request.post(`${MOCK_SERVER_BASE}/__mock/override`, {
       data: serialized,
     });

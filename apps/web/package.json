@@ -12,7 +12,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "e2e:mock-server": "tsx e2e/mock-server/start.ts",
-    "lint": "eslint src --ext .ts,.tsx",
+    "lint": "eslint src e2e --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

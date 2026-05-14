@@ -1,0 +1,15 @@
+{
+  "overrides": [
+    {
+      "files": ["e2e/**/*.ts"],
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "project": true
+      },
+      "rules": {
+        "@typescript-eslint/no-floating-promises": "error",
+        "@typescript-eslint/await-thenable": "error"
+      }
+    }
+  ]
+}

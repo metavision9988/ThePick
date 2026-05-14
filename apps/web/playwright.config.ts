@@ -16,6 +16,19 @@ import { defineConfig, devices } from '@playwright/test';
 
 const CI = process.env.CI === 'true' || process.env.CI === '1';
 
+/**
+ * ADR-040 §8.1 #6 흡수 (Session 078, 2026-05-14) — webServer timeout 통일.
+ *
+ * 이전: astro dev 120s + mock-server 30s. 두 timeout이 다르면 CI flaky 시 어느 서버가 startup
+ *   실패했는지 단서 분산. mock-server는 30s 충분하나 cold start (Hono+tsx 미캐시 + workspace
+ *   pnpm resolve) 안전 마진으로 동일 120s 채택. astro dev 120s는 known-good (tailwind oxide
+ *   첫 컴파일 + Astro 5 vite warmup 합산).
+ *
+ * log artifact: stdout/stderr 'pipe' (CI) → Playwright HTML reporter가 server 단위로 분리 캡처.
+ *   파일 분리는 GitHub Actions의 step별 로그 기본 분리에 의존 — 별도 tee 회피 (cross-platform).
+ */
+const WEB_SERVER_TIMEOUT_MS = 120_000;
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -26,7 +39,13 @@ export default defineConfig({
   // production-quality.md "빈 catch 금지" 동일 맥락) + Year 2 확장 reference로 fail-loud
   // 기본값 확정. 진짜 transient flaky 분리는 ADR-040 §6 M5 carry-over에서 별도 처리.
   retries: CI ? 1 : 0,
-  workers: CI ? 1 : undefined,
+  // ADR-040 §8.1 #3 흡수 (Session 078, 2026-05-14) — workers: 1 local 강제.
+  // 사유: mock-server (apps/web/e2e/mock-server/state.ts)가 process-scoped in-memory state.
+  //   workers > 1이면 동일 mock-server process를 N개 worker가 동시에 두드려 counter/callLog/overrides
+  //   cross-test pollution 발생 → 실패가 local에서만 silent green되고 CI(workers=1)에서만 빨개지는
+  //   flake 경로가 생긴다. multi-tenant X-Test-Session 격상 (carry-over)이 정공법이나 30분 vs 4h
+  //   trade-off에서 local도 1로 강제하여 silent miss 차단을 우선.
+  workers: 1,
   reporter: CI ? [['list'], ['github']] : 'list',
   timeout: 30_000,
   expect: { timeout: 5_000 },
@@ -78,7 +97,7 @@ export default defineConfig({
       command: 'pnpm --filter @thepick/web dev',
       url: 'http://localhost:4321',
       reuseExistingServer: !CI,
-      timeout: 120_000,
+      timeout: WEB_SERVER_TIMEOUT_MS,
       stdout: CI ? 'pipe' : 'ignore',
       stderr: 'pipe',
     },
@@ -88,7 +107,7 @@ export default defineConfig({
       command: 'pnpm --filter @thepick/web e2e:mock-server',
       url: 'http://localhost:8787/__mock/health',
       reuseExistingServer: !CI,
-      timeout: 30_000,
+      timeout: WEB_SERVER_TIMEOUT_MS,
       stdout: CI ? 'pipe' : 'ignore',
       stderr: 'pipe',
     },
