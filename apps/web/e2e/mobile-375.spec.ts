@@ -75,12 +75,11 @@ test.describe('mobile 375px viewport', () => {
     page,
     browserName,
   }) => {
-    // WebKit cross-origin POST preflight 호환성 carry-over (ADR-040 §6, Session 075 WebKit 도입).
-    // ModeSelector/SessionStart의 GET fetch는 webkit PASS. QuestionCard는 POST /mode/start +
-    // POST /grade가 page.route().fulfill()을 거치는 cross-origin preflight 시점에 WebKit이
-    // fetch failure로 처리 (chromium은 정상). CORS_HEADERS 강화 (`*`, Max-Age 제거)에도 미해결.
-    // Production은 same-origin 또는 server CORS middleware 정합이므로 본 silent miss는 mock 한정.
-    // 별도 chunk에서 page.route() 대신 same-origin proxy 또는 webkit-specific handler 도입 검토.
+    // WebKit cross-origin POST preflight 호환성 carry-over (ADR-040 §7 B-1).
+    // Session 076에서 same-origin proxy (Vite + .env.development) 도입 시도하였으나
+    // mock-api `page.route` 매칭 부조화로 mobile-375 project (chromium) 자체가 깨짐.
+    // 1 worker first test만 PASS / 이후 호출 fail deterministic. 롤백 + 별도 chunk carry-over.
+    // 근본 해결은 mock-api glob → regex 전환 또는 page.route 등록 시점 재설계 필요.
     test.skip(browserName === 'webkit', 'WebKit cross-origin POST preflight 호환성 carry-over');
     await page.goto('/study/');
     await expect(page.getByRole('heading', { name: '학습 모드를 선택하세요' })).toBeVisible();

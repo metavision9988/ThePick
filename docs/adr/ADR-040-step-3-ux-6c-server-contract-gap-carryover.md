@@ -246,7 +246,19 @@ Year 2 / Phase 4 carry-over:
 - 🟡 **B-1 WebKit QuestionCard 시나리오 영구 skip silent miss** (quality C1) — **진산 결정 (a) carry-over + ADR 보강 + 다음 chunk 최우선 등재 채택**. 본 ADR §7에 다음 fact 명시 영속:
   - **"본 ADR §6 회귀 차단망 14건 측정은 chromium 한정"** — mobile-webkit project가 실제로 cover하는 시나리오는 ModeSelector + SessionStart (GET 응답만) 2건. QuestionCard 핵심 progress action (채점 → 다음 문제 버튼) cover 0건.
   - **Phase 3 launch 차단 잠재 위험 등급** — 실 사용자 95%+ iOS Safari (모바일 80% × Safari 95%+)의 핵심 진행 path가 회귀 검출 없이 production 노출. `position: sticky` / `100vh` viewport / scroll bounce / virtual keyboard overlay 등 iOS-specific 회귀가 chromium에서 PASS + production에서만 발현 가능.
-  - **다음 chunk 최우선 등재** — Astro dev middleware `/api/*` → `localhost:8787` same-origin proxy 도입 (옵션 b). 추정 ~2시간. 3 WebKit 시나리오 전부 PASS 회복 + cross-origin POST preflight 호환성 issue 본질 해소 + Year 2 모든 자격시험 reusable foundation 완성. 옵션 c (Allow-Headers enumeration 복원)는 해결 보장 X + ITP root cause 가능성 + 향후 custom header 동기화 부담으로 폐기.
+  - **Session 076 same-origin proxy 도입 시도 결과** (롤백):
+    - 시도: Astro `vite.server.proxy` `/api/*` → `localhost:8787` + `.env.development` `PUBLIC_API_BASE_URL=http://localhost:4321` (same-origin absolute URL).
+    - 증상: e2e 전수 18 fail. mobile-375 project (chromium)에서도 workers=1 직렬 실행 시 **1 PASS (ModeSelector first) / 2 fail (SessionStart, QuestionCard) deterministic**. "네트워크 오류 — 잠시 후 다시 시도해 주세요." alert. mock이 fetch를 intercept 못 함.
+    - 가설 후보:
+      - (1) Playwright `page.route('**/api/...')` glob 매칭이 same-origin URL과 fragile — cross-origin URL (`http://localhost:8787/...`)에서는 OK였던 패턴이 same-origin (`http://localhost:4321/...`)에서 매칭 실패. minimatch glob 구현의 host 처리 차이 의심.
+      - (2) Vite proxy가 first request만 intercept + 이후 캐시/race로 mock route 우회.
+      - (3) Worker reuse 시 mock isolation issue + page.route 등록 시점 race.
+    - 결정: 본 chunk **롤백 + carry-over** (CRITICAL RULE #5 정합). 시도 fact + 가설 영속 → 다음 chunk에서 root cause 분석 reference.
+  - **다음 chunk 최우선 등재** — root cause 분석 우선:
+    - (i) mock-api `page.route` glob을 regex로 전환 (`/\/api\/study\/(mode|grade|next)/` 등 host 무관 매칭)
+    - (ii) 또는 same-origin 도입 전 `page.route` 등록 시점을 `beforeAll` (context-level)로 이전
+    - (iii) 또는 `page.route` 자체를 우회하여 webServer 환경에서 mock service 별도 구동 (port 8787에 mock server)
+    - 옵션 c (Allow-Headers enumeration 복원)는 ITP root cause 가능성 + 향후 custom header 동기화 부담으로 여전히 폐기. (iii) 옵션이 cross-origin 유지로 가장 안전.
 - ✅ **C-2 `retries: 2` silent flaky cushion 강등** (devops C-D2 ≡ perf M-P1) — **진산 결정 (a) 2→1 즉시 강등 채택, Session 076 흡수**. `playwright.config.ts:23` `retries: CI ? 2 : 0` → `retries: CI ? 1 : 0` 1줄 변경. 본 Session 076 examId fail-loud 검증 중 mobile-webkit SessionStart가 retry로 silent green되는 실 사례 검증된 fact 영속 차단. fail-loud 원칙 (Hard Rule + production-quality.md "빈 catch 금지" 동일 맥락) + Year 2 확장 reference로 fail-loud 기본값 확정. false positive mitigation은 ADR §6 M5 (flaky retry silent green detection) 우선순위 상향 carry-over에서 retry 시계열 추적 + 진짜 transient 분리 별도 처리.
 
 **신규 carry-over 12건 등재 (다음 chunk 또는 phase 종료 정리):**
