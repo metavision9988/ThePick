@@ -84,6 +84,73 @@ jobs:
       - name: Security audit (HIGH+ blocking, dev 포함)
         run: pnpm audit --audit-level=high
 
+  # Step 3-UX-6g (ADR-040 §5 #7 흡수) — apps/web Playwright E2E 회귀 차단망.
+  # Phase 3 launch toggle 의무 (ADR-040 §6 MAJOR-A5 carry-over 흡수, Session 075).
+  # quality-gate와 병렬 실행 (browser install + dev server 부팅 시간 분리).
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Playwright 브라우저 binary cache — `apps/web/package.json` 변경 (Playwright 버전 회전) 시
+      # 자동 invalidate. ~113MB chromium-headless-shell 다운로드 cache hit 시 ~5s 절약.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('apps/web/package.json') }}
+
+      - name: Install Playwright chromium (cache miss only)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @thepick/web exec playwright install --with-deps chromium
+
+      - name: Install system deps (cache hit — browser exists)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @thepick/web exec playwright install-deps chromium
+
+      - name: Run Playwright tests
+        env:
+          CI: 'true'
+        run: pnpm --filter @thepick/web exec playwright test
+
+      # 실패 시 trace + screenshot + video, 성공 시도 HTML report 보존 (PR 디버깅 단서).
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 14
+
+      - name: Upload Playwright test-results (실패 시 trace/video)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: apps/web/test-results/
+          retention-days: 7
+
   secret-scan:
     name: Secret Scan
     runs-on: ubuntu-latest
