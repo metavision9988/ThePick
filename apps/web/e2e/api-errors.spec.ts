@@ -21,7 +21,7 @@ import { selectFirstChoice, startSessionToFirstQuestion } from './helpers/study-
 test.describe('/api/study/grade 에러 path', () => {
   test('HTTP 429 rate-limit → 안내 메시지 + 다시 시도 → 다음 문제 회복', async ({ page }) => {
     const api = await startSessionToFirstQuestion(page);
-    api.override({
+    await api.override({
       gradeSequence: [
         // 5-페르소나 backend C1 흡수 (Session 076) — 실 서버 contract 정합.
         // apps/api/src/study/routes.ts:723,929의 'RATE_LIMIT_EXCEEDED' literal과 sync.
@@ -58,7 +58,7 @@ test.describe('/api/study/grade 에러 path', () => {
 
   test('HTTP 422 QUESTION_HAS_NO_ANSWER → 정답 미등록 안내', async ({ page }) => {
     const api = await startSessionToFirstQuestion(page);
-    api.override({
+    await api.override({
       gradeSequence: [{ status: 422, body: { error: 'QUESTION_HAS_NO_ANSWER' } }],
     });
 
@@ -71,7 +71,7 @@ test.describe('/api/study/grade 에러 path', () => {
 
   test('HTTP 422 generic validation → 입력 형식 오류 안내', async ({ page }) => {
     const api = await startSessionToFirstQuestion(page);
-    api.override({
+    await api.override({
       gradeSequence: [{ status: 422, body: { error: 'INVALID_INPUT' } }],
     });
 
@@ -84,7 +84,7 @@ test.describe('/api/study/grade 에러 path', () => {
 
   test('HTTP 503 service unavailable → HTTP 상태 안내', async ({ page }) => {
     const api = await startSessionToFirstQuestion(page);
-    api.override({
+    await api.override({
       gradeSequence: [{ status: 503, body: { error: 'SERVICE_UNAVAILABLE' } }],
     });
 

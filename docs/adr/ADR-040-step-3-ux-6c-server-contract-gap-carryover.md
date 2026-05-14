@@ -276,6 +276,104 @@ Year 2 / Phase 4 carry-over:
 - ☐ **backend M3 cookie Secure flag profile sync** — production HTTPS 환경에서 `Secure` 필수. `seedAuthCookie`에 `secure: baseURL.startsWith('https')` 추가.
 - ☐ **m-D7 gitleaks mock token false-positive 방지** — `.gitleaks.toml` allowlist에 `mock-(access|refresh)-token-e2e` 사전 등록.
 
+### 8. B-1 옵션 (iii) 별도 mock server 흡수 — close (2026-05-14, Session 077)
+
+진산 결정 (Session 076 §7) 옵션 (iii) 채택. `apps/web/e2e/mock-server/` (Hono + @hono/node-server + tsx) 별도 process 도입 + WebKit QuestionCard scenario unskip 영속 → **mobile-webkit 18 PASS 전수 통과**.
+
+**채택 결과:**
+
+- ✅ `apps/web/e2e/mock-server/{server,state,start,types}.ts` 신규 — 실 `apps/api` Hono stack 정합 + 단일 벤더 정합. 8 라우트 (auth/login + study 7) + admin (`/__mock/{health,state,override,reset}`).
+- ✅ `playwright.config.ts` `webServer` array 전환 — astro:4321 + mock-server:8787 병렬 기동. mock-server readiness는 `/__mock/health`로 폴링.
+- ✅ `apps/web/e2e/helpers/mock-api.ts` 마이그레이션 — `page.route()` 전수 제거. `page.on('response')` 미러링으로 counters/callLog 시그니처 호환 유지. `override()` async 시그니처 (admin POST await 의무 → spec 4건 `await api.override(...)` sync).
+- ✅ WebKit QuestionCard scenario unskip — Phase 3 launch 차단 잠재 위험 해소. 실 iOS Safari 95%+ 사용자 환경 핵심 progress action 회귀 차단망 영속.
+- ✅ 새 devDep: `hono ^4.12.14` (apps/api 동일 버전), `@hono/node-server ^1.13.0`, `tsx ^4.19.0`.
+
+**진짜 root cause 확정 (chromium에서도 발현):**
+
+§7 B-1 가설 후보 3종 중 **후보 1 (Allow-Headers wildcard 무효)이 chromium spec strict에서도 실제 발현**. page.route() 인터셉트 응답에서는 wildcard가 우회 효과로 통과했으나, 실 cross-origin Hono server 응답에서는 fetch spec WD-2024 strict enforcement.
+
+```
+# 시도 1 — page.route() (Session 074~076)
+Access-Control-Allow-Headers: *          ← chromium loose passed
+Access-Control-Expose-Headers: *
+Access-Control-Allow-Credentials: true
+
+# 시도 2 — Hono cross-origin server (Session 077 trace)
+Access-Control-Allow-Headers: *          ← chromium spec strict rejected → "네트워크 오류"
++ credentialed request → wildcard 무효
+```
+
+**해소책 — 명시 enumeration:**
+
+```
+Access-Control-Allow-Headers: Content-Type, Authorization, Cookie, X-Requested-With, Accept
+Access-Control-Expose-Headers: Retry-After, Content-Type, Content-Length
+```
+
+`mock-server/server.ts` Hono cors middleware + `mock-api.ts` CORS_HEADERS 동기 (spec page.route() abort 시나리오 정합).
+
+**§7 carry-over 해소:**
+
+- ☑ **B-1 WebKit QuestionCard 시나리오 영구 skip silent miss** (quality C1) → unskip 영속.
+- ☑ **refactor M-1 mock-api.ts 348줄 SRP 분리** → mock-server/{server,state,start,types}.ts + mock-api.ts (helpers + page.on 미러링) 5 파일 분산. 본 chunk 동시 흡수.
+
+**신규 carry-over (다음 chunk):**
+
+- ☐ **mock-server multi-tenant isolation** — 현재 process-scoped state + workers=1 강제. fully-parallel 지원은 X-Test-Session 헤더 기반 `Map<sessionId, State>` 또는 fork-per-spec. Year 2 reusable foundation 외이나 local dev 속도 ↓ 우려 시 도입.
+- ☐ **e2e/ ESLint scope 확장** — 현재 `eslint src --ext .ts,.tsx`로 e2e/ 미커버. mock-server/\*.ts + mock-api.ts + spec 5개 정합성 lint 누락. eslint config + glob 확장 의무.
+- ☐ **e2e dependency budget** — hono + @hono/node-server + tsx 3 devDep 추가. CI cold install 시간 ~5s 가산. cache invalidation 주의.
+- ☐ **mock server cookie cross-port consistency** — localhost host 기반 cookie share + SameSite=Lax cross-port 동작이 production HTTPS 환경 (apps/web Cloudflare Pages → apps/api Workers) cross-origin 동작과 1:1 매핑 의무. preview 환경 검증 carry-over.
+- ☐ **mock-server stateful 동적 응답** — 현재 sessionDetailResponse / completeResponse는 단일 객체. 호출마다 다른 응답이 필요해지면 sequence 또는 별도 admin endpoint 필요.
+
+**검증 게이트:**
+
+- ✅ `pnpm --filter @thepick/web typecheck` PASS
+- ✅ `pnpm --filter @thepick/web lint` (src) PASS
+- ✅ `pnpm --filter @thepick/web exec playwright test` — 18 PASS (chromium 12 + mobile-375 3 + mobile-webkit 3)
+
+### 8.1 5-페르소나 독립 병렬 리뷰 결과 (2026-05-14, Session 077)
+
+진산 표준 패턴 정합 — 단일 code-reviewer 자가 편향 차단망 의무. refactoring-expert + performance-engineer + quality-engineer + backend-architect + devops-architect 5명 독립 병렬 호출. 통합 보고서: `.claude/reviews/review-20260514-step-3-ux-b1-mock-server-5persona.md`
+
+**판정 매트릭스:**
+
+| Persona              | Critical | Major | Minor | 판정                                  |
+| :------------------- | :------- | :---- | :---- | :------------------------------------ |
+| refactoring-expert   | 0        | 1     | 5     | 완료 가능                             |
+| performance-engineer | 0        | 1     | 4     | 완료 가능                             |
+| quality-engineer     | 0        | 4     | 3     | 완료 가능 (Major 4건 carry-over)      |
+| backend-architect    | **3**    | 3     | 2     | **수정 필요** (production CORS drift) |
+| devops-architect     | 0        | 2     | 3     | 완료 가능                             |
+
+**backend-architect Critical 3건의 본질**: 본 chunk 자체 결함이 아닌 **이전부터 존재한 contract drift를 본 chunk가 더 키움**. mock-server allowHeaders `['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept']` (5개) vs production apps/api/src/index.ts:83 `['Content-Type', 'Authorization']` (2개). mock이 production보다 "넉넉히" 풀어줘서 E2E 녹색 → production 첫 배포 시 cross-origin block 가능. **production 변경 동반 필요 → 진산 결정 위임 별도 chunk**.
+
+**즉시 자율 흡수 2건 (Session 077):**
+
+- ✅ **backend C3 / quality Q1** — Cookie Path 리터럴 → shared 상수 import. `mock-server/server.ts:117-131` `Path=/api` → `Path=${ACCESS_TOKEN_COOKIE_PATH}`, `Path=/api/auth` → `Path=${REFRESH_TOKEN_COOKIE_PATH}`. `helpers/mock-api.ts` seedAuthCookie도 동일. shared 상수 개정 시 mock 자동 sync.
+- ✅ **refactor m-5** — `emptyCounters()` 함수 중복 제거. `mock-server/state.ts`에서 export → `helpers/mock-api.ts`에서 import. DRY 단일 source.
+
+자율 흡수 후 재검증: typecheck PASS / playwright test 18 PASS (22.3s) 회귀 0.
+
+**진산 결정 위임 (전략 갈림길) — 다음 chunk 우선순위 매트릭스:**
+
+| #   | 항목                                                                          | Persona                      | 비용       | 위험 등급                                      |
+| :-- | :---------------------------------------------------------------------------- | :--------------------------- | :--------- | :--------------------------------------------- |
+| 1   | **production CORS sync** (`packages/shared/src/constants/cors.ts` 신설)       | backend C1+C2 + refactor M-1 | 1-2h       | ★ production 첫 배포 cross-origin block 잠재   |
+| 2   | **payload required drift** (mock `inputType` required vs production optional) | backend M2                   | 30분       | ★ production에서 통과할 payload가 mock에서 422 |
+| 3   | **`workers: 1` local 강제** OR multi-tenant `X-Test-Session` 격상             | quality Q2 + perf M-P5       | 30분 OR 4h | ☆ local dev flaky silent miss                  |
+| 4   | **e2e/ ESLint scope 확장** + floating-promises rule                           | quality Q3+Q4                | 1h         | ☆ `await api.override(...)` 누락 silent race   |
+| 5   | **page.on('response') listener cleanup** (`page.on('close', off)`)            | perf PE-M1                   | 10분       | ☆ Phase 3 spec 50건+ 시 listener leak          |
+| 6   | **webServer timeout 통일 + log artifact 분리**                                | devops DO-1+DO-2             | 1h         | ☆ CI flaky / on-call 디버깅 단서 부재          |
+| 7   | **SameSite=None + Secure production HTTPS profile E2E**                       | backend M1                   | 30분       | ★ Phase 3 launch 직전 의무 (carry-over)        |
+| 8   | **mock-server admin endpoint negative regression test**                       | backend M3                   | 15분       | ☆ production binding `__mock` prefix 부재 검증 |
+
+**Year 2 carry-over:**
+
+- `requireExamId` 화이트리스트 검증 logic을 `packages/shared/exam-adapter.ts`로 추출 (backend Mi1) — Hard Rule 16 WHERE 절 주입 시점 동시 발동
+- fixture per-exam 분리 (`fixtures/{examId}/`) — ADR-009 멀티시험 정합 (backend Mi2)
+- multi-tenant `X-Test-Session` mock-server isolation — fully-parallel 4-worker로 24.8s → 6-10s 단축 (refactor/perf carry-over)
+- mock-server vs apps/api endpoint 추가 시 자동 sync (M-1 contract drift) — single contract source가 본 chunk 외 별도 PR
+
 ---
 
 ## 관련 문서

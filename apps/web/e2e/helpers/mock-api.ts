@@ -1,124 +1,90 @@
 /**
- * page.route() 기반 apps/api mock — ADR-040 §5 #7.
+ * cross-origin mock 헬퍼 — ADR-040 §7 B-1 옵션 (iii) 흡수 (Session 077, 2026-05-14).
  *
- * 모든 /api/** 호출을 가로채 deterministic 응답 반환.
- * baseURL은 import.meta.env.PUBLIC_API_BASE_URL ?? 'http://localhost:8787'
- * → glob '**\/api/**'로 모두 매칭 (호스트 무관).
+ * 이전 (Session 074~076) page.route() 기반 인터셉트 → 별도 Hono mock server (port 8787) 도입.
  *
- * 호출 횟수를 외부에서 검증 가능하도록 ApiMock object 반환.
+ * 본 모듈 책임:
+ *   1. mock server state reset (cross-test pollution 차단)
+ *   2. page.on('response') 미러링 — counters / callLog 로컬 미러 (spec 시그니처 호환)
+ *   3. override() — callback 즉시 실행 → 결과 객체 admin /__mock/override POST
+ *   4. seedAuthCookie / hideAstroDevToolbar / waitForReactHydration — 변경 없음
+ *   5. CORS_HEADERS / handlePreflight export — spec-level page.route() 사용 시 (api-errors network
+ *      error 시나리오) 의도된 abort 핸들러용. mock-api 일반 흐름은 page.route() 미사용.
+ *
+ * 시그니처 변경:
+ *   - `override()` 반환 type: void → Promise<void> (admin POST await 필수)
+ *   - spec 4건 (session-restoration, api-errors, silent-failure-surface)은 `await api.override(...)` 의무
  */
 
 import type { Page, Route } from '@playwright/test';
-import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from '@thepick/shared';
+import {
+  ACCESS_TOKEN_COOKIE,
+  ACCESS_TOKEN_COOKIE_PATH,
+  REFRESH_TOKEN_COOKIE,
+  REFRESH_TOKEN_COOKIE_PATH,
+} from '@thepick/shared';
 
 import type { GradeResponse } from '../../src/components/question/types';
+import { emptyCounters } from '../mock-server/state';
+import type {
+  ApiCallCounters,
+  EndpointKey,
+  GradeResponseEntry as ServerGradeResponseEntry,
+  SerializedOverrides,
+} from '../mock-server/types';
 
-import {
-  makeCompleteResponse,
-  makeGradeResponse,
-  makeModeStats,
-  makeNextQuestion,
-  makeProgress,
-  makeSessionDetail,
-  makeStartResponse,
-  NEXT_EXHAUSTED,
-} from './fixtures';
+export type { ApiCallCounters, EndpointKey } from '../mock-server/types';
 
-export interface ApiCallCounters {
-  authLogin: number;
-  modeStats: number;
-  progress: number;
-  modeStart: number;
-  sessionDetail: number;
-  sessionComplete: number;
-  next: number;
-  grade: number;
+/**
+ * /grade override 응답 entry — server-side type re-export.
+ * 200 → server contract `GradeResponse` 강제 / 4xx/5xx → `{error}` 강제.
+ */
+export type GradeResponseEntry = ServerGradeResponseEntry;
+
+/**
+ * spec-side override — callback 시그니처 유지 (호출 시점에 즉시 실행하여 결과 객체만 admin POST).
+ *
+ * 현재 spec 패턴은 모두 단일 객체 반환 (sessionDetailResponse / completeResponse는 매 호출 동일 응답).
+ * stateful 동적 응답 (호출마다 다른 결과)이 필요해지면 별도 admin endpoint 또는 multi-response sequence로
+ * carry-over (ADR §8).
+ */
+export interface ApiMockOverrides {
+  readonly sessionDetailResponse?: () => Record<string, unknown>;
+  readonly nextSequence?: ReadonlyArray<Record<string, unknown>>;
+  readonly gradeSequence?: ReadonlyArray<GradeResponseEntry>;
+  readonly completeResponse?: () => Record<string, unknown>;
 }
-
-/** Pass 1 C-5 흡수 — 호출 순서 검증을 위해 endpoint 키 시계열 기록. */
-export type EndpointKey = keyof ApiCallCounters;
 
 export interface ApiMock {
   readonly counters: ApiCallCounters;
   /** 호출된 endpoint를 순서대로 누적 — `expect(api.callLog).toEqual([...])` 검증용. */
   readonly callLog: ReadonlyArray<EndpointKey>;
-  /** 새로 mock 등록 (덮어쓰기). */
-  override(handler: ApiMockOverrides): void;
+  /** mock server overrides 적용 — admin endpoint POST. spec은 `await` 의무. */
+  override(handler: ApiMockOverrides): Promise<void>;
 }
 
-/**
- * /grade override 응답 — status code 기반 discriminated union (MAJOR-C1 흡수, Session 076).
- *
- * 200 → server contract `GradeResponse` 강제 (happy response 추가 시 schema drift silent block).
- * 4xx/5xx → `{ error: string }` 강제 (QuestionCard.tsx:147 body shape 정합).
- *
- * `headers`는 Retry-After (429) / 임의 contract 헤더 주입용 (MINOR-AD3 흡수).
- */
-export type GradeResponseEntry =
-  | {
-      readonly status: 200;
-      readonly body: GradeResponse;
-      readonly headers?: Readonly<Record<string, string>>;
-    }
-  | {
-      readonly status: 400 | 401 | 403 | 422 | 429 | 500 | 502 | 503;
-      readonly body: { readonly error: string } & Readonly<Record<string, unknown>>;
-      readonly headers?: Readonly<Record<string, string>>;
-    };
-
-export interface ApiMockOverrides {
-  /** session detail 응답을 임의로 교체 (restoration 시나리오에서 phase 변경). */
-  readonly sessionDetailResponse?: () => Record<string, unknown>;
-  /** /next 응답 시퀀스를 직접 제공 (3건 + exhausted 기본값 대체). */
-  readonly nextSequence?: ReadonlyArray<Record<string, unknown>>;
-  /**
-   * /grade 응답 시퀀스 (status + body + 선택 headers). N번째 grade 호출 시 sequence[N-1] 적용.
-   * body shape는 status로 discriminate (200 → GradeResponse, 4xx/5xx → `{ error }`).
-   * payload validation (questionId/userAnswer/inputType) 전 override 우선 적용.
-   */
-  readonly gradeSequence?: ReadonlyArray<GradeResponseEntry>;
-  /** /complete 응답 임의 교체 (silent_failure surface 시나리오에서 weakDelta.available=false 주입). */
-  readonly completeResponse?: () => Record<string, unknown>;
-}
-
-// Pass 2 P2-C1 흡수 — 실제 서버 contract와 cookie 이름 sync (apps/api/src/auth/routes.ts:717,724).
-// schema drift 차단 — Phase 3 launch 직전 server-side auth guard 추가 시 mock도 즉시 정합.
-const COOKIE_HEADER = `${ACCESS_TOKEN_COOKIE}=mock-access-token-e2e; Path=/api; HttpOnly; SameSite=Lax, ${REFRESH_TOKEN_COOKIE}=mock-refresh-token-e2e; Path=/api/auth; HttpOnly; SameSite=Lax`;
+const MOCK_SERVER_BASE = 'http://localhost:8787';
 
 /**
- * Cross-origin fetch (apps/web localhost:4321 → apps/api localhost:8787) CORS 통과용 헤더.
- * 모든 fulfill 응답 + OPTIONS preflight에 동일하게 적용 — credentials: 'include' 정합.
+ * Cross-origin fetch (apps/web localhost:4321 → mock-server localhost:8787) CORS 통과용 헤더.
  *
- * WebKit 정합 — Session 075 ADR-040 §6 WebKit 도입 시 발견:
- *   - WebKit (Safari)은 chromium보다 엄격: ACA-Headers에 wildcard `*` 또는 명시적 enumeration 필요
- *   - Max-Age 캐시 invalidation 차이 (WebKit 5분 vs chromium 7200s) → preflight 매번 재요청 정합
- *   - 따라서 `Access-Control-Allow-Headers: '*'` (모든 헤더 허용) + Max-Age 제거 (캐시 비활성)
+ * mock-api 일반 흐름은 mock server CORS middleware가 직접 응답하므로 본 상수 사용 불요.
+ * spec이 page.route() 직접 사용 (network abort 등 의도된 시나리오) 시 fulfill에 inline 복제 차단용.
+ *
+ * Session 077 trace 분석에서 발견 — fetch spec WD-2024: credentialed request에서
+ *   `Access-Control-Allow-Headers: '*'` + `Allow-Credentials: true` 조합 wildcard 무효 → 명시 enumeration.
+ *   page.route() 인터셉트 응답도 동일 강제 (chromium spec strict — page.route 우회 효과 X).
+ * mock-server/server.ts CORS middleware와 동기 유지 의무.
  */
-// MINOR-AD2 흡수 (Session 076) — export하여 spec에서 직접 inline 복제 제거 (DRY).
-// `Readonly`로 외부에서 mutation 차단 (defensive — `as Record<string, string>` cast 방지).
 export const CORS_HEADERS: Readonly<Record<string, string>> = Object.freeze({
   'Access-Control-Allow-Origin': 'http://localhost:4321',
   'Access-Control-Allow-Credentials': 'true',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': '*',
-  'Access-Control-Expose-Headers': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cookie, X-Requested-With, Accept',
+  'Access-Control-Expose-Headers': 'Retry-After, Content-Type, Content-Length',
 });
 
-function json(
-  route: Route,
-  body: unknown,
-  status = 200,
-  extraHeaders: Readonly<Record<string, string>> = {},
-) {
-  return route.fulfill({
-    status,
-    contentType: 'application/json; charset=utf-8',
-    headers: { ...CORS_HEADERS, ...extraHeaders },
-    body: JSON.stringify(body),
-  });
-}
-
-// MINOR-AD2 흡수 (Session 076) — export하여 spec route override가 직접 사용 (DRY).
+/** spec이 page.route() 사용 시 OPTIONS preflight 자동 처리 — abort/fulfill 시나리오 정합. */
 export async function handlePreflight(route: Route): Promise<boolean> {
   if (route.request().method() !== 'OPTIONS') return false;
   await route.fulfill({ status: 204, headers: { ...CORS_HEADERS }, body: '' });
@@ -126,205 +92,78 @@ export async function handlePreflight(route: Route): Promise<boolean> {
 }
 
 /**
- * 5-페르소나 backend C2 흡수 (Session 076) — Hard Rule 16 위반 차단.
+ * URL + method 기반 endpoint key 매핑.
  *
- * 실 서버 (apps/api/src/study/routes.ts:105-119 `requireExamId`)는 모든 study endpoint에서
- * examId query param 필수. 누락 시 422 `{error: 'VALIDATION_ERROR', message: 'examId required'}`.
- *
- * mock이 검증을 skip하면 client가 examId 누락 fetch를 작성해도 spec 통과 → production 첫
- * 배포 시 모든 endpoint 422 폭격. spec 수준 last line of defense.
- *
- * @returns true: examId 검증 통과 (caller 계속 진행) / false: 422 fulfill 완료 (caller early return)
+ * 매칭 순서가 중요 — `/mode/start`를 `/mode`보다 먼저 검사 (LIFO 매칭).
+ * `/session/:id/complete`를 `/session/:id`보다 먼저 검사.
  */
-async function requireExamId(route: Route): Promise<boolean> {
-  const examId = new URL(route.request().url()).searchParams.get('examId');
-  if (examId === null || examId === '') {
-    console.error(
-      `[mock-api] Hard Rule 16 violation: examId missing on ${route.request().method()} ${route.request().url()}`,
-    );
-    await json(
-      route,
-      { error: 'VALIDATION_ERROR', message: 'examId query parameter required (Hard Rule 16)' },
-      422,
-    );
-    return false;
-  }
-  return true;
+function mapToEndpointKey(method: string, url: string): EndpointKey | null {
+  if (method === 'OPTIONS') return null;
+  if (!url.includes('/api/')) return null;
+  if (url.includes('/__mock/')) return null;
+
+  if (url.includes('/api/auth/login')) return 'authLogin';
+  if (url.includes('/api/study/mode/start')) return 'modeStart';
+  if (url.includes('/api/study/mode')) return 'modeStats';
+  if (url.includes('/api/study/progress')) return 'progress';
+  if (/\/api\/study\/session\/[^/]+\/complete/.test(url)) return 'sessionComplete';
+  if (/\/api\/study\/session\/[^/]+(?:\?|$)/.test(url)) return 'sessionDetail';
+  if (url.includes('/api/study/next')) return 'next';
+  if (url.includes('/api/study/grade')) return 'grade';
+  return null;
 }
 
 export async function installApiMock(page: Page): Promise<ApiMock> {
-  const counters: ApiCallCounters = {
-    authLogin: 0,
-    modeStats: 0,
-    progress: 0,
-    modeStart: 0,
-    sessionDetail: 0,
-    sessionComplete: 0,
-    next: 0,
-    grade: 0,
-  };
-  const callLog: EndpointKey[] = [];
-  const overrides: { current: ApiMockOverrides } = { current: {} };
-
-  function record(key: EndpointKey): void {
-    counters[key] += 1;
-    callLog.push(key);
+  // 1. mock server state 초기화 — cross-test pollution 차단.
+  // Playwright의 page.request는 page context와 동일 cookie/origin 정책 적용. cross-origin OK.
+  const resetResponse = await page.request.post(`${MOCK_SERVER_BASE}/__mock/reset`);
+  if (!resetResponse.ok()) {
+    throw new Error(
+      `[mock-api] mock server reset failed: HTTP ${resetResponse.status()}. ` +
+        `mock server (port 8787) 미기동? playwright.config.ts webServer array 확인.`,
+    );
   }
 
-  await page.route('**/api/auth/login', async (route) => {
-    if (await handlePreflight(route)) return;
-    record('authLogin');
-    await json(route, { ok: true }, 200, { 'Set-Cookie': COOKIE_HEADER });
+  // 2. 로컬 미러 (counters / callLog) — spec 시그니처 호환.
+  // page.on('response')는 모든 navigated/fetched response (cross-origin 포함) emit.
+  // OPTIONS preflight는 mapToEndpointKey에서 null 반환으로 자동 제외.
+  const counters = emptyCounters();
+  const callLog: EndpointKey[] = [];
+
+  page.on('response', (response) => {
+    const key = mapToEndpointKey(response.request().method(), response.url());
+    if (key === null) return;
+    counters[key] += 1;
+    callLog.push(key);
   });
 
-  await page.route('**/api/study/mode**', async (route) => {
-    if (await handlePreflight(route)) return;
-    if (!(await requireExamId(route))) return;
-    const url = route.request().url();
-    // /mode/start는 POST, /mode 단독은 GET — method로 분기
-    if (route.request().method() === 'POST' && url.includes('/mode/start')) {
-      record('modeStart');
-      await json(route, makeStartResponse());
-      return;
+  // 3. override 메서드 — callback 즉시 실행 → 결과 객체 admin POST.
+  async function override(handler: ApiMockOverrides): Promise<void> {
+    const serialized: SerializedOverrides = {};
+    if (handler.sessionDetailResponse !== undefined) {
+      serialized.sessionDetailResponse = handler.sessionDetailResponse();
     }
-    if (url.includes('/api/study/mode?') || url.endsWith('/api/study/mode')) {
-      record('modeStats');
-      await json(route, makeModeStats());
-      return;
+    if (handler.completeResponse !== undefined) {
+      serialized.completeResponse = handler.completeResponse();
     }
-    // Pass 1 C-2 흡수 — unintercepted fall-through 차단.
-    // route.continue()는 실제 apps/api (혹시 dev로 떠있으면)로 빠져 contract drift silently 흡수.
-    // 명시 abort + dev 로깅으로 fail-loud.
-    console.error(`[mock-api] unhandled /mode URL: ${url}`);
-    await route.abort('failed');
-  });
-
-  await page.route('**/api/study/progress**', async (route) => {
-    if (await handlePreflight(route)) return;
-    if (!(await requireExamId(route))) return;
-    record('progress');
-    const url = new URL(route.request().url());
-    const days = Number.parseInt(url.searchParams.get('days') ?? '7', 10);
-    const clamped = Number.isFinite(days) && days > 0 && days <= 30 ? days : 7;
-    await json(route, makeProgress(clamped));
-  });
-
-  // Pass 1 C-1 흡수 — route 등록 순서를 LIFO 매칭 정합으로 명시.
-  // Playwright는 마지막 등록 핸들러 먼저 매칭 → /complete 같은 specific 패턴을 NACHHER 등록.
-  // (구버전: /complete 먼저 등록 후 /session/* 핸들러에서 endsWith fallback. 동작은 동일하나 fragile.)
-  // 실 서버 routes.ts:1772-1782 정합 — /session/:id는 sessionId가 globally unique하므로
-  // examId 검증 0건. mock도 동일 정합 (requireExamId 제외).
-  await page.route('**/api/study/session/*', async (route) => {
-    if (await handlePreflight(route)) return;
-    record('sessionDetail');
-    const body = overrides.current.sessionDetailResponse?.() ?? makeSessionDetail();
-    await json(route, body);
-  });
-
-  // specific 패턴 (LIFO 매칭 우선) — /session/:id/complete를 sessionDetail보다 먼저 catch.
-  // 실 서버 routes.ts:1923 정합 — /session/:id/complete도 sessionId path-based (examId 무관).
-  await page.route('**/api/study/session/*/complete', async (route) => {
-    if (await handlePreflight(route)) return;
-    record('sessionComplete');
-    const body = overrides.current.completeResponse?.() ?? makeCompleteResponse();
-    await json(route, body);
-  });
-
-  await page.route('**/api/study/next**', async (route) => {
-    if (await handlePreflight(route)) return;
-    if (!(await requireExamId(route))) return;
-    record('next');
-    const sequence = overrides.current.nextSequence;
-    if (sequence !== undefined) {
-      const idx = Math.min(counters.next - 1, sequence.length - 1);
-      await json(route, sequence[idx]);
-      return;
+    if (handler.nextSequence !== undefined) {
+      serialized.nextSequence = handler.nextSequence;
     }
-    // 기본: 3건 + exhausted
-    if (counters.next <= 3) {
-      await json(route, makeNextQuestion(counters.next));
-    } else {
-      await json(route, NEXT_EXHAUSTED);
+    if (handler.gradeSequence !== undefined) {
+      serialized.gradeSequence = handler.gradeSequence;
     }
-  });
-
-  await page.route('**/api/study/grade**', async (route) => {
-    if (await handlePreflight(route)) return;
-    if (!(await requireExamId(route))) return;
-
-    // gradeSequence override (api-errors 시나리오) — 1-indexed (N번째 호출 = sequence[N-1]).
-    // Pass 2 MAJOR-A1 흡수 — override path도 payload 존재만 최소 검증 (contract drift 1차 차단).
-    // MINOR-AD3 흡수 (Session 076) — entry.headers (Retry-After 등) `json()` extraHeaders로 위임.
-    //
-    // 5-페르소나 quality C2/C3 흡수 (Session 076):
-    //   - seq.length === 0 (empty) → silent fall-through 차단, console.error + 422
-    //   - counters.grade > seq.length (overflow) → silent 마지막 항목 반복 차단, console.error
-    const seq = overrides.current.gradeSequence;
-    if (seq !== undefined) {
-      if (seq.length === 0) {
-        console.error(
-          '[mock-api] gradeSequence empty array — silent fall-through 차단. ' +
-            '의도: override 해제 시 override({}) 사용 / 의도: 호출 금지면 length 0 유지 + 본 422 surface.',
-        );
-        await json(
-          route,
-          { error: 'VALIDATION_ERROR', message: 'gradeSequence empty (mock contract violation)' },
-          422,
-        );
-        return;
-      }
-      if (counters.grade >= seq.length) {
-        console.error(
-          `[mock-api] gradeSequence overflow: ${counters.grade + 1}번째 호출, sequence length=${seq.length}. ` +
-            '마지막 항목 silent 반복 차단 — 회귀 가능성 surface. 의도된 동작이면 sequence를 길이 충분히 확장.',
-        );
-      }
-      let hasPayload = false;
-      try {
-        hasPayload = route.request().postDataJSON() !== null;
-      } catch {
-        hasPayload = false;
-      }
-      if (!hasPayload) {
-        console.error('[mock-api] grade override path: postData null — payload contract drift');
-      }
-      record('grade');
-      const idx = Math.min(counters.grade - 1, seq.length - 1);
-      const entry = seq[idx]!;
-      await json(route, entry.body, entry.status, entry.headers ?? {});
-      return;
+    const overrideResponse = await page.request.post(`${MOCK_SERVER_BASE}/__mock/override`, {
+      data: serialized,
+    });
+    if (!overrideResponse.ok()) {
+      throw new Error(`[mock-api] mock server override failed: HTTP ${overrideResponse.status()}`);
     }
-
-    // Pass 1 C-5 흡수 — payload contract drift 차단.
-    // 실제 server는 questionId/userAnswer/inputType 누락 시 422. mock도 동일 fail-loud.
-    let payload: Record<string, unknown> | null = null;
-    try {
-      payload = route.request().postDataJSON() as Record<string, unknown>;
-    } catch {
-      payload = null;
-    }
-    const required = ['questionId', 'userAnswer', 'inputType'] as const;
-    const missing = payload === null ? required.slice() : required.filter((k) => !(k in payload));
-    if (missing.length > 0) {
-      console.error(`[mock-api] grade payload missing fields: ${missing.join(', ')}`);
-      await json(route, { error: 'VALIDATION_ERROR', missing }, 422);
-      return;
-    }
-    record('grade');
-    const streak = {
-      current: 3 + counters.grade,
-      longest: Math.max(7, 3 + counters.grade),
-      dailyGoalProgress: 5 + counters.grade,
-    };
-    await json(route, makeGradeResponse(counters.grade, streak));
-  });
+  }
 
   return {
     counters,
     callLog,
-    override(handler: ApiMockOverrides): void {
-      overrides.current = handler;
-    },
+    override,
   };
 }
 
@@ -332,17 +171,16 @@ export async function installApiMock(page: Page): Promise<ApiMock> {
  * 인증 cookie를 미리 주입하여 로그인 단계를 우회. restoration/mobile 시나리오용.
  *
  * cookie 도메인은 baseURL host (localhost). HttpOnly는 context cookie API에서 옵션.
+ * Pass 2 P2-C1 흡수 — 실제 서버 contract 정합 (`tp_access` + `tp_refresh`).
  */
 export async function seedAuthCookie(page: Page, baseURL: string): Promise<void> {
   const url = new URL(baseURL);
-  // Pass 2 P2-C1 흡수 — 실제 서버 contract 정합 (`tp_access` + `tp_refresh`).
-  // Path는 서버 발급 정합 (`/api` + `/api/auth`).
   await page.context().addCookies([
     {
       name: ACCESS_TOKEN_COOKIE,
       value: 'mock-access-token-e2e',
       domain: url.hostname,
-      path: '/api',
+      path: ACCESS_TOKEN_COOKIE_PATH,
       httpOnly: true,
       sameSite: 'Lax',
     },
@@ -350,7 +188,7 @@ export async function seedAuthCookie(page: Page, baseURL: string): Promise<void>
       name: REFRESH_TOKEN_COOKIE,
       value: 'mock-refresh-token-e2e',
       domain: url.hostname,
-      path: '/api/auth',
+      path: REFRESH_TOKEN_COOKIE_PATH,
       httpOnly: true,
       sameSite: 'Lax',
     },
@@ -362,9 +200,6 @@ export async function seedAuthCookie(page: Page, baseURL: string): Promise<void>
  *
  * React 19은 interactive element에 `__reactProps$<key>` / `__reactFiber$<key>` 속성을 attach.
  * SSR-rendered HTML에는 없고 hydration 완료 시 부착 → form 네이티브 submit fallthrough race 차단.
- *
- * Pass 1 M-1 흡수 — `waitForLoadState('networkidle')`는 Vite HMR WebSocket idle 정의가 fragile.
- * React fiber 검출은 결정적 + Astro/Vite 버전 비의존.
  */
 export async function waitForReactHydration(page: Page, selector: string): Promise<void> {
   await page.waitForFunction((sel: string) => {
@@ -377,11 +212,10 @@ export async function waitForReactHydration(page: Page, selector: string): Promi
 }
 
 /**
- * Astro dev toolbar + Vite error overlay 숨김 — 모바일 viewport에서 화면 하단 액션 영역을 가리는 회피.
+ * Astro dev toolbar + Vite error overlay 숨김 — 모바일 viewport 하단 액션 영역 가리는 회피.
  * Astro 5 dev 모드 한정. Production build / preview에서는 미존재.
  *
- * Pass 1 C-4 흡수 — addInitScript는 navigation 전 실행되나 `document.head` 미존재 시점 가능.
- * `DOMContentLoaded` listener가 이미 fired 후 등록되면 silent skip되어 toolbar 노출 silent → readyState 분기.
+ * Pass 1 C-4 흡수 — `DOMContentLoaded` listener race 시 silent skip 차단 → readyState 분기.
  * Pass 1 M-7 흡수 — vite-error-overlay 등 추가 dev-only overlay도 catch-all 차단.
  */
 export async function hideAstroDevToolbar(page: Page): Promise<void> {
@@ -401,3 +235,7 @@ export async function hideAstroDevToolbar(page: Page): Promise<void> {
     }
   });
 }
+
+// GradeResponse re-export — spec / fixtures import path 정합 (mock-server/types에서 import하므로
+// 본 모듈은 type-only re-export로 broken import 회피).
+export type { GradeResponse };

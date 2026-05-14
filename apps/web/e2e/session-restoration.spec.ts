@@ -43,7 +43,7 @@ test.describe('session restoration (ADR-040 G-3)', () => {
   test('완료된 세션 → 자동 정리 + mode-select fallback', async ({ page }) => {
     const api = await installApiMock(page);
     await seedAuthCookie(page, baseURL);
-    api.override({
+    await api.override({
       sessionDetailResponse: () => ({
         ...makeSessionDetail({ phase: 'completed', endedAt: new Date().toISOString() }),
       }),

@@ -71,16 +71,10 @@ test.describe('mobile 375px viewport', () => {
     }
   });
 
-  test('QuestionCard — overflow 없음 + 채점/라벨/다음 문제 44px+', async ({
-    page,
-    browserName,
-  }) => {
-    // WebKit cross-origin POST preflight 호환성 carry-over (ADR-040 §7 B-1).
-    // Session 076에서 same-origin proxy (Vite + .env.development) 도입 시도하였으나
-    // mock-api `page.route` 매칭 부조화로 mobile-375 project (chromium) 자체가 깨짐.
-    // 1 worker first test만 PASS / 이후 호출 fail deterministic. 롤백 + 별도 chunk carry-over.
-    // 근본 해결은 mock-api glob → regex 전환 또는 page.route 등록 시점 재설계 필요.
-    test.skip(browserName === 'webkit', 'WebKit cross-origin POST preflight 호환성 carry-over');
+  test('QuestionCard — overflow 없음 + 채점/라벨/다음 문제 44px+', async ({ page }) => {
+    // ADR-040 §7 B-1 옵션 (iii) 흡수 (Session 077) — WebKit cross-origin POST preflight 호환 영속.
+    // 별도 Hono mock server (port 8787) 도입 + CORS allowHeaders 명시 enumeration (fetch spec WD-2024
+    // credentialed wildcard 무효 root cause 해소) → chromium + WebKit 모두 정합.
     await page.goto('/study/');
     await expect(page.getByRole('heading', { name: '학습 모드를 선택하세요' })).toBeVisible();
     await expect(page.getByRole('button', { name: /통합 학습 학습 시작/ })).toBeEnabled();

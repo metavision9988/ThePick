@@ -34,7 +34,7 @@ async function completeSession(page: Page): Promise<void> {
 test.describe('SessionSummary weakDelta silent failure surface', () => {
   test('available=false → 집계 불가 안내 표시 + "약점 잔존" 섹션 비표시', async ({ page }) => {
     const api = await startSessionToFirstQuestion(page);
-    api.override({
+    await api.override({
       completeResponse: () =>
         makeCompleteResponse({
           weakDelta: {
@@ -64,7 +64,7 @@ test.describe('SessionSummary weakDelta silent failure surface', () => {
 
   test('available=true, cardsReviewed=0 → 정상 0건 (안내/잔존 모두 비표시)', async ({ page }) => {
     const api = await startSessionToFirstQuestion(page);
-    api.override({
+    await api.override({
       completeResponse: () =>
         makeCompleteResponse({
           weakDelta: {

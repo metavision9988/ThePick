@@ -64,18 +64,33 @@ export default defineConfig({
       testMatch: /mobile-375\.spec\.ts$/,
     },
   ],
-  webServer: {
-    // M2 흡수 (devops Pass 1) — 명시 filter로 모노레포 root에서도 정확한 패키지 지정.
-    // 향후 root에 dev script 추가 시 silent 충돌 차단.
-    command: 'pnpm --filter @thepick/web dev',
-    url: 'http://localhost:4321',
-    reuseExistingServer: !CI,
-    // M3 흡수 (devops Pass 2) — CI cold container에서 Astro 5 Vite compile + workspace symlink +
-    // Tailwind JIT 합산 35-50s. 기존 60s는 마진 10-25s만 남아 flaky 위험. 120s로 상향.
-    timeout: 120_000,
-    // m2 흡수 (devops Pass 1) — CI 실패 시 Astro 부팅 에러 (port conflict / build error)를
-    // GitHub Actions log에 자동 surface (디버깅 단서 보존).
-    stdout: CI ? 'pipe' : 'ignore',
-    stderr: 'pipe',
-  },
+  // ADR-040 §7 B-1 옵션 (iii) 흡수 (Session 077, 2026-05-14).
+  //
+  // webServer를 array로 — astro dev (4321) + Hono mock server (8787).
+  // Playwright는 array의 모든 서버를 병렬 기동 + 각 url readiness 폴링 후 spec 시작.
+  //
+  // mock server를 별도 process로 분리한 이유 (ADR §7 B-1 carry-over):
+  //   - page.route() race condition 제거 (실 production 환경 정합)
+  //   - WebKit cross-origin POST preflight 호환 (Hono CORS middleware가 직접 응답)
+  //   - apps/api와 동일 Hono stack (contract drift 차단 + 단일 벤더 정합)
+  webServer: [
+    {
+      command: 'pnpm --filter @thepick/web dev',
+      url: 'http://localhost:4321',
+      reuseExistingServer: !CI,
+      timeout: 120_000,
+      stdout: CI ? 'pipe' : 'ignore',
+      stderr: 'pipe',
+    },
+    {
+      // Hono mock server (apps/web/e2e/mock-server/start.ts) — tsx로 실행.
+      // url은 admin /__mock/health endpoint로 readiness 폴링 (CORS 무관 GET).
+      command: 'pnpm --filter @thepick/web e2e:mock-server',
+      url: 'http://localhost:8787/__mock/health',
+      reuseExistingServer: !CI,
+      timeout: 30_000,
+      stdout: CI ? 'pipe' : 'ignore',
+      stderr: 'pipe',
+    },
+  ],
 });
