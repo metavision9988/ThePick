@@ -75,12 +75,36 @@ search/` 신규 모듈, 기존 경로 **미변경** — Engine-First 격리)
 - Workers CPU budget 측정값이 free tier 초과 시 paid 전제 or 옵션 B 폴백 —
   S3에서 판정, 진산 보고
 
-## 6. 진산 승인 체크포인트
+### 5.1 4-Pass 독립 리뷰 carry-over (S5 검색 라우터 통합 결재 선결 조건)
 
-- [ ] PoC 범위 축소(검색 통합 제외, 엔진 단독)에 동의?
-- [ ] PITR 옵션 A(`WITH RECURSIVE`) 1순위 채택에 동의?
-- [ ] Binary Gate G1~G6 기준에 동의 (특히 G5 CPU budget 값 / G4 결과 cap 값은
-      S1에서 진산과 확정)?
-- [ ] S0 승인 시 다음 Session Block에서 S1 진입?
+PoC S4 4-Pass 독립 3-에이전트 리뷰 결과. CRITICAL C-1(재귀 CTE 경로
+폭발)은 **본 PoC에서 수정 + 회귀 게이트로 입증 완료**(`(node_id,depth)`
+UNION dedup, 프론티어 ≤ N×(maxDepth+1)). 잔여는 S5 통합 전 선결:
 
-> **본 plan은 실행 계획이지 실행이 아니다. 진산 승인(S0) 전 코드 0줄.**
+- **CO-1**: 실 Cloudflare D1 + Workers 환경에서 `WITH RECURSIVE` + maxDepth=
+  MAX_ALLOWED_DEPTH + 최고차수 실시드 CPU 실측 (PoC 는 in-memory node:sqlite —
+  실 budget 미검증. G5/회귀 게이트는 "구조적 bounded 입증"까지)
+- **CO-2**: `ORDER BY depth, id` 결정성이 실 D1 collation + 한글/혼합 ID 에서
+  node:sqlite 와 동일한지 라이브 1회 대조 (golden 은 node:sqlite 결정성만 증명)
+- **CO-3**: truncated 시 노드 보존 정책 — 현재 "가까운 hop 우선(ORDER BY)".
+  RAG 주입 시 truth_weight 가중 보존으로 재검토
+- **CO-4**: approved 판정 진실원 — graph-walk 는 user-search.ts:432-445 와
+  동일 `status_transitions` 경로 (NEW drift 0). 통합 시 단일 진실원 재확인
+
+## 6. 진산 승인 체크포인트 — S0 승인 완료 (2026-05-15)
+
+- [x] PoC 범위 축소(검색 통합 제외, 엔진 단독)에 동의 — 진산 "승인 진행해줘"
+- [x] PITR 옵션 A(`WITH RECURSIVE`) 1순위 채택에 동의
+- [x] Binary Gate G1~G6 기준에 동의 (G4 resultCap 기본 50 / G5 in-memory
+      sane-bound 250ms — 실 Workers budget 은 CO-1 로 carry-over)
+- [x] S0 승인 → S1~S4 완료. **S5 통합은 §5.1 CO-1~4 선결 후 별도 결재**
+
+### 진행 기록
+
+- S0 ✅ 진산 승인 (2026-05-15)
+- S1~S3 ✅ golden 시드 + 옵션 A 구현 + Binary Gate **21 PASS** (typecheck/lint clean)
+- S4 ✅ 4-Pass 독립 3-에이전트 — CRITICAL C-1 발견 → 본 PoC 내 수정 + 회귀
+  게이트 입증. 잔여 §5.1 CO-1~4 = S5 선결
+- S5 ⏸️ 검색 라우터 통합 — **별도 진산 결재** (CO-1~4 선결)
+
+> **본 plan §1 OUT(검색 통합)은 미진입. 엔진 단독 PoC 까지만 완료.**

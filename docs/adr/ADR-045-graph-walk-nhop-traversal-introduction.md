@@ -1,7 +1,7 @@
 # ADR-045: Graph walk (knowledge_edges N-hop 순회) 런타임 도입 — T1 격상
 
-- **상태:** Accepted (방향 결정) / 구현은 **L3 plan 진산 승인 대기**
-- **결정일:** 2026-05-15 (G-AUDIT Round 2.5, 진산 결재-3)
+- **상태:** Accepted / **S0 진산 승인 2026-05-15** / PoC S1~S4 완료 (엔진 단독). S5 검색 라우터 통합은 별도 결재 (4-Pass carry-over 3건 선결)
+- **결정일:** 2026-05-15 (G-AUDIT Round 2.5, 진산 결재-3) / S0 plan 승인 2026-05-15 ("승인 진행해줘")
 - **결정자:** Claude Opus 4.7 (실코드 검증 CRIT-4 확증) + 외부 3-Layer 합의 (T1 즉시 권고) + 진산 (T1 격상 결재)
 - **관련 영역:** ★ **L3 코어 엔진** (Graph RAG = 프로젝트 북극성) — `apps/api/src/search/`, `migrations/`
 - **선결 조건:** `docs/plans/graph-walk-poc.plan.md` 진산 승인 (L3 게이트, 본 ADR은 코딩을 승인하지 않음)
