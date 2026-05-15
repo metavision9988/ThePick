@@ -82,15 +82,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 (ESLint + Prettier 도입 시 업데이트)
 
-## 현재 상태
+## 현재 상태 (2026-05-15 기준 — 3축 분리)
 
-- VOID DEV HARNESS 설정 완료 (Session Monitor + 4-Pass Auto Review 포함)
-- 기획 문서 9종 분석 → 구현 재정립서 v2.0 작성 완료 (프론트엔드/PWA/확장성 포함)
-- 기획 원본 문서는 `docs/plans/`로 이동
-- Phase 0 착수 대기 (DB 스키마 + PWA 셸부터)
+> ⚠️ 본 섹션은 2026-04-16~2026-05-15 약 1개월 stale였고, 그 사이 G-AUDIT 외부 검토
+> 체인의 거짓 전제 2건(CRIT-2/3)을 유발한 단일 오염원이었다. 갱신 경위·검증:
+> `docs/Graph_RAG+Graph_Walk/REMEDIATION 타당성 검증 — Claude Code 실코드 대조 v1.0.md`.
+> **이 섹션은 handoff/WBS 갱신 시 동기 의무 (오염 재발 방지).**
+
+- **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
+  마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),
+  Worker 배포, 인증/login_history smoke PASS, ADR-034/035/036 retrofit.
+- **콘텐츠 축**: BATCH-1~7 + L1/L2(법령) + R1/R2(개정) **production 적재 완료**
+  (Session 041~045). 누적 ≈ knowledge_nodes 794 / knowledge_edges ~1274 /
+  formulas 157 / constants 193 / exam_questions 545.
+  - 출처: `docs/plans/batch-loadmap.md:41~78,148` per-BATCH "production 적재 완료"
+    기록 + 산술 검산(75+118+84+123+98+70+20+84+65+24+26+6+1=794) + handoff
+    066/068/069 3건 교차확인. 전부 status='draft' 강제 적재(인간 검수 전).
+  - ⚠️ **라이브 D1 count 미실행**(Cloudflare 인증=진산 통제 자격증명).
+    `wrangler d1 execute thepick-db-production --remote "SELECT COUNT(*)..."`
+    1회 직접 실행 후 본 수치 확정은 후속 권고(REMEDIATION 검증 §2.2 W2).
+- **실 평가 축 (미완)**: Phase 2 Eval MVP baseline·검색 품질·multi-hop 정답률
+  **미측정**. Graph walk **미구현** — knowledge_edges ~1274 적재됐으나 런타임
+  검색 경로가 엣지를 순회하지 않음(단일 노드 벡터 조회 + Truth Weight 재정렬).
+  현 시점 사실상 Vector RAG. ★ 진짜 핵심 잔여 위험(REMEDIATION 검증 CRIT-4).
+- **다음 진입 조건**: 진산 결재 5건 처리 중 — 결재-2(본 갱신) 완료. 잔여
+  결재-3(Graph walk T1, L3 plan 선행)·4(REMEDIATION 처리계획)·5(Pattern A ADR).
 
 ## 최근 실수
 
 - 2026-04-12: ARCHITECTURE.md + 구현 설계서 작성 후 4-Pass 자동 리뷰를 실행하지 않음. 사용자 지적 후 셀프 점검에서 7건 발견(IndexedDB≠D1 혼동, 배치 흐름 순서 오류 등). → review-reminder.sh Stop Hook 추가로 재발 방지
 - 2026-04-12: 세션 모니터 Hook이 4시간 동안 경고를 주지 않음. 원인: stderr 출력이 사용자에게 안 보임 + 대화 중간 점검 메커니즘 부재. → stdout 출력 + exit 2 + session-health.md 규칙 추가
 - 2026-04-12: 4-Pass 자가 리뷰에서 0건 보고 → 독립 다각도 리뷰에서 CRITICAL 9건 + MAJOR 10건 발견. 원인 5가지: (1) 자기 확인 편향 — 코드 작성자=리뷰어라 의도를 기억하고 문제를 못 봄, (2) 스코프 축소 — 변경 파일만 검사하고 연관 파일 무시, (3) N/A=통과 착각, (4) 분석 깊이 부족 — 테스트 통과에 안심, (5) 독립성 제로. → 대책: 독립 에이전트 리뷰 의무화 + 증거 기반 보고 + 반론 의무 + auto-review-protocol.md 전면 개정
+- 2026-05-15: G-AUDIT 외부 감사 보고서 §12 핵심정정 #2에서 "knowledge_nodes 미적재 / vectorCount=topic_cluster·smoke"로 단정 → 사실은 BATCH-1~7 production 적재 완료(794 노드). 원인: stale한 본 CLAUDE.md "현재 상태"(Phase 0)만 신뢰하고 `docs/plans/batch-loadmap.md`를 미열람(스코프 축소). 이 1차 환각이 외부 Review B+C(코드 미열람)→REMEDIATION CRIT-2/3로 5-Layer 연쇄 증폭. 차단: 진산이 처리계획 진입 전 "타당성 검증" 게이트 지시 → Claude Code 실코드 대조로 거짓 전제 발견. → 대책: (1) "현재 상태" 섹션을 handoff/WBS 갱신 시 동기 의무화, (2) 외부 SPDP 결과는 실코드 대조 Cycle-Closure로 닫는 패턴 영속(REMEDIATION 검증 §4 메타교훈), (3) 루트 문서 stale = 모든 하위 작업 진앙 — 30일+ 미갱신 감지 시 환기
