@@ -105,6 +105,10 @@ UNION dedup, 프론티어 ≤ N×(maxDepth+1)). 잔여는 S5 통합 전 선결:
 - S1~S3 ✅ golden 시드 + 옵션 A 구현 + Binary Gate **21 PASS** (typecheck/lint clean)
 - S4 ✅ 4-Pass 독립 3-에이전트 — CRITICAL C-1 발견 → 본 PoC 내 수정 + 회귀
   게이트 입증. 잔여 §5.1 CO-1~4 = S5 선결
-- S5 ⏸️ 검색 라우터 통합 — **별도 진산 결재** (CO-1~4 선결)
+- S5 ⏸️ 검색 라우터 통합 — **별도 진산 결재**. S5 L3 plan 작성 완료
+  (`docs/plans/graph-walk-s5-integration.plan.md`, Session 086):
+  CO-4 ✅ 해소(진실원 동일 코드 대조, drift 0) / CO-3 ✅ 해소(정책 권고:
+  graph-walk 최종 랭킹 미결정, 기존 Stage 3 단일 진실원) / CO-1·CO-2 ⏸️
+  Cloudflare 인증 게이트로 승격 → S5 plan §6 진산 결재 대기
 
 > **본 plan §1 OUT(검색 통합)은 미진입. 엔진 단독 PoC 까지만 완료.**

@@ -97,16 +97,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   formulas 157 / constants 193 / exam_questions 545.
   - 출처: `docs/plans/batch-loadmap.md:41~78,148` per-BATCH "production 적재 완료"
     기록 + 산술 검산(75+118+84+123+98+70+20+84+65+24+26+6+1=794) + handoff
-    066/068/069 3건 교차확인. 전부 status='draft' 강제 적재(인간 검수 전).
-  - ⚠️ **라이브 D1 count 미실행**(Cloudflare 인증=진산 통제 자격증명).
-    `wrangler d1 execute thepick-db-production --remote "SELECT COUNT(*)..."`
-    1회 직접 실행 후 본 수치 확정은 후속 권고(REMEDIATION 검증 §2.2 W2).
-- **실 평가 축 (미완)**: Phase 2 Eval MVP baseline·검색 품질·multi-hop 정답률
-  **미측정**. Graph walk **미구현** — knowledge_edges ~1274 적재됐으나 런타임
-  검색 경로가 엣지를 순회하지 않음(단일 노드 벡터 조회 + Truth Weight 재정렬).
-  현 시점 사실상 Vector RAG. ★ 진짜 핵심 잔여 위험(REMEDIATION 검증 CRIT-4).
-- **다음 진입 조건**: 진산 결재 5건 처리 중 — 결재-2(본 갱신) 완료. 잔여
-  결재-3(Graph walk T1, L3 plan 선행)·4(REMEDIATION 처리계획)·5(Pattern A ADR).
+    066/068/069 3건 교차확인.
+  - ✅ **라이브 D1 count 확정** (2026-05-15 Session 086, 진산 6-A 인증 위임):
+    `wrangler d1 execute thepick-db-production --remote` 실행 — knowledge_nodes
+    **794** / knowledge_edges **1274**(전부 is_active=1) / formulas 157 /
+    constants 193 / exam_questions 545. 산술검산·handoff와 전부 일치. W2 해소.
+    근거: `docs/plans/graph-walk-s5-co1-co2-measurement.md` §0.
+  - 적재는 status='draft' 강제였으나 라이브 확인 결과 **approved 488/794**
+    (status_transitions 전이). routes.ts:117 "production approved 0건" 주석은
+    stale (S5-3 정정 예정).
+- **실 평가 축 (진행)**: Phase 2 Eval MVP baseline·multi-hop 정답률 **미측정**.
+  Graph walk **PoC 엔진 완료**(S0~S4, 21 PASS, 검색 라우터 미통합=Engine-First
+  격리) → **S5 통합 진산 결재 완료**(2026-05-15: 옵션 C 독립 엔드포인트).
+  S5-1 실 D1 측정 완료(CO-2 해소, CO-1 조건부). 통합 미완 = 현 시점 여전히
+  사실상 Vector RAG. ★ REMEDIATION 검증 CRIT-4 — S5-2 이하 진행 중.
+- **다음 진입 조건**: Graph walk S5-2~S5-6 진행 — 결재 상신 D-1(edge_type
+  화이트리스트 범위=북극성)·D-2(CPU 정책). 잔여 REMEDIATION carry-over
+  (CRIT-5 L3 Year2, B-1~4 Tier3) + Step 3-UX-7b distractor BATCH(L3).
 
 ## 최근 실수
 

@@ -630,8 +630,15 @@ gantt
 - 검증 (`1f34b0d`): apps/api **571 PASS** / web typecheck PASS / lint PASS(src+e2e) / chromium 12 PASS / 회귀 0
 - 잔여 Year 2 carry-over: multi-tenant `X-Test-Session` isolation, `requireExamId` → exam-adapter 추출, fixture per-exam 분리, endpoint contract single source (ADR-040 §8.3)
 
+### Phase 2 Graph walk S5 통합 결재 + S5-1 실 D1 측정 (Session 086)
+
+- Session 085 (`dc3915c`): Graph walk PoC 엔진 S0~S4 (21 PASS, Engine-First 격리, 4-Pass C-1 흡수) — handoff-085 정합
+- Session 086 (본 commit): **S5 통합 L3 plan + S5-0 진산 결재**(옵션 C 독립 엔드포인트, 인증 위임) + **S5-1 실 Cloudflare D1 측정**(read-only, 무변경 재검증) — CO-1~4 전부 해소(CO-4 진실원 동일/CO-3 Stage3 단일진실원/CO-2 ASCII 결정적/CO-1 MATERIALIZED+MAX_DEPTH 5→4) + D-1 결재(화이트리스트 12종) + D-2(MATERIALIZED)
+- 부수: 라이브 D1 794노드/1274엣지 확정 → G-AUDIT "0건" 라이브 반증, CLAUDE.md W2 carry-over 해소, production approved 488 발견(routes.ts:117 stale 식별)
+- 잔여: S5-2(공통 approvedNodesCTE)~S5-6(baseline 보고) 다음 세션 — 추가 결재 불요(승인 plan 범위)
+
 ---
 
-**작성**: Session 035 (Claude Opus 4.7 1M context) → Session 039 갱신 → **Session 069 종착 본격 sync** (§0 + §1 + §2 + §4 + §6 + §7 — Phase 2/2.5/3 chain 30 세션 milestone 흡수) → **Session 078 footer sync** (ADR-040 server contract chain Session 077~078 milestone 흡수, handoff-084 정합)
-**다음 갱신**: Session 085+ — §3 Cat 9/10 누적 + §5 Devil's Advocate Ledger Phase 2/3 신규 TD + master-test-checklist v3 + §0 Executive Summary Session 070~078 reconstruction
-**일자**: 2026-05-02 ~ 2026-05-14 KST
+**작성**: Session 035 (Claude Opus 4.7 1M context) → Session 039 갱신 → **Session 069 종착 본격 sync** (§0 + §1 + §2 + §4 + §6 + §7 — Phase 2/2.5/3 chain 30 세션 milestone 흡수) → **Session 078 footer sync** (ADR-040 server contract chain Session 077~078 milestone 흡수, handoff-084 정합) → **Session 086 footer sync** (Graph walk S5 결재 + S5-1 측정 milestone 흡수, handoff-086 정합)
+**다음 갱신**: Session 087+ — Graph walk S5-2~S5-6 chain 흡수 + §3 Cat 9/10 누적 + §5 Devil's Advocate Ledger Phase 2/3 신규 TD + master-test-checklist v3 + §0 Executive Summary Session 070~078 reconstruction
+**일자**: 2026-05-02 ~ 2026-05-15 KST
