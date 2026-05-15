@@ -623,8 +623,15 @@ gantt
 - admin login_history 조회 API
 - 5-페르소나 P-α/β/γ/δ/ε MINOR 16 dedupe 매트릭스
 
+### Phase 3 Step 3-UX-6c server contract chain (Session 077~078) — ADR-040
+
+- Session 077 (`588acfb`+`1559c9c`): ADR-040 §7 B-1 옵션 (iii) 별도 Hono mock server (cross-origin) 흡수 + §8.2 production CORS single source (`packages/shared/src/constants/cors.ts`) — 5-페르소나 backend C1+C2+C3+M2 해소, WebKit QuestionCard PASS 영속
+- Session 078 (`1f34b0d`): ADR-040 §8.1 잔여 매트릭스 #3~#8 6건 흡수 — fail-loud 강화 묶음 (workers:1 / `__mock` 정적 0건 / SameSite=None+Secure 4 테스트 / listener cleanup / e2e ESLint type-aware / webServer timeout hoist). §8.1 매트릭스 잔여 0.
+- 검증 (`1f34b0d`): apps/api **571 PASS** / web typecheck PASS / lint PASS(src+e2e) / chromium 12 PASS / 회귀 0
+- 잔여 Year 2 carry-over: multi-tenant `X-Test-Session` isolation, `requireExamId` → exam-adapter 추출, fixture per-exam 분리, endpoint contract single source (ADR-040 §8.3)
+
 ---
 
-**작성**: Session 035 (Claude Opus 4.7 1M context) → Session 039 갱신 → **Session 069 종착 본격 sync** (§0 + §1 + §2 + §4 + §6 + §7 — Phase 2/2.5/3 chain 30 세션 milestone 흡수)
-**다음 갱신**: Session 070+ — §3 Cat 9/10 누적 + §5 Devil's Advocate Ledger Phase 2/3 신규 TD + master-test-checklist v3
-**일자**: 2026-05-02 ~ 2026-05-12 KST
+**작성**: Session 035 (Claude Opus 4.7 1M context) → Session 039 갱신 → **Session 069 종착 본격 sync** (§0 + §1 + §2 + §4 + §6 + §7 — Phase 2/2.5/3 chain 30 세션 milestone 흡수) → **Session 078 footer sync** (ADR-040 server contract chain Session 077~078 milestone 흡수, handoff-084 정합)
+**다음 갱신**: Session 085+ — §3 Cat 9/10 누적 + §5 Devil's Advocate Ledger Phase 2/3 신규 TD + master-test-checklist v3 + §0 Executive Summary Session 070~078 reconstruction
+**일자**: 2026-05-02 ~ 2026-05-14 KST
