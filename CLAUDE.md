@@ -140,6 +140,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   measurement.md §3.1 각주) in-scope. carry-over: CO-6a-1~4(plan §5b) +
   S5-7=A 통합 결재(자율 금지). 잔여 REMEDIATION (CRIT-5 L3 Year2, B-1~4
   Tier3) + Step 3-UX-7b distractor BATCH(L3).
+  - ✅ **S5-7 결재 자료 작성 완료** (2026-05-16, 코드 무변경, 미커밋):
+    `docs/plans/graph-walk-s5-7-a-integration.plan.md` — 통합지점
+    (routes.ts:111-142 Stage 2.5) / 회귀표면 / CPU예산 / PITR 3안(A-3
+    섀도→A-2 플래그→전량 권고) / CO 통합원장(CO7-1·3 선결·CO7-2·4·5·
+    L-1·CO-6a-3·Pass2 m-2) / Binary Gate G-S7-1~6 / **§7 ROI/GO = G-S5
+    실측 의존 조건부(미정)**. 진산 결재 §8(통합방식·선결순서·L-1·GO).
+    **A 코드 착수 = §7 GO + 별도 결재 후** (자율 금지 영속).
 
 ## 최근 실수
 
