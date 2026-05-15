@@ -101,6 +101,8 @@ export interface GraphWalkNode {
   readonly depth: number;
   readonly type: string;
   readonly name: string;
+  /** 노드 본문 — UserSearchHit 동형(잉여 2차 조회 제거, S5-5 CO6-1). 없으면 null. */
+  readonly description: string | null;
   readonly truthWeight: number;
   /** 출처 추적 (source citation requirement) — 없으면 null. */
   readonly pageRef: string | null;
@@ -139,6 +141,7 @@ interface WalkRow {
   readonly depth: number;
   readonly type: string;
   readonly name: string;
+  readonly description: string | null;
   readonly truth_weight: number;
   readonly page_ref: string | null;
 }
@@ -205,9 +208,18 @@ export async function graphWalk(
   //   cycle 안전 = depth 단조 증가 + `w.depth < maxDepth` 종료 (path guard 불요)
   //   → 노드 ID 의 '/' 포함 여부와 무관 (구 instr 가드의 M-2 결함 동시 소멸).
   //   LIMIT 은 최종 SELECT 결과 cap. CTE 자체가 이미 N×depth 로 bounded.
+  // S5-5 CO6-1: `description` 를 projection 에 포함 → 호출 측(graph-search-route)
+  // 의 잉여 2차 fetchApprovedNodes(windowed scan) 제거 (subrequest -1, 측정
+  // 비용 정확). approved CTE 가 이미 MATERIALIZED 라 컬럼 추가 비용은 무시 가능.
+  //
+  // ★ S5-5 Pass2 Devil's Advocate 흡수: 최종 SELECT 의 description 은 GROUP BY
+  //   key 가 아니라 `MIN(a3.description)` 집계다. GROUP BY 가 id(PK)+FD 컬럼이라
+  //   그룹 내 description 은 전부 동일 → MIN 은 그 값을 정확 반환(동치)하면서,
+  //   긴 법령 본문 텍스트를 group-key 비교에서 제외해 D-2(measurement.md §3.1
+  //   depth4=41.5ms free 50ms) CPU 마진 잠식을 차단(측정 무결성 직결).
   const approvedCte = buildApprovedNodesMaterializedCte(
     'approved',
-    'kn.id AS id, kn.type AS type, kn.name AS name, kn.truth_weight AS truth_weight, kn.page_ref AS page_ref',
+    'kn.id AS id, kn.type AS type, kn.name AS name, kn.description AS description, kn.truth_weight AS truth_weight, kn.page_ref AS page_ref',
   );
   const sql = `
     WITH RECURSIVE ${approvedCte},
@@ -224,7 +236,8 @@ export async function graphWalk(
         AND e.edge_type IN (${edgePlaceholders})
     )
     SELECT a3.id AS id, MIN(w.depth) AS depth, a3.type AS type,
-           a3.name AS name, a3.truth_weight AS truth_weight, a3.page_ref AS page_ref
+           a3.name AS name, MIN(a3.description) AS description,
+           a3.truth_weight AS truth_weight, a3.page_ref AS page_ref
     FROM walk w
     JOIN approved a3 ON a3.id = w.node_id
     WHERE w.node_id <> ?
@@ -268,6 +281,7 @@ export async function graphWalk(
       depth: r.depth,
       type: r.type,
       name: r.name,
+      description: r.description ?? null,
       truthWeight: r.truth_weight,
       pageRef: r.page_ref ?? null,
     })),

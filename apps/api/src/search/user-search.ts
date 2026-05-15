@@ -151,13 +151,23 @@ export class UserSearchError extends Error {
   }
 }
 
-export interface ApprovedNodeRow {
+/**
+ * `buildHit` 가 실제로 소비하는 최소 필드 — status/is_current_active 는 미사용.
+ *
+ * S5-5 CO6-1: graph-walk 확장 노드(`GraphWalkNode`)도 이 형태로 매핑되어
+ * `buildHit` 단일 진실원을 *공유*한다 (잉여 2차 fetchApprovedNodes 제거). 즉
+ * hit 구성(truth_weight 도출·page_ref 정규화)이 정상 Stage 3 와 한 곳.
+ */
+export interface NodeHitSource {
   readonly id: string;
   readonly type: string;
   readonly name: string;
   readonly description: string | null;
   readonly page_ref: string | null;
   readonly truth_weight: number;
+}
+
+export interface ApprovedNodeRow extends NodeHitSource {
   readonly status: string;
   readonly is_current_active: number;
 }
@@ -322,9 +332,14 @@ export function compareByTruthWeightThenScore(a: UserSearchHit, b: UserSearchHit
   return b.score - a.score;
 }
 
-export function buildHit(row: ApprovedNodeRow, score: number): UserSearchHit {
+export function buildHit(row: NodeHitSource, score: number): UserSearchHit {
   const nodeType = row.type as NodeType;
-  const truthWeight = TRUTH_WEIGHTS[nodeType] ?? row.truth_weight;
+  // S5-5 CO6-4(e): truth_weight 정렬 안전 가드. TRUTH_WEIGHTS 미등록 type +
+  // row.truth_weight 가 NULL/NaN(D1 REAL 결측·graph 확장이 노출 확대) 이면
+  // `compareByTruthWeightThenScore` 의 `!==`/뺄셈이 NaN 으로 정렬 불능 →
+  // baseline 정답률 왜곡. `?? 0` 만으로 NaN 미차단이라 Number.isFinite 로 0 폴백.
+  const rawTruthWeight = TRUTH_WEIGHTS[nodeType] ?? row.truth_weight;
+  const truthWeight = Number.isFinite(rawTruthWeight) ? rawTruthWeight : 0;
   return {
     id: row.id,
     score,

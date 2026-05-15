@@ -14,7 +14,8 @@
  *   1. `searchKnowledgeNodesForUser` (Stage 1 Vector → 2 approved → 3 re-rank)
  *      = vector-only **baseline** (그대로 응답에 포함 → S5-6 A/B 비교 격리).
  *   2. baseline approved 시드에서 `graphWalk` N-hop 확장 (graph-walk 모듈 불변).
- *   3. 확장 노드 approved 데이터 `fetchApprovedNodes` (S5-2 단일 진실원 SQL).
+ *   3. 확장 노드 = graph-walk projection(S5-2 단일 진실원 SQL + description
+ *      동봉, CO6-1) 을 `NodeHitSource` 로 직접 매핑 — **2차 조회 없음**.
  *   4. baseline + 확장 병합 → `compareByTruthWeightThenScore`
  *      (**Stage 3 단일 진실원 공유** — graph-walk 2차 truth_weight 정책 금지,
  *      CO-3). graph-walk 은 hop-distance 로 recall bound 만 책임.
@@ -36,7 +37,6 @@ import {
   embedQuery,
   searchKnowledgeNodesForUser,
   buildHit,
-  fetchApprovedNodes,
   compareByTruthWeightThenScore,
   UserSearchError,
   DEFAULT_RESULT_TOP_K,
@@ -46,6 +46,7 @@ import {
   type UserSearchResult,
   type VectorizeQueryBinding,
   type UserSearchD1,
+  type NodeHitSource,
 } from './user-search.js';
 import {
   graphWalk,
@@ -53,6 +54,7 @@ import {
   MAX_ALLOWED_DEPTH,
   MAX_ALLOWED_RESULT_CAP,
   type GraphWalkD1,
+  type GraphWalkNode,
 } from './graph-walk/index.js';
 import type { AiBinding } from '../vectorize/upserter.js';
 import { getClientIp, type RateLimiter } from '../auth/rate-limit.js';
@@ -92,6 +94,12 @@ interface GraphExpansionMeta {
   readonly reason?: 'no_approved_seed';
   readonly seedWalkCount: number;
   readonly expandedNodeCount: number;
+  /**
+   * 시드 walk 중 하나라도 resultCap 초과로 절단됐는가 (S5-5 CO6-2).
+   * silent 절단된 부분집합에서 정답률을 재면 baseline 이 왜곡되므로 측정
+   * 무결성 상 반드시 surface — true 면 해당 baseline 표본은 절단 보정 필요.
+   */
+  readonly truncated: boolean;
   readonly maxDepth: number;
   readonly resultCap: number;
   readonly edgeTypeWhitelist: ReadonlyArray<string>;
@@ -137,6 +145,26 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
     }
 
     const env = c.env.ENVIRONMENT ?? 'production';
+    const logger = createLogger({
+      service: 'thepick-api',
+      environment: env as LoggerEnvironment,
+    });
+    // S5-5 CO6-3: 성공 경로도 elapsed 측정 — silent degradation(상태 회귀로
+    // expansion 0, 절단) 을 on-call/측정에서 관측 가능하게. 측정 무결성 직결.
+    const startedAt = Date.now();
+    const logOk = (meta: GraphExpansionMeta): void => {
+      logger.info('graph_search_ok', {
+        module: 'search/graph',
+        examId,
+        applied: meta.applied,
+        reason: meta.reason,
+        seedWalkCount: meta.seedWalkCount,
+        expandedNodeCount: meta.expandedNodeCount,
+        truncated: meta.truncated,
+        elapsedMs: Date.now() - startedAt,
+      });
+    };
+
     try {
       const deps: UserSearchDeps = {
         ai: c.env.AI,
@@ -165,6 +193,7 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
           reason: 'no_approved_seed',
           seedWalkCount: 0,
           expandedNodeCount: 0,
+          truncated: false,
           maxDepth: maxDepth ?? 0,
           resultCap: resultCap ?? 0,
           edgeTypeWhitelist: [],
@@ -177,14 +206,27 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
           graphExpansion: meta,
           results: baseline.results,
         };
+        logOk(meta);
         return c.json(resp);
       }
 
       // 2. 각 시드 N-hop 확장. graph-walk 실패는 전파 (빈 결과로 삼키지 않음).
-      const expandedIds = new Set<string>();
+      //
+      //    ★ mid-loop 실패 계약 (S5-5 CO6-4(c) — 명시 pin): 5-seed 중 임의
+      //    시드의 graphWalk 가 throw 하면 부분 확장으로 degrade 하지 않고
+      //    **fail-loud** (전파 → catch → 5xx). graph-walk 모듈 교리("빈
+      //    결과로 삼키지 않는다", index.ts:252)와 정합 — 부분 확장 집합에서
+      //    정답률을 재면 baseline 측정이 silent 왜곡되므로, 측정 무결성 상
+      //    부분 성공 < 전체 실패. (S5-7 A 통합 시 학습자 UX 차원에서
+      //    per-seed graceful 재검토 가능 — 현 옵션 C 측정 경로는 fail-loud.)
+      //
+      //    확장 노드는 GraphWalkNode 그대로 dedup(Map) — S5-5 CO6-1: graph-walk
+      //    projection 이 description 동봉 → 잉여 2차 fetchApprovedNodes 제거.
+      const expandedNodes = new Map<string, GraphWalkNode>();
       let effectiveMaxDepth = 0;
       let effectiveResultCap = 0;
       let edgeTypeWhitelist: ReadonlyArray<string> = [];
+      let anyTruncated = false;
       for (const seed of seeds) {
         const walk = await graphWalk(examId, walkDb, seed.id, {
           ...(maxDepth !== undefined ? { maxDepth } : {}),
@@ -194,26 +236,43 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
         effectiveMaxDepth = walk.maxDepth;
         effectiveResultCap = walk.resultCap;
         edgeTypeWhitelist = walk.edgeTypeWhitelist;
+        // S5-5 CO6-2: 어느 시드든 절단되면 표면화 (silent 절단 차단).
+        if (walk.truncated) anyTruncated = true;
         for (const n of walk.nodes) {
-          if (!baselineIds.has(n.id)) expandedIds.add(n.id);
+          // baseline 교집합 노드는 baseline hit(실 vector score)이 우선 →
+          // 확장에서 제외 (CO6-4(a) — 충돌 시 baseline 보존). 시드 간 중복은
+          // Map 키로 1회 collapse.
+          if (!baselineIds.has(n.id) && !expandedNodes.has(n.id)) {
+            expandedNodes.set(n.id, n);
+          }
         }
       }
 
-      // 3. 확장 노드 approved 데이터 (S5-2 단일 진실원 SQL). description 등
-      //    UserSearchHit 동형 필드 확보 위해 재조회 (graph-walk 은 description 미반환).
-      const expandedRows =
-        expandedIds.size > 0 ? await fetchApprovedNodes(deps.db, [...expandedIds]) : [];
+      // 3. 확장 노드 → hit. buildHit 단일 진실원 공유(CO-3) — graph-walk 노드를
+      //    NodeHitSource 로 매핑(2차 DB 조회 없음, CO6-1). 확장 노드 vector
+      //    score=0 (graph 관계로 편입 — truth_weight 가 정렬 지배, score 는
+      //    동 weight tiebreak 만).
+      const expandedHits = [...expandedNodes.values()].map((n) => {
+        const src: NodeHitSource = {
+          id: n.id,
+          type: n.type,
+          name: n.name,
+          description: n.description,
+          page_ref: n.pageRef,
+          truth_weight: n.truthWeight,
+        };
+        return buildHit(src, 0);
+      });
 
-      // 4. 병합 + Stage 3 단일 진실원 재정렬 (CO-3). 확장 노드 vector score=0
-      //    (graph 관계로 편입 — truth_weight 가 정렬 지배, score 는 동 weight
-      //    tiebreak 만). baseline hit 은 실 vector score 보존(중복 시 baseline 우선).
-      const expandedHits = expandedRows.map((row) => buildHit(row, 0));
+      // 4. 병합 + Stage 3 단일 진실원 재정렬 (CO-3). baseline hit 은 실 vector
+      //    score 보존(교집합은 위에서 baseline 우선 처리 → 중복 없음).
       const merged = [...baseline.results, ...expandedHits].sort(compareByTruthWeightThenScore);
 
       const meta: GraphExpansionMeta = {
         applied: true,
         seedWalkCount: seeds.length,
-        expandedNodeCount: expandedIds.size,
+        expandedNodeCount: expandedNodes.size,
+        truncated: anyTruncated,
         maxDepth: effectiveMaxDepth,
         resultCap: effectiveResultCap,
         edgeTypeWhitelist,
@@ -226,16 +285,13 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
         graphExpansion: meta,
         results: merged.slice(0, baseline.topK),
       };
+      logOk(meta);
       return c.json(resp);
     } catch (err) {
       // fail-loud — graph-walk / user-search 실패 전파 (빈 결과 은폐 금지).
       const isDev = env === 'dev' || env === 'development' || env === 'test';
       const cause = (err as { cause?: unknown }).cause;
       const causeName = cause instanceof Error ? cause.name : undefined;
-      const logger = createLogger({
-        service: 'thepick-api',
-        environment: env as LoggerEnvironment,
-      });
 
       if (err instanceof GraphWalkError) {
         logger.error('graph_search_walk_failed', undefined, {
@@ -243,6 +299,7 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
           phase: err.phase,
           examId,
           causeName,
+          elapsedMs: Date.now() - startedAt,
         });
         return c.json(
           {
@@ -260,6 +317,7 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
           examId,
           errMessage: err.message,
           causeName,
+          elapsedMs: Date.now() - startedAt,
         });
         return c.json(
           {
@@ -270,14 +328,16 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
           err.statusCode === 504 ? 504 : 500,
         );
       }
-      // 미지정(non-typed) 에러 — embedQuery(Workers AI)/확장 fetchApprovedNodes/
-      // buildHit 등은 GraphWalkError/UserSearchError 가 아닌 raw throw 가능.
+      // 미지정(non-typed) 에러 — embedQuery(Workers AI)/graph-walk D1/buildHit
+      // 등은 GraphWalkError/UserSearchError 가 아닌 raw throw 가능 (CO6-1 후
+      // 확장 경로 2차 조회 없음 — graph-walk projection 직접 매핑).
       // rethrow 전 구조화 로그 의무 (S5-5 devops M-1 — on-call 사각 + S5-6
       // 측정 무결성: 무로그 bare 500 = 원인 분기 불가). cause 만 surface.
       logger.error('graph_search_unhandled', undefined, {
         module: 'search/graph',
         examId,
         causeName: err instanceof Error ? err.name : undefined,
+        elapsedMs: Date.now() - startedAt,
       });
       throw err;
     }

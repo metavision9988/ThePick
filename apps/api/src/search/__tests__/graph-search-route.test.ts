@@ -211,6 +211,122 @@ describe('/api/search/graph route', () => {
     expect(body.graphExpansion.edgeTypeWhitelist).not.toContain('SUPERSEDES');
   });
 
+  it('CO6-1 — 확장 노드가 description 동봉 (잉여 2차 fetchApprovedNodes 제거 입증)', async () => {
+    await insertApproved(backend.db, 'SEED-D', 'LAW', 10);
+    await insertApproved(backend.db, 'EXP-D', 'CONCEPT', 5);
+    await insertEdge(backend.db, 'SEED-D', 'EXP-D', 'DEPENDS_ON');
+    env = {
+      DB: backend.db,
+      VECTORIZE: makeMockVectorize([{ id: 'SEED-D', score: 0.9, metadata: {} }]),
+      AI: makeMockAi(),
+      ENVIRONMENT: 'test',
+    };
+    const res = await post({ examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: 'q', topK: 5 });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      results: Array<{ id: string; description: string | null }>;
+    };
+    const exp = body.results.find((h) => h.id === 'EXP-D');
+    // insertApproved 는 description = `desc-${id}` 적재 → graph-walk projection
+    // 이 description 을 실어와 buildHit 에 그대로 전달됐음을 입증 (2차 조회 X).
+    expect(exp?.description).toBe('desc-EXP-D');
+  });
+
+  it('CO6-2 — resultCap 초과 시 graphExpansion.truncated=true surface (silent 절단 차단)', async () => {
+    await insertApproved(backend.db, 'SEED-T', 'LAW', 10);
+    await insertApproved(backend.db, 'EXP-T1', 'CONCEPT', 5);
+    await insertApproved(backend.db, 'EXP-T2', 'CONCEPT', 5);
+    await insertEdge(backend.db, 'SEED-T', 'EXP-T1', 'DEPENDS_ON');
+    await insertEdge(backend.db, 'SEED-T', 'EXP-T2', 'DEPENDS_ON');
+    env = {
+      DB: backend.db,
+      VECTORIZE: makeMockVectorize([{ id: 'SEED-T', score: 0.9, metadata: {} }]),
+      AI: makeMockAi(),
+      ENVIRONMENT: 'test',
+    };
+    // resultCap=1 → 시드가 2 노드 도달 → graph-walk 절단(cap+1 조회 판정).
+    const res = await post({
+      examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+      query: 'q',
+      topK: 5,
+      resultCap: 1,
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { graphExpansion: { truncated: boolean } };
+    expect(body.graphExpansion.truncated).toBe(true);
+  });
+
+  it('CO6-4(a) — baseline∩expanded 충돌 시 baseline 실 vector score 보존 (확장 score=0 미덮어씀)', async () => {
+    // SEED-A, SEED-B 둘 다 vector hit(baseline). SEED-A →(DEPENDS_ON) SEED-B.
+    // graph-walk 가 SEED-B 를 재도달하지만 baseline 교집합 → 확장 제외,
+    // baseline 의 실 score(0.71) 보존돼야 한다 (확장 0 으로 덮이면 안 됨).
+    await insertApproved(backend.db, 'SEED-A', 'LAW', 10);
+    await insertApproved(backend.db, 'SEED-B', 'LAW', 10);
+    await insertEdge(backend.db, 'SEED-A', 'SEED-B', 'DEPENDS_ON');
+    env = {
+      DB: backend.db,
+      VECTORIZE: makeMockVectorize([
+        { id: 'SEED-A', score: 0.92, metadata: {} },
+        { id: 'SEED-B', score: 0.71, metadata: {} },
+      ]),
+      AI: makeMockAi(),
+      ENVIRONMENT: 'test',
+    };
+    const res = await post({ examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: 'q', topK: 5 });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      graphExpansion: { expandedNodeCount: number };
+      results: Array<{ id: string; score: number }>;
+    };
+    // SEED-B 는 baseline 이라 확장 집합에서 제외 (충돌 → baseline 우선).
+    expect(body.graphExpansion.expandedNodeCount).toBe(0);
+    const sb = body.results.find((h) => h.id === 'SEED-B');
+    expect(sb?.score).toBeCloseTo(0.71, 5); // 실 vector score 보존 (0 아님)
+  });
+
+  it('CO6-4(c) — mid-loop graphWalk 실패는 fail-loud (부분 확장 degrade 금지, 5xx)', async () => {
+    // 2 시드 — 2번째 시드 walk 에서 D1 주입 실패 → 전체 요청 5xx (부분 200 아님).
+    await insertApproved(backend.db, 'MS-1', 'LAW', 10);
+    await insertApproved(backend.db, 'MS-2', 'LAW', 10);
+    await insertApproved(backend.db, 'MS-1X', 'CONCEPT', 5);
+    await insertEdge(backend.db, 'MS-1', 'MS-1X', 'DEPENDS_ON');
+    let walkCalls = 0;
+    const failingDb = {
+      prepare(sql: string) {
+        const stmt = backend.db.prepare(sql);
+        if (!sql.includes('WITH RECURSIVE')) return stmt;
+        return {
+          bind(...args: unknown[]) {
+            const bound = stmt.bind(...args);
+            return {
+              all: async <T>() => {
+                walkCalls += 1;
+                if (walkCalls >= 2) throw new Error('injected D1 walk failure (seed #2)');
+                return bound.all<T>();
+              },
+            };
+          },
+        };
+      },
+    } as unknown as D1Database;
+    env = {
+      DB: failingDb,
+      VECTORIZE: makeMockVectorize([
+        { id: 'MS-1', score: 0.9, metadata: {} },
+        { id: 'MS-2', score: 0.85, metadata: {} },
+      ]),
+      AI: makeMockAi(),
+      ENVIRONMENT: 'test',
+    };
+    const res = await post({ examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: 'q', topK: 5 });
+    // graph-walk query 실패 → GraphWalkError(phase=query) → 500 (200 partial 아님).
+    expect(res.status).toBe(500);
+    expect(walkCalls).toBeGreaterThanOrEqual(2); // 1번째 성공 후 2번째에서 throw (mid-loop)
+    const body = (await res.json()) as { error: string; phase?: string };
+    expect(body.error).toBeTruthy();
+    expect(body.phase).toBe('query');
+  });
+
   it('D-1 — SUPERSEDES 엣지는 기본 화이트리스트에서 미순회 (확장 0)', async () => {
     await insertApproved(backend.db, 'SEED-2', 'LAW', 10);
     await insertApproved(backend.db, 'SUP-2', 'CONCEPT', 5);

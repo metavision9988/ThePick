@@ -114,12 +114,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   S5-5 4-Pass+5-페르소나 8 독립 에이전트, realcode 게이트 후 CRITICAL 0,
   회귀 0 (api 609 PASS). **여전히 통합 미완 = S5-6 미측정 = 사실상 Vector
   RAG** (옵션 C 격리 — 학습자 경로 비노출, A 통합 차기 별도 결재).
-- **다음 진입 조건**: **S5-6 (multi-hop 정답률 baseline)** — ★ 착수 즉시
-  `review-20260515-202957-graph-walk-s5-2-s5-3.md` §4 CO6-1~CO6-4 선결
-  의무(perf M2 잉여 fetch 제거 / `truncated` surface / 성공 telemetry+
-  elapsedMs / 누락 테스트 4종 = baseline 신뢰성 전제). S5-7=A 통합 결재
-  자료. 잔여 REMEDIATION carry-over (CRIT-5 L3 Year2, B-1~4 Tier3) +
-  Step 3-UX-7b distractor BATCH(L3).
+  - ✅ **S5-6 선결 CO6-1~CO6-4 완료** (Session 088, 미커밋): CO6-1 graph-walk
+    projection description 동봉 → 잉여 2차 fetchApprovedNodes 제거(`MIN()` 집계
+    로 GROUP BY 폭 차단) / CO6-2 `truncated` surface / CO6-3 성공·실패 경로
+    elapsedMs telemetry / CO6-4 buildHit `Number.isFinite` 가드 + 누락 테스트
+    (ranking-core.test.ts 신규 8 + graph-search-route +4). 독립 3 에이전트
+    4-Pass: CRITICAL 0 / MAJOR 1 즉시해소 / 회귀 0 (**api 621 PASS**).
+    근거 `review-20260515-220647-graph-walk-s5-6-co6-4pass-integrated.md`.
+- **다음 진입 조건**: **S5-6a (eval harness + golden 평가셋 자율 구축)** —
+  진산 결재(2026-05-15): "평가셋 자율 구축 + 인증 대기" 경로. golden 출처 =
+  `exam_questions.related_nodes`(Q↔expected-node), 기출 ~545문항. harness 가
+  baseline(`/api/search`) vs `/api/search/graph` recall@K 비교, multi-hop
+  개선 입증 = G-S5. **remote production D1+Vectorize 실행만 진산 Cloudflare
+  인증 게이트 잔존**(plan §6-A class, 토큰 회피 의무). S5-6 측정 시 Pass2 m-2
+  (D-2 description-포함 projection 1회 재측정 → measurement.md §3.1 각주)
+  in-scope. S5-7=A 통합 결재 자료. 잔여 REMEDIATION carry-over (CRIT-5 L3
+  Year2, B-1~4 Tier3) + Step 3-UX-7b distractor BATCH(L3).
 
 ## 최근 실수
 
