@@ -630,12 +630,13 @@ gantt
 - 검증 (`1f34b0d`): apps/api **571 PASS** / web typecheck PASS / lint PASS(src+e2e) / chromium 12 PASS / 회귀 0
 - 잔여 Year 2 carry-over: multi-tenant `X-Test-Session` isolation, `requireExamId` → exam-adapter 추출, fixture per-exam 분리, endpoint contract single source (ADR-040 §8.3)
 
-### Phase 2 Graph walk S5 통합 결재 + S5-1 실 D1 측정 (Session 086)
+### Phase 2 Graph walk S5 통합 결재 + S5-1 측정 + S5-2~S5-5 구현/리뷰 (Session 086~087)
 
 - Session 085 (`dc3915c`): Graph walk PoC 엔진 S0~S4 (21 PASS, Engine-First 격리, 4-Pass C-1 흡수) — handoff-085 정합
 - Session 086 (본 commit): **S5 통합 L3 plan + S5-0 진산 결재**(옵션 C 독립 엔드포인트, 인증 위임) + **S5-1 실 Cloudflare D1 측정**(read-only, 무변경 재검증) — CO-1~4 전부 해소(CO-4 진실원 동일/CO-3 Stage3 단일진실원/CO-2 ASCII 결정적/CO-1 MATERIALIZED+MAX_DEPTH 5→4) + D-1 결재(화이트리스트 12종) + D-2(MATERIALIZED)
 - 부수: 라이브 D1 794노드/1274엣지 확정 → G-AUDIT "0건" 라이브 반증, CLAUDE.md W2 carry-over 해소, production approved 488 발견(routes.ts:117 stale 식별)
-- 잔여: S5-2(공통 approvedNodesCTE)~S5-6(baseline 보고) 다음 세션 — 추가 결재 불요(승인 plan 범위)
+- Session 087: **S5-2~S5-5 완료** — S5-2 공통 `approved-nodes-sql.ts` 단일 진실원(4 호출 측 통합: graph-walk/user-search/keyword-fallback/topic-cluster) / S5-3 독립 `/api/search/graph` 옵션 C(D-1 12종·D-2 MAX_DEPTH4·MATERIALIZED, `/api/search` 불변) / S5-4 Binary Gate G-S1~S4·S6 PASS / S5-5 4-Pass+5-페르소나 8 독립 에이전트(realcode 게이트로 backend C-1 거짓 반증·perf C1 launch 재분류 → CRITICAL 0, 즉시수정 8묶음, 회귀 0 api 609 PASS). 산출 `review-20260515-202957-graph-walk-s5-2-s5-3.md`
+- 잔여: **S5-6 baseline 보고** 다음 세션 — ★ 착수 즉시 review §4 carry-over 원장 CO6-1~CO6-4 선결 의무(perf M2 잉여 fetch / truncated surface / 성공 telemetry / 누락 테스트 = baseline 신뢰성 전제). S5-7=A 통합 차기 별도 결재 (자율 금지)
 
 ---
 

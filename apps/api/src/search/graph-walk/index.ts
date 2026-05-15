@@ -19,6 +19,7 @@
  */
 
 import type { ExamId } from '@thepick/shared';
+import { buildApprovedNodesMaterializedCte } from '../approved-nodes-sql.js';
 
 /** D1 인터페이스 (테스트 sqlite-backed wrapper / 실 D1Database 양쪽 구조 호환). */
 export interface GraphWalkD1 {
@@ -32,14 +33,33 @@ export interface GraphWalkD1 {
 }
 
 /**
- * 기본 edge_type 화이트리스트. SUPERSEDES 의도적 제외 —
- * SUPERSEDES 는 버전 시계열 관계이지 "연관 지식" semantic relation 이 아니다
- * (plan §0.3). 호출 측에서 명시 override 가능.
+ * 기본 edge_type 화이트리스트 — **의미 관계 전체 (SUPERSEDES 만 제외)**.
+ *
+ * D-1 진산 결재 (★ 북극성, 2026-05-15 Session 086 / measurement.md §3.1):
+ *   구 PoC 기본 3종(`DEPENDS_ON,SHARED_WITH,CROSS_REF`)은 비-SUPERSEDES
+ *   1263 엣지의 34% 만 커버 → 핵심 추론 엣지(USES_FORMULA 221 / APPLIES_TO
+ *   158 / DEFINED_AS 129 / PREREQUISITE 113)가 누락되어 Pattern A multi-hop
+ *   추론이 반쪽. 의미 관계 전체를 순회 허용하도록 12종으로 확정.
+ *
+ * SUPERSEDES 제외: 버전 시계열 관계이지 "연관 지식" semantic relation 이
+ *   아니다 (plan §0.3 / ADR-045). 0013 트리거가 superseded 타깃을
+ *   is_current_active=0 자동 폐기 → 어차피 approved 필터에서 탈락.
+ *
+ * 호출 측에서 명시 override 가능 (단 길이 ≤ MAX_EDGE_TYPE_WHITELIST).
  */
 export const DEFAULT_EDGE_TYPE_WHITELIST: ReadonlyArray<string> = [
   'DEPENDS_ON',
-  'SHARED_WITH',
+  'USES_FORMULA',
+  'APPLIES_TO',
+  'DEFINED_AS',
+  'PREREQUISITE',
+  'REQUIRES_INVESTIGATION',
   'CROSS_REF',
+  'GOVERNED_BY',
+  'DIFFERS_FROM',
+  'SHARED_WITH',
+  'TIME_CONSTRAINT',
+  'EXCEPTION',
 ];
 
 /** PoC 기본값 (plan §1). */
@@ -49,14 +69,20 @@ export const DEFAULT_RESULT_CAP = 50;
 /**
  * Hard ceiling — 호출 측이 더 큰 값을 요청해도 clamp.
  * plan §0 Anchor #1(CPU)·#2(폭발) 강제. 본 상한 자체가 안전선이다.
+ *
+ * D-2 진산 결재 (2026-05-15 Session 086 / measurement.md §3.1 CO-1 해소):
+ *   실 D1 측정 — 12종 화이트리스트 worst-case 시드 + MATERIALIZED 기준
+ *   depth4 = 41.5ms (free 50ms 내) / depth5 = 67.3ms (초과). hard ceiling
+ *   5→4 하향 → worst+full 에서도 free tier 내. depth5 는 명시적 paid
+ *   opt-in / 추가 최적화 전까지 차단 (Reality Anchor #1 강화 = 더 보수적).
  */
-export const MAX_ALLOWED_DEPTH = 5;
+export const MAX_ALLOWED_DEPTH = 4;
 export const MAX_ALLOWED_RESULT_CAP = 500;
 
 /**
  * edge_type 화이트리스트 길이 상한 (4-Pass Pass3 Major-3 흡수).
  * 호출 측이 거대 배열 전달 시 `IN (?,...×N)` SQL 비대 = DoS 표면 차단.
- * 실 edge_type 종류는 한 자릿수 (CROSS_REF/DEPENDS_ON/SHARED_WITH/SUPERSEDES 등).
+ * D-1 기본 화이트리스트 12종 ≤ 16 상한 (전체 의미 관계 + 여유). 16 유지.
  */
 export const MAX_EDGE_TYPE_WHITELIST = 16;
 
@@ -165,8 +191,12 @@ export async function graphWalk(
 
   const edgePlaceholders = whitelist.map(() => '?').join(',');
 
+  // approved 노드 도출은 approved-nodes-sql.ts 단일 진실원 (CO-4) + D-2
+  // `AS MATERIALIZED`(rows_read 폭증 차단, measurement.md §3.1). user-search
+  // Stage 2 와 동일 status 코어를 *공유* (복제 아님 → status 정책 drift 0).
+  //
   // WITH RECURSIVE — D1 SQLite (= SQLite 코어). ROW_NUMBER() OVER 는
-  // user-search.ts:431-441 가 이미 D1 production 경로에서 사용 (지원 확인).
+  // user-search.ts 가 이미 D1 production 경로에서 사용 (지원 확인).
   //
   // ★ 폭발 차단 설계 (4-Pass C-1 흡수): walk 튜플을 (node_id, depth) 로 한정.
   //   `path` 문자열 미사용 → 다중 경로로 같은 (node,depth) 도달 시 UNION 집합
@@ -175,20 +205,12 @@ export async function graphWalk(
   //   cycle 안전 = depth 단조 증가 + `w.depth < maxDepth` 종료 (path guard 불요)
   //   → 노드 ID 의 '/' 포함 여부와 무관 (구 instr 가드의 M-2 결함 동시 소멸).
   //   LIMIT 은 최종 SELECT 결과 cap. CTE 자체가 이미 N×depth 로 bounded.
+  const approvedCte = buildApprovedNodesMaterializedCte(
+    'approved',
+    'kn.id AS id, kn.type AS type, kn.name AS name, kn.truth_weight AS truth_weight, kn.page_ref AS page_ref',
+  );
   const sql = `
-    WITH RECURSIVE approved AS (
-      SELECT kn.id AS id, kn.type AS type, kn.name AS name,
-             kn.truth_weight AS truth_weight, kn.page_ref AS page_ref
-      FROM knowledge_nodes kn
-      LEFT JOIN (
-        SELECT target_id, to_status,
-          ROW_NUMBER() OVER (PARTITION BY target_id ORDER BY transitioned_at DESC) AS rn
-        FROM status_transitions
-        WHERE target_type = 'node'
-      ) latest ON latest.target_id = kn.id AND latest.rn = 1
-      WHERE kn.is_current_active = 1
-        AND COALESCE(latest.to_status, 'draft') = 'approved'
-    ),
+    WITH RECURSIVE ${approvedCte},
     walk(node_id, depth) AS (
       SELECT a.id, 0
       FROM approved a

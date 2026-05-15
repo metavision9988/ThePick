@@ -60,6 +60,7 @@ import {
   type UserSearchHit,
   type VectorizeQueryBinding,
 } from '../user-search.js';
+import { buildApprovedNodesQuery } from '../approved-nodes-sql.js';
 
 /** Stage 3 topic cluster 매칭 similarity 임계 (Stage 1 0.60 보다 낮춤 — 토픽 매칭 본질). */
 export const TOPIC_CLUSTER_MIN_SIMILARITY = 0.5;
@@ -472,19 +473,12 @@ async function fetchNodesByIds(
 ): Promise<ReadonlyArray<TopicClusterNodeRow>> {
   if (ids.length === 0) return [];
   const placeholders = ids.map(() => '?').join(',');
-  const sql = `
-    SELECT kn.id, kn.type, kn.name, kn.description, kn.page_ref, kn.truth_weight
-    FROM knowledge_nodes kn
-    LEFT JOIN (
-      SELECT target_id, to_status,
-        ROW_NUMBER() OVER (PARTITION BY target_id ORDER BY transitioned_at DESC) AS rn
-      FROM status_transitions
-      WHERE target_type = 'node'
-    ) latest ON latest.target_id = kn.id AND latest.rn = 1
-    WHERE kn.id IN (${placeholders})
-      AND kn.is_current_active = 1
-      AND COALESCE(latest.to_status, 'draft') = 'approved'
-  `;
+  // status 도출 = approved-nodes-sql.ts 단일 진실원 공유 (CO-4). status 코어엔
+  // `?` 0개 → bind 순서(...ids) 불변. IN 후보 한정은 코어 뒤 AND 결합(동치).
+  const sql = buildApprovedNodesQuery({
+    projection: 'kn.id, kn.type, kn.name, kn.description, kn.page_ref, kn.truth_weight',
+    candidateFilter: `kn.id IN (${placeholders})`,
+  });
   try {
     const result = await db
       .prepare(sql)

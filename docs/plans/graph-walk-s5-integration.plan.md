@@ -181,6 +181,19 @@ ROI 입증 후 A 결재. B 는 Pattern A 정체성 미회복으로 단독 채택
 - S5-0 ✅ 진산 결재 2026-05-15 (Session 086): 6-A 인증 위임(자동 측정) /
   6-B 옵션 **C 독립 엔드포인트**(C→A 단계 도입) / 6-C 권고 채택.
   → S5-1 인증 세션 진입.
+- S5-2~S5-5 ✅ 완료 (Session 087):
+  - S5-2 공통 `approved-nodes-sql.ts` 단일 진실원 + drift-0 테스트.
+  - S5-3 독립 `/api/search/graph`(옵션 C) + D-1(12종)·D-2(MAX_DEPTH 4·
+    MATERIALIZED) 반영 + routes.ts:117 정정. `/api/search` 불변.
+  - S5-4 Binary Gate `graph-walk-s5-binary-gates.md` G-S1~G-S4·G-S6 PASS
+    (G-S5 = S5-6 산출).
+  - S5-5 4-Pass(3 독립 에이전트) + 5-페르소나(5 독립) — realcode 게이트
+    후 CRITICAL 0. 즉시수정 8묶음(CO-4 4곳 완전통합·실DB 동치/flagged/
+    MATERIALIZED 테스트·Zod 정직·devops 로그 등). 회귀 0 (609 PASS).
+    잔여 MAJOR = `review-20260515-202957-graph-walk-s5-2-s5-3.md` §4
+    carry-over 원장 (S5-6 측정무결성 4 / S5-7 구조 5 / launch 게이트 1).
+  - ★ S5-6 진입 시 §4 CO6-1~CO6-4 (perf M2 / truncated surface / 성공
+    telemetry / 누락 테스트) **선결 의무** — baseline 신뢰성 전제.
 - S5-1 ✅ 실 D1 측정 완료 (`graph-walk-s5-co1-co2-measurement.md`):
   CO-2 ✅ 해소(노드 ID 전부 ASCII, collation 무관). CO-1 ⚠️ 조건부 —
   narrow ~5ms 안전 / WIDE depth5 54ms free 초과 + `approved` CTE 비물질화

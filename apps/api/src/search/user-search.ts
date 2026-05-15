@@ -30,6 +30,7 @@
 import { TRUTH_WEIGHTS, type ExamId, type NodeType } from '@thepick/shared';
 import type { AiBinding, VectorizeBinding } from '../vectorize/upserter.js';
 import { parsePageRefToInt } from '../vectorize/page-ref.js';
+import { buildApprovedNodesQuery } from './approved-nodes-sql.js';
 
 /** Stage 1 Vector Recall similarity 임계 (ADR-008). */
 export const STAGE1_VECTOR_RECALL_MIN_SIMILARITY = 0.6;
@@ -150,7 +151,7 @@ export class UserSearchError extends Error {
   }
 }
 
-interface ApprovedNodeRow {
+export interface ApprovedNodeRow {
   readonly id: string;
   readonly type: string;
   readonly name: string;
@@ -267,10 +268,7 @@ export async function searchKnowledgeNodesForUser(
   const scoreById = new Map(stage1Filtered.map((m) => [m.id, m.score]));
   const reranked = stage2Rows
     .map((row) => buildHit(row, scoreById.get(row.id) ?? 0))
-    .sort((a, b) => {
-      if (a.truthWeight !== b.truthWeight) return b.truthWeight - a.truthWeight;
-      return b.score - a.score;
-    });
+    .sort(compareByTruthWeightThenScore);
 
   return {
     query,
@@ -302,7 +300,29 @@ function buildEmptyResult(
   };
 }
 
-function buildHit(row: ApprovedNodeRow, score: number): UserSearchHit {
+/**
+ * Stage 3 "Truth Weight Re-rank" 비교자 — **단일 진실원 (CO-3)**.
+ *
+ * truth_weight 내림차순(LAW=10 > FORMULA=8 > … > TERM=3), 동일 weight 내
+ * vector score 보존(내림차순). graph-walk 경로(`/api/search/graph`)도 본
+ * 비교자를 *공유*한다 — graph-walk 는 최종 랭킹을 정하지 않으며(hop-distance
+ * 로 recall bound 만 책임).
+ *
+ * **단일 진실원 범위 (정밀):** "정상 Stage 3 + graph-walk 경로" 의 truth_weight
+ * 최종 정렬 유일 출처가 본 함수다. multi-path-fallback 의 topic-cluster
+ * 라우터(`topic-cluster-router.ts` ranked sort)는 *별개 의미 맥락*으로
+ * `truth_weight → score → name.localeCompare` 3-key 결정적 정렬을 의도적으로
+ * 사용한다(폴백 결과 안정 정렬용 name tiebreak — drift 아님, 설계 차이).
+ * 정상/graph 경로에 2번째 truth_weight 정책 생성 금지가 본 주석의 계약이다
+ * (graph-walk-s5-integration.plan.md §1 CO-3 / SEARCH_PIPELINE.md §2 /
+ * ADR-012 §Decision Stage 3).
+ */
+export function compareByTruthWeightThenScore(a: UserSearchHit, b: UserSearchHit): number {
+  if (a.truthWeight !== b.truthWeight) return b.truthWeight - a.truthWeight;
+  return b.score - a.score;
+}
+
+export function buildHit(row: ApprovedNodeRow, score: number): UserSearchHit {
   const nodeType = row.type as NodeType;
   const truthWeight = TRUTH_WEIGHTS[nodeType] ?? row.truth_weight;
   return {
@@ -406,7 +426,10 @@ async function runWithRetry<T>(
  * **현재 status 도출 정책** (migrations/0010 + 0018 정합):
  *   - `knowledge_nodes.status` 컬럼은 INSERT 시 초기 상태(항상 'draft') 스냅샷 용도
  *   - 실제 현재 상태 = `status_transitions` 최신 레코드 `to_status` (없으면 'draft' default)
- *   - draft → review → approved 단방향 전이 (CHECK 제약, migrations/0010)
+ *   - migrations/0010 = **4-state** (draft/review/approved/flagged). 정상
+ *     draft→review→approved 단방향 + any→flagged 일방(종착, 0010:101-106 트리거가
+ *     flagged→복귀 ABORT). 본 필터는 'approved' 만 통과 → review/draft/**flagged
+ *     (결함 격리)** 전부 의도적 배제. status 코어 = approved-nodes-sql.ts 단일 진실원.
  *
  * **valid_from 4번째 조건 carry-over** (Pass 4 CONTRACT C1 재평가, Session 058):
  *   - SEARCH_PIPELINE.md §4 line 62 + ADR-012 §Decision Stage 2 가 명시한 "valid_from" 필터는
@@ -420,29 +443,22 @@ async function runWithRetry<T>(
  *
  * SEARCH_PIPELINE.md §4 + ADR-012 §Decision + ADR-013 Materialized Active View Rule 16 정합.
  */
-async function fetchApprovedNodes(
+export async function fetchApprovedNodes(
   db: UserSearchD1,
   candidateIds: ReadonlyArray<string>,
 ): Promise<ReadonlyArray<ApprovedNodeRow>> {
   if (candidateIds.length === 0) return [];
 
   const placeholders = candidateIds.map(() => '?').join(',');
-  // status_transitions 최신 레코드 to_status='approved' 인 노드만 (없으면 default 'draft' 차단)
-  // ROW_NUMBER OVER PARTITION BY 는 D1 SQLite 3.45+ 지원 (migrations 호환).
-  const sql = `
-    SELECT kn.id, kn.type, kn.name, kn.description, kn.page_ref, kn.truth_weight,
-           kn.status, kn.is_current_active
-    FROM knowledge_nodes kn
-    LEFT JOIN (
-      SELECT target_id, to_status,
-        ROW_NUMBER() OVER (PARTITION BY target_id ORDER BY transitioned_at DESC) AS rn
-      FROM status_transitions
-      WHERE target_type = 'node'
-    ) latest ON latest.target_id = kn.id AND latest.rn = 1
-    WHERE kn.id IN (${placeholders})
-      AND kn.is_current_active = 1
-      AND COALESCE(latest.to_status, 'draft') = 'approved'
-  `;
+  // status 도출 코어는 approved-nodes-sql.ts 단일 진실원 (CO-4 해소) — graph-walk
+  // 와 동일 코어 *공유*(복제 아님). 후보 한정(`kn.id IN`)만 본 호출 측 주입 —
+  // status 코어 뒤 AND 결합(교환법칙 → 원 SQL 결과 집합 불변). ROW_NUMBER OVER
+  // PARTITION BY 는 D1 SQLite 3.45+ 지원 (migrations 호환).
+  const sql = buildApprovedNodesQuery({
+    projection:
+      'kn.id, kn.type, kn.name, kn.description, kn.page_ref, kn.truth_weight, kn.status, kn.is_current_active',
+    candidateFilter: `kn.id IN (${placeholders})`,
+  });
 
   try {
     const result = await db

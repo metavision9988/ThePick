@@ -18,6 +18,7 @@ import { reportSilentFailures } from './scheduled/silent-failure-monitor.js';
 import { createTelemetryRoutes } from './telemetry/routes.js';
 import { createVectorizeRoutes, type VectorizeRouteBindings } from './vectorize/routes.js';
 import { createUserSearchRoutes } from './search/routes.js';
+import { createGraphSearchRoutes } from './search/graph-search-route.js';
 import { createStudyRoutes } from './study/routes.js';
 import { createWebhookRoutes } from './webhooks/payment.js';
 
@@ -50,6 +51,9 @@ type Bindings = {
   AUTH_RATE_LIMITER_IP?: RateLimiter;
   AUTH_RATE_LIMITER_EMAIL?: RateLimiter;
   WEBHOOK_RATE_LIMITER_IP?: RateLimiter;
+  // S5-5 Pass3 Minor-2 — /api/search·/api/search/graph public route DoS 방어
+  // (wrangler.toml 선언, 런타임 주입). 타입 차원 발견성 확보.
+  SEARCH_RATE_LIMITER_IP?: RateLimiter;
   WEBHOOK_HMAC_SECRET_MOCK?: string;
   WEBHOOK_HMAC_SECRET_POLAR?: string;
   WEBHOOK_HMAC_SECRET_PORTONE?: string;
@@ -117,6 +121,9 @@ app.use(
 // Phase 2A Step 3 (Session 058) — public user search route (인증 0, MVP).
 // rate-limit 별도 step (P3-m1 carry-over). user_session 인증 별도 step.
 app.use('/api/search', cors(buildCorsOptions()));
+// S5-3 (Session 087) — 독립 graph-augmented 검색 (옵션 C, plan §2). 정상
+// 경로 `/api/search` 와 분리된 exact path → 회귀 표면 0 (Engine-First).
+app.use('/api/search/graph', cors(buildCorsOptions()));
 
 // L1 Edge Cache 헤더 자동 주입 (ADR-008 §8) — 4-Pass C-3 반영
 // **첫 번째** 미들웨어로 등록: 어떤 경로에서 어떤 이유로 early-return 되어도
@@ -150,6 +157,11 @@ app.route('/api/progress', createProgressRoutes());
 app.route('/api/telemetry', createTelemetryRoutes());
 app.route('/api/webhooks', createWebhookRoutes());
 app.route('/api/admin/vectorize', createVectorizeRoutes());
+// Hono trie 라우터는 등록 순서 무관하게 정확/최장 매칭 (Express식 순서 의존
+// 아님 — S5-5 Pass2 Minor-1 정정). 구체 경로를 먼저 두는 것은 가독성 목적일
+// 뿐 shadowing 회피 필수 아님. /api/search/graph 와 /api/search 는 별개 exact
+// path → 상호 shadow 불가.
+app.route('/api/search/graph', createGraphSearchRoutes());
 app.route('/api/search', createUserSearchRoutes());
 app.route('/api/study', createStudyRoutes());
 

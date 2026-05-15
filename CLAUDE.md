@@ -107,13 +107,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     (status_transitions 전이). routes.ts:117 "production approved 0건" 주석은
     stale (S5-3 정정 예정).
 - **실 평가 축 (진행)**: Phase 2 Eval MVP baseline·multi-hop 정답률 **미측정**.
-  Graph walk **PoC 엔진 완료**(S0~S4, 21 PASS, 검색 라우터 미통합=Engine-First
-  격리) → **S5 통합 진산 결재 완료**(2026-05-15: 옵션 C 독립 엔드포인트).
-  S5-1 실 D1 측정 완료(CO-2 해소, CO-1 조건부). 통합 미완 = 현 시점 여전히
-  사실상 Vector RAG. ★ REMEDIATION 검증 CRIT-4 — S5-2 이하 진행 중.
-- **다음 진입 조건**: Graph walk S5-2~S5-6 진행 — 결재 상신 D-1(edge_type
-  화이트리스트 범위=북극성)·D-2(CPU 정책). 잔여 REMEDIATION carry-over
-  (CRIT-5 L3 Year2, B-1~4 Tier3) + Step 3-UX-7b distractor BATCH(L3).
+  Graph walk PoC 엔진(S0~S4) → S5 통합 결재(옵션 C) → **S5-1~S5-5 완료**
+  (Session 087): S5-2 공통 status SQL 단일 진실원(`approved-nodes-sql.ts`,
+  4 호출 측 통합) / S5-3 독립 `/api/search/graph`(D-1 12종·D-2 MAX_DEPTH4·
+  MATERIALIZED, `/api/search` **불변**) / S5-4 Binary Gate G-S1~S4·S6 PASS /
+  S5-5 4-Pass+5-페르소나 8 독립 에이전트, realcode 게이트 후 CRITICAL 0,
+  회귀 0 (api 609 PASS). **여전히 통합 미완 = S5-6 미측정 = 사실상 Vector
+  RAG** (옵션 C 격리 — 학습자 경로 비노출, A 통합 차기 별도 결재).
+- **다음 진입 조건**: **S5-6 (multi-hop 정답률 baseline)** — ★ 착수 즉시
+  `review-20260515-202957-graph-walk-s5-2-s5-3.md` §4 CO6-1~CO6-4 선결
+  의무(perf M2 잉여 fetch 제거 / `truncated` surface / 성공 telemetry+
+  elapsedMs / 누락 테스트 4종 = baseline 신뢰성 전제). S5-7=A 통합 결재
+  자료. 잔여 REMEDIATION carry-over (CRIT-5 L3 Year2, B-1~4 Tier3) +
+  Step 3-UX-7b distractor BATCH(L3).
 
 ## 최근 실수
 

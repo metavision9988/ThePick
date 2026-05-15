@@ -23,6 +23,7 @@
 
 import { TRUTH_WEIGHTS, type ExamId, type NodeType } from '@thepick/shared';
 import { parsePageRefToInt } from '../../vectorize/page-ref.js';
+import { buildApprovedNodesQuery } from '../approved-nodes-sql.js';
 import { UserSearchError, type UserSearchD1, type UserSearchHit } from '../user-search.js';
 
 /** Stage 2 keyword 매칭 최소 토큰 길이 (1자 noise 차단). */
@@ -193,21 +194,16 @@ async function fetchTokenMatches(
   // (D1 SQLite 는 LIKE escape 별도 지정 시에만 활성). 정상 학습자 query 에 % 가 의미
   // 있는 검색 의도가 부재해 단순 substring 매칭 안전.
   const likePattern = `%${token}%`;
-  const sql = `
-    SELECT kn.id, kn.type, kn.name, kn.description, kn.page_ref, kn.truth_weight,
-           kn.is_current_active
-    FROM knowledge_nodes kn
-    LEFT JOIN (
-      SELECT target_id, to_status,
-        ROW_NUMBER() OVER (PARTITION BY target_id ORDER BY transitioned_at DESC) AS rn
-      FROM status_transitions
-      WHERE target_type = 'node'
-    ) latest ON latest.target_id = kn.id AND latest.rn = 1
-    WHERE (kn.name LIKE ? OR kn.description LIKE ?)
-      AND kn.is_current_active = 1
-      AND COALESCE(latest.to_status, 'draft') = 'approved'
-    LIMIT ${KEYWORD_PER_TOKEN_LIMIT}
-  `;
+  // status 도출 = approved-nodes-sql.ts 단일 진실원 공유 (CO-4 — 정상/graph/
+  // fallback 4 호출 측 동일 코어). LIKE 후보 한정은 status 코어 뒤 AND 결합
+  // (교환법칙 → 원 SQL 결과 집합 불변). status 코어엔 `?` 0개 → bind 순서
+  // (likePattern×2) 불변. LIMIT 은 코어 외부에서 부착.
+  const sql = `${buildApprovedNodesQuery({
+    projection:
+      'kn.id, kn.type, kn.name, kn.description, kn.page_ref, kn.truth_weight, kn.is_current_active',
+    candidateFilter: '(kn.name LIKE ? OR kn.description LIKE ?)',
+  })}
+    LIMIT ${KEYWORD_PER_TOKEN_LIMIT}`;
   try {
     const result = await db.prepare(sql).bind(likePattern, likePattern).all<KeywordMatchRow>();
     return result.results ?? [];

@@ -114,7 +114,12 @@ export function createUserSearchRoutes(): Hono<{ Bindings: UserSearchRouteBindin
 
       // Multi-Path Fallback 진입 조건 (gracefulDegradation=true 또는 stage2Count=0)
       // - graceful=true: top-1 < 0.60 (Stage 1 임계 미달)
-      // - stage2Count=0: Stage 2 hard filter 후 0건 (production 'approved' 0건 정합)
+      // - stage2Count=0: Stage 2 hard filter 후 0건 (Stage 1 후보가 전부 draft/
+      //   비활성일 때). ※ 정정(S5-3, Session 087): 구 주석 "production
+      //   'approved' 0건 정합" 은 stale — 실 D1 측정 결과 production approved
+      //   488/794 (graph-walk-s5-co1-co2-measurement.md §3). 본 분기는 "특정
+      //   질의의 Stage1 후보가 마침 전부 미승인" 인 정상 fallback 신호이지
+      //   "전역 approved 0건" 이 아니다.
       if (result.gracefulDegradation || result.stage2Count === 0) {
         const fallback = await runMultiPathFallback(
           { db: deps.db, vectorize: deps.vectorize },
