@@ -1,0 +1,82 @@
+{
+  "_comment": "S5-6a LOCAL_SMOKE 합성 픽스처 — harness 로직(G-6a-1) 검증 전용. 정답률 수치는 G-S5 아님(stub 산물). nodes 는 approved 적재, edges 는 graph-walk 화이트리스트 타입, questions.related_nodes 는 expected, vectorMatches 는 stub Vectorize 가 query 무관 반환할 시드 id→score.",
+  "nodes": [
+    {
+      "id": "LAW-1",
+      "type": "LAW",
+      "name": "보험가입 법령",
+      "description": "법령 본문 1",
+      "truthWeight": 10,
+      "pageRef": "p.10"
+    },
+    {
+      "id": "CONCEPT-1",
+      "type": "CONCEPT",
+      "name": "보험가액 개념",
+      "description": "개념 본문 1",
+      "truthWeight": 5,
+      "pageRef": "p.21"
+    },
+    {
+      "id": "CONCEPT-2",
+      "type": "CONCEPT",
+      "name": "비례보상 개념",
+      "description": "개념 본문 2",
+      "truthWeight": 5,
+      "pageRef": "p.22"
+    },
+    {
+      "id": "FORMULA-1",
+      "type": "FORMULA",
+      "name": "지급보험금 산식",
+      "description": "산식 본문 1",
+      "truthWeight": 8,
+      "pageRef": "p.30"
+    },
+    {
+      "id": "TERM-1",
+      "type": "TERM",
+      "name": "면책 용어",
+      "description": "용어 본문 1",
+      "truthWeight": 3,
+      "pageRef": "p.40"
+    }
+  ],
+  "edges": [
+    { "from": "LAW-1", "to": "CONCEPT-1", "type": "DEFINED_AS" },
+    { "from": "CONCEPT-1", "to": "FORMULA-1", "type": "USES_FORMULA" },
+    { "from": "LAW-1", "to": "CONCEPT-2", "type": "DEPENDS_ON" }
+  ],
+  "questions": [
+    {
+      "id": "SMOKE-Q1",
+      "content": "보험가액과 지급보험금 산식의 관계는?",
+      "relatedNodes": ["LAW-1", "FORMULA-1"],
+      "vectorMatches": [{ "id": "LAW-1", "score": 0.88 }]
+    },
+    {
+      "id": "SMOKE-Q2",
+      "content": "비례보상 개념 설명",
+      "relatedNodes": ["CONCEPT-2"],
+      "vectorMatches": [{ "id": "LAW-1", "score": 0.81 }]
+    },
+    {
+      "id": "SMOKE-Q3",
+      "content": "면책 용어 정의",
+      "relatedNodes": ["TERM-1"],
+      "vectorMatches": [{ "id": "TERM-1", "score": 0.9 }]
+    },
+    {
+      "id": "SMOKE-Q4-unmeasurable",
+      "content": "관련 노드 미적재 문항",
+      "relatedNodes": ["DOES-NOT-EXIST-1"],
+      "vectorMatches": [{ "id": "LAW-1", "score": 0.7 }]
+    },
+    {
+      "id": "SMOKE-Q5-malformed",
+      "content": "related_nodes malformed 문항",
+      "relatedNodesRaw": "{not-json",
+      "vectorMatches": [{ "id": "LAW-1", "score": 0.7 }]
+    }
+  ]
+}

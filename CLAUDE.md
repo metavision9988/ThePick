@@ -121,15 +121,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     (ranking-core.test.ts 신규 8 + graph-search-route +4). 독립 3 에이전트
     4-Pass: CRITICAL 0 / MAJOR 1 즉시해소 / 회귀 0 (**api 621 PASS**).
     근거 `review-20260515-220647-graph-walk-s5-6-co6-4pass-integrated.md`.
-- **다음 진입 조건**: **S5-6a (eval harness + golden 평가셋 자율 구축)** —
-  진산 결재(2026-05-15): "평가셋 자율 구축 + 인증 대기" 경로. golden 출처 =
-  `exam_questions.related_nodes`(Q↔expected-node), 기출 ~545문항. harness 가
-  baseline(`/api/search`) vs `/api/search/graph` recall@K 비교, multi-hop
-  개선 입증 = G-S5. **remote production D1+Vectorize 실행만 진산 Cloudflare
-  인증 게이트 잔존**(plan §6-A class, 토큰 회피 의무). S5-6 측정 시 Pass2 m-2
-  (D-2 description-포함 projection 1회 재측정 → measurement.md §3.1 각주)
-  in-scope. S5-7=A 통합 결재 자료. 잔여 REMEDIATION carry-over (CRIT-5 L3
-  Year2, B-1~4 Tier3) + Step 3-UX-7b distractor BATCH(L3).
+  - ✅ **S5-6a eval harness + golden 평가셋 자율 구축 완료** (Session 088,
+    미커밋): 순수 코어 `apps/api/src/eval/multihop-accuracy.ts`(Workers-safe,
+    import 0 — parseRelatedNodes/scoreQuestion/aggregate/format/assertRemote)
+    - REMOTE runner `scripts/measure-s5-6-multihop-accuracy.ts` + 합성 픽스처
+    - plan `graph-walk-s5-6a-eval-harness.plan.md`. golden 출처 =
+      `exam_questions.related_nodes`(enrichRelatedNodes 파싱 동치). 지표 =
+      graphOnlyRecovery(multi-hop 순기여)+regression 양면, 3분할(절단제외 권장).
+      Binary Gate **G-6a-1~5 PASS**(결정성/파서골든/손계산/측정불가제외/자격
+      증명). 독립 3 에이전트 4-Pass: CRITICAL 0 / MAJOR 즉시해소 5(lint차단
+      runner remote전용화 포함)+carry-over 4 / 회귀 0 (**api 643 PASS**). 근거
+      `review-20260515-230435-s5-6a-eval-harness-4pass-integrated.md`.
+- **다음 진입 조건**: **G-S5 본체 측정 = 진산 Cloudflare 인증 게이트** —
+  harness READY(LOCAL_SMOKE vitest 게이트 / REMOTE 코드 完, fabricate 차단).
+  `THEPICK_API_BASE`(env) + golden 파일(인증 세션이 remote D1 추출) 주입 시
+  `pnpm tsx scripts/measure-s5-6-multihop-accuracy.ts --golden <f>` → 실
+  정답률 산출. 동시 Pass2 m-2(D-2 description-포함 projection 1회 재측정 →
+  measurement.md §3.1 각주) in-scope. carry-over: CO-6a-1~4(plan §5b) +
+  S5-7=A 통합 결재(자율 금지). 잔여 REMEDIATION (CRIT-5 L3 Year2, B-1~4
+  Tier3) + Step 3-UX-7b distractor BATCH(L3).
 
 ## 최근 실수
 

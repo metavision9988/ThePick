@@ -461,6 +461,14 @@ function parseCalcVariables(
  *   - JSON parse 실패: empty 배열 반환 + warn 로깅 (silent fail 차단)
  *   - 빈 배열 / null: empty 반환 (정상 경로)
  *   - 노드 미존재: 결과에서 자연 제외 (knowledge_nodes 가 적재 후 status 영역만 enrichment)
+ *
+ * ★ drift 방어 (S5-6a 4-Pass Pass2 M-1): 본 함수의 *파싱 술어*
+ *   (JSON.parse / Array 검사 / `typeof==='string' && length>0` 필터)는
+ *   `apps/api/src/eval/multihop-accuracy.ts` `parseRelatedNodes` 와 **동치
+ *   유지 의무**다. 여기 파싱 규칙을 개정하면 그쪽 G-6a-2 골든 테스트도
+ *   동반 갱신하라 (측정 정답률이 production surface 파싱과 어긋나면 G-S5
+ *   해석이 왜곡). 단 `RELATED_NODES_MAX` 절단은 study 런타임 surface 상한
+ *   으로, 측정 측은 분모 인위 축소 방지 위해 의도적 미적용(비동치 1건).
  */
 async function enrichRelatedNodes(
   db: D1Database,
