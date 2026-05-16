@@ -132,7 +132,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
       증명). 독립 3 에이전트 4-Pass: CRITICAL 0 / MAJOR 즉시해소 5(lint차단
       runner remote전용화 포함)+carry-over 4 / 회귀 0 (**api 643 PASS**). 근거
       `review-20260515-230435-s5-6a-eval-harness-4pass-integrated.md`.
-- **다음 진입 조건**: **G-S5 본체 측정 = 진산 Cloudflare 인증 게이트** —
+- **다음 진입 조건**: **⛔ G-S5 측정 차단 — golden 데이터 부재**
+  (2026-05-16 진산 인증 세션 실확인): production 기출 545 전부
+  `related_nodes` NULL = Q↔node 라벨 없음. harness 정확·READY 이나 채점
+  기준 데이터 미존재 → 측정 불가, fabricate 금지(RULE #5). golden 확보
+  경로 **진산 결재 = A(LLM생성→진산검수, 소규모 먼저)** 채택(2026-05-16).
+  근거 [[project_g_s5_golden_data_gap]]. → **S5-6b plan 고정**
+  (`docs/plans/graph-walk-s5-6b-golden-generation.plan.md`): 순환편향
+  차단(측정대상 vector/graph 로 golden 선정 금지)·정밀라벨·대표성·
+  draft-only(Hard Limit) 방법론 + Binary Gate G-6b-1~4. grounding 실측
+  (active 534: 상법/농학/재해법령 각175+2차9 / approved 488). **다음:
+  pilot ~12 draft 생성(판단집약 — 신선 세션 권고) → 진산 검수 → approved
+  golden 동결 → wrangler dev --remote + harness G-S5 pilot.** 이하 게이트
+  서술은 golden 확보 후 적용:
+- (참고, 데이터 확보 후) G-S5 본체 측정 = 진산 Cloudflare 인증 게이트 —
   harness READY(LOCAL_SMOKE vitest 게이트 / REMOTE 코드 完, fabricate 차단).
   `THEPICK_API_BASE`(env) + golden 파일(인증 세션이 remote D1 추출) 주입 시
   `pnpm tsx scripts/measure-s5-6-multihop-accuracy.ts --golden <f>` → 실
@@ -154,3 +167,4 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 2026-04-12: 세션 모니터 Hook이 4시간 동안 경고를 주지 않음. 원인: stderr 출력이 사용자에게 안 보임 + 대화 중간 점검 메커니즘 부재. → stdout 출력 + exit 2 + session-health.md 규칙 추가
 - 2026-04-12: 4-Pass 자가 리뷰에서 0건 보고 → 독립 다각도 리뷰에서 CRITICAL 9건 + MAJOR 10건 발견. 원인 5가지: (1) 자기 확인 편향 — 코드 작성자=리뷰어라 의도를 기억하고 문제를 못 봄, (2) 스코프 축소 — 변경 파일만 검사하고 연관 파일 무시, (3) N/A=통과 착각, (4) 분석 깊이 부족 — 테스트 통과에 안심, (5) 독립성 제로. → 대책: 독립 에이전트 리뷰 의무화 + 증거 기반 보고 + 반론 의무 + auto-review-protocol.md 전면 개정
 - 2026-05-15: G-AUDIT 외부 감사 보고서 §12 핵심정정 #2에서 "knowledge_nodes 미적재 / vectorCount=topic_cluster·smoke"로 단정 → 사실은 BATCH-1~7 production 적재 완료(794 노드). 원인: stale한 본 CLAUDE.md "현재 상태"(Phase 0)만 신뢰하고 `docs/plans/batch-loadmap.md`를 미열람(스코프 축소). 이 1차 환각이 외부 Review B+C(코드 미열람)→REMEDIATION CRIT-2/3로 5-Layer 연쇄 증폭. 차단: 진산이 처리계획 진입 전 "타당성 검증" 게이트 지시 → Claude Code 실코드 대조로 거짓 전제 발견. → 대책: (1) "현재 상태" 섹션을 handoff/WBS 갱신 시 동기 의무화, (2) 외부 SPDP 결과는 실코드 대조 Cycle-Closure로 닫는 패턴 영속(REMEDIATION 검증 §4 메타교훈), (3) 루트 문서 stale = 모든 하위 작업 진앙 — 30일+ 미갱신 감지 시 환기
+- 2026-05-16: S5-6a eval harness 를 "golden 출처 = exam_questions.related_nodes" 전제로 자율 구축(plan §1) → 진산 Cloudflare 인증 세션 실측 착수 시 production 545 기출 전부 related_nodes NULL 확인, G-S5 측정 불가 판명. 원인: 스키마에 컬럼이 존재한다는 사실만으로 golden 출처 채택, **production 데이터 populate 여부 미검증**(2026-05-15 G-AUDIT stale 가정과 동일 클래스, 방향만 반대). 다행히 realcode 인증-게이트 경계에서 측정 실행 직전 포착(harness/plan/결재자료는 데이터 확보 시 그대로 가동 — 매몰 아님). → 대책: (1) 신규 데이터-의존 작업은 "스키마 존재 ≠ 데이터 populate" 를 plan Reality Anchor 에서 실 production 1-쿼리로 선검증 의무, (2) memory `project_g_s5_golden_data_gap` 영속, (3) Cycle-Closure(feedback_cycle_closure_realcode_gate)가 이번에도 유효 작동 — 외부 결과뿐 아니라 *자체 plan 전제*도 실행 게이트에서 실데이터 대조
