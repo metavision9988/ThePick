@@ -13,7 +13,7 @@
     "cli": "tsx ./bin/batch.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.90.0",
+    "@anthropic-ai/sdk": "^0.98.0",
     "@thepick/formula-engine": "workspace:*",
     "@thepick/parser": "workspace:*",
     "@thepick/quality": "workspace:*",
