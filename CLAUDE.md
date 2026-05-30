@@ -2,6 +2,49 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🚧 G-1 REALITY GATE 규칙 (코드 1줄 전 — 최우선)
+
+> **헌법:** VOID DEV UNIFIED CONSTITUTION v3.6 (`docs/consti/`). 이 프로젝트의 모든 새 기능·아이디어는
+> 코드를 쓰기 전에 G-1을 통과해야 한다. G-1은 ACAP Stage -1(Deep Dive)보다도 앞에 온다.
+> **현 적용 상태 (2026-05-30 소급 형식화, 프롬프트 C):** 상태 **C**(가장 성숙). 판정서
+> `docs/feasibility/thepick.feasibility.md` + `ceiling.md`. **🟢 아키텍처(콘텐츠+산식+Vector RAG+FSRS)
+> = 축소 GO·production 배포 완료 / 🟡 graph-walk 정답률 = R3 BLOCKED(=기존 G-S5 측정 게이트, 미측정 0%).
+> 🔴 조각 0.** graph-walk 전체 GO는 G-S5 실측 후 진산 R5 결재.
+
+### AI(너)가 반드시 지킬 것
+
+1. **"가능합니다"는 금지어다.** 실현 가능성을 단언하지 마라. 형식: ①"업계 SOTA 천장은 [수치/출처]" ②"목표는 천장 [위/아래]" ③"측정 전이므로 추정 — Feasibility Spike 필요".
+2. **목표에 절대 수식어**(자동/완전/범용/지배적/출판급/전문가급)가 있으면 → 즉시 멈추고 R1~R5 전수 요구 (TYPE-11 서식지).
+3. **한 문장 목표를 그대로 받지 마라.** 최소 2개 축으로 분해해 조각별 판정. 묶음 통째 가능/불가 판정 금지.
+4. **AI 자체 점수로 가능성 판정 금지.** Ground Truth 대비 정량 비교 + 인간 직접 소비만이 진실 (A등급 환각 재발 방지).
+5. **R5(GO/STOP)는 인간이 결정한다.** 너는 🟢/🟡/🔴 사실만 못박는다. "할 가치"를 네가 결론짓지 마라.
+6. **feasibility.md 없이 research.md를 쓰지 마라.** 현실 판정이 코드베이스 분석보다 먼저다.
+
+### G-1 5관문 (산출물 영속 의무)
+
+|         관문          | 행동                                             | 산출물                                      |
+| :-------------------: | :----------------------------------------------- | :------------------------------------------ |
+|    R1 SOTA Ceiling    | 외부 리서치로 업계 천장 조사                     | `docs/feasibility/ceiling.md`               |
+| R2 Goal Decomposition | 목표를 난이도 축으로 분해                        | (ceiling.md 내) 분해 매트릭스               |
+| R3 Feasibility Spike  | GT로 내 데이터에서 실측 (버려질 스파이크만 허용) | `docs/feasibility/spike-*.md`               |
+|   R4 3-Tier Verdict   | 🟢/🟡/🔴 못박기                                  | `docs/feasibility/{project}.feasibility.md` |
+|      R5 GO/STOP       | 인간 결정 대기                                   | (feasibility.md 내) 결정 기록               |
+
+### G-1 자동 발동 조건
+
+- 절대 수식어 존재 → R1~R5 전수 / AI·ML 출력 정확도가 비즈니스 핵심 → R1~R5 전수
+- "전 업계 미해결"로 들리는 목표 → R3 실측 BLOCKER / 검증된 기술 조합(CRUD·표준 SaaS) → R1 약식(천장 자명, ceiling.md 1줄 근거)
+
+### 절대 하지 말 것 (G-1 위반)
+
+- ❌ 천장 미조사 채 "가능합니다"/"어렵지 않습니다" 단언 ❌ 한 문장 목표를 분해 없이 통째 추진
+- ❌ feasibility.md 없이 plan.md/contract.yaml 작성 ❌ 🔴(불가) 조각에 미련(재정의 없이 우회) ❌ R5 결정을 AI가 대신 내림
+
+### ★ 신규 Epic/Feature 적용 (형식화 이후)
+
+- 본 소급 형식화는 _기존_ 방향의 약식이다. **신규 Epic/Feature 착수 시 R1~R5 전수**를 `docs/feasibility/`에 작성한 뒤 plan.md를 쓴다.
+- hook 기계강제(블록 C/D, `docs/consti/G1_REALITY_GATE_CLAUDE_MD_BLOCK.md`)는 **전체 GO(R5) 후 + 기존 61 plan 금지어 오탐 점검 후** 설치 (현 husky/lint-staged 통합).
+
 ## 프로젝트 정의
 
 **쪽집게(ThePick)** — 손해평가사 자격시험(1차+2차) AI 학습 서비스

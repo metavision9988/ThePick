@@ -1,0 +1,65 @@
+name: G-1 Reality Gate
+
+# Security note: 이 workflow는 신뢰할 수 없는 입력(${{ github.event.*.title/body }} 등)을 사용하지 않는다.
+# 모든 run: 명령은 하드코딩되어 있고, 외부 action은 공식/검증된 것만 사용한다.
+#
+# 목적 (VOID DEV 헌법 v3.6, docs/consti/ 블록 D): 출시 불가 기준 #17 배포 차단.
+#   ① plan은 있으나 feasibility.md 없음 = TYPE-11 위험 → 차단
+#   ② feasibility.md 에 R5 GO/STOP 인간 결정 미기록 → 차단
+# pre-commit hook(scripts/g1-forbidden-phrase.mjs)이 1차 방어, 본 CI가 --no-verify 우회 백스톱.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  g1-reality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: G-1 Reality Gate Audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          fail=0
+
+          # ① plan/contract 존재 시 feasibility.md 존재 강제
+          if { [ -d docs/plans ] && [ -n "$(ls -A docs/plans)" ]; } || \
+             { [ -d docs/contracts ] && [ -n "$(ls -A docs/contracts)" ]; }; then
+            if [ -d docs/feasibility ] && [ -n "$(ls -A docs/feasibility)" ]; then
+              echo "✅ plan/contract 존재 → docs/feasibility/ 존재"
+            else
+              echo "::error::G-1 BLOCKER — plan은 있으나 feasibility.md 없음 (TYPE-11 위험)"
+              fail=1
+            fi
+          fi
+
+          # ② 각 feasibility.md 에 R5 GO/STOP 인간 결정 기록 강제
+          feas=(docs/feasibility/*.feasibility.md)
+          if [ ${#feas[@]} -eq 0 ]; then
+            echo "::warning::docs/feasibility/*.feasibility.md 없음 (신규 프로젝트 형식화 전일 수 있음)"
+          fi
+          for f in "${feas[@]}"; do
+            if grep -qE '\[x\][[:space:]]*(GO|축소 GO|STOP)' "$f"; then
+              echo "✅ $f → R5 GO/STOP 기록됨"
+            else
+              echo "::error::$f — R5 GO/STOP 인간 결정 미기록"
+              fail=1
+            fi
+          done
+
+          if [ "$fail" -ne 0 ]; then
+            echo "❌ G-1 Reality Gate 차단 (헌법 v3.6)."
+            exit 1
+          fi
+          echo "✅ G-1 Reality Gate 통과."
