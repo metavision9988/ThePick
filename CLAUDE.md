@@ -157,6 +157,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > ① plan formal 결재 + ADR-046 Accepted(선작성본 sign-off) ② D-4 distractor 결재(ADR §D-6)
 > ③ production 적용(wrangler --remote) → backfill → G-S5 측정. 게이트 B golden 12 검수는 사전심사
 > 권고 적용 가능. 상세: `.jjokjipge/handoff-session-094.md` + `phase2-tech-debt-workflow.md` §6.
+>
+> ★ **2026-05-30 갱신 (Session 094)**: (1) **VOID DEV 헌법 v3.6 G-1 Reality Gate 소급
+> 형식화** (프롬프트 C) — 상태 C, `docs/feasibility/{thepick.feasibility,ceiling}.md`
+> (split-verdict: 🟢 아키텍처 축소GO·배포완료 / 🟡 graph-walk 정답률 R3 **BLOCKED**=기존
+> G-S5 동일물 / 🔴 0, fabricate 0) + CLAUDE.md 상단 G-1 블록(최우선) + **기계강제 hook**
+> (`scripts/g1-forbidden-phrase.mjs` added-lines 스캔·execFileSync + husky + CI
+> `g1-gate.yml`, 5/5+E2E 검증, 레거시 61 plan 영향 0 — "범용" 제외·added-lines 로 헌법
+> 예시 개선). 커밋 `2a4aaa8`. (2) **TR-0 게이트 #1 결재 완료** = plan `approved_by=진산`
+> (2026-05-30 "다음 진행") + ADR-046 **Accepted**. 마이그 0038 번들 커밋 `ecd375e`
+> (선작성본 → formal sign-off, schema.ts/test/4-Pass 동봉). ⇒ **잔여 진산 게이트 2**:
+> ② D-4 distractor 결재(ADR §D-6) ③ production 적용(`wrangler --remote`=게이트 #3,
+> 진산 Cloudflare 인증, **미수행**) → related_nodes backfill → G-S5 측정(북극성).
+> 상세 [[project_phase2_tech_debt_review_20260529]].
 
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),
