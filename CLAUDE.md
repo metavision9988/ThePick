@@ -166,9 +166,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > `g1-gate.yml`, 5/5+E2E 검증, 레거시 61 plan 영향 0 — "범용" 제외·added-lines 로 헌법
 > 예시 개선). 커밋 `2a4aaa8`. (2) **TR-0 게이트 #1 결재 완료** = plan `approved_by=진산`
 > (2026-05-30 "다음 진행") + ADR-046 **Accepted**. 마이그 0038 번들 커밋 `ecd375e`
-> (선작성본 → formal sign-off, schema.ts/test/4-Pass 동봉). ⇒ **잔여 진산 게이트 2**:
-> ② D-4 distractor 결재(ADR §D-6) ③ production 적용(`wrangler --remote`=게이트 #3,
-> 진산 Cloudflare 인증, **미수행**) → related_nodes backfill → G-S5 측정(북극성).
+> (선작성본 → formal sign-off, schema.ts/test/4-Pass 동봉). (3) **게이트 B golden 검수 완료**
+> = `golden-pilot-approved.json` 동결(APPROVE 7+FIX 5/순환위반 0, 노드 코퍼스 488 실재검증,
+> expected평균 1.57→2.71). 커밋 `180d986`. (4) **게이트 #2(D-4 distractor) 결재 = (a) SUPERSEDES**
+> (ADR §D-6 OPEN 해소, 0038 불변·7c 직접UPDATE→SUPERSEDES 재설계 의무). 커밋 6개 push 완료.
+> ⇒ **잔여 진산 게이트 = #3 단 하나**: production 적용(`wrangler --remote`, 진산 Cloudflare
+> 인증, **미수행**) → 0038 적용 → related_nodes backfill(approved.json) → G-S5 측정(북극성).
 > 상세 [[project_phase2_tech_debt_review_20260529]].
 
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1

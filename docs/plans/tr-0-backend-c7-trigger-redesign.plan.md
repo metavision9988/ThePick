@@ -103,10 +103,10 @@ related:
 > 추가: `distractors`(객관식 오답 후보)는 D-1 극성과 무관히 답안안전 표면이므로 보호등급
 > 별도 명시 권장(사전심사 MAJOR).
 
-> ✅ **D-4 추가 (2026-05-29 4-Pass MAJOR-1, OPEN)**: `distractors` 직접 UPDATE 백필(Step 3-UX-7c
+> ✅ **D-4 (2026-05-29 4-Pass MAJOR-1) — 진산 결재 2026-05-30 = (a) SUPERSEDES 경로**: `distractors` 직접 UPDATE 백필(Step 3-UX-7c
 > 파이프라인 `PUT /api/admin/distractors` 설계)이 0038 distractors ABORT 와 충돌(forward-compat 트랩).
-> 진산 결재: (a) SUPERSEDES 경로(권고) / (b) 화이트리스트 이동 / (c) 별도 staging. 옵션표 = ADR-046 §D-6.
-> 7c 착수는 본 결재 후. 현 0038 = distractors ABORT 유지. [[project_multi_source_choice_basis_track]] 연결.
+> ✅ 채택 = **(a) SUPERSEDES** (신규 INSERT + superseded_by, 직접 UPDATE 금지). 옵션표 = ADR-046 §D-6.
+> 0038 = distractors ABORT **유지(불변, 정합)**. Step 3-UX-7c `PUT` 직접 UPDATE → **SUPERSEDES 재설계**(7c 착수 시 선결, distractor.ts/phase3 plan 동기). 현 7c 미구현=무파손. [[project_multi_source_choice_basis_track]] 연결.
 
 ## 3. 대상 파일
 

@@ -92,7 +92,7 @@ exam_questions 에 컬럼 추가 시 (마이그/schema.ts PR):
 3. 메타 화이트리스트면 → 추가하지 않음(허용). 단 답안 노출 표면인지 재검토.
 4. 본 ADR D-0 표 + schema.ts 1:1 정합 확인.
 
-### D-6. distractors UPDATE vs Step 3-UX-7c 파이프라인 충돌 (★OPEN — 4-Pass MAJOR-1, 진산 결재 필요)
+### D-6. distractors UPDATE vs Step 3-UX-7c 파이프라인 충돌 (✅ 결재 = (a) SUPERSEDES, 2026-05-30)
 
 4-Pass(`review-20260529-213954-4pass-changes.md` MAJOR-1)가 모듈 간 계약 충돌을 발견:
 
@@ -112,9 +112,9 @@ exam_questions 에 컬럼 추가 시 (마이그/schema.ts PR):
 | (b) distractors 화이트리스트 이동 | distractors 를 UPDATE 허용으로 전환(0038 WHEN 에서 제외)                                         | 7c 직접 UPDATE / 답안 안전 표면 완화(검수 의존) |
 | (c) 별도 staging 테이블           | distractor_drafts 등 staging → 검수 후 SUPERSEDES 승격                                           | 무결성↑ / 신규 테이블·복잡도                    |
 
-→ 결정 전까지 **0038 = distractors ABORT 유지**(현 SQL). 7c 착수는 본 D-6 결재 후. `distractor.ts:6,66` docstring
+✅ **진산 결재 2026-05-30 = (a) SUPERSEDES 경로**. distractors 는 `answer` 급 보호 자산이므로 **직접 UPDATE 금지·SUPERSEDES(신규 INSERT + superseded_by)로만 백필**. **0038 = distractors ABORT 유지(불변, SQL 무변경)** — 본 결재와 정합.
 
-- phase3 plan 동기 의무. [[project_multi_source_choice_basis_track]] Phase B/C 와 연결.
+**Step 3-UX-7c 재설계 의무 (7c 착수 시 선결)**: 현 설계 `PUT /api/admin/distractors/:questionId` **직접 UPDATE → SUPERSEDES 경로로 재설계**(신규 행 INSERT + 원행 superseded_by). `apps/admin-web/src/types/distractor.ts:6,66` docstring + `docs/plans/phase3-learning-ux-modes.plan.md` Step 3-UX-7c 동기 의무(7c 착수 시점). 현재 7c 미구현 = 런타임 무파손. [[project_multi_source_choice_basis_track]] Phase B/C 와 연결.
 
 ## 트리거 설계 사양 (마이그 0038 구현 대상 — 인간 승인 후 작성)
 
