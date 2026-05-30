@@ -316,6 +316,16 @@ export const revisionChanges = sqliteTable('revision_changes', {
 // 6. Exam Questions
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// exam_questions UPDATE 정책 (ADR-046 / 마이그 0038 — default-deny)
+//   trigger prevent_exam_questions_body_update 의 WHEN enumeration 과 1:1 동결.
+//   ★ 컬럼 추가 시 아래 분류 1개 배정 + (본문/상태/답안안전/불변이면) 0038 후속 마이그 WHEN 갱신 의무.
+//   • 본문(ABORT,SUPERSEDES): content/answer/explanation/subject/year/round/questionNumber/examType
+//   • 상태머신(ABORT,D-2):    status/supersededBy/validUntil/validFrom
+//   • 답안안전(ABORT,D-1·D-3): distractors/calcVariables  ← 학습자 노출·Formula Engine 결합
+//   • 불변(ABORT):            id/createdAt
+//   • 메타 화이트리스트(UPDATE 허용): relatedNodes/relatedConstants/topicCluster/memorizationType/confusionType/inputType
+// ---------------------------------------------------------------------------
 export const examQuestions = sqliteTable('exam_questions', {
   id: text('id').primaryKey(),
   year: integer('year').notNull(),
