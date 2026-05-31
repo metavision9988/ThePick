@@ -85,3 +85,37 @@ THEPICK_API_BASE=http://localhost:8787 \
 
 연계: phase2-tech-debt-20260529-INDEX.md §5 Q2 / §7 자기 검증 (C-1 강등
 가능성 자가 반박 영속).
+
+## 게이트 #3 실행 사전점검 (진산 인증 세션)
+
+> ★ 측정은 백필에 의존하지 않는다 — runner 는 golden 파일 relatedNodesRaw 를
+> expected 로 직접 읽고 `/api/search/graph` 결과만 채점. 백필은 학습자 경로
+> 근거 노출(TR-0 본래 목적)용 별개 작업. 북극성(측정)만 빠르게: 0·3, 학습자
+> 데이터까지: +1·2.
+
+- **0. 엔드포인트 점검(필수)**: 배포 Worker 에 `/api/search/graph`(S5-3) 생존 확인.
+  S5-3~S5-6 코드가 마지막 `wrangler deploy` 이후이면 미배포 → 측정 404.
+  불확실 시 `wrangler deploy`(/api/search 불변·additive) 후
+  `curl -sX POST <Worker>/api/search/graph -H 'content-type: application/json' -d '{"examId":"son-hae-pyeong-ga-sa","query":"손해평가","topK":5}'` → 200·graphExpansion 필드 확인.
+- **1. 0038 적용**: `wrangler d1 execute thepick-db-production --remote --file=migrations/0038_exam_questions_metadata_update_allow.sql`
+- **2. 백필(학습자용·측정 무관)**: `backfill-related-nodes-pilot.draft.sql` STEP 0→1→2.
+- **3. G-S5 측정(북극성)**: `THEPICK_API_BASE=<Worker> pnpm tsx scripts/measure-s5-6-multihop-accuracy.ts --golden docs/plans/s5-6-measurements/golden-pilot-approved.json`
+- **4. 리포트 공유**: `s5-6-remote-g-s5-<stamp>.md` 를 Claude 에 전달.
+
+## 측정 후 처리 (Claude 자동 — RULE #5: GO 는 진산, 나는 사실+분기만)
+
+1. **사실 추출**: 3분할(절단제외[권장]/전체/절단만) graphOnlyRecovery·regression·
+   hitRateDelta·recall + unmeasurable/no_seed/malformed. flagged(Q-2019-05-031
+   approximate / Q-2025-11-2ND-004 partial / truncated) 분리 주석. AI 자기채점 0.
+2. **S5-7 §7 분기 매핑** (단정 아닌 매핑):
+   - graphOnlyRecovery 유의 ∧ regression 작음 ∧ Δ>0 → **GO 후보**
+   - 양수이나 미미 → **CONDITIONAL**(A-3 섀도 지속/선별)
+   - regression ≥ graphOnlyRecovery 또는 Δ≤0 → **NO-GO**(옵션 C 격리 유지)
+   - ⚠️ CPU p95<50ms(G-S7-3)는 별도 게이트 — graph-search-route elapsedMs
+     telemetry 확인 또는 후속 측정(정확도 측정으론 미산출).
+3. **산출물**: `s5-6-g-s5-analysis.md`(신규) / S5-7 plan §7 갱신 + §8 측정값 행 /
+   feasibility R3(🟡→측정값)·R4·R5(진산 결정 후) / ceiling R2 graph-walk 행 /
+   CLAUDE.md 현재상태 + memory sync.
+4. **진산 결재 상신**: §7 GO/NO-GO + (GO 시) A-1/A-2/A-3 + 545 전수 확대 여부.
+   ⛔ A 코드 착수 = §7 GO + 별도 결재 후(자율 금지). N=12 = 신호 — pilot GO 여도
+   통계 일반화는 545 전수 확대 후.
