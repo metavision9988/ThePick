@@ -158,11 +158,11 @@ review-20260515-202957 §4 + CO6/S5-6a 리뷰 누적.
 → G-S7-1·3·4·5·6 = 코드/측정 게이트. **G-S7-2(ROI) = G-S5 실측 의존
 = 인증 게이트.** 전 PASS 전 A 전량 금지.
 
-## 7. ROI / GO 판정 (★ 조건부 — G-S5 실측 전 공란)
+## 7. ROI / GO 판정 (✅ G-S5 1차 실측 완료 2026-06-01 — NO-GO 방향)
 
-> plan §6-B: "데이터로 A 통합 ROI 입증 후 A 결재". 본 절은 G-S5 실측
-> (`docs/plans/s5-6-measurements/s5-6-remote-g-s5-*.md`) 산출 후 채운다.
-> 측정 전 GO 결재 = plan 위배(Reality Anchor #2). **현재 = 미정.**
+> plan §6-B: "데이터로 A 통합 ROI 입증 후 A 결재". **G-S5 1차 실측 완료**
+> (`s5-6-remote-g-s5-2026-06-01-1242.md`, 분석 `s5-6-g-s5-analysis.md`).
+> production Worker `07b5f47d` 배포 후 측정. **결과 = NO-GO 방향** (아래).
 
 판정 규칙(측정 후 적용):
 
@@ -174,17 +174,56 @@ review-20260515-202957 §4 + CO6/S5-6a 리뷰 누적.
   A 통합 기각, 옵션 C 격리 유지(정체성 미회복 명시 trade 영속). 자원
   낭비 방지 — 측정이 기각을 말하면 기각.
 
-## 8. 진산 결재 체크포인트 (S5-7-0 — ⏸️ 대기)
+### 7.1 G-S5 1차 실측 결과 (사실 — RULE #5: 결정은 진산)
 
+| 지표 (절단제외, measured=3) | baseline (vector) | graph |             Δ |
+| :-------------------------- | ----------------: | ----: | ------------: |
+| hit-rate                    |              100% | 66.7% |    **−33.3%** |
+| mean recall                 |             73.3% | 66.7% |         −6.7% |
+| graphOnlyRecovery           |                 — |     — |         **0** |
+| regression                  |                 — |     — | **1 (Q-012)** |
+
+(전체 measured=4: hit-rate Δ −25%, graphOnlyRecovery 0, regression 1.)
+
+- **판정 매핑**: graphOnlyRecovery 0 ≤ regression 1 ∧ hit-rate Δ < 0 →
+  **§7 NO-GO 분기 해당** (CONDITIONAL "양수" 조건 미충족).
+- **원인 (raw 적대 검증, 분석 §2)**: graph 확장이 Formula 노드(F-xx) 과다
+  유입(expandedNodeCount 6~53)으로 정답 후보 축출. Q-012 = baseline 이 회수한
+  INV-035 를 재정렬이 top5 밖으로 밀어내고 전부 F-노드로 교체.
+- **부수 수확**: baseline(vector-only) hit-rate 100% = 🟢 Vector RAG 바닥 재확인.
+
+### 7.2 신호 한계 (과대해석 금지)
+
+- **N=4 measurable** (query>500 measurable 3건 제외 후, 진산 결재 2026-06-01).
+  통계 일반화 불가 — 신호 방향만. 측정 4건 중 3건이 단일-hop LAW(graph 무관),
+  multi-hop 의존은 Q-012 1건뿐인데 regression.
+- 현 graph 파라미터(maxDepth 2, edge whitelist 12) 결과 — **"현 설정에서 순손실"**
+  이 정확한 서술 (알고리즘 자체 사망 단정 아님). 재시도 선결 = F-노드 유입 억제
+  - multi-hop 표본 확대 (별도 plan·결재).
+- CPU 예산(G-S7-3)은 정확도 측정으로 미산출 — 별도.
+
+### 7.3 진산 결재 대기 (GO/NO-GO)
+
+- [ ] **NO-GO 확정** (권고 방향) — 옵션 C 격리 유지, "Vector RAG 로 출시"(🟢 바닥).
+      graph-walk 매몰 최소(격리). feasibility R5 기록.
+- [ ] **CONDITIONAL** — N 확대(30~50, multi-hop 가중) + F-노드 억제 후 재측정
+      하고서 재판정 (graph 1회 더 기회).
+- [ ] 기타 (진산 지시).
+
+## 8. 진산 결재 체크포인트 (S5-7-0)
+
+> ✅ **G-S5 1차 실측 완료 (2026-06-01)** → §7.3 GO/NO-GO 가 **1차 결재 항목**으로
+> 부상. 측정 결과 = NO-GO 방향(§7.1). 아래 1~3(통합 방식/선결/L-1)은 §7.3 에서
+> GO 또는 CONDITIONAL 결정 시에만 유효 — NO-GO 확정 시 전부 보류(옵션 C 격리 유지).
+
+0. **★ GO/NO-GO (§7.3 — 1차)**: NO-GO 확정(권고) / CONDITIONAL(재측정) / 기타.
 1. **통합 방식(§2)**: A-3 섀도→A-2 플래그→전량 (권고) / A-2 직행 /
-   A-1 인라인 / 기타.
-2. **선결 순서**: CO7-1·CO7-3·CO-6a-3·Pass2 m-2 를 G-S5 측정 _전_ vs
-   _후_ 처리 (CO7-1 은 측정 정확도에도 영향 → 측정 전 권고).
-3. **L-1 rate limiter namespace**: 진산 Cloudflare 자원 provision 시점.
-4. **GO 판정(§7)**: G-S5 실측 산출 후 본 문서 §7 갱신 → 재결재.
+   A-1 인라인 / 기타. _(GO/CONDITIONAL 시에만)_
+2. **선결 순서**: CO7-1·CO7-3·CO-6a-3·Pass2 m-2. _(GO/CONDITIONAL 시에만)_
+3. **L-1 rate limiter namespace**: 진산 Cloudflare 자원. _(GO 시에만)_
 
-→ 본 결재 자료로 1~3 방향 확정 시 S5-7 구현 plan(별도) 분해. **§7 GO
-없이 A 코드 착수 금지**(자율 금지 영속).
+→ **§7.3 GO 없이 A 코드 착수 금지**(자율 금지 영속). NO-GO 시 graph-walk
+매몰 최소(옵션 C 격리) — 측정 기반 의사결정의 정상 산물(§9).
 
 ## 9. 잔존 위험 / trade-off
 

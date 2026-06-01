@@ -173,6 +173,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > ⇒ **잔여 진산 게이트 = #3 단 하나**: production 적용(`wrangler --remote`, 진산 Cloudflare
 > 인증, **미수행**) → 0038 적용 → related_nodes backfill(approved.json) → G-S5 측정(북극성).
 > 상세 [[project_phase2_tech_debt_review_20260529]].
+>
+> ★ **2026-06-01 갱신 (Session 096) — 북극성 G-S5 1차 실측 완료**: 진산 위임 하 Claude 가
+> production Worker 재배포(`wrangler deploy --env production`, Version `07b5f47d` — graph 라우트
+> S5-3 가 2026-05-10 빌드에 미포함 → `/api/search/graph` 404였음. `/api/search` 불변·additive,
+> api 671 PASS 회귀 0) 후 **G-S5 측정 실행**. **측정 ≠ DB 백필 의존**(runner 가 golden 파일
+> relatedNodesRaw 직접 채점 + `/api/search/graph` vector+graph-walk 결과만) → 0038/백필 없이 측정
+> (게이트 #3 의 마이그·백필은 여전히 미수행·진산 전용). **발견: graph route query max 500자**
+> (graph-search-route.ts:79) → golden measurable 7 중 3건(Q-004/014/015 2차 서술형) 400 거부 →
+> **진산 결재(2026-06-01) "초과 3건 제외, measurable 4건만 측정"**(subset `golden-pilot-approved.query-le500.json`,
+> 원본 불변). **결과(절단제외 measured=3 / 전체 4): graphOnlyRecovery 0 · regression 1(Q-012) ·
+> hit-rate Δ −33%(절단제외)~−25%(전체) = baseline 미달.** raw 적대검증: graph 확장이 Formula 노드
+> (F-xx) 과다 유입(expandedNodeCount 6~53)으로 정답 축출(Q-012 = baseline 회수한 INV-035 를 top5 밖
+> 으로). **§7 NO-GO 방향**(S5-7 §7.1~7.3 진산 결재 대기: NO-GO 확정 권고 / CONDITIONAL 재측정).
+> ★ baseline(vector) hit-rate **100%** = 🟢 Vector RAG 바닥 실측 재확인. 한계: N=4 신호(통계
+> 일반화 아님)·손해평가 도메인·현 graph 파라미터(maxDepth2/whitelist12) 기준 "순손실"(알고리즘
+> 사망 단정 아님). feasibility R3 측정완료·R5 §7.3 대기 / ceiling R1·R2 graph-walk 행 🟡→🔻 갱신.
+> 분석 `docs/plans/s5-6-measurements/s5-6-g-s5-analysis.md` + 리포트 `s5-6-remote-g-s5-2026-06-01-1242.md`.
+> 상세 [[project_s5_6_eval_measurement_gate]]. (백필 SQL 초안 `28c25f3` 은 학습자 경로용·미실행 유지.)
 
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),
