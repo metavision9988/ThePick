@@ -119,7 +119,7 @@ jobs:
       # → 평균 ~50% 다운로드 절감. `install` 시 동일 버전 검증 후 skip하므로 회귀 위험 0.
       - name: Cache Playwright browsers
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('apps/web/package.json') }}
