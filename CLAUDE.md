@@ -191,6 +191,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > 사망 단정 아님). feasibility R3 측정완료·R5 §7.3 대기 / ceiling R1·R2 graph-walk 행 🟡→🔻 갱신.
 > 분석 `docs/plans/s5-6-measurements/s5-6-g-s5-analysis.md` + 리포트 `s5-6-remote-g-s5-2026-06-01-1242.md`.
 > 상세 [[project_s5_6_eval_measurement_gate]]. (백필 SQL 초안 `28c25f3` 은 학습자 경로용·미실행 유지.)
+>
+> ★ **2026-06-02 갱신 (Session 096 후속) — G-S5 NO-GO "시기상조"로 교정 (5-페르소나 적대 감사)**:
+> 진산 통찰("정확성 검증 ③층=판단·방법론은 사람이 어렵다, AI 다각 페르소나가 객관 검토 낫다")로
+> 코드용 4-Pass/5-페르소나 패턴을 **콘텐츠·측정 정확성 층에 첫 적용**(워크플로우 5 독립 페르소나:
+> 손해평가실무/RAG엔지니어/측정과학자/순환편향감사관/적대통계가 + 종합). **메타판정 = NO-GO
+> 시기상조**(4 PREMATURE+1 SOUND한정). 결정적: (1) 유일 regression(Q-012)이 **maxDepth=1 로 가역**
+> (메인 production raw 직접 재현: depth2 INV-035 축출 → depth1 rank3 유지) = `truthWeight 1차정렬×
+score=0 병합` 튜닝 아티팩트, 알고리즘 한계 아님. (2) graph **유효표본 N=1**(measurable 4 중 3건
+> 단일-hop LAW; graph 빛날 multi-hop 3건 Q-004/014/015 는 query>500 답안키 패딩으로 제외 = 표적 75%
+> 빠짐). (3) baseline 100% 도 부분 아티팩트(생존편향+golden 명칭대조=vector 친화). ⇒ **1차 단독
+> NO-GO 보고가 과잉 일반화였음 — 다각 감사가 교정**(진산 통찰 직접 입증). 순환편향 = 채점단계 코드차단
+> 확인, 잔여=표적정의층(진산 검수가 차단막). **진산 결재 큐 7항**(절대값 임계 사용 여부 / 답안키-본문
+> 분리 정책 / graph 재설계 (a)hop감쇠 (b)truthWeight우선권제거 / §7 임계규칙 N≥30 한정 / 등) +
+> **AI 후속 7항**(maxDepth1 전수재측정 / 답안키제거 스크립트 / expandedNodes surface / timeout 정량 /
+> mean-recall headline / 등 = 메인 자율 처리, 진산 부담 0). 감사 영속 `g-s5-multipersona-audit-20260602.md`.
+> feasibility R3/R4/R5 + ceiling + S5-7 §7 전부 "NO-GO 시기상조"로 정정. 재사용 프로토콜
+> `content-accuracy-audit` 신설 가치. 상세 [[project_s5_6_eval_measurement_gate]] + [[feedback_multipersona_accuracy_audit]].
 
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),

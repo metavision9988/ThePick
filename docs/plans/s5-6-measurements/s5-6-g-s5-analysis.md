@@ -1,5 +1,14 @@
 # G-S5 측정 분석 — multi-hop 정답률 실측 (북극성, 1차)
 
+> ⚠️ **2026-06-02 정정 (5-페르소나 적대 감사)**: 본 문서 §3 의 "§7 NO-GO 방향"
+> 결론은 **과도 일반화로 판정되어 "NO-GO 시기상조(PREMATURE)"로 교정**됨. 핵심:
+> (1) −33% 헤드라인을 만든 유일 regression(Q-012)이 **maxDepth=1 로 가역**(메인 raw
+> 재현) = 알고리즘 한계 아닌 튜닝 아티팩트. (2) 측정 measurable 4 중 graph 유효 표본
+> = Q-012 **1건뿐**(나머지 3 단일-hop LAW). graph 가 빛날 multi-hop 3건(Q-004/014/015)은
+> query>500(답안키 패딩)으로 제외. ⇒ **측정값은 재현·결정적이나 "graph-walk NO-GO"
+> 일반화 불가**. 상세 + 진산 결재 큐: `g-s5-multipersona-audit-20260602.md`. 아래 §1~2
+> 측정 사실은 유효(재현됨), §3 결론 해석만 교정.
+
 > **MODE=REMOTE_G_S5** — 실 production D1 + Vectorize (`thepick-api-production`,
 > Version `07b5f47d`, 2026-06-01). 원본 리포트:
 > `s5-6-remote-g-s5-2026-06-01-1242.{md,json}`.

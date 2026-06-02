@@ -186,11 +186,19 @@ review-20260515-202957 §4 + CO6/S5-6a 리뷰 누적.
 (전체 measured=4: hit-rate Δ −25%, graphOnlyRecovery 0, regression 1.)
 
 - **판정 매핑**: graphOnlyRecovery 0 ≤ regression 1 ∧ hit-rate Δ < 0 →
-  **§7 NO-GO 분기 해당** (CONDITIONAL "양수" 조건 미충족).
-- **원인 (raw 적대 검증, 분석 §2)**: graph 확장이 Formula 노드(F-xx) 과다
-  유입(expandedNodeCount 6~53)으로 정답 후보 축출. Q-012 = baseline 이 회수한
-  INV-035 를 재정렬이 top5 밖으로 밀어내고 전부 F-노드로 교체.
-- **부수 수확**: baseline(vector-only) hit-rate 100% = 🟢 Vector RAG 바닥 재확인.
+  §7 NO-GO 분기 형식 해당. **단 5-페르소나 감사(2026-06-02)가 "NO-GO 시기상조"로 메타교정**(아래).
+- **원인 (raw 적대 검증)**: graph 확장이 Formula 노드(F-xx) 과다 유입으로 정답 축출.
+  Q-012 = baseline 회수 INV-035 를 재정렬이 top5 밖으로.
+- **★ 5-페르소나 감사 교정 (2026-06-02, `g-s5-multipersona-audit-20260602.md`)**:
+  - regression 진짜 원인 = **병합 정렬 설계 결함**(`compareByTruthWeightThenScore` truthWeight
+    1차정렬 + graph 확장노드 `buildHit(src,0)` score=0 → tw8 FORMULA 가 tw7 INV-035 결정론적 축출).
+    **maxDepth=1 로 가역**(메인 raw 재현: INV-035 rank3 복귀) = 튜닝 아티팩트, 알고리즘 한계 아님.
+  - **유효 graph 표본 = N=1**(measurable 4 중 3건 단일-hop LAW = graph 동률 구조; multi-hop 3건
+    query>500 제외). "graphOnlyRecovery 0"은 graph 실패 아닌 표본 결함.
+  - **§7 임계규칙 자체 결함**: "regression≥graphOnlyRecovery OR Δ≤0"이 소표본서 NO-GO 구조적
+    강제(1≥0 항상 참) → 임계규칙을 "N≥30 + multi-hop 가중 표본에서만 GO/NO-GO" 로 재정의 필요(진산 큐 #4).
+  - ⇒ **NO-GO/GO 둘 다 현 데이터로 확정 불가 = 재측정이 정상 경로.**
+- **부수 수확**: baseline(vector) hit-rate 100% = Vector RAG 바닥(단, golden 명칭대조=vector 친화 편향 감안).
 
 ### 7.2 신호 한계 (과대해석 금지)
 
