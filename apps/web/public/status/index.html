@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex,nofollow" />
+<title>쪽집게(ThePick) — 현황판</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1d212b; --line:#2a2f3a;
+    --ink:#e7eaf0; --dim:#9aa3b2; --faint:#6b7384;
+    --done:#3fb950; --prog:#d29922; --todo:#f85149; --info:#58a6ff; --na:#484f5e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Pretendard,"Apple SD Gothic Neo",sans-serif;
+    line-height:1.55;font-size:15px}
+  a{color:var(--info);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 20px 80px}
+  header{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:24px}
+  header h1{font-size:24px;margin:0;letter-spacing:-.02em}
+  header .sub{color:var(--dim);font-size:13px}
+  header .date{margin-left:auto;color:var(--faint);font-size:13px}
+  h2{font-size:15px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin:34px 0 14px;font-weight:600}
+  .grid{display:grid;gap:14px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  /* hero */
+  .hero{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.hero{grid-template-columns:1fr}}
+  .big{font-size:42px;font-weight:700;letter-spacing:-.02em}
+  .big small{font-size:15px;color:var(--dim);font-weight:400}
+  .live a{display:block;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:11px 14px;margin-top:9px;font-weight:600}
+  .live .tag{display:inline-block;font-size:11px;color:var(--done);border:1px solid var(--done);border-radius:5px;padding:1px 6px;margin-left:7px;vertical-align:middle}
+  .live .url{color:var(--faint);font-weight:400;font-size:12px;display:block;margin-top:2px}
+  /* progress bars */
+  .bar{display:flex;align-items:center;gap:12px;margin:9px 0}
+  .bar .name{width:230px;flex:none;font-size:14px}
+  .bar .name small{color:var(--faint)}
+  .bar .track{flex:1;height:11px;background:var(--panel2);border-radius:6px;overflow:hidden}
+  .bar .fill{height:100%;border-radius:6px}
+  .bar .pct{width:42px;text-align:right;color:var(--dim);font-variant-numeric:tabular-nums;font-size:13px}
+  /* tiles */
+  .tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+  @media(max-width:720px){.tiles{grid-template-columns:repeat(3,1fr)}}
+  .tile{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;text-align:center}
+  .tile .n{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+  .tile .l{font-size:11px;color:var(--faint);margin-top:2px}
+  /* north star */
+  .ns{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.ns{grid-template-columns:1fr}}
+  .metric{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px dashed var(--line)}
+  .metric:last-child{border-bottom:0}
+  .metric .v{font-variant-numeric:tabular-nums;font-weight:600}
+  .v.good{color:var(--done)} .v.bad{color:var(--todo)} .v.flat{color:var(--prog)}
+  /* decisions */
+  .dec{border-left:3px solid var(--na);background:var(--panel2);border-radius:0 9px 9px 0;padding:11px 14px;margin:9px 0}
+  .dec.jin{border-left-color:var(--todo)}
+  .dec.claude{border-left-color:var(--na)}
+  .dec .t{font-weight:600}
+  .dec .m{color:var(--dim);font-size:13px;margin-top:3px}
+  .chip{display:inline-block;font-size:11px;border-radius:5px;padding:1px 7px;margin-right:6px;vertical-align:middle}
+  .chip.jin{background:rgba(248,81,73,.15);color:#ff8a80;border:1px solid rgba(248,81,73,.4)}
+  .chip.cl{background:rgba(88,166,255,.12);color:var(--info);border:1px solid rgba(88,166,255,.35)}
+  .chip.now{background:rgba(210,153,34,.15);color:#e3b341;border:1px solid rgba(210,153,34,.4)}
+  /* tracks */
+  .trk{display:grid;grid-template-columns:160px 1fr 70px;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:center}
+  .trk:last-child{border-bottom:0}
+  .trk .k{color:var(--dim);font-size:13px}
+  .trk .own{font-size:11px;text-align:right;color:var(--faint)}
+  .note{color:var(--faint);font-size:12.5px;margin-top:8px}
+  .legend{color:var(--faint);font-size:12px;margin-top:6px}
+  ul.tl{list-style:none;padding:0;margin:0}
+  ul.tl li{padding:6px 0;border-bottom:1px dashed var(--line);font-size:13.5px;color:var(--dim)}
+  ul.tl li b{color:var(--ink)}
+  ul.tl li:last-child{border-bottom:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>쪽집게 <span style="color:var(--faint);font-weight:400">현황판</span></h1>
+    <span class="sub">손해평가사 AI 학습 · 엔진-우선 단계</span>
+    <span class="date">기준 2026-06-05 · Session 098</span>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="panel">
+      <div style="color:var(--dim);font-size:13px">전체 진척 (기획 대비)</div>
+      <div class="big">62–64<small> %</small></div>
+      <div class="note">코드·테스트·파일 기준 64% / 상용 준비 기준 58–64% (독립 감사 범위 내).
+        엔진·인프라는 거의 완성, "보이는 학습 기능 + 콘텐츠 생성"이 남은 큰 덩어리.</div>
+    </div>
+    <div class="panel live">
+      <div style="color:var(--dim);font-size:13px">지금 바로 볼 수 있는 것 (라이브)</div>
+      <a href="https://thepick-web.pages.dev" target="_blank">📱 학습 앱 (PWA)<span class="tag">LIVE 200</span>
+        <span class="url">thepick-web.pages.dev — 폰으로 열어서 학습 시작 → 풀이 가능</span></a>
+      <a href="https://thepick-api-production.metavision9988.workers.dev/health" target="_blank">⚙️ API (검색 엔진)<span class="tag">LIVE 200</span>
+        <span class="url">…workers.dev — 794 노드 검색 엔드포인트</span></a>
+    </div>
+  </div>
+
+  <!-- PHASE PROGRESS -->
+  <h2>단계별 진척</h2>
+  <div class="panel">
+    <div class="bar"><div class="name">P0 기반 + PoC <small>완료</small></div><div class="track"><div class="fill" style="width:95%;background:var(--done)"></div></div><div class="pct">95%</div></div>
+    <div class="bar"><div class="name">P1 데이터 + 코어 엔진</div><div class="track"><div class="fill" style="width:62%;background:var(--prog)"></div></div><div class="pct">62%</div></div>
+    <div class="bar"><div class="name">P2 콘텐츠 + 학습 서비스</div><div class="track"><div class="fill" style="width:48%;background:var(--prog)"></div></div><div class="pct">48%</div></div>
+    <div class="bar"><div class="name">P3 런칭 준비</div><div class="track"><div class="fill" style="width:30%;background:var(--todo)"></div></div><div class="pct">30%</div></div>
+    <div class="bar"><div class="name">Y2 멀티시험 확장 <small>인벤토리만</small></div><div class="track"><div class="fill" style="width:5%;background:var(--na)"></div></div><div class="pct">5%</div></div>
+    <div class="legend">초록=거의완료 · 주황=진행중 · 빨강=착수단계 · 회색=미착수</div>
+  </div>
+
+  <!-- DATA -->
+  <h2>적재된 콘텐츠 (production D1, 실측)</h2>
+  <div class="tiles">
+    <div class="tile"><div class="n">794</div><div class="l">지식 노드</div></div>
+    <div class="tile"><div class="n">1,274</div><div class="l">엣지(관계)</div></div>
+    <div class="tile"><div class="n">157</div><div class="l">산식</div></div>
+    <div class="tile"><div class="n">193</div><div class="l">상수</div></div>
+    <div class="tile"><div class="n">545</div><div class="l">기출 문항</div></div>
+    <div class="tile"><div class="n">488</div><div class="l">승인(approved)</div></div>
+  </div>
+
+  <!-- NORTH STAR -->
+  <h2>북극성 — graph 정답률 (2026-06-05 2차 실측 완료)</h2>
+  <div class="ns">
+    <div class="panel">
+      <div style="color:var(--dim);font-size:13px;margin-bottom:8px">측정 결과 (공정 재측정, queryBody)</div>
+      <div class="metric"><span>Vector 기본 검색 (baseline)</span><span class="v good">정상 작동 83.3%</span></div>
+      <div class="metric"><span>graph 순기여 (depth1)</span><span class="v flat">0 — 무해·무익</span></div>
+      <div class="metric"><span>graph 순기여 (depth2)</span><span class="v bad">−20% — 순손실</span></div>
+      <div class="metric"><span>graphOnlyRecovery</span><span class="v bad">0 (양쪽 depth)</span></div>
+    </div>
+    <div class="panel">
+      <div style="color:var(--dim);font-size:13px;margin-bottom:8px">한 줄 해석 (사실 — 판정은 진산)</div>
+      <div class="note" style="color:var(--ink);font-size:14px">
+        현 graph 파라미터는 <b>vector 검색에 보태는 게 없음</b>(depth2는 오히려 정답을 밀어냄).
+        실패 원인은 ① F-노드 범람 ② 랭킹 무변별 ③ 정답 노드 엣지 부재(자기부담금) ④ 시드 품질.
+        ②③④ 중 일부는 튜닝/데이터로 회복 가능성 있으나 <b>표본 N=1</b> — "원리 사망"은 미증명.
+      </div>
+      <div class="note">→ 진산 결정: <b>depth1만 적용+보류</b> / <b>재설계 투자</b>(plan §9) / <b>NO-GO</b>. 셋 중 하나.</div>
+    </div>
+  </div>
+
+  <!-- DECISIONS -->
+  <h2>진산이 결정할 것 — 재정리 (측정 완료로 대폭 축소)</h2>
+  <div class="panel">
+    <div class="note" style="margin-bottom:10px">
+      문서상 "결재 대기"는 22건이나, 대부분 <b>"G-S5 측정을 위한 백필"</b> 전제로 쌓인 것 →
+      측정이 백필 없이 <b>이미 완료</b>되어 사슬이 풀렸습니다. <b>진짜 진산 전용 + 지금 필요한 건 3개</b>입니다.
+    </div>
+
+    <div class="dec jin"><span class="chip jin">진산 전용</span><span class="chip now">지금</span>
+      <span class="t">① graph 방향 결정 (북극성)</span>
+      <div class="m">측정 끝남. depth1+보류 / 재설계 투자 / NO-GO 중 택1. → <code>graph-walk-s5-8-redesign.plan.md §9</code></div></div>
+
+    <div class="dec jin"><span class="chip jin">진산 전용</span><span class="chip now">지금</span>
+      <span class="t">② "학습 앱에서 정답 근거(출처 노드) 보여주기" 기능을 지금 할지</span>
+      <div class="m">이게 TR-0 트리거·golden검수·ADR-046 사슬의 <b>실제 목적</b>입니다. 북극성과 무관(이미 측정됨).
+        지금 학습 UX 기능으로 진행할지, Phase 3로 미룰지만 정하면 됩니다.</div></div>
+
+    <div class="dec jin"><span class="chip jin">진산 전용</span>
+      <span class="t">③ 다음 큰 덩어리 우선순위</span>
+      <div class="m">"보이는 학습 기능 완성(P2)" vs "런칭 준비(P3)" vs "graph 재설계" 중 무엇부터. (방향만 — 구현은 Claude)</div></div>
+
+    <div class="dec claude"><span class="chip cl">Claude 자율</span>
+      <span class="t">나머지 ~19건 (plan 결재·4-Pass·구현·문서동기)</span>
+      <div class="m">대부분 "어떻게 만들지"는 제가 최선 품질로 처리하고 <b>결과를 보여드리면</b> 되는 것들.
+        진산님이 일일이 결재할 필요 없습니다 (지엽 결정 위임 원칙).</div></div>
+  </div>
+
+  <!-- REMAINING WORK -->
+  <h2>남은 구현 (트랙별 · 담당)</h2>
+  <div class="panel">
+    <div class="trk"><div class="k">북극성 graph</div><div>방향 결정 → (재설계 시) depth1·F억제·양방향·seed + 재측정</div><div class="own">진산+Claude</div></div>
+    <div class="trk"><div class="k">P2 학습 기능</div><div>문제 생성기(빈 stub)·OX 문제·혼동감지·암기법·모의시험 — <b>"보이는 것" 대부분 여기</b></div><div class="own">Claude</div></div>
+    <div class="trk"><div class="k">P2 정직성 정리</div><div>TR-1 단일 진실원 강제 + TR-2 Phase2 마감(테스트·성능)</div><div class="own">진산결재+Claude</div></div>
+    <div class="trk"><div class="k">P3 런칭</div><div>배포 자동화·운영 모니터링·DR runbook·E2E (TR-3 1주 스프린트)</div><div class="own">진산콘솔+Claude</div></div>
+    <div class="trk"><div class="k">콘텐츠</div><div>distractor(오답보기) 적재·2차 기출 확대·보기별 출처 라벨</div><div class="own">Claude(+자료)</div></div>
+    <div class="trk"><div class="k">법무·Year2</div><div>법무3종+탈퇴+이메일인증(런칭 직전) · 멀티시험 추상화(인벤토리만)</div><div class="own">미룸</div></div>
+  </div>
+
+  <!-- HOW WE GOT HERE -->
+  <h2>어쩌다 여기 왔나 — 최근 방향 전환</h2>
+  <div class="panel">
+    <ul class="tl">
+      <li><b>05-29</b> 5-페르소나 기술부채 리뷰 → CRITICAL 27건, TR-0~4 정리 (방향감 상실 첫 진단)</li>
+      <li><b>06-01</b> 북극성 1차 실측 → graph 미달(−33%), "NO-GO" 원보고</li>
+      <li><b>06-02</b> 5-페르소나 적대 감사 → "NO-GO 시기상조" 교정 (1차가 과잉 일반화였음)</li>
+      <li><b>06-04</b> queryBody 정화 결재 → 측정 입력에서 정답·해설 분리 (공정 측정 준비)</li>
+      <li><b>06-05</b> 2차 실측 완료 → depth1 무해·depth2 순손실, graph 순기여 0 (북극성 측정 종결)</li>
+    </ul>
+    <div class="note">패턴: 측정→과잉결론→다각감사로 교정→정화 재측정. 신중했으나, 그 과정이 전부 <b>문서·숫자</b>라 진산님 눈에 안 보였음.</div>
+  </div>
+
+  <div class="note" style="margin-top:30px;text-align:center">
+    이 현황판은 <code>apps/web/public/status/index.html</code> (라이브 <code>/status/</code>) · 데이터는 실측(production D1·G-S5 측정·결정 스캔).
+    다음부터 매 이정표마다 이 파일을 갱신해 "보이는 진척"으로 보고합니다.
+  </div>
+
+</div>
+</body>
+</html>
