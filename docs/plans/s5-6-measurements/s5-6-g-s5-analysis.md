@@ -68,6 +68,14 @@
 
 **확정 패턴**: graph 확장이 **Formula 노드(F-xx)를 과다 유입**(seedWalkCount 5, expandedNodeCount 6~53)시켜 정답 후보를 밀어낸다. 단일-hop 정답(LAW)이 top-1 견고한 문항은 정답 유지(동률), 정답이 하위 슬롯(INV-035 = baseline rank 2)이면 **F-노드 유입이 정답을 축출(regression)**. multi-hop 순 회수(baseline 미회수→graph 회수) = **0건**.
 
+> ⚠️ **node-ID 드리프트 주의 (정정 기재 2026-06-04 / 재현 실행 2026-06-02, 감사 §5 #5)**: 위 표의 **per-node top5 ID 는
+> 2026-06-01 1차 측정 시점 raw** 다. 하위 슬롯(rank 4~5)의 F-노드 ID(F-01/02/06/07 등)는 vector
+> 동률·확장 순서에 따라 **재실행 시 일부 달라질 수 있다**(per-node 증거만 stale, 결론 불변).
+> **durable 한 사실 = (1) regression 메커니즘**(F-노드 유입이 하위 슬롯 정답 축출) + **(2) 그
+> regression 이 `maxDepth=1` 로 가역**임 — 둘 다 5-페르소나 감사 §1 에서 **2026-06-02 라이브 재현**
+> (Version 07b5f47d). 정확한 per-node top5 는 **queryBody 재측정(`--maxDepth 1`&`2`, 결재 #2 후)**
+> 에서 새로 산출·치환 예정. 그 전까지 본 표는 "메커니즘 예시"로만 읽고 ID 자체를 인용하지 말 것.
+
 ## 3. §7 분기 매핑 (S5-7 plan §7 — 단정 아닌 매핑)
 
 > S5-7 §7 판정 규칙: NO-GO = "regression ≥ graphOnlyRecovery 또는 hit-rate Δ ≤ 0".

@@ -1,0 +1,49 @@
+{
+  "generatedAt": "2026-06-05T00:36:40.893Z",
+  "report": {
+    "total": 6,
+    "excludedUnmeasurable": 0,
+    "excludedNoSeed": 0,
+    "relatedMalformed": 0,
+    "coverageNote": "REMOTE G-S5 pilot golden — queryBody 판(결재 #2). measurable 6 측정 (Q-2025-11-2ND-004 자료표 유지로 583자 = 여전히 >500 미회복). N=12 워터마크 — 방법론·신호 방향 검증용, 통계 일반화 아님. 손해평가 도메인 한정. | maxDepth=2",
+    "overall": {
+      "measured": 6,
+      "baselineHitRate": 0.8333333333333334,
+      "graphHitRate": 0.6666666666666666,
+      "hitRateDelta": -0.16666666666666674,
+      "meanRecallBaseline": 0.580952380952381,
+      "meanRecallGraph": 0.5238095238095238,
+      "recallDelta": -0.05714285714285716,
+      "graphOnlyRecoveryCount": 0,
+      "regressionCount": 1,
+      "graphOnlyRecoveryIds": [],
+      "regressionIds": ["Q-2025-11-2ND-012"]
+    },
+    "excludingTruncated": {
+      "measured": 5,
+      "baselineHitRate": 0.8,
+      "graphHitRate": 0.6,
+      "hitRateDelta": -0.20000000000000007,
+      "meanRecallBaseline": 0.49714285714285716,
+      "meanRecallGraph": 0.42857142857142855,
+      "recallDelta": -0.06857142857142862,
+      "graphOnlyRecoveryCount": 0,
+      "regressionCount": 1,
+      "graphOnlyRecoveryIds": [],
+      "regressionIds": ["Q-2025-11-2ND-012"]
+    },
+    "truncatedOnly": {
+      "measured": 1,
+      "baselineHitRate": 1,
+      "graphHitRate": 1,
+      "hitRateDelta": 0,
+      "meanRecallBaseline": 1,
+      "meanRecallGraph": 1,
+      "recallDelta": 0,
+      "graphOnlyRecoveryCount": 0,
+      "regressionCount": 0,
+      "graphOnlyRecoveryIds": [],
+      "regressionIds": []
+    }
+  }
+}

@@ -8,7 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > 코드를 쓰기 전에 G-1을 통과해야 한다. G-1은 ACAP Stage -1(Deep Dive)보다도 앞에 온다.
 > **현 적용 상태 (2026-05-30 소급 형식화, 프롬프트 C):** 상태 **C**(가장 성숙). 판정서
 > `docs/feasibility/thepick.feasibility.md` + `ceiling.md`. **🟢 아키텍처(콘텐츠+산식+Vector RAG+FSRS)
-> = 축소 GO·production 배포 완료 / 🟡 graph-walk 정답률 = R3 BLOCKED(=기존 G-S5 측정 게이트, 미측정 0%).
+> = 축소 GO·production 배포 완료 / 🔻 graph-walk 정답률 = R3 **측정완료**(2026-06-01 1차 + 06-05 2차 queryBody depth1·2).
+> graph 순기여 0(graphOnlyRecovery 0 both·depth2 순손실 −20%·depth1 무익 0%) / **R5 GO/NO-GO 진산 대기**(단 "알고리즘 사망"은 시기상조: 재설계 미시도·N극소).
 > 🔴 조각 0.** graph-walk 전체 GO는 G-S5 실측 후 진산 R5 결재.
 
 ### AI(너)가 반드시 지킬 것
@@ -208,6 +209,34 @@ score=0 병합` 튜닝 아티팩트, 알고리즘 한계 아님. (2) graph **유
 > mean-recall headline / 등 = 메인 자율 처리, 진산 부담 0). 감사 영속 `g-s5-multipersona-audit-20260602.md`.
 > feasibility R3/R4/R5 + ceiling + S5-7 §7 전부 "NO-GO 시기상조"로 정정. 재사용 프로토콜
 > `content-accuracy-audit` 신설 가치. 상세 [[project_s5_6_eval_measurement_gate]] + [[feedback_multipersona_accuracy_audit]].
+>
+> ★ **2026-06-05 갱신 (Session 097~098) — 북극성 G-S5 2차 실측 완료 (queryBody 정화·미커밋)**:
+> (1) **진산 결재 #2 (2026-06-04)**: golden query = 출제 본문만(발문+보기+빈칸+자료표), 정답값·중복정답표·해설
+> 제외(A안+자료표 포함). → 06-02 감사가 못박은 "답안키 패딩 → query>500 → graph 표적 multi-hop 75% 제외
+> (유효표본 N=1)" 해소. 결재카드 `decision-card-q2-querybody-separation.md`. (2) **queryBody 파생**:
+> `build-querybody-golden.mjs`(제거전용·결정적·answer-leak assert) → `golden-pilot-approved.querybody.json`
+> (measurable **4→6** 회복: Q-014 501→270·Q-015 922→398 / Q-004 583자 미회복 정직제외). 원본 golden 불변,
+> graph 유효 multi-hop 표본 **1→3**. (3) ★ **G-S5 2차 REMOTE 실측 (2026-06-05, production
+> `/api/search/graph` 공개 무인증, maxDepth 1·2 양측)**: **depth1 = hit-rate Δ 0.0%(83.3→83.3)·recall
+> −2.4%·graphOnlyRecovery 0·regression 0 = 무해·무익** / **depth2 = hit-rate Δ −20.0%(80→60 절단제외)·
+> recall −6.9%·graphOnlyRecovery 0·regression 1(Q-012) = 순손실**(depth2 F-노드 범람 → INV-035 축출).
+> (4) **06-02 감사 3대 가설 전부 실측 확증**: ①Q-012 regression=depth2 아티팩트(depth1 regression 0)
+> ②유효표본 N=1→3 ③baseline 100%→**83.3%**(명칭-동형 아티팩트 부분확증 — 1차 "🟢 Vector RAG 100%"
+> 서술은 stale, 정화 baseline 83.3% 가 진실). (5) **전제 정정**: "측정 = 진산 Cloudflare 인증 게이트" =
+> 실코드 반증(`/api/search/graph` 공개 무인증, index.ts:54·123-126 / 인증은 배포·D1 추출 전용). G-S5 측정은
+> golden 파일 직접 채점 = related_nodes 백필·TR-0 trigger 와 무관(별건, study 경로용). ⇒ **결론: 🟢 vector
+> baseline 작동(83.3%) / 🔻 graph 현 파라미터 순손실(depth2)~무익(depth1)·graphOnlyRecovery 0 both /
+> 🟡 "알고리즘 사망" 단정 시기상조**(진짜 graph-only headroom 2노드=CONCEPT-023·INS-27 전부 Q-015 단일
+> 문항, 재설계 미시도). **CONCEPT-023(자기부담금)은 batch 1274 엣지 직접검증=연결 엣지 부재 = graph 영구
+> 도달 불가(데이터 천장, BATCH 보강 외 해법 없음)**. (6) **재설계 plan** `graph-walk-s5-8-redesign.plan.md`
+> (DRAFT·L3): 4 실패기전 + Phase 0a(depth1 기본화)~0b(golden N≥20~30 확대)~1(보수 algo)~2(ADR 랭킹)~
+> 3(BATCH 엣지) + PITR + Binary Gate G-R-1~6 + §9 진산 결재란 6항 **전부 미체크**. 코드 착수 = 진산 결재 후
+> (자율 금지). (7) **독립 검증 2회**: `review-20260604-145408`(queryBody 무결성 C0/M0/MINOR6) +
+> `review-20260606-082005`(변경셋 4-Pass C0/**M1**/MINOR8). eval 코어 22 PASS 회귀 0. MAJOR-1 = AuthForm
+> 테스트 자동로그인 평문 번들 인라인(런칭 차단 [[project_test_autologin_launch_blocker]], 런칭 스프린트 이연).
+> ⚠️ **진산 결재 대기**: G-S5 GO/NO-GO(RULE #5, S5-8 §9 6옵션) + 감사 §4 결재 큐 잔여 6항. ⚠️ **Session
+> 097~098 + 06-05 측정 산출물 전부 미커밋**(마지막 커밋 33f0387, 라이브 `/status/`만 커밋). feasibility
+> R3=측정완료 / R4·R5=진산 대기. 상세 [[project_s5_6_eval_measurement_gate]] + [[project_g_s5_golden_data_gap]].
 
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),
@@ -252,7 +281,11 @@ score=0 병합` 튜닝 아티팩트, 알고리즘 한계 아님. (2) graph **유
       증명). 독립 3 에이전트 4-Pass: CRITICAL 0 / MAJOR 즉시해소 5(lint차단
       runner remote전용화 포함)+carry-over 4 / 회귀 0 (**api 643 PASS**). 근거
       `review-20260515-230435-s5-6a-eval-harness-4pass-integrated.md`.
-- **다음 진입 조건**: **⛔ G-S5 측정 차단 + TR-0 trigger 차단 (이중 게이트)**
+- **다음 진입 조건**: ✅ **G-S5 측정 차단 = 해소됨** (golden-pilot 동결 + queryBody 파생 → 2026-06-01 1차 ·
+  06-05 2차 실측 완료, 위 "2026-06-05 갱신" 블록). 채점 = golden 파일 직접 → DB `related_nodes` 백필·TR-0
+  trigger 와 **무관**(별건, 백필은 학습자 study 경로용으로 여전히 유효). **이제 진입 = G-S5 GO/NO-GO 진산
+  결재 + S5-8 재설계 plan §9.** 아래 ⛔ 이중 게이트 서술은 **2026-05-16~29 당시 기록(역사 보존)**:
+  - ~~**다음 진입 조건**: **⛔ G-S5 측정 차단 + TR-0 trigger 차단 (이중 게이트)**~~ (해소, 상기 참조)
   - **G-S5 골든 차단** (2026-05-16): production 기출 545 전부
     `related_nodes` NULL = Q↔node 라벨 없음. harness 정확·READY 이나 채점
     기준 데이터 미존재 → 측정 불가, fabricate 금지(RULE #5).

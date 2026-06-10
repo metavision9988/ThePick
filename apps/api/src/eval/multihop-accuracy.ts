@@ -348,11 +348,15 @@ export function formatReportMarkdown(
     `- no_seed(graph graceful, applied=false): ${report.excludedNoSeed}`,
     report.coverageNote !== null ? `- 커버리지: ${report.coverageNote}` : '- 커버리지: (미주입)',
     '',
-    '## 판정 기준 (plan §2)',
+    '## 판정 기준 (plan §2 + 감사 §5 #6)',
     '',
-    '"Vector-only 대비 multi-hop 정답률" = graph hit-rate − baseline hit-rate ' +
-      '(**절단표본 제외** 기준 권장) + graphOnlyRecovery 절대수. 악화(regression) ' +
+    '**1차 지표 = hit-rate@5 와 mean-recall@5 동급 헤드라인** (graph − baseline, ' +
+      '**절단표본 제외** 기준 권장) + graphOnlyRecovery 절대수. 악화(regression) ' +
       '동시 제시 — 개선·동률·악화 모두 수치로.',
+    '',
+    '⚠️ **hit-rate@5 단독 해석 금지**: hit-rate 는 expected N개 중 1개라도 회수하면 ' +
+      'hit=1(binary). expected 다수인 multi-hop 문항(예: expected 5 중 1 회수)도 hit=1 → ' +
+      'baseline 과대평가. **mean-recall@5(회수 분율)를 동급으로 읽어** 부분 회수를 구분하라.',
     '',
     fmtBucket('절단표본 제외 (G-S5 권장 기준)', report.excludingTruncated),
     '',

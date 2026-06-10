@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const SHELL_CACHE = `thepick-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `thepick-data-${CACHE_VERSION}`;
 
@@ -62,7 +62,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Strategy 1: CacheFirst — shell, CSS, JS, fonts, images
+  // Navigation(HTML 문서) → NetworkFirst: 새 배포 HTML 즉시 반영(옛 HTML→옛 번들 해시 고착 방지).
+  // 오프라인 시 캐시 폴백. (CacheFirst 가 옛 HTML→옛 study-api 번들→localhost 호출 고착시키던 버그 해소.)
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
+  // Strategy 1: CacheFirst — 해시 자산(/_astro/*.[hash].js·css)·폰트·이미지 (콘텐츠 해시 = 불변, 변경 시 새 URL).
   event.respondWith(cacheFirst(request));
 });
 
@@ -94,6 +101,29 @@ async function cacheFirst(request) {
     return new Response(
       JSON.stringify({ error: 'offline', url: request.url }),
       { status: 503, statusText: 'Service Unavailable', headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+async function networkFirst(request) {
+  const cache = await caches.open(SHELL_CACHE);
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      cache.put(request, response.clone()).catch((err) => {
+        console.error('[SW] networkFirst cache.put failed:', request.url, err);
+      });
+    }
+    return response;
+  } catch (err) {
+    console.warn('[SW] networkFirst fetch failed — falling back to cache:', request.url, err);
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    const shell = await cache.match('/');
+    if (shell) return shell;
+    return new Response(
+      '<!doctype html><meta charset="utf-8"><h1>오프라인</h1><p>네트워크 연결 후 다시 시도해 주세요.</p>',
+      { status: 503, statusText: 'Service Unavailable', headers: { 'Content-Type': 'text/html; charset=utf-8' } }
     );
   }
 }

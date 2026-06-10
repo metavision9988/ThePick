@@ -53,7 +53,16 @@ interface Args {
   goldenPath: string | null;
   outDir: string;
   limit: number | null;
+  /** graph-walk maxDepth (route 계약 1..MAX_ALLOWED_DEPTH=4). null = 미주입(엔진 기본). */
+  maxDepth: number | null;
 }
+
+/**
+ * route 계약 상한 사본 (graph-search-route.ts:86 MAX_ALLOWED_DEPTH=4) — 조기 fail-loud 용.
+ * ★ 권위 게이트는 route 자신(>4 면 400 거부)이므로 본 상수가 desync 돼도 측정은 안전 거부.
+ *   route ceiling 변경 시 본 상수 동반 갱신(별 패키지라 자동 추종 없음 — known MINOR, 검증 wf_f5b13834).
+ */
+const MAX_DEPTH_CEILING = 4;
 
 /**
  * 인자 파싱. `--limit` 은 silent 흡수 금지 (4-Pass Pass1 M-3) — 양의 정수
@@ -62,6 +71,7 @@ interface Args {
 function parseArgs(argv: string[]): Args {
   let goldenPath: string | null = null;
   let limit: number | null = null;
+  let maxDepth: number | null = null;
   let outDir = join(HERE, '..', 'docs', 'plans', 's5-6-measurements');
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
@@ -74,6 +84,23 @@ function parseArgs(argv: string[]): Args {
         throw new Error(`--limit 은 양의 정수여야 함 (받은 값: ${JSON.stringify(rawLimit)})`);
       }
       limit = n;
+    } else if (a === '--maxDepth') {
+      // 결재 카드 #2 후속 / 감사 §5 #1 — maxDepth=1 재측정용. silent 흡수 금지:
+      // 정수 문자열만 허용(소수 '1.5'→parseInt 1 무음절단 차단, 검증 wf_f5b13834 MINOR),
+      // 그 후 1..4(route MAX_ALLOWED_DEPTH) 범위 강제 (무음 clamp 가 측정 설정 왜곡 차단).
+      const rawDepth = (argv[++i] ?? '').trim();
+      if (!/^[0-9]+$/.test(rawDepth)) {
+        throw new Error(
+          `--maxDepth 는 1..${MAX_DEPTH_CEILING} 정수여야 함 (소수·비정수 거부, 받은 값: ${JSON.stringify(rawDepth)})`,
+        );
+      }
+      const n = Number.parseInt(rawDepth, 10);
+      if (n < 1 || n > MAX_DEPTH_CEILING) {
+        throw new Error(
+          `--maxDepth 는 1..${MAX_DEPTH_CEILING} 정수여야 함 (route 계약, 받은 값: ${JSON.stringify(rawDepth)})`,
+        );
+      }
+      maxDepth = n;
     } else if (a === '--local') {
       throw new Error(
         '--local 은 본 CLI 가 제공하지 않는다. LOCAL_SMOKE 는 vitest 소유 — ' +
@@ -81,12 +108,56 @@ function parseArgs(argv: string[]): Args {
       );
     }
   }
-  return { goldenPath, outDir, limit };
+  return { goldenPath, outDir, limit, maxDepth };
+}
+
+/**
+ * REMOTE fetch 재시도 — ADR-008 800ms Vectorize 하드 타임아웃(user-search.ts:42)이
+ * 간헐적으로 phase=timeout(504)을 던지는 것을 흡수(2026-06-05 실측: 쿼리 무관 ~1/5 산발).
+ * 측정 무결성 보존 규칙:
+ *   - 5xx(간헐 infra timeout) = 재시도 — 결과는 결정적(성공 시 동일 top-K, 지연만 변동).
+ *   - 4xx(validation·계약 등 결정적) = 즉시 fail-loud (재시도 무의미).
+ *   - 재시도 소진 = fail-loud (빈결과 삼킴 금지). 각 재시도는 stderr 로깅(무음 아님).
+ * ★ fabricate 아님: 재시도는 flaky 지연만 넘길 뿐, 응답 본문/채점 로직은 불변.
+ */
+const REMOTE_MAX_ATTEMPTS = 4;
+async function fetchGraphWithRetry(
+  url: string,
+  requestBody: { examId: string; query: string; topK: number; maxDepth?: number },
+  questionId: string,
+): Promise<GraphSearchResponseShape> {
+  let lastStatus = 0;
+  for (let attempt = 1; attempt <= REMOTE_MAX_ATTEMPTS; attempt++) {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
+    if (r.ok) return (await r.json()) as GraphSearchResponseShape;
+    lastStatus = r.status;
+    // 4xx = 결정적(쿼리/계약 문제) → 재시도 무의미, 즉시 fail-loud.
+    if (r.status >= 400 && r.status < 500) {
+      throw new Error(`remote graph search ${r.status} for ${questionId} (non-retryable 4xx)`);
+    }
+    // 5xx = 간헐적 infra(ADR-008 800ms timeout 등) → backoff 후 재시도.
+    if (attempt < REMOTE_MAX_ATTEMPTS) {
+      const backoffMs = 600 * attempt;
+      process.stderr.write(
+        `[retry ${attempt}/${REMOTE_MAX_ATTEMPTS - 1}] ${questionId}: HTTP ${r.status} → backoff ${backoffMs}ms\n`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, backoffMs));
+    }
+  }
+  // 재시도 소진 → fail-loud (측정 무신뢰 차단).
+  throw new Error(
+    `remote graph search ${lastStatus} for ${questionId} after ${REMOTE_MAX_ATTEMPTS} attempts (transient timeout exhausted)`,
+  );
 }
 
 async function runRemote(
   goldenPath: string | null,
   limit: number | null,
+  maxDepth: number | null,
 ): Promise<{ per: PerQuestionResult[]; golden: EvalGoldenItem[]; coverage: string }> {
   // 사전조건 = 순수 코어 단일 진실원 (G-6a-5 — 게이트 정책 drift 0).
   const { apiBase, goldenPath: gp } = assertRemoteMeasurementInputs(
@@ -111,28 +182,35 @@ async function runRemote(
       relatedMalformed: parsed.malformed,
     };
     golden.push(item);
-    const r = await fetch(`${apiBase.replace(/\/$/, '')}/api/search/graph`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ examId, query: it.content, topK: 5 }),
-    });
-    if (!r.ok) {
-      // fail-loud — 빈결과 삼킴 금지 (측정 무신뢰 차단).
-      throw new Error(`remote graph search ${r.status} for ${it.questionId}`);
-    }
-    const body = (await r.json()) as GraphSearchResponseShape;
+    // maxDepth 미주입 시 키 자체를 빼서 route 기본(엔진 default) 경로 보존 —
+    // 원 측정(2026-06-01)과 byte-동치. 주입 시에만 명시 (maxDepth=1 재측정).
+    const requestBody: { examId: string; query: string; topK: number; maxDepth?: number } = {
+      examId,
+      query: it.content,
+      topK: 5,
+    };
+    if (maxDepth !== null) requestBody.maxDepth = maxDepth;
+    // 간헐적 ADR-008 800ms timeout(504) 흡수 후 fail-loud — 채점 본문 불변.
+    const body = await fetchGraphWithRetry(
+      `${apiBase.replace(/\/$/, '')}/api/search/graph`,
+      requestBody,
+      it.questionId,
+    );
     per.push(scoreQuestion(item, body));
   }
   return {
     per,
     golden,
-    coverage: goldenFile.coverageNote ?? `REMOTE: ${itemsRaw.length} questions measured`,
+    // 측정 provenance: maxDepth 를 coverage 에 각인 (두 depth 리포트가 동일해 보이는 혼동 차단).
+    coverage:
+      (goldenFile.coverageNote ?? `REMOTE: ${itemsRaw.length} questions measured`) +
+      ` | maxDepth=${maxDepth ?? 'engine-default'}`,
   };
 }
 
 async function main(): Promise<void> {
-  const { goldenPath, outDir, limit } = parseArgs(process.argv);
-  const { per, golden, coverage } = await runRemote(goldenPath, limit);
+  const { goldenPath, outDir, limit, maxDepth } = parseArgs(process.argv);
+  const { per, golden, coverage } = await runRemote(goldenPath, limit, maxDepth);
 
   const report = aggregate(per, golden, coverage);
   const generatedAt = new Date().toISOString();

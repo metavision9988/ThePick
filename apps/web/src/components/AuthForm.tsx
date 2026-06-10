@@ -124,6 +124,40 @@ export function AuthForm() {
     setErrorMsg(null);
   }, [mode]);
 
+  // 테스트 환경 자동 로그인 — PUBLIC_TEST_AUTOLOGIN=1 빌드에서만 동작(production launch 시 미설정).
+  // /study/ 401 → /auth/login 리다이렉트 시 테스트 계정으로 자동 제출 → 타이핑 없이 진입.
+  // 서버 인증은 그대로(실 세션 쿠키 발급) — 클라이언트 편의일 뿐. 실패 시 수동 폼으로 조용히 폴백.
+  useEffect(() => {
+    const auto = import.meta.env.PUBLIC_TEST_AUTOLOGIN;
+    const tEmail = import.meta.env.PUBLIC_TEST_EMAIL;
+    const tPassword = import.meta.env.PUBLIC_TEST_PASSWORD;
+    if (auto !== '1' || tEmail === undefined || tPassword === undefined) return;
+    let cancelled = false;
+    setPhase('submitting');
+    void (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/login`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: tEmail, password: tPassword }),
+        });
+        if (cancelled) return;
+        if (res.ok) {
+          window.location.href = resolveNext();
+          return;
+        }
+        setEmail(tEmail);
+        setPhase('idle');
+      } catch {
+        if (!cancelled) setPhase('idle');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
     setPhase('submitting');
