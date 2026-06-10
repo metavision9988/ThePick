@@ -1,0 +1,1425 @@
+{
+  "integrity": {
+    "valid": false,
+    "violations": [
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "CONCEPT-030",
+        "message": "Orphan node: CONCEPT-030 (재조달가액) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "CONCEPT-037",
+        "message": "Orphan node: CONCEPT-037 (표본구간) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "CONCEPT-053",
+        "message": "Orphan node: CONCEPT-053 (면적피해율) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "CONCEPT-057",
+        "message": "Orphan node: CONCEPT-057 (자연수정불량률 (복분자)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "CONCEPT-066",
+        "message": "Orphan node: CONCEPT-066 (피해면적 보정계수) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "CONCEPT-069",
+        "message": "Orphan node: CONCEPT-069 (통상적 영농활동 (벼)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "CONCEPT-084",
+        "message": "Orphan node: CONCEPT-084 (미보상감수량 (밭작물)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-022",
+        "message": "Orphan node: LAW-022 (법 제2조의3 (실태조사)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-031",
+        "message": "Orphan node: LAW-031 (법 제10조의2 (사고예방의무 등)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-040",
+        "message": "Orphan node: LAW-040 (법 제13조 (보험목적물의 양도에 따른 권리 및 의무의 승계)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-042",
+        "message": "Orphan node: LAW-042 (법 제15조 (회계 구분)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-043",
+        "message": "Orphan node: LAW-043 (법 제17조 (분쟁조정)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-044",
+        "message": "Orphan node: LAW-044 (법 제18조 (「보험업법」 등의 적용)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-064",
+        "message": "Orphan node: LAW-064 (시행령 제2조의3 (기본계획 및 시행계획의 수립ㆍ시행)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-065",
+        "message": "Orphan node: LAW-065 (시행령 제3조 (심의회 회의)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-093",
+        "message": "Orphan node: LAW-093 (상법 제641조 (증권에 관한 이의약관의 효력)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-094",
+        "message": "Orphan node: LAW-094 (상법 제643조 (소급보험)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-095",
+        "message": "Orphan node: LAW-095 (상법 제644조 (보험사고의 객관적 확정의 효과)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-096",
+        "message": "Orphan node: LAW-096 (상법 제646조 (대리인이 안 것의 효과)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-097",
+        "message": "Orphan node: LAW-097 (상법 제646조의2 (보험대리상 등의 권한)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-098",
+        "message": "Orphan node: LAW-098 (상법 제647조 (특별위험의 소멸로 인한 보험료의 감액청구)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-099",
+        "message": "Orphan node: LAW-099 (상법 제648조 (보험계약의 무효로 인한 보험료반환청구)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-114",
+        "message": "Orphan node: LAW-114 (상법 제661조 (재보험)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-128",
+        "message": "Orphan node: LAW-128 (상법 제675조 (사고발생 후의 목적멸실과 보상책임)) has no active edges"
+      }
+    ],
+    "stats": {
+      "totalNodes": 794,
+      "totalEdges": 1274,
+      "activeNodes": 783,
+      "activeEdges": 1274,
+      "orphanNodes": 24,
+      "brokenEdges": 0,
+      "supersedeCycles": 0
+    }
+  },
+  "staleEdgeRefs": [
+    {
+      "edgeId": "EDGE-BATCH-1-0001",
+      "side": "from",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0002",
+      "side": "from",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0003",
+      "side": "from",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0004",
+      "side": "from",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0005",
+      "side": "to",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0006",
+      "side": "to",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0011",
+      "side": "to",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0012",
+      "side": "to",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0013",
+      "side": "to",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0014",
+      "side": "from",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0015",
+      "side": "from",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0016",
+      "side": "from",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0017",
+      "side": "from",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0104",
+      "side": "to",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0107",
+      "side": "from",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0108",
+      "side": "from",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0109",
+      "side": "from",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0125",
+      "side": "from",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0126",
+      "side": "from",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0129",
+      "side": "from",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-1-0130",
+      "side": "from",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-2-0021",
+      "side": "from",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-2-0022",
+      "side": "from",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-2-0033",
+      "side": "from",
+      "nodeId": "INS-12"
+    },
+    {
+      "edgeId": "EDGE-BATCH-2-0034",
+      "side": "from",
+      "nodeId": "INS-12"
+    },
+    {
+      "edgeId": "EDGE-BATCH-2-0035",
+      "side": "from",
+      "nodeId": "INS-12"
+    },
+    {
+      "edgeId": "EDGE-BATCH-2-0052",
+      "side": "from",
+      "nodeId": "INS-12"
+    },
+    {
+      "edgeId": "EDGE-BATCH-2-0122",
+      "side": "from",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-2-0123",
+      "side": "from",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-2-0124",
+      "side": "from",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-2-0125",
+      "side": "from",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-2-0126",
+      "side": "from",
+      "nodeId": "INS-12"
+    },
+    {
+      "edgeId": "EDGE-BATCH-2-0156",
+      "side": "from",
+      "nodeId": "INS-12"
+    },
+    {
+      "edgeId": "EDGE-BATCH-2-0185",
+      "side": "from",
+      "nodeId": "INS-12"
+    },
+    {
+      "edgeId": "EDGE-BATCH-2-0191",
+      "side": "from",
+      "nodeId": "INS-12"
+    },
+    {
+      "edgeId": "EDGE-BATCH-2-0193",
+      "side": "from",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-3-0015",
+      "side": "from",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-3-0016",
+      "side": "from",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-3-0017",
+      "side": "from",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-3-0018",
+      "side": "from",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-3-0019",
+      "side": "from",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-3-0077",
+      "side": "from",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-3-0078",
+      "side": "from",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-3-0107",
+      "side": "from",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-4-0015",
+      "side": "to",
+      "nodeId": "CROP-042"
+    },
+    {
+      "edgeId": "EDGE-BATCH-4-0018",
+      "side": "to",
+      "nodeId": "CROP-045"
+    },
+    {
+      "edgeId": "EDGE-BATCH-4-0019",
+      "side": "to",
+      "nodeId": "CROP-046"
+    },
+    {
+      "edgeId": "EDGE-BATCH-4-0031",
+      "side": "to",
+      "nodeId": "CROP-058"
+    },
+    {
+      "edgeId": "EDGE-BATCH-4-0032",
+      "side": "to",
+      "nodeId": "CROP-059"
+    },
+    {
+      "edgeId": "EDGE-BATCH-4-0044",
+      "side": "to",
+      "nodeId": "F-71"
+    },
+    {
+      "edgeId": "EDGE-BATCH-4-0078",
+      "side": "from",
+      "nodeId": "F-71"
+    },
+    {
+      "edgeId": "EDGE-BATCH-4-0148",
+      "side": "from",
+      "nodeId": "F-71"
+    },
+    {
+      "edgeId": "EDGE-BATCH-4-0149",
+      "side": "from",
+      "nodeId": "F-71"
+    },
+    {
+      "edgeId": "EDGE-BATCH-4-0150",
+      "side": "to",
+      "nodeId": "CONCEPT-081"
+    },
+    {
+      "edgeId": "EDGE-BATCH-4-0157",
+      "side": "from",
+      "nodeId": "CROP-042"
+    },
+    {
+      "edgeId": "EDGE-BATCH-4-0158",
+      "side": "from",
+      "nodeId": "CROP-045"
+    },
+    {
+      "edgeId": "EDGE-BATCH-4-0172",
+      "side": "to",
+      "nodeId": "F-71"
+    },
+    {
+      "edgeId": "EDGE-BATCH-4-0173",
+      "side": "to",
+      "nodeId": "F-71"
+    },
+    {
+      "edgeId": "EDGE-BATCH-4-0207",
+      "side": "to",
+      "nodeId": "CONCEPT-081"
+    },
+    {
+      "edgeId": "EDGE-BATCH-5-0086",
+      "side": "to",
+      "nodeId": "CROP-058"
+    },
+    {
+      "edgeId": "EDGE-BATCH-5-0087",
+      "side": "to",
+      "nodeId": "CROP-059"
+    },
+    {
+      "edgeId": "EDGE-BATCH-5-0134",
+      "side": "from",
+      "nodeId": "CROP-058"
+    },
+    {
+      "edgeId": "EDGE-BATCH-5-0135",
+      "side": "from",
+      "nodeId": "CROP-058"
+    },
+    {
+      "edgeId": "EDGE-BATCH-5-0136",
+      "side": "from",
+      "nodeId": "CROP-059"
+    },
+    {
+      "edgeId": "EDGE-BATCH-5-0137",
+      "side": "from",
+      "nodeId": "CROP-059"
+    },
+    {
+      "edgeId": "EDGE-BATCH-5-0138",
+      "side": "from",
+      "nodeId": "CROP-059"
+    },
+    {
+      "edgeId": "EDGE-BATCH-5-0166",
+      "side": "from",
+      "nodeId": "CROP-058"
+    },
+    {
+      "edgeId": "EDGE-BATCH-5-0167",
+      "side": "from",
+      "nodeId": "CROP-058"
+    },
+    {
+      "edgeId": "EDGE-BATCH-5-0168",
+      "side": "from",
+      "nodeId": "CROP-059"
+    },
+    {
+      "edgeId": "EDGE-BATCH-5-0169",
+      "side": "from",
+      "nodeId": "CROP-059"
+    },
+    {
+      "edgeId": "EDGE-BATCH-5-0195",
+      "side": "to",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0001",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0002",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0003",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0004",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0005",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0006",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0007",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0008",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0009",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0010",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0011",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0071",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0072",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0073",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0074",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0075",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0076",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0077",
+      "side": "from",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0084",
+      "side": "to",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0085",
+      "side": "to",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0086",
+      "side": "to",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0087",
+      "side": "to",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0088",
+      "side": "to",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-6-0092",
+      "side": "to",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-L2-0078",
+      "side": "to",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-R1-0024",
+      "side": "to",
+      "nodeId": "CONCEPT-081"
+    },
+    {
+      "edgeId": "EDGE-BATCH-R1-0025",
+      "side": "to",
+      "nodeId": "F-71"
+    },
+    {
+      "edgeId": "EDGE-BATCH-R1-0026",
+      "side": "to",
+      "nodeId": "CROP-045"
+    },
+    {
+      "edgeId": "EDGE-BATCH-R1-0027",
+      "side": "to",
+      "nodeId": "CROP-046"
+    },
+    {
+      "edgeId": "EDGE-BATCH-R1-0028",
+      "side": "to",
+      "nodeId": "CROP-042"
+    },
+    {
+      "edgeId": "EDGE-BATCH-R1-0029",
+      "side": "to",
+      "nodeId": "CROP-058"
+    },
+    {
+      "edgeId": "EDGE-BATCH-R1-0030",
+      "side": "to",
+      "nodeId": "CROP-059"
+    },
+    {
+      "edgeId": "EDGE-BATCH-R1-0031",
+      "side": "to",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-R1-0032",
+      "side": "to",
+      "nodeId": "INS-09"
+    },
+    {
+      "edgeId": "EDGE-BATCH-R1-0033",
+      "side": "to",
+      "nodeId": "INS-12"
+    },
+    {
+      "edgeId": "EDGE-BATCH-R1-0034",
+      "side": "to",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-R2-0044",
+      "side": "to",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-R2-0047",
+      "side": "to",
+      "nodeId": "CROP-059"
+    },
+    {
+      "edgeId": "EDGE-BATCH-R2-0048",
+      "side": "to",
+      "nodeId": "CROP-059"
+    },
+    {
+      "edgeId": "EDGE-BATCH-R2-0052",
+      "side": "to",
+      "nodeId": "INS-33"
+    },
+    {
+      "edgeId": "EDGE-BATCH-7-0028",
+      "side": "to",
+      "nodeId": "CONCEPT-081"
+    },
+    {
+      "edgeId": "EDGE-BATCH-S1-0010",
+      "side": "to",
+      "nodeId": "INS-01"
+    },
+    {
+      "edgeId": "EDGE-BATCH-S1-0011",
+      "side": "to",
+      "nodeId": "INS-33"
+    }
+  ],
+  "walkUnreachable": [
+    {
+      "nodeId": "INV-008",
+      "name": "표본주 선정",
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "nodeId": "INV-009",
+      "name": "침수피해 조사",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "INV-014",
+      "name": "예찰조사",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-009",
+      "name": "기준착과수",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-011",
+      "name": "인정피해율",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "TERM-004",
+      "name": "적과",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "INS-10",
+      "name": "수확량감소 추가보장 특약",
+      "inDegree": 0,
+      "outDegree": 5
+    },
+    {
+      "nodeId": "INV-022",
+      "name": "낙과수 전수조사",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-030",
+      "name": "재조달가액",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "CONCEPT-031",
+      "name": "조사대상주수",
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "nodeId": "CONCEPT-037",
+      "name": "표본구간",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "CONCEPT-046",
+      "name": "식물체 피해율 (복분자)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "TERM-019",
+      "name": "결과지",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "TERM-020",
+      "name": "결과모지",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "TERM-022",
+      "name": "청피 (호두)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "TERM-023",
+      "name": "소과 (밤 30mm 미만)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "INS-16",
+      "name": "이앙·직파불능 보장 (벼)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "INS-17",
+      "name": "재이앙·재직파 보장 (벼)",
+      "inDegree": 0,
+      "outDegree": 3
+    },
+    {
+      "nodeId": "INS-20",
+      "name": "무화과 나무손해보장 특별약관",
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "nodeId": "CONCEPT-052",
+      "name": "식물체 피해율 (논작물)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-053",
+      "name": "면적피해율",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "CONCEPT-054",
+      "name": "제현율",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-057",
+      "name": "자연수정불량률 (복분자)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "CONCEPT-059",
+      "name": "수확감소환산 고사결과모지수",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-063",
+      "name": "결과지피해율 (무화과)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-064",
+      "name": "수량요소조사 점수 합계",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-066",
+      "name": "피해면적 보정계수",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "CONCEPT-068",
+      "name": "단위면적당 조사수확량",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-069",
+      "name": "통상적 영농활동 (벼)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "TERM-027",
+      "name": "분질미",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "TERM-028",
+      "name": "조곡",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "TERM-032",
+      "name": "점파 / 산파",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "F-43",
+      "name": "수확감소환산계수",
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "nodeId": "INS-23",
+      "name": "작물특정 인삼손해보장",
+      "inDegree": 0,
+      "outDegree": 14
+    },
+    {
+      "nodeId": "INS-24",
+      "name": "시설(해가림시설) 종합위험 손해보장",
+      "inDegree": 0,
+      "outDegree": 12
+    },
+    {
+      "nodeId": "CONCEPT-073",
+      "name": "면적피해율 (밭작물)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-084",
+      "name": "미보상감수량 (밭작물)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "TERM-034",
+      "name": "표본이랑",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "TERM-035",
+      "name": "표본구간 (밭작물) — 이랑 길이 × 이랑 폭",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "TERM-037",
+      "name": "비대 종료 / 결구 형성 완료",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "INS-28",
+      "name": "종합위험 버섯재배사·버섯작물 손해보장",
+      "inDegree": 0,
+      "outDegree": 21
+    },
+    {
+      "nodeId": "INS-29",
+      "name": "농업수입감소보장 (일반)",
+      "inDegree": 0,
+      "outDegree": 10
+    },
+    {
+      "nodeId": "INS-31",
+      "name": "농업수입감소보장 — 밭작물 10종",
+      "inDegree": 0,
+      "outDegree": 16
+    },
+    {
+      "nodeId": "INS-32",
+      "name": "농업수입감소보장 — 벼",
+      "inDegree": 0,
+      "outDegree": 7
+    },
+    {
+      "nodeId": "INS-39",
+      "name": "소(牛) 도체결함보장 특약",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "INS-40",
+      "name": "돼지 질병위험보장 특약 (종빈돈)",
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "nodeId": "INS-42",
+      "name": "전기적장치 위험보장 특약",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "INS-43",
+      "name": "폭염재해보장 특약",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "LAW-021",
+      "name": "법 제2조의2 (기본계획 및 시행계획의 수립ㆍ시행)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-022",
+      "name": "법 제2조의3 (실태조사)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-023",
+      "name": "법 제2조의4 (재해보험 등의 심의)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-031",
+      "name": "법 제10조의2 (사고예방의무 등)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-040",
+      "name": "법 제13조 (보험목적물의 양도에 따른 권리 및 의무의 승계)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-042",
+      "name": "법 제15조 (회계 구분)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-043",
+      "name": "법 제17조 (분쟁조정)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-044",
+      "name": "법 제18조 (「보험업법」 등의 적용)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-052",
+      "name": "법 제25조의2 (농어업재해보험사업의 관리)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "LAW-056",
+      "name": "법 제28조 (보험가입의 촉진 등)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-058",
+      "name": "법 제29조 (보고 등)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-060",
+      "name": "법 제30조 (벌칙)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "LAW-063",
+      "name": "시행령 제1조 (목적)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-064",
+      "name": "시행령 제2조의3 (기본계획 및 시행계획의 수립ㆍ시행)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-065",
+      "name": "시행령 제3조 (심의회 회의)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-068",
+      "name": "시행령 제10조 (재해보험사업의 약정체결)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-069",
+      "name": "시행령 제12조 (손해평가인의 자격요건 등)",
+      "inDegree": 0,
+      "outDegree": 3
+    },
+    {
+      "nodeId": "LAW-071",
+      "name": "시행령 제12조의3 (손해평가사 자격시험의 방법)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-076",
+      "name": "시행령 제12조의8 (손해평가 등의 교육)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-077",
+      "name": "시행령 제12조의9 (손해평가사 자격 취소 처분의 세부기준)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-078",
+      "name": "시행령 제12조의10 (손해평가사 업무 정지 처분의 세부기준)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-079",
+      "name": "시행령 제12조의11 (보험금수급전용계좌의 신청 방법ㆍ절차 등)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-081",
+      "name": "시행령 제13조 (업무 위탁)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-083",
+      "name": "시행령 제16조 (재보험 약정서)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-084",
+      "name": "시행령 제19조 (기금의 결산)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-085",
+      "name": "시행령 제22조 (시범사업 실시)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-086",
+      "name": "시행령 제22조의2 (보험가입촉진계획의 제출 등)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-130",
+      "name": "재해보험의 종류 (4종)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-131",
+      "name": "농어업재해의 정의 (5+1종)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-132",
+      "name": "손해평가사 제도",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-133",
+      "name": "손해평가사 시험 과목 (1차/2차)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-134",
+      "name": "손해평가사 시험 합격기준",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-135",
+      "name": "손해평가사 자격 면제 (1차)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-136",
+      "name": "손해평가사 자격취소 사유 (5종)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-137",
+      "name": "교차손해평가",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-138",
+      "name": "농어업재해재보험기금",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-139",
+      "name": "보험금수급전용계좌",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-140",
+      "name": "이의신청 절차 (손해평가)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-141",
+      "name": "재정지원 (보험료 지원)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "INV-085",
+      "name": "손해평가사 자격시험 응시 절차",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "INV-086",
+      "name": "보험가입 절차 (재해보험)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "INV-087",
+      "name": "손해평가 결과 검증 조사",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-091",
+      "name": "상법 제639조 (타인을 위한 보험)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-093",
+      "name": "상법 제641조 (증권에 관한 이의약관의 효력)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-094",
+      "name": "상법 제643조 (소급보험)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-095",
+      "name": "상법 제644조 (보험사고의 객관적 확정의 효과)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-096",
+      "name": "상법 제646조 (대리인이 안 것의 효과)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-097",
+      "name": "상법 제646조의2 (보험대리상 등의 권한)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-098",
+      "name": "상법 제647조 (특별위험의 소멸로 인한 보험료의 감액청구)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-099",
+      "name": "상법 제648조 (보험계약의 무효로 인한 보험료반환청구)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-114",
+      "name": "상법 제661조 (재보험)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-121",
+      "name": "상법 제668조 (보험계약의 목적)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-128",
+      "name": "상법 제675조 (사고발생 후의 목적멸실과 보상책임)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-132",
+      "name": "상법 제679조 (보험목적의 양도)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-136",
+      "name": "상법 제719조 (책임보험자의 책임)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-142",
+      "name": "보험계약 당사자 (보험자/보험계약자/피보험자/보험수익자)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-143",
+      "name": "고지의무",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-144",
+      "name": "위험변경증가 통지의무 + 해지",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-145",
+      "name": "보험가액 / 보험금액 / 초과보험 / 일부보험 / 중복보험",
+      "inDegree": 0,
+      "outDegree": 6
+    },
+    {
+      "nodeId": "CONCEPT-146",
+      "name": "보험자 면책사유 (3종)",
+      "inDegree": 0,
+      "outDegree": 3
+    },
+    {
+      "nodeId": "CONCEPT-147",
+      "name": "보험대위 2종",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-148",
+      "name": "손해방지의무 (상법)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-149",
+      "name": "보험사고 통지의무",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-150",
+      "name": "보험금청구권 소멸시효 (3년)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-151",
+      "name": "보험약관 교부·설명 의무 (3개월 취소권)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-152",
+      "name": "보험계약자 등의 불이익변경금지 원칙",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-153",
+      "name": "보험계약 부활 (제650조의2)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "INV-088",
+      "name": "보험계약 체결 절차 (상법)",
+      "inDegree": 0,
+      "outDegree": 5
+    },
+    {
+      "nodeId": "INV-089",
+      "name": "보험사고 발생 시 절차 (상법)",
+      "inDegree": 0,
+      "outDegree": 3
+    },
+    {
+      "nodeId": "INV-090",
+      "name": "보험계약 해지 사유 종합 (상법)",
+      "inDegree": 0,
+      "outDegree": 7
+    },
+    {
+      "nodeId": "CONCEPT-218",
+      "name": "[BATCH-Q-META] 손해평가사 기출 7회분 카탈로그 + 본격 적재 차세션 이월 메타",
+      "inDegree": 0,
+      "outDegree": 1
+    }
+  ],
+  "gatePass": false
+}

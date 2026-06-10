@@ -20,3 +20,19 @@ export type {
   ViolationType,
   IntegrityReport,
 } from './graph-integrity';
+
+// design-audit WS-2a (확장 게이트 E0-2) — production 누적 무결성 감사 코어 (2026-06-11).
+export {
+  auditProductionGraph,
+  findActiveEdgesToInactiveNodes,
+  findWalkUnreachableNodes,
+  fromD1Rows,
+} from './production-audit';
+
+export type {
+  D1NodeRow,
+  D1EdgeRow,
+  StaleEdgeRef,
+  UnreachableNode,
+  ProductionAuditReport,
+} from './production-audit';
