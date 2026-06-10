@@ -22,6 +22,12 @@ const NODE_COLORS: Record<NodeType, string> = {
   CROP: '#06b6d4',
   CONCEPT: '#8b5cf6',
   TERM: '#6b7280',
+  // Table-as-Micro-KG 4종 (ADR-032 v1.4.0 NodeType 확장) — teal 계열로 표 구조 노드를
+  // 한 가족으로 묶어 기존 7색과 시각 구분. 동일 위계(TABLE 진함 → CELL 옅음).
+  TABLE: '#0f766e',
+  ROW_HEADER: '#14b8a6',
+  COL_HEADER: '#5eead4',
+  CELL: '#ccfbf1',
 };
 
 const STATUS_STROKE: Record<string, string> = {

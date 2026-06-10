@@ -262,6 +262,11 @@ describe('runPipeline — 실패 경로', () => {
           content: '',
           truth_weight: 5,
           source_page: 403,
+          // ADR-030 필수 필드 (KnowledgeContractNode book_page/pdf_page) — 페이지는
+          // 유효값으로 채워 typecheck 정합. (잔여 런타임 위반 = type + 빈 title/content,
+          // 테스트는 Stage 3 FAIL status 만 단언하므로 의도 보존.)
+          book_page: 403,
+          pdf_page: 403,
         },
       ],
       edges: [],
