@@ -51,6 +51,8 @@ interface NextQuestionBody {
   readonly questionNumber: number | null;
   readonly relatedNodes: ReadonlyArray<RelatedNodeBody>;
   readonly sourceCitations: SourceCitationsBody;
+  readonly inputType: string;
+  readonly choices: ReadonlyArray<{ readonly label: string; readonly text: string }> | null;
 }
 
 interface StudyResponseBody {
@@ -415,6 +417,85 @@ describe('GET /api/study/next', () => {
     });
     expect(q.sourceCitations.manualPages).toEqual([50, 100]);
     expect(q.sourceCitations.lawArticles).toContain('50');
+  });
+
+  // design-audit WS-0e (2026-06-10) — enrichRelatedNodes(study route)를 parseRelatedNodes
+  //   와 같은 malformed→[] 계약에 묶는 route-level 바인딩. related_nodes 가 비배열 JSON
+  //   (구조 결함)일 때 라우트가 크래시·silent 오작동 없이 빈 relatedNodes 를 surface 하는지
+  //   검증. seedExamQuestion 은 JSON.stringify 라 malformed 주입 불가 → raw INSERT
+  //   (exam_questions UPDATE 트리거 차단 때문에 UPDATE 아닌 INSERT 로 주입).
+  it('malformed related_nodes(비배열 JSON) → 빈 relatedNodes surface (enrichRelatedNodes 계약)', async () => {
+    seedUser('u1', 'u1@test.com');
+    ctx.raw
+      .prepare(
+        `INSERT INTO exam_questions
+           (id, year, round, question_number, subject, content, answer, explanation,
+            related_nodes, status, exam_type, confusion_type)
+         VALUES (?, 2024, 11, 5, NULL, '테스트 문제', '1', NULL, ?, 'active', '2nd', NULL)`,
+      )
+      .run('eq-malformed', '"CONCEPT-001"'); // 비배열 JSON = malformed (parseRelatedNodes 와 동일 분류)
+    const res = await fetchAs('u1', '/next?examType=2nd');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as StudyResponseBody;
+    const q = body.questions![0];
+    expect(q.relatedNodes).toEqual([]); // enrichRelatedNodes malformed→[] (parseRelatedNodes 동치)
+  });
+});
+
+describe('GET /next 객관식 distractor 안전 가드 (design-audit WS-0f)', () => {
+  // exam_questions 는 UPDATE 트리거 차단(0004/0038) → input_type='multiple_choice' +
+  // distractors 를 raw INSERT 로 주입(seedExamQuestion 미지원 컬럼).
+  function seedMcQuestion(id: string, answer: string, distractorsJson: string): void {
+    ctx.raw
+      .prepare(
+        `INSERT INTO exam_questions
+           (id, year, round, question_number, subject, content, answer, explanation,
+            related_nodes, status, exam_type, confusion_type, input_type, distractors)
+         VALUES (?, 2024, 11, 5, NULL, 'MC 문제', ?, NULL, NULL, 'active', '2nd', NULL,
+                 'multiple_choice', ?)`,
+      )
+      .run(id, answer, distractorsJson);
+  }
+
+  it('정답과 normalize 동치인 distractor 존재 → MC 셔플 거부, choices=null (fallback)', async () => {
+    seedUser('u1', 'u1@test.com');
+    // 정답 '보험가액' vs distractor '보험 가액'(공백만 차이) = normalizeAnswer 후 동치 → 채점 모순 위험
+    seedMcQuestion(
+      'eq-dup',
+      '보험가액',
+      JSON.stringify(['보험 가액', '손해액', '면책금', '보험금액']),
+    );
+    const res = await fetchAs('u1', '/next?examType=2nd');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as StudyResponseBody;
+    const q = body.questions![0];
+    expect(q.choices).toBeNull(); // 가드 발동 → 객관식 미구성 (fill_blank 강등)
+  });
+
+  it('distractor 간 중복 → MC 셔플 거부, choices=null', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedMcQuestion(
+      'eq-dup2',
+      '보험가액',
+      JSON.stringify(['손해액', '손해액', '면책금', '보험금액']),
+    );
+    const res = await fetchAs('u1', '/next?examType=2nd');
+    const body = (await res.json()) as StudyResponseBody;
+    expect(body.questions![0].choices).toBeNull();
+  });
+
+  it('보기 전부 distinct → 정상 MC choices 5개', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedMcQuestion(
+      'eq-ok',
+      '보험가액',
+      JSON.stringify(['손해액', '면책금', '보험금액', '자기부담금']),
+    );
+    const res = await fetchAs('u1', '/next?examType=2nd');
+    const body = (await res.json()) as StudyResponseBody;
+    const q = body.questions![0];
+    expect(q.choices).not.toBeNull();
+    expect(q.choices).toHaveLength(5);
   });
 });
 

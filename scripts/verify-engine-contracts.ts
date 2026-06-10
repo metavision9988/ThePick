@@ -176,6 +176,12 @@ const VITEST_PACKAGES: readonly VitestPackage[] = [
   { name: '@thepick/ai-adapter', dir: 'packages/ai-adapter', required: 13 },
   // Step 037 CRIT-QPHASE1-1 흡수 — admin-web vitest setup + 8 tests + 2 추가 방어선 (10).
   { name: '@thepick/admin-web', dir: 'apps/admin-web', required: 10 },
+  // 2026-06-10 (design-audit WS-0a) — Phase 3 학습 코어 패키지 CI 게이트 누락 해소.
+  //   learning-modes(116)·srs(35) 는 VITEST_PACKAGES·ci.yml test 필터 양쪽 미등록이라
+  //   CI 에서 151 테스트가 미실행이었다(typecheck/lint 는 `pnpm -r` 로 이미 커버). 실측
+  //   카운트(`pnpm exec vitest run --reporter=json`) 주입 — 단방향 감소 차단 게이트(CRITICAL-A1).
+  { name: '@thepick/learning-modes', dir: 'packages/learning-modes', required: 116 },
+  { name: '@thepick/srs', dir: 'packages/srs', required: 35 },
 ];
 
 interface VitestSummary {
@@ -1298,6 +1304,91 @@ function buildUnitModuleIntegrationCategory(summaries: Map<string, VitestSummary
   };
 }
 
+// === Known-stub 패키지 무결성 (design-audit WS-0c, 2026-06-10) ===
+//
+// 의도적 미착수 stub 패키지는 `--passWithNoTests` + VITEST_PACKAGES 미등록으로
+// turbo test/lint/typecheck 를 무음 PASS 한다 (설계 감사 RC-4 generation-layer-stub).
+// 은폐는 아니나(roadmap 명기) "구현 시작"을 기계가 감지·강제하는 장치가 0이었다.
+// 본 게이트 = ① stub 명단 기계 영속 ② stub 가 실구현으로 전환되면 즉시 FAIL →
+// "VITEST_PACKAGES 등록 + --passWithNoTests 제거" 를 강제 (silent PASS 차단 tripwire).
+//
+// stub 판정 = src 디렉토리에 단일 index.ts + 그 내용(trim)이 stubMarker 와 정확 일치.
+
+interface StubPackage {
+  readonly name: string;
+  /** repo-root 기준 src 디렉토리. */
+  readonly srcDir: string;
+  /** index.ts 가 stub 일 때의 정확 내용(trim 후). */
+  readonly stubMarker: string;
+  readonly reason: string;
+}
+
+const KNOWN_STUB_PACKAGES: readonly StubPackage[] = [
+  {
+    name: '@thepick/study-material-generator',
+    srcDir: 'packages/study-material-generator/src',
+    stubMarker: 'export {};',
+    reason:
+      'ADR-023 §2.4 — Layer 5 콘텐츠 생성 엔진(북극성 본체)은 Phase 2 Content Generation 진입 전까지 의도적 stub. roadmap-milestone-progress 명기.',
+  },
+];
+
+function checkKnownStubsIntegrity(): BooleanMetric {
+  const name = 'Known-stub 패키지 무결성 (구현 시작 시 게이트 등록 강제)';
+  const violations: string[] = [];
+  for (const pkg of KNOWN_STUB_PACKAGES) {
+    const srcPath = join(REPO_ROOT, pkg.srcDir);
+    let srcFiles: string[];
+    try {
+      // recursive — 서브디렉토리 실구현 우회 차단 (design-audit ARCH-3/DEBT-2: src/generators/x.ts
+      //   추가 + index.ts='export {};' 유지 시 false-negative). 확장자도 .ts 한정→소스 일반으로 확대.
+      srcFiles = readdirSync(srcPath, { recursive: true })
+        .map((f) => String(f))
+        .filter((f) => /\.(ts|tsx|js|mjs|cjs)$/.test(f));
+    } catch {
+      violations.push(`${pkg.name}: src 디렉토리(${pkg.srcDir}) 미존재`);
+      continue;
+    }
+    // recursive 결과의 최상위 index.ts 만 stub 허용 — 그 외 모든 소스(서브디렉토리 포함) = 구현 시작.
+    const nonIndex = srcFiles.filter((f) => f !== 'index.ts');
+    if (nonIndex.length > 0) {
+      violations.push(
+        `${pkg.name}: src 에 index.ts 외 소스 ${nonIndex.length}건(${nonIndex.slice(0, 3).join(',')}) — 구현 시작 감지`,
+      );
+      continue;
+    }
+    let content = '';
+    try {
+      content = readFileSync(join(srcPath, 'index.ts'), 'utf8').trim();
+    } catch {
+      violations.push(`${pkg.name}: src/index.ts 미존재`);
+      continue;
+    }
+    if (content !== pkg.stubMarker) {
+      violations.push(
+        `${pkg.name}: index.ts 가 stub marker('${pkg.stubMarker}') 와 불일치 — 구현 시작 감지`,
+      );
+    }
+  }
+
+  if (violations.length === 0) {
+    return {
+      name,
+      value: true,
+      required: true,
+      status: 'PASS',
+      evidence: `${KNOWN_STUB_PACKAGES.length} stub 패키지 여전히 미착수(의도된 상태) — VITEST_PACKAGES 미등록 정당`,
+    };
+  }
+  return {
+    name,
+    value: false,
+    required: true,
+    status: 'FAIL',
+    evidence: `stub 구현 시작 감지 ${violations.length}건 → 해당 패키지를 VITEST_PACKAGES 에 실측 카운트로 등록 + package.json test 의 --passWithNoTests 제거 필요 (silent PASS 차단): ${violations.slice(0, 3).join(' | ')}`,
+  };
+}
+
 // === 메인 ===
 
 async function main(): Promise<void> {
@@ -1369,7 +1460,8 @@ async function main(): Promise<void> {
   const innerHtml = checkInnerHtmlUsage();
   const consoleCheck = checkConsoleUsage();
   const adr034Skip = checkAdr034CarryOverSkips();
-  const cat7Booleans = [hr17, formulaSafety, innerHtml, consoleCheck, adr034Skip];
+  const knownStubs = checkKnownStubsIntegrity();
+  const cat7Booleans = [hr17, formulaSafety, innerHtml, consoleCheck, adr034Skip, knownStubs];
   const cat7: CategoryReport = {
     id: 7,
     name: '보안 테스트 (Cat 7)',
@@ -1379,6 +1471,7 @@ async function main(): Promise<void> {
     notes: [
       'production-quality.md Hard Rule 17 + Formula Engine 동적 실행 차단 + XSS + Step 18 logger 회귀 방어.',
       'Phase 3 launch chain C-09 — ADR-034 carry-over skip 자동 알람 (BASELINE 2건, Phase 3 unskip 후 0건 도달 시 BASELINE 갱신).',
+      'design-audit WS-0c — Known-stub 무결성 tripwire: 의도된 stub 패키지(study-material-generator)가 실구현으로 전환되면 FAIL → VITEST_PACKAGES 등록 + --passWithNoTests 제거 강제 (silent PASS 차단).',
     ],
   };
 

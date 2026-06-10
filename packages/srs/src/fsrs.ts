@@ -11,8 +11,12 @@
  */
 
 import { Card, FSRS, Grade, Rating, State, createEmptyCard, generatorParameters } from 'ts-fsrs';
-import type { FsrsRating } from '@thepick/learning-modes';
-import type { FsrsCardState, ScheduleReviewInput, ScheduleReviewResult } from './types.js';
+import type {
+  FsrsCardState,
+  FsrsRating,
+  ScheduleReviewInput,
+  ScheduleReviewResult,
+} from './types.js';
 
 const FSRS_INSTANCE = new FSRS(generatorParameters());
 

@@ -12,7 +12,9 @@
  * 의존:
  *   - ts-fsrs (FSRS-4 알고리즘 자체)
  *   - @thepick/shared (TYPES)
- *   - @thepick/learning-modes (FsrsRating)
+ *
+ * ★ FsrsRating / FSRS_RATINGS 정본 = 본 패키지 (이전 learning-modes 에서 이관 —
+ *   srs → learning-modes 역의존 차단, plan §7.3:375).
  *
  * Step 3-UX-5 통합 시:
  *   - migration 0033 user_progress.fsrs_state JSON 컬럼 적재
@@ -22,12 +24,13 @@
 
 export type {
   FsrsCardState,
+  FsrsRating,
   ScheduleReviewInput,
   ScheduleReviewResult,
   WeakScoreInput,
 } from './types.js';
 
-export { MASTERED_THRESHOLD_DAYS, WEAK_SCORE_WEIGHTS } from './types.js';
+export { FSRS_RATINGS, MASTERED_THRESHOLD_DAYS, WEAK_SCORE_WEIGHTS } from './types.js';
 
 export { createFreshCard, replayReviews, scheduleReview } from './fsrs.js';
 

@@ -41,12 +41,12 @@ import {
   gradeFillBlank,
   gradeMultipleChoice,
   multipleChoiceAnswerToIndex,
+  normalizeAnswer,
   resolveLearningMode as resolveLearningModeBase,
   resolveSessionPhase as resolveSessionPhaseBase,
   shuffleChoices,
   todayDateString,
   type EssaySelfRating,
-  type FsrsRating,
   type InputType,
   type LearningMode,
   type NarrowingFallback,
@@ -59,6 +59,7 @@ import {
   createFreshCard,
   scheduleReview,
   type FsrsCardState,
+  type FsrsRating,
 } from '@thepick/srs';
 import { requireAuth, type RequireAuthVariables } from '../auth/middleware/require-auth.js';
 import { writeTelemetryEvent } from '../telemetry/write-helper.js';
@@ -412,6 +413,34 @@ async function buildShuffledChoices(
     logger.warn('choice count out of range', {
       questionId: question.id,
       count: originalTexts.length,
+    });
+    return null;
+  }
+
+  // design-audit WS-0f (2026-06-10) — distractor 안전 최후 가드.
+  //   채점(gradeMultipleChoice)은 originalIndex 로 정답을 판정한다. 같은 텍스트가 두
+  //   슬롯에 있으면 "정답과 동일한 보기"를 고른 사용자가 오답 처리되는 불공정이 발생
+  //   하고, distractor 간 중복은 동일 보기 2개 노출이 된다. 채점 동치 기준(normalizeAnswer)
+  //   으로 중복을 검출하면 셔플·서빙을 거부 → routes 측 fill_blank fallback (안전 강등).
+  //   ※ index 쌍만 로깅(정답 원문 미노출 — 정답 누출 차단). index 0 = 정답.
+  const normalizedTexts = originalTexts.map((t) => normalizeAnswer(t));
+  const firstSeenIndex = new Map<string, number>();
+  const collisionPairs: string[] = [];
+  let answerCollides = false;
+  normalizedTexts.forEach((norm, i) => {
+    const prev = firstSeenIndex.get(norm);
+    if (prev === undefined) {
+      firstSeenIndex.set(norm, i);
+      return;
+    }
+    collisionPairs.push(`${prev}=${i}`);
+    if (prev === 0) answerCollides = true;
+  });
+  if (collisionPairs.length > 0) {
+    logger.warn('duplicate choice text — refusing MC shuffle (fallback to fill_blank)', {
+      questionId: question.id,
+      collisionIndexPairs: collisionPairs.join(','),
+      answerCollides,
     });
     return null;
   }

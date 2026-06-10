@@ -14,5 +14,5 @@ export type LearningMode = (typeof LEARNING_MODES)[number];
 export const SESSION_PHASES = ['warmup', 'main', 'cooldown', 'completed'] as const;
 export type SessionPhase = (typeof SESSION_PHASES)[number];
 
-export const FSRS_RATINGS = ['again', 'hard', 'good', 'easy'] as const;
-export type FsrsRating = (typeof FSRS_RATINGS)[number];
+// FSRS_RATINGS / FsrsRating 는 @thepick/srs 로 이관 (srs → learning-modes 역의존
+// 차단, plan §7.3:375). 본 패키지 내부 미사용 — 소비자(apps/api)는 @thepick/srs 에서 import.

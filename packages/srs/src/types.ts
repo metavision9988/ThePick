@@ -5,7 +5,16 @@
  * Step 3-UX-3 (packages/srs 신설).
  */
 
-import type { FsrsRating } from '@thepick/learning-modes';
+/**
+ * FSRS 채점 등급 — FSRS-4 grade vocabulary ('again'|'hard'|'good'|'easy').
+ *
+ * ★ 본 패키지(srs)가 정본 소유자. 이전엔 @thepick/learning-modes 에 있었으나
+ *   srs → learning-modes 역의존(plan §7.3:375 "역의존 차단")이라 srs 로 이관 —
+ *   FSRS 개념은 SRS 엔진 소유가 Engine-First 정합. learning-modes 가 필요하면
+ *   srs 에서 import (단방향 learning-modes → srs 만 허용).
+ */
+export const FSRS_RATINGS = ['again', 'hard', 'good', 'easy'] as const;
+export type FsrsRating = (typeof FSRS_RATINGS)[number];
 
 /**
  * D1 user_progress.fsrs_state JSON 컬럼 직렬화 형식.

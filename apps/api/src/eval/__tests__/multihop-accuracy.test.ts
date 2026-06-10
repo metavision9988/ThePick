@@ -68,6 +68,18 @@ describe('G-6a-2 — parseRelatedNodes 는 enrichRelatedNodes 시맨틱 정본',
       malformed: false,
     });
   });
+  // design-audit WS-0e (2026-06-10) — parseRelatedNodes ↔ enrichRelatedNodes 의
+  //   '의도적 비동치 1건(절단)'을 명시 잠금. enrichRelatedNodes(study/routes.ts)는 surface
+  //   상한 RELATED_NODES_MAX=20 으로 ids.slice(0,20) 절단하나, 측정 코어는 recall 분모
+  //   인위 축소 방지 위해 무절단(파일 상단 계약 주석). 두 술어가 같은 절단 정책으로
+  //   표류하면 G-S5 정답률이 왜곡되므로 본 테스트가 회귀를 차단한다.
+  it('절단 비동치 잠금 — 20개 초과도 무절단 (enrichRelatedNodes 의 RELATED_NODES_MAX 미적용)', () => {
+    const ids = Array.from({ length: 25 }, (_, i) => `CONCEPT-${String(i + 1).padStart(3, '0')}`);
+    const result = parseRelatedNodes(JSON.stringify(ids));
+    expect(result.malformed).toBe(false);
+    expect(result.ids).toHaveLength(25); // ★ 무절단 — enrichRelatedNodes 는 여기서 20으로 자른다
+    expect(result.ids).toEqual(ids);
+  });
 });
 
 describe('G-6a-3 — scoreQuestion 지표 손계산 정확', () => {

@@ -146,6 +146,11 @@ const CARD_TYPES = ['flashcard', 'ox', 'blank', 'exam', 'calculation'] as const;
 // Phase 3 학습 UX 모드 (plan §13 lock + migrations 0032~0035)
 const INPUT_TYPES = ['multiple_choice', 'fill_blank', 'essay', 'calc'] as const;
 const FSRS_STATES = ['new', 'learning', 'review', 'relearning'] as const;
+// FSRS_RATINGS 정본 = @thepick/srs/types (FsrsRating, 2026-06-10 learning-modes→srs 이관).
+// 본 로컬 리터럴은 Drizzle/CHECK enum 전용 사본 — srs barrel(index.ts)이 ts-fsrs 를 동반
+// export 하므로 Workers 번들 비대화 회피 위해 직접 import 대신 값만 복제. 변경 시
+// packages/srs/src/types.ts 의 FSRS_RATINGS 와 동시 갱신 의무. (3번째 사본 =
+// migrations/0034_study_reviews.sql rating CHECK — 적용된 마이그라 불변, 개정은 신규 마이그로만.)
 const FSRS_RATINGS = ['again', 'hard', 'good', 'easy'] as const;
 const STUDY_REVIEW_CARD_TYPES = ['exam', 'concept'] as const;
 // SESSION_MODES (5 학습 모드) + SESSION_PHASES (4 phase)는 @thepick/learning-modes가 단일 source.

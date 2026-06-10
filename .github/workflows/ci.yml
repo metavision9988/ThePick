@@ -51,6 +51,9 @@ jobs:
       - name: Lint
         run: pnpm -r lint
 
+      # design-audit WS-0a (2026-06-10) — learning-modes(116)·srs(35) 추가.
+      # 두 패키지는 test 필터 누락으로 CI 에서 151 테스트 미실행이었다(typecheck/lint 는
+      # `pnpm -r` 로 이미 커버). verify-engine-contracts VITEST_PACKAGES 와 동시 등록.
       - name: Test (packages with tests)
         run: |
           pnpm --filter @thepick/shared \
@@ -61,6 +64,8 @@ jobs:
                --filter @thepick/api \
                --filter @thepick/ai-adapter \
                --filter @thepick/admin-web \
+               --filter @thepick/learning-modes \
+               --filter @thepick/srs \
                test
 
       # Step 18 — Engine Hardening 자동 검증 (master-test-checklist v1 / Cat 1+4+6+7).
