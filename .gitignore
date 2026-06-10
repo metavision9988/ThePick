@@ -65,3 +65,8 @@ docs/measurements/raw/
 # 머신 간 PID 의미가 다르므로 (linux jiffies 기반) 커밋 시 stale lock으로 cron 영구 차단 위험.
 # 5-페르소나 리뷰 devops C-D1 흡수 (Session 076).
 .claude/scheduled_tasks.lock
+
+# 트리거형 티어 리뷰 훅(mark-review-pending/enforce-review)의 세션-로컬 마커.
+# 코드 변경 시 생성, 리뷰 완료 후 rm 으로 정리되는 휘발성 런타임 상태 — 커밋 금지.
+.claude/.review-pending
+.claude/.review-files
