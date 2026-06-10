@@ -260,6 +260,19 @@ docs/feasibility/thepick.feasibility.md R3/R4 + docs/feasibility/ceiling.md 에 
 
 **다음**: Fable 5 독립 감사 → (통과 시) S4(WS-2a/2c 무결성 러너)·S6(WS-3a 드리프트 동기) 병행 가능(결재 #1만 의존).
 
+### S2 — WS-0d 모드 정직성 (2026-06-11, Fable 5 구현 — 결재 #9 위임 "비활성 표기")
+
+**상태: 구현 완료 + 독립 리뷰 통과(조건 이행 완료). 미push.**
+
+| 항목                     | 내용                                                                                                                                                                                                                                                                                         |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 구현                     | ① `/mode` 응답 `wired` 필드 — 서버 단일 진실원 `WIRED_MODES={weak,mixed}`(routes.ts, 미배선 = category/topic/confusion) ② `/mode/start` 미배선 422 `MODE_NOT_AVAILABLE`(UI 우회 차단) ③ ModeSelector "준비 중" disabled + available 숫자 비표시(미필터 풀 오해 방지) + 추천 pill 미배선 제외 |
+| 별건 수리                | streak '어제' 테스트 **UTC/KST 시간대 윈도우 결함**(KST 00~09시 실행 시 항상 실패 — 6/11 아침 발화로 발견) → `todayDateString`(KST) 기준 통일. gap 테스트는 기준 일관성 정비(결함 아님 — 리뷰 m-5 정정)                                                                                      |
+| 독립 리뷰                | 2-agent 병렬(Pass1+2/Pass3+4) `review-20260611-074710-s2-mode-honesty.md` — **C0/M1/Minor7, 조건부 완료 → 조건 이행 완료**(주석 2건 흡수 + 배포 제약 명문)                                                                                                                                   |
+| 검증                     | api 678/0(+2) · study 83/83 · web 21/0(+5) · tsc·lint 양측 PASS                                                                                                                                                                                                                              |
+| ⚠️ **배포 제약 (M-1)**   | **반드시 Worker(API) 먼저 → Pages(web) 나중.** 역순이면 신 web 이 구 API 의 wired 필드 부재를 fail-closed 해석 → 전 모드 "준비 중" 차단(학습 시작 전면 불가)                                                                                                                                 |
+| WS-5a 백로그 (리뷰 이관) | ① WIRED_MODES 등재 전 "/next 필터 통합 테스트 PASS" Binary Gate(m-3) ② weak 풀 제한 여부(미시도 우선 정렬 vs "약점 N문제" 표기 간극, m-2) ③ 422 MODE_NOT_AVAILABLE 전용 UI 문구(m-4)                                                                                                         |
+
 ## 수정 이력
 
 - 2026-06-10 v1.0 최초 작성 (Fable 5, design-audit 기반)
