@@ -20,7 +20,7 @@ const ORDER: ReadonlyArray<LearningMode> = ['mixed', 'weak', 'confusion', 'topic
 
 export function ModeSelector({ modes, disabled, onSelect }: ModeSelectorProps) {
   const recommended = pickRecommendedMode(modes);
-  const byMode = new Map(modes.map((m) => [m.mode, m.available]));
+  const byMode = new Map(modes.map((m) => [m.mode, m]));
 
   return (
     <div>
@@ -31,16 +31,24 @@ export function ModeSelector({ modes, disabled, onSelect }: ModeSelectorProps) {
       <ul className="space-y-3">
         {ORDER.map((mid) => {
           const meta = MODE_META[mid];
-          const available = byMode.get(mid) ?? 0;
-          const isRecommended = mid === recommended;
+          const entry = byMode.get(mid);
+          const available = entry?.available ?? 0;
+          // WS-0d 모드 정직성 (결재 #9 = 비활성 표기): 서버 wired=false = /next 미배선
+          // 모드 → "준비 중" disabled. 응답에 항목 자체가 없으면 미배선으로 안전 간주.
+          const notWired = entry === undefined || !entry.wired;
+          const isRecommended = mid === recommended && !notWired;
           const noCards = available === 0;
           return (
             <li key={mid}>
               <button
                 type="button"
                 onClick={() => onSelect(mid)}
-                disabled={disabled || noCards}
-                aria-label={`${meta.label} 학습 시작 (${available}문제)`}
+                disabled={disabled || noCards || notWired}
+                aria-label={
+                  notWired
+                    ? `${meta.label} (준비 중)`
+                    : `${meta.label} 학습 시작 (${available}문제)`
+                }
                 className="group flex w-full items-start gap-4 rounded-lg border border-gray-200 bg-white px-5 py-4 text-left transition-colors hover:bg-gray-50 focus-visible:border-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-50"
                 style={{ borderLeftWidth: 2, borderLeftColor: meta.borderColor, minHeight: 44 }}
               >
@@ -52,14 +60,22 @@ export function ModeSelector({ modes, disabled, onSelect }: ModeSelectorProps) {
                         추천
                       </span>
                     )}
-                    {noCards && (
+                    {notWired && (
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+                        준비 중
+                      </span>
+                    )}
+                    {!notWired && noCards && (
                       <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
                         대상 없음
                       </span>
                     )}
                   </div>
                   <p className="mt-1 text-sm text-gray-500">{meta.hint}</p>
-                  <p className="mt-2 text-xs tabular-nums text-gray-500">{available}문제</p>
+                  {/* 미배선 모드의 available 은 미필터 전체 풀 숫자(오해 소지) → 비표시 */}
+                  {!notWired && (
+                    <p className="mt-2 text-xs tabular-nums text-gray-500">{available}문제</p>
+                  )}
                 </div>
                 <svg
                   aria-hidden="true"

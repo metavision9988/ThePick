@@ -19,6 +19,13 @@ export type ExamType = '1st' | '2nd';
 export interface ModeAvailability {
   readonly mode: LearningMode;
   readonly available: number;
+  /**
+   * 서빙 풀 실배선 여부 (WS-0d 모드 정직성, 2026-06-11) — false = /next 가 본 모드의
+   * WHERE 필터를 아직 미적용(서버 WIRED_MODES 가 단일 진실원). UI 는 "준비 중" disabled
+   * 표기 + available 숫자 비표시(미필터 전체 풀 숫자라 오해 소지). 서버가 배선 후
+   * wired=true 로 바꾸면 UI 자동 재활성.
+   */
+  readonly wired: boolean;
 }
 
 /** GET /api/study/mode 응답 약점 카드 top N */
@@ -155,11 +162,18 @@ export const MODE_META: Readonly<Record<LearningMode, ModeMeta>> = {
   },
 };
 
-/** 클라이언트 측 추천 mode 선택 (ADR-039 §"결정 §4" 정합) — weak > confusion > mixed. */
+/**
+ * 클라이언트 측 추천 mode 선택 (ADR-039 §"결정 §4" 정합) — weak > confusion > mixed.
+ * WS-0d: 미배선(wired=false) 모드는 추천 대상에서 제외 ("준비 중"을 추천하는 모순 차단).
+ */
 export function pickRecommendedMode(modes: ReadonlyArray<ModeAvailability>): LearningMode {
-  const byMode = new Map(modes.map((m) => [m.mode, m.available]));
-  if ((byMode.get('weak') ?? 0) > 0) return 'weak';
-  if ((byMode.get('confusion') ?? 0) > 0) return 'confusion';
+  const byMode = new Map(modes.map((m) => [m.mode, m]));
+  const usable = (mode: LearningMode): boolean => {
+    const m = byMode.get(mode);
+    return m !== undefined && m.wired && m.available > 0;
+  };
+  if (usable('weak')) return 'weak';
+  if (usable('confusion')) return 'confusion';
   return 'mixed';
 }
 

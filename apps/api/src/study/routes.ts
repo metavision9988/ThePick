@@ -174,6 +174,20 @@ const modeStartSchema = z.object({
   cardsPlanned: z.number().int().min(MIN_CARDS_PLANNED).max(MAX_CARDS_PLANNED),
 });
 
+/**
+ * 실배선 모드 (design-audit WS-0d, 결재 #9 위임 = "비활성 표기", 2026-06-11).
+ *
+ * 등재 기준 = "/next 서빙 의미가 모드 계약과 일치하는 모드" (리뷰 m-1 정정: weak 는
+ * WHERE 가 아닌 ORDER BY weak_score 분기, mixed 는 무필터가 곧 계약). category/topic/
+ * confusion 은 modeParams 저장·표시만 되고 서빙 풀이 mixed 와 동일(ADR-039:41-43 계약
+ * 위반 상태, 기보고 RC-3)라 제외. 미배선 모드는 ① /mode 응답 wired=false (UI "준비 중"
+ * disabled 근거) ② /mode/start 422 거부 (UI 우회 차단). ★ WS-5a 에서 해당 모드 서빙
+ * 배선 완료 시 본 Set 등재가 재활성의 유일 경로 — UI 는 wired 를 따르므로 자동 추종.
+ * 단 Set 등재 전 "해당 모드 /next 필터 통합 테스트 PASS" 가 선행 게이트 (Set 은 선언이지
+ * 검증이 아님 — 리뷰 m-3).
+ */
+const WIRED_MODES: ReadonlySet<LearningMode> = new Set<LearningMode>(['weak', 'mixed']);
+
 interface ExamQuestionRow {
   readonly id: string;
   readonly year: number;
@@ -1540,12 +1554,12 @@ export function createStudyRoutes(): Hono<StudyEnv> {
         examId: examIdParam.examId,
         examType,
         modes: [
-          { mode: 'category', available: total },
-          { mode: 'topic', available: total },
-          { mode: 'confusion', available: confusion },
-          { mode: 'weak', available: weak },
-          { mode: 'mixed', available: total },
-        ] satisfies ReadonlyArray<{ mode: LearningMode; available: number }>,
+          { mode: 'category', available: total, wired: WIRED_MODES.has('category') },
+          { mode: 'topic', available: total, wired: WIRED_MODES.has('topic') },
+          { mode: 'confusion', available: confusion, wired: WIRED_MODES.has('confusion') },
+          { mode: 'weak', available: weak, wired: WIRED_MODES.has('weak') },
+          { mode: 'mixed', available: total, wired: WIRED_MODES.has('mixed') },
+        ] satisfies ReadonlyArray<{ mode: LearningMode; available: number; wired: boolean }>,
         weakTop: weakTopResult.results.map((row) => ({
           cardId: row.card_id,
           subject: row.subject,
@@ -1757,6 +1771,19 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       return c.json({ error: 'VALIDATION_ERROR', issues: parsed.error.issues }, 422);
     }
     const { mode, modeParams, cardsPlanned } = parsed.data;
+
+    // WS-0d 모드 정직성 — 미배선 모드 세션 시작 거부 (UI 비활성의 서버측 강제,
+    // API 직접 호출 우회 차단). 배선 완료 시 WIRED_MODES 등재로 자동 해제.
+    if (!WIRED_MODES.has(mode)) {
+      return c.json(
+        {
+          error: 'MODE_NOT_AVAILABLE',
+          message: `mode '${mode}' is not wired to the serving pool yet`,
+          wiredModes: [...WIRED_MODES],
+        },
+        422,
+      );
+    }
 
     const sessionId = crypto.randomUUID();
     const nowIso = new Date().toISOString();

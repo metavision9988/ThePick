@@ -16,7 +16,7 @@ import { signAccessToken } from '../../auth/session.js';
 import { createStudyRoutes, type StudyBindings } from '../routes.js';
 // Step 3-UX-5a — normalize/isAnswerCorrect 로직은 packages/learning-modes로 분리.
 // 본 테스트는 분리 후에도 동일 회귀 정합 검증 (Pass 1 CRIT-1 + Pass 1 M1).
-import { gradeFillBlank, normalizeAnswer } from '@thepick/learning-modes';
+import { gradeFillBlank, normalizeAnswer, todayDateString } from '@thepick/learning-modes';
 
 /** Step 3-UX-5 이전 호환 helper — gradeFillBlank wrapper. */
 function isAnswerCorrect(expected: string | null, userAnswer: string): boolean {
@@ -743,7 +743,7 @@ interface GradeResponseBody extends StudyResponseBody {
 interface ModeStatsBody {
   readonly examId: string;
   readonly examType: '1st' | '2nd';
-  readonly modes: ReadonlyArray<{ mode: string; available: number }>;
+  readonly modes: ReadonlyArray<{ mode: string; available: number; wired: boolean }>;
   readonly weakTop: ReadonlyArray<{ cardId: string; subject: string | null; weakScore: number }>;
   readonly confusionTypes: ReadonlyArray<{ type: string; count: number }>;
   readonly streak: { current: number; longest: number; dailyGoalProgress: number };
@@ -830,6 +830,19 @@ describe('GET /api/study/mode', () => {
     for (const m of body.modes) expect(m.available).toBe(0);
     expect(body.weakTop).toEqual([]);
     expect(body.confusionTypes).toEqual([]);
+  });
+
+  // WS-0d 모드 정직성 (결재 #9 위임 = 비활성 표기, 2026-06-11) — wired 가 서버 단일 진실원.
+  it('wired — weak/mixed 만 true, 미배선 category/topic/confusion 은 false', async () => {
+    seedUser('u1', 'u1@test.com');
+    const res = await fetchAs('u1', '/mode?examType=2nd');
+    const body = (await res.json()) as ModeStatsBody;
+    const wiredOf = new Map(body.modes.map((m) => [m.mode, m.wired]));
+    expect(wiredOf.get('weak')).toBe(true);
+    expect(wiredOf.get('mixed')).toBe(true);
+    expect(wiredOf.get('category')).toBe(false);
+    expect(wiredOf.get('topic')).toBe(false);
+    expect(wiredOf.get('confusion')).toBe(false);
   });
 
   // Step 3-UX-6e backend M-D1 흡수 — study-read group rate-limit 60/min.
@@ -1167,11 +1180,12 @@ describe('POST /api/study/mode/start', () => {
 
   it('modeParams JSON 영속', async () => {
     seedUser('u1', 'u1@test.com');
+    // WS-0d: topic 은 미배선(422) → 배선된 weak 로 modeParams 영속 검증 (검증 의도 동일).
     const res = await fetchAs('u1', '/mode/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        mode: 'topic',
+        mode: 'weak',
         modeParams: { conceptId: 'CONCEPT-001' },
         cardsPlanned: 10,
       }),
@@ -1182,6 +1196,22 @@ describe('POST /api/study/mode/start', () => {
       .prepare(`SELECT mode_params FROM study_sessions WHERE id = ?`)
       .get(body.sessionId) as { mode_params: string };
     expect(JSON.parse(row.mode_params)).toEqual({ conceptId: 'CONCEPT-001' });
+  });
+
+  // WS-0d 모드 정직성 — 미배선 모드는 서버가 거부 (UI disabled 의 API 우회 차단).
+  it('미배선 모드(category/topic/confusion) → 422 MODE_NOT_AVAILABLE', async () => {
+    seedUser('u1', 'u1@test.com');
+    for (const mode of ['category', 'topic', 'confusion'] as const) {
+      const res = await fetchAs('u1', '/mode/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode, cardsPlanned: 10 }),
+      });
+      expect(res.status).toBe(422);
+      const body = (await res.json()) as { error: string; wiredModes: string[] };
+      expect(body.error).toBe('MODE_NOT_AVAILABLE');
+      expect(body.wiredModes.sort()).toEqual(['mixed', 'weak']);
+    }
   });
 });
 
@@ -1367,8 +1397,10 @@ describe('POST /api/study/grade — Step 3-UX-5c streak + session 통합', () =>
   it('streak 어제 → current 누적', async () => {
     seedUser('u1', 'u1@test.com');
     seedExamQuestion({ id: 'eq-streak-2', answer: '1' });
-    // 어제 last_study_date
-    const yesterday = new Date(Date.now() - 86400_000).toISOString().substring(0, 10);
+    // 어제 last_study_date — 서버 streak 의 날짜 기준은 todayDateString(KST 기본)이므로
+    // 테스트도 동일 기준으로 계산. (구 toISOString=UTC 기반은 KST 00~09시 실행 시
+    // 서버 today 와 2일 차로 벌어져 reset 오판 → 시간 윈도우 결함, 2026-06-11 발화로 발견.)
+    const yesterday = todayDateString(new Date(Date.now() - 86400_000));
     seedStreakRecord({
       userId: 'u1',
       currentStreak: 3,
@@ -1389,7 +1421,9 @@ describe('POST /api/study/grade — Step 3-UX-5c streak + session 통합', () =>
   it('streak gap (2일 이상 공백) → current reset to 1', async () => {
     seedUser('u1', 'u1@test.com');
     seedExamQuestion({ id: 'eq-streak-3', answer: '1' });
-    const twoDaysAgo = new Date(Date.now() - 86400_000 * 2).toISOString().substring(0, 10);
+    // KST 기준 통일 (리뷰 m-5 정정: gap 테스트는 구 UTC 기반에서도 전 시간대 PASS —
+    // KST 00~09시에 3일 전이 되어도 reset 판정 동일. 결함이 아니라 기준 일관성 정비.)
+    const twoDaysAgo = todayDateString(new Date(Date.now() - 86400_000 * 2));
     seedStreakRecord({
       userId: 'u1',
       currentStreak: 7,
