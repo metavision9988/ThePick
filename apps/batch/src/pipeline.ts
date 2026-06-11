@@ -1193,7 +1193,8 @@ async function stageQg2Gate(
 ): Promise<StageResult> {
   const nodes = state.graphNodes.length > 0 ? state.graphNodes : [];
   const edges = state.graphEdges.length > 0 ? state.graphEdges : [];
-  const result = runQG2Validation(nodes, edges, ctx.goldenTests);
+  // batchId 배선 (RC-5/2c 동기, 2026-06-11) — 누적 산식 임계가 배치별로 선택되도록.
+  const result = runQG2Validation(nodes, edges, ctx.goldenTests, ctx.batchId);
 
   // === Step 037 telemetry — quality_gate + formula_accuracy emit ===
   // quality_gate 단위: pass_count (migrations/0017_engine_telemetry.sql:30 정의 정합) — 0~totalChecks.

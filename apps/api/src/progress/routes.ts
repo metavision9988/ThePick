@@ -106,7 +106,7 @@ type ProgressEnv = {
  *
  * Year 1 (현): user_progress 테이블 exam_id 컬럼 부재 — 검증만 수행, WHERE 절 미추가
  *   (단일 시험이므로 시험 격리 자동 효과).
- * Year 2 (마이그레이션 0019 user_progress.exam_id 도입 후): 본 함수 시그니처 그대로,
+ * Year 2 (user_progress.exam_id 도입 마이그레이션 후 — 차기 가용 번호, 구 "0019" 는 page_chapter_meta 로 소진): 본 함수 시그니처 그대로,
  *   각 SELECT/UPDATE/INSERT 의 WHERE 절에 exam_id = ? 추가만 하면 zero-cost 전환.
  *
  * 호출 측 (PWA / admin-web / E2E test) 은 EXAM_IDS.SON_HAE_PYEONG_GA_SA 고정 전달.
@@ -155,7 +155,7 @@ export function createProgressRoutes(): Hono<ProgressEnv> {
       );
     }
     // Year 1: examId 검증만 (단일 시험이라 WHERE 절 미추가).
-    // Year 2 마이그레이션 0019 후: WHERE user_id = ? AND exam_id = ? 추가.
+    // Year 2 exam_id 마이그레이션(차기 가용 번호) 후: WHERE user_id = ? AND exam_id = ? 추가.
     void examIdParam.examId;
 
     try {
@@ -200,7 +200,7 @@ export function createProgressRoutes(): Hono<ProgressEnv> {
         422,
       );
     }
-    // Year 1: examId 검증만. Year 2 마이그레이션 0019 후: knowledge_nodes / user_progress 의
+    // Year 1: examId 검증만. Year 2 exam_id 마이그레이션(차기 가용 번호) 후: knowledge_nodes / user_progress 의
     // WHERE 절에 exam_id = ? 추가로 cross-tenant 격리.
     void examIdParam.examId;
 
@@ -314,7 +314,7 @@ export function createProgressRoutes(): Hono<ProgressEnv> {
         422,
       );
     }
-    // Year 1: examId 검증만. Year 2 마이그레이션 0019 후: WHERE 절 추가.
+    // Year 1: examId 검증만. Year 2 exam_id 마이그레이션(차기 가용 번호) 후: WHERE 절 추가.
     void examIdParam.examId;
 
     try {

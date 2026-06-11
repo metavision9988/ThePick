@@ -72,7 +72,7 @@ export interface BatchRunRow {
  * Hard Rule 16 (Year 1 한시 예외) 적용:
  *   모든 메서드는 첫 인자로 `examId: ExamId` 를 받는다. Year 1 (현재) 단일
  *   시험이라 내부 SQL 의 WHERE 절에 exam_id 미주입이지만, 시그니처 자체가
- *   examId 포함이라 Year 2 Phase 4 마이그레이션 0005 도입 시 zero-cost 전환
+ *   examId 포함이라 Year 2 Phase 4 exam_id 도입 마이그레이션(차기 가용 번호 — 구 "0005"는 소진) 시 zero-cost 전환
  *   가능 (호출 측 코드 변경 X, 어댑터 내부만 WHERE exam_id = ? 추가).
  *
  * 근거:

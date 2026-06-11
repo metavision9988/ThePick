@@ -1,3 +1,11 @@
+> ⚠️ **STALE 정정 캐비엇 (2026-06-11, design-audit RC-5 동기 — 전면 개정 전 임시 정본 표식)**
+> 본 문서는 ADR-045(N-hop graph-walk) 이후 미개정 상태로 실코드와 3축에서 어긋난다:
+> ① §6 코드 위치 `packages/content-build-engine/search/` → 실코드 = `apps/api/src/search/`
+> ② §2-3 Concurrent Pipeline(Promise.all) → 실코드 = 순차 vector→fallback (`routes.ts:107-142`)
+> ③ "재귀 CTE 금지" vow → 실코드 = WITH RECURSIVE 채택 (ADR-045 결재, `graph-walk/index.ts`)
+> 또한 본문 §2~3 의 lexical/keyword 융합 서술(ADR-019)은 **미구현 스펙**이다 (실코드 = 순차 폴백 전용, 동시 fusion 0건) (S5-8 plan D안 비교군 — 결재 #7/#8).
+> 실코드와 충돌 시 **실코드가 정본**. 전면 개정 = ADR-045 정합화 별도 단위.
+
 # Search Pipeline — Hybrid + Multi-Path + Concurrent 통합 명세 (v2.1)
 
 > 운영 RAG 검색의 통합 명세. Rule 15 + 18 + 23 의 결합 흐름.

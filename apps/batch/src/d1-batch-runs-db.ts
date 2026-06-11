@@ -9,7 +9,7 @@
  *   2. 0015 트리거 발화 (RAISE(ABORT)) 를 throw 로 caller 에 전파 (silent failure 차단)
  *   3. Hard Rule 16 정합 — 모든 메서드 첫 인자 examId. Year 1 단일 시험이라
  *      내부 SQL 의 `WHERE exam_id = ?` 미주입이지만 시그니처 자체가 examId 포함.
- *      Year 2 Phase 4 (마이그레이션 0005, exam_id 컬럼 도입) 진입 시:
+ *      Year 2 Phase 4 (exam_id 컬럼 도입 마이그레이션 — 차기 가용 번호, 구 "0005"는 소진) 진입 시:
  *        - 본 파일 내부에서 SELECT/UPDATE 는 `AND exam_id = ?` 추가
  *        - INSERT 는 `exam_id` 컬럼 추가
  *        - 호출 측 코드 (pipeline.ts 등) 변경 0건 — zero-cost 전환

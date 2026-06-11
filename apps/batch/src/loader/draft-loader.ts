@@ -34,7 +34,7 @@ export interface LoadDraftContext {
    *
    * Year 1 (현재): D1 `knowledge_nodes` 에 `exam_id` 컬럼 부재. INSERT 시 미바인딩 (Year 1 한시
    * 예외, 메모리 `project_v3_final_multi_exam_deferred`). 단 시그니처에 required 로 보유 →
-   * Year 2 마이그레이션 0017 (`exam_id` 컬럼 도입) 시점에 INSERT SQL `bind(examId)` 추가만으로
+   * Year 2 exam_id 컬럼 도입 마이그레이션(차기 가용 번호 — 구 "0017" 표기는 engine_telemetry 로 소진되어 정정, 리뷰 RC-5 슬롯 부패) 시점에 INSERT SQL `bind(examId)` 추가만으로
    * zero-cost 전환. caller 코드 수정 0건.
    *
    * Year 2 Phase 4: 본 필드 → INSERT SQL `exam_id` 컬럼 + Vectorize 메타데이터 + recover() 시

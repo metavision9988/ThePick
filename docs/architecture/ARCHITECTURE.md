@@ -1,10 +1,16 @@
+> ⚠️ **부분 STALE 캐비엇 (2026-06-11, design-audit RC-5 동기)** — 본 문서는 2026-04-12 작성
+> 이후 다음을 미반영: S5-3 독립 `/api/search/graph` 라우트(graph-walk) · eval harness
+> (`apps/api/src/eval/`) · 신규 테이블군(테이블 전수 정본 = `apps/api/src/db/schema.ts` 헤더,
+> 26 테이블 — 본문 "9 tables" 표기는 stale) · 오프라인 동기화 다이어그램은 **미구현 선언**
+> 상태(PWA 캐싱만 실재, sw.js stub). 실코드와 충돌 시 실코드가 정본. Mermaid 전면 갱신 = 별도 단위.
+
 # 쪽집게(ThePick) — 아키텍처 다이어그램 (Mermaid DaC)
 
 > **Diagram as Code** — 구현이 변경되면 다이어그램도 함께 수정한다.
 >
 > 이 파일은 6종의 아키텍처 다이어그램을 Mermaid.js로 관리한다.
 >
-> 최종 수정: 2026-04-12
+> 최종 수정: 2026-06-11 (캐비엇 헤더 추가 — 본문 다이어그램은 2026-04-12 기준, 상단 캐비엇 참조)
 
 ---
 

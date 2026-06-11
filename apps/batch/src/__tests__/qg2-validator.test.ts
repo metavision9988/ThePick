@@ -146,6 +146,19 @@ describe('QG-2 Validator', () => {
       expect(result.passed).toBe(false);
       expect(result.summary).toContain('FAILED');
     });
+
+    // 리뷰 MAJOR-1 흡수 (2026-06-11) — batchId 배선 회귀 게이트.
+    // pipeline.ts 가 4번째 인자(ctx.batchId)를 다시 누락(구 미배선 드리프트 재발)하면
+    // 어떤 테스트도 깨지지 않던 비대칭을 차단: BATCH-5 전달 시 누적 임계(68)가
+    // 실제로 check name 에 반영되는지 단언.
+    it('batchId 배선 — BATCH-5 전달 시 누적 임계 68 선택 (기본 BATCH-1=7 아님)', () => {
+      const nodes = makeNodes(65);
+      const edges = makeEdges(nodes, 210);
+      const result = runQG2Validation(nodes, edges, [], 'BATCH-5');
+      const formulaCheck = result.checks.find((c) => c.name.includes('Formula count'));
+      expect(formulaCheck?.name).toBe('Formula count >= 68 (BATCH-5)');
+      // 미배선 회귀 시 위 단언이 'Formula count >= 7 (BATCH-1)' 로 깨진다.
+    });
   });
 
   // Sprint 1 §5.1 4-Pass CRITICAL-1 흡수 (Pass 2/3, 2026-05-01) — SupersedeChainTooDeepError graceful degradation 회귀

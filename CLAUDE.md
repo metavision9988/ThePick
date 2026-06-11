@@ -56,10 +56,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 스택
 
 - Frontend: Astro + React Islands + Tailwind CSS + shadcn/ui (PWA)
-- State: Zustand + IndexedDB (Dexie.js) 오프라인 동기화
+- State: Zustand + IndexedDB(Dexie — 로컬 영속 구현) (★오프라인: PWA 캐싱·IDB 로컬 영속까지 실재, **IDB↔D1 동기화만 미구현** — sw.js syncOfflineActions stub. RC-3 정직 표기 2026-06-11)
 - Backend: Cloudflare Workers + Hono (Edge)
-- ORM: Drizzle ORM (D1 네이티브)
-- DB: Cloudflare D1 (9개 테이블) + Vectorize (벡터 검색)
+- ORM: Drizzle = **타입 파생 전용** (NC-1 — 런타임 쿼리는 raw prepared statement, drizzle-kit 금지)
+- DB: Cloudflare D1 (**26 테이블** — schema.ts 헤더가 전수 목록 정본) + Vectorize (벡터 검색)
 - AI: Claude API (Haiku 배치 구조화 + Vision OCR)
 - Formula Engine: math.js AST 파서
 - PDF: pdfplumber (Python subprocess)
@@ -70,10 +70,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 명령어
 
 ```
-# build: (Astro 프로젝트 초기화 후 확정)
-# test:  (Vitest 도입 후 확정)
-# lint:  (ESLint + Prettier 도입 후 확정)
-# dev:   (확정 후 업데이트)
+pnpm build / test / lint / typecheck   # turbo run (루트 package.json)
+pnpm --filter @thepick/api deploy:staging|deploy:production  # api 배포 (deploy:api 루트 스크립트는 의도적 차단)
+# web = wrangler pages 수동 배포 (Git 자동배포 없음)
+pnpm g1:check                          # G-1 금지어 게이트
+# 단일 패키지: pnpm --filter @thepick/<pkg> test
 ```
 
 ## 아키텍처
@@ -83,6 +84,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 모노레포: apps/(web PWA, admin-web, api Workers, batch) + packages/(parser, parser-1st-exam, formula-engine, study-material-generator, quality)
 상세: `docs/쪽집게(ThePick) — 구현 재정립서 v2.0.md` 참조
 구현: `docs/쪽집게(ThePick) — 구현 설계서 및 개발 로드맵.md` 참조
+★ 인프라 견고화 마스터 플랜(2026-06-10~, 진행 중): `docs/plans/master-remediation-20260610/MASTER_PLAN.md` (WS-0~7 + 확장 게이트 E0~E4 + 결재란 — 차세션 1차 참조)
 아키텍처 다이어그램: `docs/architecture/ARCHITECTURE.md` 참조 (Mermaid DaC — 시스템 조감도, 데이터 흐름, 의존관계, 배치 파이프라인, 오프라인 동기화, Hexagonal 규칙)
 
 ## 상용 품질 원칙 (★ 최우선)

@@ -1,14 +1,17 @@
 /**
- * QG-2 게이트 검증기 — BATCH 1 PoC 품질 게이트
+ * QG-2 게이트 검증기 — BATCH 품질 게이트
  *
- * 통과 조건:
- *   1. 노드 60+ 개
- *   2. 엣지 200+ 개
- *   3. 산식 13+ 개 (F-01~F-13)
+ * 통과 조건 (★ 임계값 정본 = 아래 QG2_THRESHOLDS 코드 — 설계서 v1.1 기준.
+ * 구 헤더의 60/200/13 표기는 stale 이었음, design-audit RC-5/2c 동기 2026-06-11):
+ *   1. 노드 40+ 개
+ *   2. 엣지 80+ 개
+ *   3. 산식: 배치별 누적 임계 (CUMULATIVE_FORMULA_THRESHOLDS — BATCH-1~5 정의,
+ *      ★BATCH-6+ 미정의 시 minFormulas(7) fallback = 누적 검증 약화. 6+ 임계값
+ *      추가는 결재 사안으로 보류 중, 마스터 플랜 2c)
  *   4. 산식 정확도 100% (교재 예시값 대비)
  *   5. Graph 무결성: 고아노드 0, 순환 0, 끊긴엣지 0
  *
- * 실패 시 Phase 1 진입 보류.
+ * 실패 시 다음 BATCH/Phase 진입 보류.
  */
 
 import { validateGraphIntegrity, SupersedeChainTooDeepError } from '@thepick/quality';
@@ -64,7 +67,8 @@ export interface GoldenTestCase {
 // --- 검증 함수 ---
 
 /**
- * 그래프 규모 검증: 노드 60+, 엣지 200+
+ * 그래프 규모 검증 — 임계 정본 = QG2_THRESHOLDS (노드 40+, 엣지 80+).
+ * (구 "60+/200+" 표기는 stale — 리뷰 MINOR-1 동기, 2026-06-11)
  */
 export function checkGraphScale(
   nodes: readonly GraphNode[],
@@ -210,10 +214,16 @@ export function runQG2Validation(
   nodes: readonly GraphNode[],
   edges: readonly GraphEdge[],
   goldenTests: readonly GoldenTestCase[],
+  /**
+   * 검증 대상 배치 — 누적 산식 임계 선택 (design-audit RC-5/2c 동기, 2026-06-11:
+   * 구 구현은 미배선이라 어느 배치든 BATCH-1 임계(7)로 고정 검증되던 드리프트).
+   * 기본값은 하위호환 유지.
+   */
+  batchId: string = 'BATCH-1',
 ): QG2Result {
   const checks: QG2Check[] = [
     ...checkGraphScale(nodes, edges),
-    checkFormulaRegistry(),
+    checkFormulaRegistry(batchId),
     ...checkFormulaAccuracy(goldenTests),
     ...checkGraphIntegrity(nodes, edges),
   ];

@@ -15,17 +15,22 @@
  * - drizzle.config.ts 는 의도적으로 생성하지 않는다. 누군가 추가 필요성을 느낀다면
  *   먼저 ADR 로 기존 정책을 번복한 후 진행할 것.
  *
- * ## 테이블 구성
+ * ## 테이블 구성 (2026-06-11 NC-1 드리프트 동기 — design-audit RC-5)
  *
- * 14 tables (base 6 + extension 3 + auth 2 + webhook 1 + audit 1 + rate 1):
- *   knowledge_nodes, knowledge_edges, formulas, constants,
- *   revision_changes, exam_questions,
- *   mnemonic_cards, user_progress, topic_clusters,
- *   users (Phase 1 Step 1-1 — migrations/0006),
- *   webhook_events (Phase 1 Step 1-2 — migrations/0008),
- *   sessions (Phase 1 Step 1-4 — migrations/0009),
- *   status_transitions (Phase 1 Step 1-5 — migrations/0010),
- *   rate_limits (Phase 1 Step 1-5 가-0 — migrations/0012)
+ * 26 tables 선언 (migrations 0001~0038 CREATE TABLE 전수와 1:1 — 실측 대조 2026-06-11):
+ *   base 6: knowledge_nodes, knowledge_edges, formulas, constants,
+ *           revision_changes, exam_questions
+ *   extension 3: mnemonic_cards, user_progress, topic_clusters
+ *   auth/infra 5: users(0006), webhook_events(0008), sessions(0009),
+ *                 status_transitions(0010), rate_limits(0012)
+ *   ops 4: review_decisions(0013), batch_runs(0015), engine_telemetry(0017),
+ *          login_history(0030)
+ *   table-KG 4 (ADR-032): table_structures, table_headers, table_cells,
+ *          table_node_links (0021~0026)
+ *   learning 3: study_reviews(0034), study_sessions·streak_records(0035)
+ *   search-ops 1: review_queue(0027)
+ *   ※ 신규 CREATE TABLE 마이그레이션 추가 시 본 목록 + 선언 동시 갱신 의무
+ *     (구 "14 tables" 헤더가 ~1.5개월 stale 였던 드리프트 재발 방지).
  *
  * Temporal Graph pattern: UPDATE 금지 → INSERT + SUPERSEDES edge
  * (users 테이블은 예외 — last_login_at / subscription_* 변경 빈도로 일반 UPDATE 허용)
@@ -191,6 +196,12 @@ export const knowledgeNodes = sqliteTable(
     batchId: text('batch_id'),
     versionYear: integer('version_year').notNull(),
     supersededBy: text('superseded_by'),
+    /**
+     * Materialized Active View (migrations/0013, ADR-013) — SUPERSEDES INSERT 시
+     * 트리거가 구 노드를 0 으로 자동 폐기. 검색·graph-walk 의 핵심 필터 컬럼
+     * (approved-nodes-sql.ts raw SQL 소비). NC-1 드리프트 동기 (design-audit RC-5, 2026-06-11).
+     */
+    isCurrentActive: integer('is_current_active').notNull().default(1),
     truthWeight: integer('truth_weight').notNull().default(5),
     /**
      * @deprecated 현재 상태 조회에 **사용하지 말 것** (ADR-010).
@@ -264,6 +275,8 @@ export const formulas = sqliteTable('formulas', {
   nodeId: text('node_id').references(() => knowledgeNodes.id),
   versionYear: integer('version_year').notNull(),
   supersededBy: text('superseded_by'),
+  /** Materialized Active View (migrations/0013) — NC-1 동기 (RC-5, 2026-06-11). */
+  isCurrentActive: integer('is_current_active').notNull().default(1),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`),
@@ -290,6 +303,10 @@ export const constants = sqliteTable('constants', {
   examFrequency: integer('exam_frequency').default(0),
   relatedFormula: text('related_formula'),
   examScope: text('exam_scope', { enum: EXAM_SCOPES }).default('2nd'),
+  /** 개정 supersession 체인 (migrations/0014:134) — NC-1 동기 (RC-5, 2026-06-11). */
+  supersededBy: text('superseded_by'),
+  /** Materialized Active View (migrations/0013) — NC-1 동기 (RC-5, 2026-06-11). */
+  isCurrentActive: integer('is_current_active').notNull().default(1),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`),
@@ -973,3 +990,81 @@ export type TableCell = typeof tableCells.$inferSelect;
 export type NewTableCell = typeof tableCells.$inferInsert;
 export type TableNodeLink = typeof tableNodeLinks.$inferSelect;
 export type NewTableNodeLink = typeof tableNodeLinks.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// NC-1 드리프트 동기 (design-audit RC-5, 2026-06-11) — migrations 에는 존재하나
+// 본 파일에 미선언이던 3테이블. CHECK 제약은 enum 배열로, 트리거·인덱스는 SQL 정본.
+// ---------------------------------------------------------------------------
+
+const BATCH_RUN_STATES = ['in_progress', 'completed', 'failed', 'recovered', 'killed'] as const;
+
+/** BATCH 파이프라인 실행 추적 (migrations/0015) — recover()/idempotency 키. */
+export const batchRuns = sqliteTable('batch_runs', {
+  batchRunId: text('batch_run_id').primaryKey(),
+  startedAt: text('started_at').notNull(),
+  completedAt: text('completed_at'),
+  lastCompletedStage: text('last_completed_stage').notNull(),
+  lastNodeId: text('last_node_id'),
+  state: text('state', { enum: BATCH_RUN_STATES }).notNull(),
+  resumeCount: integer('resume_count').notNull().default(0),
+  fixturePath: text('fixture_path').notNull(),
+  stateHash: text('state_hash').notNull(),
+  engineVersion: text('engine_version').notNull(),
+});
+
+const REVIEW_DECISION_TYPES = [
+  'merge',
+  'reject',
+  'keep_both',
+  'rollback',
+  'approve',
+  'flag',
+] as const;
+const REVIEW_TARGET_TYPES = ['node', 'formula', 'constant', 'edge'] as const;
+const AI_RECOMMENDATIONS = ['merge', 'reject', 'keep_both', 'approve', 'flag'] as const;
+
+/** 인간 검수 결정 감사 이력 (migrations/0013, Hard Rule 29/31 — append-only). */
+export const reviewDecisions = sqliteTable('review_decisions', {
+  id: text('id').primaryKey(),
+  decisionType: text('decision_type', { enum: REVIEW_DECISION_TYPES }).notNull(),
+  targetType: text('target_type', { enum: REVIEW_TARGET_TYPES }).notNull(),
+  targetId: text('target_id').notNull(),
+  secondaryTargetId: text('secondary_target_id'),
+  reviewerId: text('reviewer_id').notNull(),
+  decisionRationale: text('decision_rationale'),
+  aiRecommendation: text('ai_recommendation', { enum: AI_RECOMMENDATIONS }),
+  aiConfidence: real('ai_confidence'),
+  referencesDecisionId: text('references_decision_id'),
+  decidedAt: text('decided_at').notNull(),
+  rollbackDeadline: text('rollback_deadline').notNull(),
+  queueId: integer('queue_id').notNull(),
+  batchId: text('batch_id'),
+});
+
+const REVIEW_QUEUE_REASONS = ['honest_refusal', 'topic_uncertain', 'no_match'] as const;
+const REVIEWER_ACTIONS = [
+  'add_keyword',
+  'expand_topic',
+  'add_node',
+  'out_of_scope',
+  'duplicate',
+] as const;
+
+/** honest refusal 검수 큐 (migrations/0027 — admin G5.5 워크플로우). */
+export const reviewQueue = sqliteTable('review_queue', {
+  id: text('id').primaryKey(),
+  examId: text('exam_id').notNull(),
+  queryHash: text('query_hash').notNull(),
+  queryLength: integer('query_length').notNull(),
+  reason: text('reason', { enum: REVIEW_QUEUE_REASONS }).notNull(),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  reviewedAt: text('reviewed_at'),
+  reviewerId: text('reviewer_id'),
+  reviewerAction: text('reviewer_action', { enum: REVIEWER_ACTIONS }),
+});
+
+export type BatchRun = typeof batchRuns.$inferSelect;
+export type ReviewDecision = typeof reviewDecisions.$inferSelect;
+export type ReviewQueueItem = typeof reviewQueue.$inferSelect;
