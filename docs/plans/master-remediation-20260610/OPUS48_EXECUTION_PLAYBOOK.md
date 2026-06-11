@@ -273,6 +273,14 @@ docs/feasibility/thepick.feasibility.md R3/R4 + docs/feasibility/ceiling.md 에 
 | ⚠️ **배포 제약 (M-1)**   | **반드시 Worker(API) 먼저 → Pages(web) 나중.** 역순이면 신 web 이 구 API 의 wired 필드 부재를 fail-closed 해석 → 전 모드 "준비 중" 차단(학습 시작 전면 불가)                                                                                                                                 |
 | WS-5a 백로그 (리뷰 이관) | ① WIRED_MODES 등재 전 "/next 필터 통합 테스트 PASS" Binary Gate(m-3) ② weak 풀 제한 여부(미시도 우선 정렬 vs "약점 N문제" 표기 간극, m-2) ③ 422 MODE_NOT_AVAILABLE 전용 UI 문구(m-4)                                                                                                         |
 
+### S4 — WS-2a production 무결성 러너 (2026-06-11, Fable 5)
+
+**완료.** packages/quality production-audit 코어(11 tests) + scripts 러너(fabricate 차단·read-only). **production 794/1274 사상 첫 기계 검증(E0-2): 게이트 FAIL = 실 결손 노출** — 고아 24·활성엣지→비활성노드 103(SUPERSEDES 11 설계 시계열 제외, 리뷰 C-1 적중)·순환 0·끊김 0·도달불가 133(하한). CONCEPT-023 = 약연결 정정(Cycle-Closure). 리뷰 C1/M5/m14 전건 해소 `review-20260611-084743`. **데이터 수리(고아 24+유령 103) = L3 결재 대기.**
+
+### S6 — WS-3a 드리프트 동기 + 이월 WS-2c (2026-06-11, Fable 5)
+
+**완료.** 슬롯 포인터 8곳 소탕(리뷰가 +2 발견) / schema.ts NC-1 동기(26테이블 1:1 + isCurrentActive×3 + 3테이블 선언 + **동기 계약 테스트 5건**) / QG-2 batchId 배선+회귀 게이트 / CLAUDE.md 정직화(스택·명령어 실경로·마스터 플랜 등재) / SEARCH_PIPELINE·ARCHITECTURE STALE 캐비엇. 리뷰 C0/M5/m12 전건 해소 `review-20260611-095447` — 특기: 동기 세션이 도입한 신규 드리프트(deploy 오정보)를 리뷰가 적발·정정. 신규 결재 #19(BATCH-6+ 임계).
+
 ## 수정 이력
 
 - 2026-06-10 v1.0 최초 작성 (Fable 5, design-audit 기반)
