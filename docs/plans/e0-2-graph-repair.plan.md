@@ -1,6 +1,6 @@
 # E0-2 production 그래프 결손 수리 plan (L3 — 데이터 수리)
 
-> **상태: DRAFT — §6 진산 결재 전 production 쓰기 금지** (plan 작성 자체 = 결재 #20 승인, 2026-06-11)
+> **상태: Track A-1 + C 집행 완료 (2026-06-11 — §8 실행 기록) / Track B = 06-15 검수 대기**
 > 작성: 2026-06-11 Claude (Fable 5) — 4-에이전트 분석 워크플로우(고아/유령/제약 병렬 + 적대 검증) 산출.
 > 입력 정본: `docs/plans/master-remediation-20260610/g-ws2-integrity/integrity-2026-06-10T23-47-26.{md,json}` (E0-2 1차 실측) + production 덤프(kn 794 / ke 1274, 2026-06-10 23:25 mtime).
 > **RULE #5**: 본 문서는 사실 + 선택지 + 권고. GO/옵션 채택 = 진산.
@@ -41,7 +41,7 @@ BATCH-R1 적재(EDGE-BATCH-R1-0024~0034, SUPERSEDES 11건)가 "개정 사항 메
 
 **A-1 (권고): 노드 복원 + R1 엣지 처분 원자 묶음**
 
-1. `UPDATE knowledge_nodes SET is_current_active=1 WHERE id IN (11건)` — **트리거 무차단 실측 확인** (0014 화이트리스트가 is_current_active 플립 허용, 적대 검증 R-3. "트리거 우회" 아님). CLAUDE.md Hard Limit("knowledge_nodes UPDATE 금지")과의 정합 = "개정 시 신규 노드" 조항의 취지가 _본문 변경_ 차단이며, 본 건은 **오적재 SUPERSEDES 의 효과 원복**(본문 무변경) — 단 이 해석 채택 여부 자체가 결재 사항.
+1. `UPDATE knowledge_nodes SET is_current_active=1 WHERE id IN (11건)` — **트리거 무차단 실측 확인** (0014 화이트리스트가 is*current_active 플립 허용, 적대 검증 R-3. "트리거 우회" 아님). CLAUDE.md Hard Limit("knowledge_nodes UPDATE 금지")과의 정합 = "개정 시 신규 노드" 조항의 취지가 *본문 변경\_ 차단이며, 본 건은 **오적재 SUPERSEDES 의 효과 원복**(본문 무변경) — 단 이 해석 채택 여부 자체가 결재 사항.
 2. **동시에** R1 SUPERSEDES 엣지 11건(R1-0024~0034) 처분 — 방치 시 "활성 SUPERSEDES → 활성 to_node" 가 MAV 불변식 위반으로 잔존, 향후 재적재 시 재비활성화 위험 (R-3). 옵션: (i) `UPDATE knowledge_edges SET is_active=0` (DB 무차단 — edges 에 UPDATE 가드 자체가 없음, 가드 공백은 WS-2b 별건) (ii) DELETE (이력 소실 — 비권고).
 3. 개정노트(CONCEPT-159~176)와 본체의 관계는 SUPERSEDES 가 아니라 **CROSS_REF 신규 INSERT** 로 표현 (개정노트 11건 ← 본체, 선택 — A-1 과 분리 가능).
 
@@ -95,13 +95,13 @@ BATCH-R1 적재(EDGE-BATCH-R1-0024~0034, SUPERSEDES 11건)가 "개정 사항 메
 ## 6. 진산 결재란 (RULE #5)
 
 ```
-[ ] Track A-1 채택 (본체 11 복원 + R1 SUPERSEDES 11 비활성화 원자 묶음 — 권고)
+[x] Track A-1 채택 — 진산 2026-06-11 "권고대로 진행" + cfut_ 쓰기 토큰 발급. 집행 완료 (§8)
 [ ] Track A 의 개정노트 CROSS_REF 재연결 (선택)
 [ ] Track B-1 (확정 2건) 승인
 [ ] Track B-2 (~14건) 검수 후 승인        — 후보표 검수 (문항당 수초)
 [ ] Track B-3 (~8건) 처분: 검수 / 보류
-[ ] Track C 적재 경로: (b) 직접 SQL (권고) / (a) BATCH
-[ ] 진성 중복 2쌍 정리 (5-0086·5-0087 비활성화)
+[x] Track C 적재 경로: (b) 직접 SQL — 채택·사용 (§8)
+[x] 진성 중복 2쌍 정리 — 집행 완료 (§8)
 ```
 
 - SQL 실행 = 추가로 진산 Cloudflare 인증 필요 (#11 과 동일 채널 — 묶음 처리 가능).
@@ -109,3 +109,10 @@ BATCH-R1 적재(EDGE-BATCH-R1-0024~0034, SUPERSEDES 11건)가 "개정 사항 메
 ## 7. 분석 산출물 (입력 전문)
 
 4-에이전트 워크플로우 결과 전문(고아 24 전수표 + 유령 11그룹 전수표 + 엣지 ID 103 전수 + 제약 file:line + 적대 검증 반증 5/과신 5): 세션 산출 `/tmp/.../tasks/wtjkh2r08.output` → **결재 검수용 발췌는 본 plan §1·§2 표가 정본** (전수표 영속 필요 시 결재 후 별도 부록).
+
+## 8. 실행 기록 (2026-06-11, Track A-1 + C)
+
+- SQL: `e0-2-repair-track-a1.sql` (이중 잠금·멱등). 1차 시도 = review_decisions 트리거 ABORT(rollback 타입 references 필수) → **배치 전체 롤백 확인(원자성 정상·무오염)** → reject 타입 정정 후 성공 (changes 26).
+- 사전: 덤프 기계 대조 6/6 PASS + 라이브 SELECT (11/11/2 정확 일치). 사후: inactive_nodes **0** / r1_active **0** / dup_active **0** / 감사행 RD-E02-A1-20260611 기록.
+- 러너 재검증 (`integrity-2026-06-11T05-34-52`): **유령 참조 103 → 0 (G-RP-1 ✓)** · 활성 794/794 · 활성 엣지 1261(=1274−13, 정확) · 순환 0·끊김 0 (G-RP-3 ✓) · 도달불가 133→120 (연동 개선). **잔여 = 고아 24 (Track B — G-RP-2 정직 표기, 06-15 검수)**.
+- E0-2 게이트: stale 축 해소 — 고아 축만 잔여. 후속: 복원 11 본체 검색 풀 복귀 → baseline 재측정 가치(§3-4) + E0-8 커버리지 역감사(06-15)와 연계.
