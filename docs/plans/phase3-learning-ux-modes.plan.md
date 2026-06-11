@@ -624,14 +624,16 @@ mode 별 메타데이터 + 카드 풀 통계:
 
 **Sub-step 분해 (Session 075 영속)** — 1-2주 chunk:
 
-| Sub-step        | 작업                                                                                 | L등급         | 의존             | 산출물                                                                                                                                                                                                  |
-| :-------------- | :----------------------------------------------------------------------------------- | :------------ | :--------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 3-UX-7a ✅ 완료 | distractor 파이프라인 schema + adminUI mock UI                                       | L2            | 0032 영속 (완료) | `apps/admin-web/src/types/distractor.ts` + `DistractorReview.tsx` + `DistractorQueue.tsx` + `/distractors` route + vitest 11건 — Session 075 (2026-05-14)                                               |
-| 3-UX-7b         | apps/batch/src/distractor-extract/ pdfplumber 5지선다 추출 + 정답지 cross-check      | L3            | 7a               | BATCH 파이프라인 + JSON dump. POC: 제5회(2019) 1차 1교시 ~25문                                                                                                                                          |
-| 3-UX-7c         | adminUI 검수 화면 실 API 연동 + draft → approved 워크플로우 (exam_questions UPDATE)  | L3            | 7b               | `PUT /api/admin/distractors/:questionId` + `GET /api/admin/distractors` queue + 7a Major/Minor 5건 흡수 (모바일 fallback + STATUS 단일 source + confidence boundary + maxLength + 검수 게이트 reminder) |
-| 3-UX-7d         | golden test (객관식 자동 채점 100%) + 셔플 정합 (D3 hash seed) + 환상 distractor 0건 | L2            | 7c               | packages/learning-modes Golden Test + grade route 회귀 차단                                                                                                                                             |
-| 3-UX-7e (진산)  | 진산 검수 (525문 1차 + 7회분 2차 기출 distractor 승인)                               | 진산 hands-on | 7d               | 환상 0건 + 정답지 100% 정합                                                                                                                                                                             |
-| 3-UX-7f         | production seed BATCH + 4-Pass + 5-페르소나 + 통합 리뷰                              | L2            | 7e               | exam_questions.distractors 영속 + Phase 3 학습 UX 객관식 라디오 활성                                                                                                                                    |
+| Sub-step        | 작업                                                                                                                                                          | L등급 | 의존             | 산출물                                                                                                                                                    |
+| :-------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :---- | :--------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3-UX-7a ✅ 완료 | distractor 파이프라인 schema + adminUI mock UI                                                                                                                | L2    | 0032 영속 (완료) | `apps/admin-web/src/types/distractor.ts` + `DistractorReview.tsx` + `DistractorQueue.tsx` + `/distractors` route + vitest 11건 — Session 075 (2026-05-14) |
+| 3-UX-7b         | apps/batch/src/distractor-extract/ pdfplumber 보기 추출(★1차 = 4지선다 실측 — production "5" 값 0건, 2026-06-11. 구 "5지선다" 표기 정정) + 정답지 cross-check | L3    | 7a               | BATCH 파이프라인 + JSON dump. POC: 제5회(2019) 1차 1교시 ~25문                                                                                            |
+
+> ★ **선결 게이트 (결재 #2, 2026-06-11)**: distractor 적재 형식 = 결재 #2 위치 라벨형 계약(`packages/learning-modes/src/input-types/mc-answer.ts` 정본 — distractors=보기 전체 배열·answer=1-based 위치·복수정답 콤마). 적재 착수 전 `mc-answer.test.ts` G-WS1 결합 게이트(전순열×시드 채점 100%) PASS 확인 의무.
+> | 3-UX-7c | adminUI 검수 화면 실 API 연동 + draft → approved 워크플로우 (exam_questions UPDATE) | L3 | 7b | `PUT /api/admin/distractors/:questionId` + `GET /api/admin/distractors` queue + 7a Major/Minor 5건 흡수 (모바일 fallback + STATUS 단일 source + confidence boundary + maxLength + 검수 게이트 reminder) |
+> | 3-UX-7d | golden test (객관식 자동 채점 100%) + 셔플 정합 (D3 hash seed) + 환상 distractor 0건 | L2 | 7c | packages/learning-modes Golden Test + grade route 회귀 차단 |
+> | 3-UX-7e (진산) | 진산 검수 (525문 1차 + 7회분 2차 기출 distractor 승인) | 진산 hands-on | 7d | 환상 0건 + 정답지 100% 정합 |
+> | 3-UX-7f | production seed BATCH + 4-Pass + 5-페르소나 + 통합 리뷰 | L2 | 7e | exam_questions.distractors 영속 + Phase 3 학습 UX 객관식 라디오 활성 |
 
 ---
 
@@ -676,7 +678,7 @@ mode 별 메타데이터 + 카드 풀 통계:
 ### 11.6 Step 3-UX-7 게이트 (distractor)
 
 - [x] **3-UX-7a 완료** (Session 075, 2026-05-14) — adminUI mock + schema + vitest 11건 PASS + 4-Pass review (Critical 0 / Major 2 / Minor 3 모두 7c carry-over). 통합 보고서: `.claude/reviews/review-20260514-095000-step-3-ux-7a-4pass-integrated.md`
-- [ ] 3-UX-7b — pdfplumber 5지선다 추출 + 정답지 cross-check
+- [ ] 3-UX-7b — pdfplumber 보기 추출(★1차 = 4지선다 실측 — production "5" 값 0건, 2026-06-11. 구 "5지선다" 표기 정정) + 정답지 cross-check
 - [ ] 3-UX-7c — adminUI 실 API 연동 + 7a carry-over 5건 흡수
 - [ ] 3-UX-7d — golden test 객관식 자동 채점 100%
 - [ ] 3-UX-7e — 진산 검수 (환상 distractor 0건 / 기출 원본 정합 100%)

@@ -13,113 +13,116 @@ const sampleShuffled: ShuffledChoice[] = [
   { label: 'E', originalIndex: 3, text: 'choice four' },
 ];
 
+// 결재 #2 (2026-06-11): correctOriginalIndex(단수) → correctOriginalIndices(집합) 계약 전환.
+// 기존 시나리오 의도는 단원소 Set 으로 보존.
 describe('gradeMultipleChoice', () => {
-  it('정답 originalIndex=2 → 셔플 후 라벨 A 선택 시 정답', () => {
+  it('정답 위치 {2} → 셔플 후 라벨 A 선택 시 정답', () => {
     const result = gradeMultipleChoice({
       submittedLabel: 'A',
       shuffledChoices: sampleShuffled,
-      correctOriginalIndex: 2,
+      correctOriginalIndices: new Set([2]),
     });
     expect(result.isCorrect).toBe(true);
     expect(result.submittedOriginalIndex).toBe(2);
-    expect(result.correctLabel).toBe('A');
+    expect(result.correctLabels).toEqual(['A']);
   });
 
-  it('정답 originalIndex=0 → 셔플 후 라벨 B 선택 시 정답', () => {
+  it('정답 위치 {0} → 셔플 후 라벨 B 선택 시 정답', () => {
     const result = gradeMultipleChoice({
       submittedLabel: 'B',
       shuffledChoices: sampleShuffled,
-      correctOriginalIndex: 0,
+      correctOriginalIndices: new Set([0]),
     });
     expect(result.isCorrect).toBe(true);
-    expect(result.correctLabel).toBe('B');
+    expect(result.correctLabels).toEqual(['B']);
   });
 
-  it('정답 originalIndex=4 → 셔플 후 라벨 C 외 선택 시 오답', () => {
+  it('정답 위치 {4} → 셔플 후 라벨 C 외 선택 시 오답', () => {
     const result = gradeMultipleChoice({
       submittedLabel: 'A',
       shuffledChoices: sampleShuffled,
-      correctOriginalIndex: 4,
+      correctOriginalIndices: new Set([4]),
     });
     expect(result.isCorrect).toBe(false);
     expect(result.submittedOriginalIndex).toBe(2);
-    expect(result.correctLabel).toBe('C');
+    expect(result.correctLabels).toEqual(['C']);
   });
 
-  it('정답 데이터 부재 (correctOriginalIndex null) → 오답 + correctLabel 빈 string', () => {
+  it('복수정답 {1,2} — 어느 정답 보기(D 또는 A)를 골라도 정답 (공식 복수정답 인정)', () => {
+    for (const label of ['A', 'D'] as const) {
+      const result = gradeMultipleChoice({
+        submittedLabel: label,
+        shuffledChoices: sampleShuffled,
+        correctOriginalIndices: new Set([1, 2]),
+      });
+      expect(result.isCorrect).toBe(true);
+      expect(result.correctLabels).toEqual(['A', 'D']); // 셔플 순서대로
+    }
+    const wrong = gradeMultipleChoice({
+      submittedLabel: 'B',
+      shuffledChoices: sampleShuffled,
+      correctOriginalIndices: new Set([1, 2]),
+    });
+    expect(wrong.isCorrect).toBe(false);
+  });
+
+  it('정답 데이터 부재 (null) → 오답 + correctLabels 빈 배열', () => {
     const result = gradeMultipleChoice({
       submittedLabel: 'A',
       shuffledChoices: sampleShuffled,
-      correctOriginalIndex: null,
+      correctOriginalIndices: null,
     });
     expect(result.isCorrect).toBe(false);
-    expect(result.correctLabel).toBe('');
+    expect(result.correctLabels).toEqual([]);
   });
 
   it('submittedLabel이 셔플에 없음 (잘못된 입력) → submittedOriginalIndex null + 오답', () => {
     const result = gradeMultipleChoice({
       submittedLabel: 'Z',
       shuffledChoices: sampleShuffled,
-      correctOriginalIndex: 0,
+      correctOriginalIndices: new Set([0]),
     });
     expect(result.isCorrect).toBe(false);
     expect(result.submittedOriginalIndex).toBeNull();
-    expect(result.correctLabel).toBe('B');
+    expect(result.correctLabels).toEqual(['B']);
   });
 
   it('빈 셔플 → 항상 오답 (방어)', () => {
     const result = gradeMultipleChoice({
       submittedLabel: 'A',
       shuffledChoices: [],
-      correctOriginalIndex: 0,
+      correctOriginalIndices: new Set([0]),
     });
     expect(result.isCorrect).toBe(false);
     expect(result.submittedOriginalIndex).toBeNull();
   });
 });
 
-describe('multipleChoiceAnswerToIndex', () => {
+describe('multipleChoiceAnswerToIndex (deprecated 호환 래퍼 — 정본 = parseMcAnswerLabels)', () => {
   it('원형숫자 ① ~ ⑤ → 0 ~ 4', () => {
     expect(multipleChoiceAnswerToIndex('①')).toBe(0);
-    expect(multipleChoiceAnswerToIndex('②')).toBe(1);
     expect(multipleChoiceAnswerToIndex('③')).toBe(2);
-    expect(multipleChoiceAnswerToIndex('④')).toBe(3);
     expect(multipleChoiceAnswerToIndex('⑤')).toBe(4);
   });
 
-  it('숫자 "1" ~ "5" → 0 ~ 4', () => {
+  it('숫자 "1" ~ "5" / "N번" → 0 ~ 4', () => {
     expect(multipleChoiceAnswerToIndex('1')).toBe(0);
     expect(multipleChoiceAnswerToIndex('5')).toBe(4);
-  });
-
-  it('"1번" ~ "5번" → 0 ~ 4', () => {
-    expect(multipleChoiceAnswerToIndex('1번')).toBe(0);
     expect(multipleChoiceAnswerToIndex('3번')).toBe(2);
-    expect(multipleChoiceAnswerToIndex('5번')).toBe(4);
   });
 
-  it('"6" 이상은 null (5지선다 범위 외)', () => {
+  it('범위 외·서술형·빈 string → null', () => {
     expect(multipleChoiceAnswerToIndex('6')).toBeNull();
-    expect(multipleChoiceAnswerToIndex('⑥')).toBeNull();
-  });
-
-  it('"0" 또는 음수는 null', () => {
     expect(multipleChoiceAnswerToIndex('0')).toBeNull();
-    expect(multipleChoiceAnswerToIndex('-1')).toBeNull();
-  });
-
-  it('서술형 정답은 null', () => {
     expect(multipleChoiceAnswerToIndex('보험가액의 80%')).toBeNull();
-    expect(multipleChoiceAnswerToIndex('착과수조사')).toBeNull();
+    expect(multipleChoiceAnswerToIndex('')).toBeNull();
   });
 
-  it('빈 string + whitespace는 null', () => {
-    expect(multipleChoiceAnswerToIndex('')).toBeNull();
-    expect(multipleChoiceAnswerToIndex('   ')).toBeNull();
+  it('복수정답 "2,3" → null (단수 API 로 표현 불가 — parseMcAnswerLabels 사용 강제)', () => {
+    expect(multipleChoiceAnswerToIndex('2,3')).toBeNull();
   });
 
   it('공백 trim 후 처리', () => {
     expect(multipleChoiceAnswerToIndex('  ②  ')).toBe(1);
-    expect(multipleChoiceAnswerToIndex(' 3번 ')).toBe(2);
   });
 });

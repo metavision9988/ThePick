@@ -281,6 +281,21 @@ docs/feasibility/thepick.feasibility.md R3/R4 + docs/feasibility/ceiling.md 에 
 
 **완료.** 슬롯 포인터 8곳 소탕(리뷰가 +2 발견) / schema.ts NC-1 동기(26테이블 1:1 + isCurrentActive×3 + 3테이블 선언 + **동기 계약 테스트 5건**) / QG-2 batchId 배선+회귀 게이트 / CLAUDE.md 정직화(스택·명령어 실경로·마스터 플랜 등재) / SEARCH_PIPELINE·ARCHITECTURE STALE 캐비엇. 리뷰 C0/M5/m12 전건 해소 `review-20260611-095447` — 특기: 동기 세션이 도입한 신규 드리프트(deploy 오정보)를 리뷰가 적발·정정. 신규 결재 #19(BATCH-6+ 임계).
 
+### S3 — WS-1 MC answer 위치 라벨형 계약 (2026-06-11, Fable 5 — 결재 #2 (a) 채택)
+
+**상태: 구현 완료 + 자체검증 PASS. ⚠️ 독립 리뷰 = 월 지출 한도로 보류 중 (서브에이전트 스폰 불가) — 한도 해제 후 1순위 재개.**
+
+| 항목        | 내용                                                                                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 계약 정본   | `packages/learning-modes/src/input-types/mc-answer.ts` 신규 — parseMcAnswerLabels(1-based 위치·복수정답 콤마·"N번"/① 관용)·answerLabelsFitChoices·MC_MAX_CHOICES                |
+| 채점 전환   | gradeMultipleChoice = correctOriginalIndices(Set) 계약(복수정답 = 어느 정답 보기든 정답) + correctLabels 복수. multipleChoiceAnswerToIndex = deprecated 래퍼(복수→null)         |
+| 서빙 재설계 | buildShuffledChoices: distractors = **보기 전체 배열(원본 순서)**·정답 텍스트 prepend **폐기**(3중 모순 진앙 제거)·answerLabelsFitChoices 적재 결함 거부·0f 동치 가드 유지      |
+| 게이트      | G-WS1 결합: 위치 1~4 전순열 × 시드 10 × 채점 100% + 복수정답 케이스(learning-modes) + 서빙 라벨 전수 /grade 제출 → 정답 정확히 1 (study routes E2E)                             |
+| 호환        | production 실측 형식("1"~"4" 519 + 복수 6) 파서 전수 커버·distractors 전부 NULL = 깨질 데이터 0·기존 fill_blank 525 채점 경로 무접촉                                            |
+| plan 게이트 | phase3 plan 7b 에 선결 게이트 1줄 명문 (※ 7b 행 "5지선다" 표기 vs 실측 4지선다 불일치 발견 — 7b 착수 시 검증 항목)                                                              |
+| 자체검증    | api 684/0 · learning-modes 122/0(+6) · study 84/84 · tsc PASS                                                                                                                   |
+| 미완        | **독립 리뷰(2-agent) + 커밋 = 한도 해제 후.** 리뷰 프롬프트 요지: 정답 안전 적대(파서 경계·525 fill_blank 무회귀·correctLabel join web 호환·정답 누출) + decision-card 4항 대조 |
+
 ## 수정 이력
 
 - 2026-06-10 v1.0 최초 작성 (Fable 5, design-audit 기반)

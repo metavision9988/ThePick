@@ -39,9 +39,10 @@ import {
   gradeCalc,
   gradeEssay,
   gradeFillBlank,
+  answerLabelsFitChoices,
   gradeMultipleChoice,
-  multipleChoiceAnswerToIndex,
   normalizeAnswer,
+  parseMcAnswerLabels,
   resolveLearningMode as resolveLearningModeBase,
   resolveSessionPhase as resolveSessionPhaseBase,
   shuffleChoices,
@@ -393,12 +394,20 @@ function resolveInputType(value: string | null | undefined): InputType {
 }
 
 /**
- * 객관식 보기 셔플. exam_questions.distractors (JSON array 4 + answer 합쳐 5 보기) → shuffleChoices.
+ * 객관식 보기 셔플 — **결재 #2 위치 라벨형 계약** (mc-answer.ts 정본, 2026-06-11).
  *
- * 정합:
- *   - distractors JSON parse 실패 시 null 반환 (객관식 셔플 불가 → routes 측 inputType fallback)
- *   - 정답 (answer) 인덱스 = 0 (첫 번째) → 셔플 후 originalIndex로 역추적
+ * 계약 (구 "answer=정답텍스트 index0" 가정 폐기 — 감사 critical 3중 모순 해소):
+ *   - exam_questions.distractors = **보기 전체 배열(원본 순서)** JSON (4지선다 = 4개)
+ *   - exam_questions.answer = 1-based 위치 라벨 ("3" / 복수 "2,3") — 보기 배열을 가리킴
+ *   - 검증: answer 위치가 보기 수 안에 들어야 서빙 (불일치 = 적재 결함 → 거부)
  *   - 셔플 시드: D3 lock — hash(userId || questionId || YYYYMMDD)
+ *   - parse 실패/계약 위반 시 null → 서빙은 choices=null(web 은 채점불가 안내+스킵),
+ *     채점측만 fill_blank fallback (direct-API 경로 한정 — 리뷰 m-3/m-5 표현 정정)
+ *
+ * ★ 서빙·채점 공유 단일 경로 — 채점은 본 함수를 동일 인자로 재호출해 셔플을 재생성한다.
+ *   서빙 결과 캐시·채점측 별도 재구현 금지(위치 전단사 파괴 = 무음 오채점. 리뷰 반론 채택).
+ *   알려진 한계: 일자 시드 특성상 자정(KST) 걸친 서빙→채점은 재셔플로 오채점 가능 —
+ *   carry-over (D3 lock 기존 트레이드오프, 본 계약 도입 아님).
  */
 async function buildShuffledChoices(
   userId: string,
@@ -408,39 +417,45 @@ async function buildShuffledChoices(
   if (question.distractors === null || question.distractors === '') return null;
   if (question.answer === null || question.answer === '') return null;
 
-  let distractors: string[];
+  let choices: string[];
   try {
     const parsed: unknown = JSON.parse(question.distractors);
     if (!Array.isArray(parsed)) {
       logger.warn('distractors JSON not array', { questionId: question.id });
       return null;
     }
-    distractors = parsed.filter((v): v is string => typeof v === 'string' && v.length > 0);
+    // ★ 리뷰 C-1 (2026-06-11): 무음 filter 금지 — 위치 라벨형 계약에서 원소를 떨구면
+    //   이후 보기 위치가 당겨져 answer↔보기 매핑이 조용히 오염된다(오답이 정답 처리).
+    //   비문자/빈/공백-only 원소 = 적재 결함 → 전수 검증 실패 시 서빙 거부(null).
+    if (!parsed.every((v): v is string => typeof v === 'string' && v.trim().length > 0)) {
+      logger.warn('distractors contains invalid element — refusing MC shuffle', {
+        questionId: question.id,
+      });
+      return null;
+    }
+    choices = parsed;
   } catch (err) {
     logger.warn('distractors JSON parse failed', { err: String(err), questionId: question.id });
     return null;
   }
 
-  // 정답 + distractors 합쳐 originalTexts. 정답은 index 0.
-  const originalTexts = [question.answer, ...distractors];
-  if (originalTexts.length < 2 || originalTexts.length > 5) {
-    logger.warn('choice count out of range', {
+  // 위치 라벨형 계약 검증 — answer 가 위치 집합으로 파싱되고 보기 수와 정합해야 서빙.
+  const answerLabels = parseMcAnswerLabels(question.answer);
+  if (answerLabels === null || !answerLabelsFitChoices(answerLabels, choices.length)) {
+    logger.warn('answer/choices contract violation — refusing MC shuffle', {
       questionId: question.id,
-      count: originalTexts.length,
+      choiceCount: choices.length,
+      answerParsable: answerLabels !== null,
     });
     return null;
   }
 
-  // design-audit WS-0f (2026-06-10) — distractor 안전 최후 가드.
-  //   채점(gradeMultipleChoice)은 originalIndex 로 정답을 판정한다. 같은 텍스트가 두
-  //   슬롯에 있으면 "정답과 동일한 보기"를 고른 사용자가 오답 처리되는 불공정이 발생
-  //   하고, distractor 간 중복은 동일 보기 2개 노출이 된다. 채점 동치 기준(normalizeAnswer)
-  //   으로 중복을 검출하면 셔플·서빙을 거부 → routes 측 fill_blank fallback (안전 강등).
-  //   ※ index 쌍만 로깅(정답 원문 미노출 — 정답 누출 차단). index 0 = 정답.
-  const normalizedTexts = originalTexts.map((t) => normalizeAnswer(t));
+  // design-audit WS-0f — 보기 간 동치/중복 가드 (채점 동치 기준 normalizeAnswer).
+  //   같은 텍스트 보기 2개 = 한쪽을 고른 사용자가 위치 불일치로 오답 처리되는 불공정.
+  //   ※ index 쌍만 로깅 (위치 라벨형에선 정답 위치 자체도 비노출 — 정답 누출 차단).
+  const normalizedTexts = choices.map((t) => normalizeAnswer(t));
   const firstSeenIndex = new Map<string, number>();
   const collisionPairs: string[] = [];
-  let answerCollides = false;
   normalizedTexts.forEach((norm, i) => {
     const prev = firstSeenIndex.get(norm);
     if (prev === undefined) {
@@ -448,16 +463,15 @@ async function buildShuffledChoices(
       return;
     }
     collisionPairs.push(`${prev}=${i}`);
-    if (prev === 0) answerCollides = true;
   });
   if (collisionPairs.length > 0) {
     logger.warn('duplicate choice text — refusing MC shuffle (fallback to fill_blank)', {
       questionId: question.id,
       collisionIndexPairs: collisionPairs.join(','),
-      answerCollides,
     });
     return null;
   }
+  const originalTexts = choices;
 
   try {
     return await shuffleChoices(originalTexts, {
@@ -667,14 +681,16 @@ async function gradeAnswerByType(params: {
       // distractors 부재 또는 parse 실패 → fill_blank fallback (backward-compat).
       isCorrect = gradeFillBlank({ expected: expectedAnswer, userAnswer }).isCorrect;
     } else {
-      const correctOriginalIndex = multipleChoiceAnswerToIndex(expectedAnswer);
+      // 결재 #2 위치 라벨형 — 복수정답("2,3")은 어느 정답 보기를 골라도 정답.
+      const correctOriginalIndices = parseMcAnswerLabels(expectedAnswer);
       const result = gradeMultipleChoice({
         submittedLabel: userAnswer,
         shuffledChoices: shuffled,
-        correctOriginalIndex,
+        correctOriginalIndices,
       });
       isCorrect = result.isCorrect;
-      correctLabel = result.correctLabel;
+      // 빈 배열 → undefined (web ResultSection 의 `?? correctAnswer` 폴백 유지 — 리뷰 m-6)
+      correctLabel = result.correctLabels.length > 0 ? result.correctLabels.join(',') : undefined;
       // study_reviews.shuffle_seed audit — 정답 위치 telemetry 미노출, seed만 기록.
       shuffleSeedForAudit = todayDateString();
     }

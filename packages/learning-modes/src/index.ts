@@ -42,6 +42,13 @@ export {
   type MultipleChoiceGradeResult,
 } from './input-types/multiple-choice.js';
 
+// 결재 #2 (2026-06-11) — 객관식 answer 위치 라벨형 계약 단일 정본.
+export {
+  MC_MAX_CHOICES,
+  answerLabelsFitChoices,
+  parseMcAnswerLabels,
+} from './input-types/mc-answer.js';
+
 export {
   gradeFillBlank,
   type FillBlankGradeInput,

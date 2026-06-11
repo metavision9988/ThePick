@@ -442,10 +442,12 @@ describe('GET /api/study/next', () => {
   });
 });
 
-describe('GET /next 객관식 distractor 안전 가드 (design-audit WS-0f)', () => {
+describe('GET /next 객관식 가드 (WS-0f 동치 + 결재 #2 위치 라벨형 계약)', () => {
   // exam_questions 는 UPDATE 트리거 차단(0004/0038) → input_type='multiple_choice' +
   // distractors 를 raw INSERT 로 주입(seedExamQuestion 미지원 컬럼).
-  function seedMcQuestion(id: string, answer: string, distractorsJson: string): void {
+  // 신 계약 (결재 #2, 2026-06-11): distractors = 보기 전체 배열(원본 순서),
+  // answer = 1-based 위치 라벨.
+  function seedMcQuestion(id: string, answer: string, choicesJson: string): void {
     ctx.raw
       .prepare(
         `INSERT INTO exam_questions
@@ -454,17 +456,13 @@ describe('GET /next 객관식 distractor 안전 가드 (design-audit WS-0f)', ()
          VALUES (?, 2024, 11, 5, NULL, 'MC 문제', ?, NULL, NULL, 'active', '2nd', NULL,
                  'multiple_choice', ?)`,
       )
-      .run(id, answer, distractorsJson);
+      .run(id, answer, choicesJson);
   }
 
-  it('정답과 normalize 동치인 distractor 존재 → MC 셔플 거부, choices=null (fallback)', async () => {
+  it('보기 간 normalize 동치 존재 → MC 셔플 거부, choices=null (WS-0f fallback)', async () => {
     seedUser('u1', 'u1@test.com');
-    // 정답 '보험가액' vs distractor '보험 가액'(공백만 차이) = normalizeAnswer 후 동치 → 채점 모순 위험
-    seedMcQuestion(
-      'eq-dup',
-      '보험가액',
-      JSON.stringify(['보험 가액', '손해액', '면책금', '보험금액']),
-    );
+    // '보험가액' vs '보험 가액'(공백만 차이) = normalizeAnswer 후 동치 → 위치 채점 불공정 위험
+    seedMcQuestion('eq-dup', '1', JSON.stringify(['보험가액', '보험 가액', '손해액', '면책금']));
     const res = await fetchAs('u1', '/next?examType=2nd');
     expect(res.status).toBe(200);
     const body = (await res.json()) as StudyResponseBody;
@@ -472,30 +470,56 @@ describe('GET /next 객관식 distractor 안전 가드 (design-audit WS-0f)', ()
     expect(q.choices).toBeNull(); // 가드 발동 → 객관식 미구성 (fill_blank 강등)
   });
 
-  it('distractor 간 중복 → MC 셔플 거부, choices=null', async () => {
+  it('answer 위치가 보기 수 초과 (적재 결함) → 계약 위반 거부, choices=null (결재 #2 검증)', async () => {
     seedUser('u1', 'u1@test.com');
-    seedMcQuestion(
-      'eq-dup2',
-      '보험가액',
-      JSON.stringify(['손해액', '손해액', '면책금', '보험금액']),
-    );
+    seedMcQuestion('eq-oob', '4', JSON.stringify(['손해액', '면책금', '보험금액'])); // 보기 3개에 answer "4"
     const res = await fetchAs('u1', '/next?examType=2nd');
     const body = (await res.json()) as StudyResponseBody;
     expect(body.questions![0].choices).toBeNull();
   });
 
-  it('보기 전부 distinct → 정상 MC choices 5개', async () => {
+  it('정상 4지선다 (answer="3", 보기 4) → MC choices 4개', async () => {
     seedUser('u1', 'u1@test.com');
-    seedMcQuestion(
-      'eq-ok',
-      '보험가액',
-      JSON.stringify(['손해액', '면책금', '보험금액', '자기부담금']),
-    );
+    seedMcQuestion('eq-ok', '3', JSON.stringify(['손해액', '면책금', '보험금액', '자기부담금']));
     const res = await fetchAs('u1', '/next?examType=2nd');
     const body = (await res.json()) as StudyResponseBody;
     const q = body.questions![0];
     expect(q.choices).not.toBeNull();
-    expect(q.choices).toHaveLength(5);
+    expect(q.choices).toHaveLength(4); // 보기 전체 배열 그대로 (정답 텍스트 prepend 폐기)
+  });
+
+  it('★ 결합 (G-WS1): 적재→셔플→채점 — 정답 위치 보기 제출 = 정답, 타 보기 = 오답', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedMcQuestion('eq-grade', '2', JSON.stringify(['손해액', '면책금', '보험금액', '자기부담금']));
+    const res = await fetchAs('u1', '/next?examType=2nd');
+    const body = (await res.json()) as StudyResponseBody;
+    const choices = body.questions![0].choices!;
+    expect(choices).toHaveLength(4);
+    // 서버와 동일 시드로 셔플 재현 불가(일자 시드) → 서빙된 라벨 전수를 /grade 에 제출.
+    // 리뷰 P12-M2 강화: "정답 1개 존재" 가 아니라 **어느 보기가 정답인지**(text='면책금')
+    // 까지 단언 — off-by-one/위치 시프트 회귀 시 "잘못된 보기 1개 정답" 도 잡는다.
+    for (const c of choices) {
+      const g = await fetchAs('u1', '/grade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          questionId: 'eq-grade',
+          userAnswer: c.label,
+          inputType: 'multiple_choice',
+        }),
+      });
+      const gb = (await g.json()) as StudyResponseBody;
+      expect(gb.isCorrect).toBe(c.text === '면책금'); // 위치 2 보기만 정답
+    }
+  });
+
+  it('distractors 에 빈/공백 원소 (적재 결함) → 무음 filter 금지, 서빙 거부 (리뷰 C-1)', async () => {
+    seedUser('u1', 'u1@test.com');
+    // 구 filter 구현이면 "" 가 떨어져 보기 3개가 되고 answer "3" 이 잘못된 보기를 가리킴.
+    seedMcQuestion('eq-mal', '3', JSON.stringify(['손해액', '', '보험금액', '자기부담금']));
+    const res = await fetchAs('u1', '/next?examType=2nd');
+    const body = (await res.json()) as StudyResponseBody;
+    expect(body.questions![0].choices).toBeNull(); // 위치 오염 대신 거부 (안전 강등)
   });
 });
 

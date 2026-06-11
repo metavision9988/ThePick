@@ -1,6 +1,6 @@
 # 결정 카드 #2 — MC 채점 answer 계약 (WS-1/S3 선결)
 
-> 작성: 2026-06-11 / 상태: **증거 확정 + 권고 상신 — 진산 최종 확인 1회 대기** (정답 안전 Hard Stop 직격)
+> 작성: 2026-06-11 / 상태: **채택·구현 완료 (2026-06-11)** (정답 안전 Hard Stop 직격)
 > 배경: 감사 critical `mc-grading-answer-index-contradiction` — 3경로(buildShuffledChoices=정답텍스트
 > index0 / 채점 파서=①~⑤ 위치 / shuffle 계약=0=①)가 어떤 데이터 컨벤션으로도 동시 성립 불가.
 
@@ -26,4 +26,4 @@
 
 **S3 구현 계약 (확인 후 착수)**: ① `McAnswerLabel` 타입+파서 단일 모듈(콤마 복수정답 포함) ② 3경로 동일 모듈 import ③ buildShuffledChoices = "answer 위치가 가리키는 보기" 기반으로 재설계(distractors 적재 형식과 함께 — distractor BATCH plan 7b 선결 게이트) ④ 결합 테스트 = 위치 1~4 전순열 × 복수정답 케이스 × 셔플 시드 10. **부수 처분 필요**: input_type 525 'fill_blank' → 'multiple_choice' 백필은 0038 화이트리스트(input_type 포함)로 가능하나 **0038 production 적용(#11) 선행** — S3 와 별도 트랙.
 
-> 진산 확인란: ☐ (a) 위치 라벨형 채택 / ☐ (b) 텍스트형 / ☐ 보류
+> 진산 확인란: **☑ (a) 위치 라벨형 채택** (2026-06-11 "추천한 것으로 하면 되겠지" — MASTER_PLAN §6 결재 #2 ☑ 와 동기) / ☐ (b) 텍스트형 / ☐ 보류
