@@ -172,7 +172,7 @@ Phase 3(BATCH 엣지, 병렬·독립) ──┘                          no→ �
 ## 9. 진산 결재란 (RULE #5 — AI 판정 금지)
 
 ```
-[x] Phase 0a (depth1 기본화)        — ★결재 #6 (진산 2026-06-11 "추천한 것으로") + 집행 완료: 엔진 DEFAULT_MAX_DEPTH 2→1 (plan 문언 "route override" 와 동등·더 보수 — 직접 호출자까지 보호, 리뷰 m-3). 4-Pass C0/M2 해소. G-R0a 잔여 = production 배포 후 REMOTE 재측정 regression=0 재확인.
+[x] Phase 0a (depth1 기본화)        — ★결재 #6 (진산 2026-06-11 "추천한 것으로") + 집행 완료: 엔진 DEFAULT_MAX_DEPTH 2→1 (plan 문언 "route override" 와 동등·더 보수 — 직접 호출자까지 보호, 리뷰 m-3). 4-Pass C0/M2 해소. G-R0a **완료** (2026-06-11): Worker 재배포(8d2e6ea3) 후 REMOTE 재측정 — hit-rate 83.3/83.3 Δ0.0%·regression 0 (`s5-6-remote-g-s5-2026-06-11-0549.md`). **Phase 0a 완료.**
 [ ] Phase 0b (golden N≥20~30 확대)  — 알고리즘 재설계 하드 선결. 승인 시 메인 구축(draft-only).
 [ ] Phase 1 (보수 algo: L1·L3·L4)   — Phase 0b 재현 후. PITR 권고 채택/조정: ____________
 [ ] Phase 2 (ADR 랭킹 분리)         — Phase 1 잔존 시. ADR 선작성 후 별도 결재.
