@@ -62,8 +62,17 @@ export const DEFAULT_EDGE_TYPE_WHITELIST: ReadonlyArray<string> = [
   'EXCEPTION',
 ];
 
-/** PoC 기본값 (plan §1). */
-export const DEFAULT_MAX_DEPTH = 2;
+/**
+ * 기본 maxDepth = 1 — S5-8 Phase 0a (결재 #6, 진산 2026-06-11).
+ *
+ * 근거 (G-S5 2차 REMOTE 실측 2026-06-05, queryBody 정화 N=6):
+ *   - depth2 = **순손실**: hit-rate Δ −20%(80→60 절단제외)·recall −6.9%·
+ *     regression 1 (Q-012 — depth2 F-노드 범람이 baseline 회수 INV-035 를 top5 축출)
+ *   - depth1 = 무해·무익: hit-rate Δ 0.0%(83.3→83.3)·recall −2.4%·regression 0
+ * depth2 재승격 = S5-8 Phase 1+ 재설계(hop 감쇠 등) 실측 개선 후 별도 결재.
+ * (구 PoC 기본값 2 — plan §1. 호출 측 명시 지정으로 1~MAX_ALLOWED_DEPTH 여전히 가능.)
+ */
+export const DEFAULT_MAX_DEPTH = 1;
 export const DEFAULT_RESULT_CAP = 50;
 
 /**
@@ -87,7 +96,7 @@ export const MAX_ALLOWED_RESULT_CAP = 500;
 export const MAX_EDGE_TYPE_WHITELIST = 16;
 
 export interface GraphWalkOptions {
-  /** 순회 최대 깊이 (hop). [1, MAX_ALLOWED_DEPTH] 로 clamp. 기본 2. */
+  /** 순회 최대 깊이 (hop). [1, MAX_ALLOWED_DEPTH] 로 clamp. 기본 1 (DEFAULT_MAX_DEPTH — 리뷰 M-2 동기). */
   readonly maxDepth?: number;
   /** 결과 노드 상한. [1, MAX_ALLOWED_RESULT_CAP] 로 clamp. 기본 50. */
   readonly resultCap?: number;

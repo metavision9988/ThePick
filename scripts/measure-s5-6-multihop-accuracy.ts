@@ -202,9 +202,11 @@ async function runRemote(
     per,
     golden,
     // 측정 provenance: maxDepth 를 coverage 에 각인 (두 depth 리포트가 동일해 보이는 혼동 차단).
+    // 'engine-default' 의 resolved 값은 **원격 배포 버전**에 따름 — 코드 기본은
+    // 2026-06-11 결재 #6 부터 1 (~06-10 측정분은 2). 리뷰 S8 m-1: 라벨만으로 동일시 금지.
     coverage:
       (goldenFile.coverageNote ?? `REMOTE: ${itemsRaw.length} questions measured`) +
-      ` | maxDepth=${maxDepth ?? 'engine-default'}`,
+      ` | maxDepth=${maxDepth ?? 'engine-default(remote-resolved; code-default 1 since 2026-06-11)'}`,
   };
 }
 

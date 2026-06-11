@@ -150,6 +150,20 @@ describe('/api/search/graph route', () => {
       const body = (await res.json()) as { graphExpansion: { maxDepth: number } };
       expect(body.graphExpansion.maxDepth).toBe(4);
     });
+    it('maxDepth 미지정 → 기본 1 (S5-8 Phase 0a 결재 #6 — depth2 순손실 실측 회귀 차단)', async () => {
+      await insertApproved(backend.db, 'SD-D1', 'LAW', 10);
+      env = {
+        DB: backend.db,
+        VECTORIZE: makeMockVectorize([{ id: 'SD-D1', score: 0.9, metadata: {} }]),
+        AI: makeMockAi(),
+        ENVIRONMENT: 'test',
+      };
+      const res = await post({ examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: 'q' });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { graphExpansion: { maxDepth: number } };
+      // 기본값이 2 로 되돌아가면(depth2 순손실 재도입) 본 단언이 깨진다.
+      expect(body.graphExpansion.maxDepth).toBe(1);
+    });
     it('resultCap > 엔진 ceiling(MAX_ALLOWED_RESULT_CAP=500) → 400', async () => {
       const res = await post({ examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: 'q', resultCap: 501 });
       expect(res.status).toBe(400);
