@@ -1,6 +1,6 @@
 # 결정 카드 #3 — knowledge_edges UPDATE/DELETE 가드 마이그 plan 착수 (WS-2b)
 
-> 작성: 2026-06-12 / 상태: **결재 대기**
+> 작성: 2026-06-12 / 상태: **결재 완료 (2026-07-02)** — (a) 채택
 > 배경: production 보호 트리거 체계에서 knowledge_edges 만 UPDATE/DELETE 가드 0 (RC-1, `MASTER_PLAN.md:54,68`).
 > **본 결재 대상 = "L3 plan 작성 착수" 자체** (SQL 아님 — SQL 승인은 plan 완성 후 별도, `MASTER_PLAN.md:220,232`).
 > 가드 설계 방향(0038식 컬럼 화이트리스트 vs 전면 차단+is_active 플립 예외)은 plan 내 PITR 로 비교 — 본 카드 범위 밖.
@@ -31,4 +31,4 @@ plan 착수 자체는 문서 작업(코드·DB 무접촉·가역)이며, 집행�
 Track B 는 INSERT-only(plan §2 명문 `:52` — Track B 수리 SQL 자체는 미작성) 라 가드 선적용과 충돌 없음. 06-15 까지 plan 결재·4-Pass 미완 시
 (b)로 자연 분리(손실 없음). plan 작성 소요 [추정 — 미측정]. SQL 작성·집행 승인은 plan §결재란에서 별도.
 
-> 진산 확인란: ☐ (a) plan 착수 승인 + Track B 결재 묶음 / ☐ (b) plan 착수만 승인·집행 별건 / ☐ 보류
+> 진산 확인란: ☑ (a) plan 착수 승인 + Track B 결재 묶음 **(진산 2026-07-02 "권고대로")** / ☐ (b) plan 착수만 승인·집행 별건 / ☐ 보류

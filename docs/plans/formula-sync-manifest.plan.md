@@ -215,12 +215,12 @@ FROM formulas` 덤프 → 순수 코어가 `ALL_FORMULAS` 와 대조 → 리포�
 ## 9. 진산 결재란 (RULE #5 — AI 판정 금지)
 
 ```
-[ ] WS-3c 코드 착수 승인 (manifest 스크립트 + 대조 테스트 — L3, formula-engine 읽기전용 참조)
-[ ] PITR 채택/조정: 정규화 ____(B 권고·C 채택 시 G-WS3c-6 재정의) / version_year ____ / 미적재컬럼 ____ / 실행면 ____
-[ ] 정규화 모듈 경로 — (i) shared 승격 / (ii) 복제(권고) / (iii) quality→parser 의존 (반론 2)
+[x] WS-3c 코드 착수 승인 (manifest 스크립트 + 대조 테스트 — L3, formula-engine 읽기전용 참조) — 진산 2026-07-02 "권고대로"+"진행"
+[x] PITR 채택/조정: 정규화 **B**(권고대로) / version_year **A+B** / 미적재컬럼 **A(대조 제외)** / 실행면 **C** — 진산 2026-07-02
+[x] 정규화 모듈 경로 — (ii) 복제(권고대로, 진산 2026-07-02) / ~~(i) shared 승격 / (iii) quality→parser 의존~~
 [ ] ★89건 display-only 분류 결정 — (a) 영구 전시(검증 부재 명문화) / (b) engine 승격 로드맵 신설
 [ ] F-55 TODO 주석 처분 — (a) constraint 타입 확장 구현 / (b) 주석 제거+이슈 등재 / (c) 현행 유지 사유 명문
-[ ] supersededBy/ConstantsProvider 단일진실원화 = 2027 R-BATCH 이월 확인 (본 plan 범위 밖)
+[x] supersededBy/ConstantsProvider 단일진실원화 = 2027 R-BATCH 이월 확인 (본 plan 범위 밖) — 진산 2026-07-02 확인
 [ ] MASTER_PLAN "소비자 batch QG 단 1곳" 표현 §1.4 3분해로 정밀화 여부
 ```
 
