@@ -5,9 +5,10 @@
  * 구 헤더의 60/200/13 표기는 stale 이었음, design-audit RC-5/2c 동기 2026-06-11):
  *   1. 노드 40+ 개
  *   2. 엣지 80+ 개
- *   3. 산식: 배치별 누적 임계 (CUMULATIVE_FORMULA_THRESHOLDS — BATCH-1~5 정의,
- *      ★BATCH-6+ 미정의 시 minFormulas(7) fallback = 누적 검증 약화. 6+ 임계값
- *      추가는 결재 사안으로 보류 중, 마스터 플랜 2c)
+ *   3. 산식: 배치별 누적 임계 (CUMULATIVE_FORMULA_THRESHOLDS — BATCH-1~7 +
+ *      L1·L2·R1·R2·S1 전 배치 정의, formula-engine 레지스트리 카운트 기준.
+ *      ★미정의 batchId = fail-closed 즉시 FAIL — 구 minFormulas(7) 무경고
+ *      fallback 은 결재 #19 (a)로 폐기, 진산 2026-07-02)
  *   4. 산식 정확도 100% (교재 예시값 대비)
  *   5. Graph 무결성: 고아노드 0, 순환 0, 끊긴엣지 0
  *
@@ -24,21 +25,39 @@ import type { CalculateResult } from '@thepick/formula-engine';
 const QG2_THRESHOLDS = {
   minNodes: 40,
   minEdges: 80,
-  minFormulas: 7,
   formulaAccuracy: 1.0, // 100%
   maxOrphanNodes: 0,
   maxBrokenEdges: 0,
   maxSupersedeCycles: 0,
 } as const;
 
-/** 배치별 누적 산식 수 임계값 (BATCH_CONFIGS.expectedFormulas 기반) */
+/**
+ * 배치별 누적 산식 수 임계값 — formula-engine 레지스트리(getAllFormulas) 카운트 기준.
+ *
+ * BATCH-6+ 수치 = 결재 #19 (a) engine 실측 산출 채택 (진산 2026-07-02 "권고대로",
+ * `docs/plans/master-remediation-20260610/decision-card-19-qg2-batch6-threshold.md` §②):
+ * BATCH-6 = 68+21 = 89 / BATCH-7 = 89+6 = 95 / L1·L2·R1·R2·S1 = 산식 증분 0 → 95 유지.
+ * ★F-131~F-157(27건)은 engine 미등록 — 등록(formula-engine = L3 별도 plan·결재) 전까지
+ * BATCH-6+ 검증은 의도적으로 FAIL (fail-closed: 등록 갭을 게이트가 강제 노출).
+ * 미정의 batchId 는 checkFormulaRegistry 에서 fail-closed FAIL (구 fallback 7 폐기).
+ */
 const CUMULATIVE_FORMULA_THRESHOLDS: Record<string, number> = {
   'BATCH-1': 7,
   'BATCH-2': 30, // 13 + 17
   'BATCH-3': 38, // 30 + 8
   'BATCH-4': 53, // 38 + 15
   'BATCH-5': 68, // 53 + 15
+  'BATCH-6': 89, // 68 + 21 (F-131~F-151 — engine 미등록, 등록 전 FAIL = 의도된 fail-closed)
+  'BATCH-7': 95, // 89 + 6 (F-152~F-157 — engine 미등록, 등록 전 FAIL = 의도된 fail-closed)
+  'BATCH-L1': 95, // 산식 증분 0 → 95 유지
+  'BATCH-L2': 95, // 산식 증분 0 → 95 유지
+  'BATCH-R1': 95, // 산식 증분 0 → 95 유지
+  'BATCH-R2': 95, // 산식 증분 0 → 95 유지
+  'BATCH-S1': 95, // 산식 증분 0 → 95 유지
 };
+
+/** 미정의 batchId fail-closed 진단 코드 (admin-web/observability 추적용 — CHAIN_TOO_DEEP 컨벤션 정합) */
+const UNDEFINED_THRESHOLD_CODE = 'UNDEFINED_THRESHOLD';
 
 // --- 검증 결과 ---
 
@@ -95,11 +114,25 @@ export function checkGraphScale(
 
 /**
  * 산식 레지스트리 검증: 배치별 누적 산식 수 확인
+ *
+ * 결재 #19 (a) 흡수 (진산 2026-07-02): 미정의 batchId 는 구 `?? minFormulas(7)`
+ * 무경고 fallback(누적 검증 약화) 대신 **fail-closed 즉시 FAIL** — 직접 호출로
+ * 미정의 ID 를 전달해도 7 기준 무음 통과 경로가 존재하지 않는다. 신규 배치 임계
+ * 정의 추가는 결재 사안(본 카드 #19 선례).
+ *
  * @param batchId - 검증 대상 배치 ID (기본: 'BATCH-1')
  */
 export function checkFormulaRegistry(batchId: string = 'BATCH-1'): QG2Check {
   const formulas = getAllFormulas();
-  const threshold = CUMULATIVE_FORMULA_THRESHOLDS[batchId] ?? QG2_THRESHOLDS.minFormulas;
+  const threshold: number | undefined = CUMULATIVE_FORMULA_THRESHOLDS[batchId];
+  if (threshold === undefined) {
+    return {
+      name: `Formula count threshold defined (${batchId})`,
+      passed: false,
+      expected: `batchId in [${Object.keys(CUMULATIVE_FORMULA_THRESHOLDS).join(', ')}]`,
+      actual: `${UNDEFINED_THRESHOLD_CODE} (${batchId})`,
+    };
+  }
   return {
     name: `Formula count >= ${threshold} (${batchId})`,
     passed: formulas.length >= threshold,

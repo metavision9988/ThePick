@@ -81,6 +81,34 @@ describe('QG-2 Validator', () => {
       expect(check.passed).toBe(true);
       expect(check.actual).toBe('68');
     });
+
+    // 결재 #19 (a) 흡수 (진산 2026-07-02) — BATCH-6+ engine 기준 누적 임계 89/95/95유지.
+    it('BATCH-6 기준 누적 임계 89 선택 — engine 미등록(F-131~151) 상태 FAIL (fail-closed 갭 노출)', () => {
+      const check = checkFormulaRegistry('BATCH-6');
+      expect(check.name).toBe('Formula count >= 89 (BATCH-6)');
+      // 현 레지스트리 = BATCH1~5 68건 → 89 미달 FAIL 이 카드 #19 (a)의 의도된 즉시 효과
+      // ("등록 누락 강제 노출"). F-131~F-157 engine 등록(L3 별도 plan·결재) 완료 시
+      // 본 단언은 PASS 기대로 갱신 의무 — 그 전까지는 갭 노출 회귀 게이트.
+      expect(check.passed).toBe(false);
+      expect(Number(check.actual)).toBeLessThan(89);
+    });
+
+    it('BATCH-7 + L1·L2·R1·R2·S1 기준 누적 임계 95 유지 선택 (산식 증분 0)', () => {
+      const tailBatchIds = ['BATCH-7', 'BATCH-L1', 'BATCH-L2', 'BATCH-R1', 'BATCH-R2', 'BATCH-S1'];
+      for (const batchId of tailBatchIds) {
+        const check = checkFormulaRegistry(batchId);
+        expect(check.name).toBe(`Formula count >= 95 (${batchId})`);
+      }
+    });
+
+    it('미정의 batchId → fail-closed 즉시 FAIL (구 fallback 7 무음 약화 도달 불가)', () => {
+      const check = checkFormulaRegistry('BATCH-99');
+      expect(check.passed).toBe(false);
+      expect(check.actual).toBe('UNDEFINED_THRESHOLD (BATCH-99)');
+      // 구 동작(`?? minFormulas 7`)이면 레지스트리 68 >= 7 로 무음 PASS 였다 —
+      // fallback 회귀 시 위 passed=false 단언과 아래 임계 표기 단언이 깨진다.
+      expect(check.name).not.toContain('>= 7');
+    });
   });
 
   describe('checkFormulaAccuracy', () => {
@@ -158,6 +186,17 @@ describe('QG-2 Validator', () => {
       const formulaCheck = result.checks.find((c) => c.name.includes('Formula count'));
       expect(formulaCheck?.name).toBe('Formula count >= 68 (BATCH-5)');
       // 미배선 회귀 시 위 단언이 'Formula count >= 7 (BATCH-1)' 로 깨진다.
+    });
+
+    // 결재 #19 (a) — 게이트 수준 fail-closed: 미정의 batchId 는 QG-2 전체 FAIL.
+    it('미정의 batchId 전달 시 QG-2 전체 fail-closed FAIL (무음 통과 경로 부재)', () => {
+      const nodes = makeNodes(65);
+      const edges = makeEdges(nodes, 210);
+      const result = runQG2Validation(nodes, edges, [], 'BATCH-6X');
+      expect(result.passed).toBe(false);
+      expect(result.summary).toContain('FAILED');
+      const failClosedCheck = result.checks.find((c) => c.actual.startsWith('UNDEFINED_THRESHOLD'));
+      expect(failClosedCheck?.passed).toBe(false);
     });
   });
 

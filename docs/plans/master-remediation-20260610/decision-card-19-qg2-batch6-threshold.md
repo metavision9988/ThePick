@@ -47,3 +47,5 @@
 별도 카드 재상신 경로도 성립.
 
 > 진산 확인란: ☑ (a) engine 기준 89/95/95유지 **(진산 2026-07-02 "권고대로")** / ☐ (b) D1 모드 151/157/157유지 / ☐ (c) 보류 / ☐ 수치 별도 지정: \_\_\_
+>
+> **집행 기록 (2026-07-02)**: (a) 집행 완료 — `apps/batch/src/qg2-validator.ts` CUMULATIVE_FORMULA_THRESHOLDS 7행 추가(BATCH-6 89 / BATCH-7 95 / L1·L2·R1·R2·S1 95유지) + 미정의 batchId fallback(7) 폐기 → fail-closed FAIL(`UNDEFINED_THRESHOLD`) + 회귀 테스트 4건(batch 332 PASS / quality 71(에이전트 시점 — 통합 워킹트리 최종 85: 동일 변경셋 formula-sync 14 포함) PASS / typecheck·lint 0). F-131~F-157 engine 등록은 L3 별도 plan·결재(범위 외).
