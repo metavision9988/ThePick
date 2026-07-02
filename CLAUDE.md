@@ -289,6 +289,27 @@ inventory-20260612.md` — 무결성 러너 재실행(고아 24 그대로·유�
 >   확정 3군/C 자료 한계 2군/D 데이터 수리 11노드) → 결재 시 E0-8 ✓ = M1 출구. 결재 카드 §2A 10건 +
 >   Track B 고아 24 검수 + S5-8 §9 0b·WS-3c §9는 **여전히 진산 대기** (로드맵 v2 §2 통합표 참조).
 
+> ★ **2026-07-02 갱신 2 (동일 세션) — 일괄 결재 집행 완료**: 진산 "결재 카드 전부 권고대로 진행" →
+> (1) 결재 기록 커밋 `3adb10a`: #3·#4·#10·#12·#13·#18·#19·#22 + WS-5c(C) + S5-8 §9 0b ☑ + WS-3c §9
+> ①②③⑥ ☑ (**잔존**: WS-3c ④89건 분류·⑤F-55 / #14 push / Track B 검수 / E0-8 갭 처분 A~D군 / 감사
+> §4 #5·#7). (2) **집행 7건 완료**: #19 QG-2 fail-closed(89/95×6) / #13 표벡터 433 필터+**ADR-047**+4c
+> 잣대강화(expandedNodes 디버그·query 500→2000 debug 한정) / #10 weak_score D2 복원 1단계(α=subject
+> 집계)+**ADR-048** / WS-3c manifest 3층 / #4 **ADR-014 Amended**(C 축소) / #3 WS-2b 엣지가드 L3
+> plan(슬롯 0039, SQL 0줄·§8 결재 대기) / #12 Phase2 진입 체크리스트+WS-6c mock plan(슬롯 0040, §7
+> 결재 대기). (3) ★★**WS-3c 첫 실행 실측 = 산식 선재 드리프트 55건**: 코드 레지스트리 F-14~F-68 이
+> BATCH-2~5 적재물과 **ID 배정부터 계보 분화**(예: D1 F-68=마늘 표준피해율 vs 코드 F-68=무화과
+> 잔여수확량비율. 일치 = F-01~13 뿐). G-WS3c-4 FAIL 정직 보고 + 워터마크 테스트 고정 — **진실원 방향
+> (코드 수정 vs D1 재적재) = 신규 L3 결재 상신**(RC-5 리스크 실물 확인. 완화: 런타임 계산 소비자 0 =
+> 학습자 영향 현재 0). 리포트 `g-ws3-formula-sync/formula-sync-2026-07-02*`. (4) **5-페르소나 독립
+> 리뷰 + 적대 반증 15에이전트**: C0/**M10**(기각 0) → 전건 즉시 수정(골든 빌더 과제거 fail-loud 가드
+> 3종·G-WS4② 테스트 pnpm test+CI 배선·러너 --debug+debug 측정파일(Q-004 포함)·0039/0040 슬롯 충돌
+> 해소·레지스트리 동치 고정 테스트) + MINOR 15 처분 기록(`review-20260702-133800-5persona-*`).
+> (5) **E0-8 갭 보강 Sonnet급 플레이북 v1.0** `docs/plans/e0-8-gap-remediation-sonnet-playbook.md`
+> (P1~P6 패키지·G-GAP-1~7·에스컬레이션 7규칙·§8 결재란 — 파일럿 FIX율 게이트 시퀀스). 검증: turbo
+> 17/17+scripts 13/13·api 711·batch 332·quality 85·E2E 20/20·typecheck·lint 全green. 세션 커밋 계
+> 20건(로컬 — push = #14 보류). **다음**: S5-8 0b golden N≥20~30 확대 draft(잣대 도구 게이트 完) +
+> 진산 잔여 결재(위 잔존 + WS-2b §8·WS-6c §7·★55건 진실원 방향).
+
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),
   Worker 배포, 인증/login_history smoke PASS, ADR-034/035/036 retrofit.
