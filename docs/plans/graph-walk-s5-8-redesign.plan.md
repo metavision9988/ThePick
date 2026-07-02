@@ -208,7 +208,7 @@ Phase 3(BATCH 엣지, 병렬·독립) ──┘            │               no�
 
 ```
 [x] Phase 0a (depth1 기본화)        — ★결재 #6 (진산 2026-06-11 "추천한 것으로") + 집행 완료: 엔진 DEFAULT_MAX_DEPTH 2→1 (plan 문언 "route override" 와 동등·더 보수 — 직접 호출자까지 보호, 리뷰 m-3). 4-Pass C0/M2 해소. G-R0a **완료** (2026-06-11): Worker 재배포(8d2e6ea3) 후 REMOTE 재측정 — hit-rate 83.3/83.3 Δ0.0%·regression 0 (`s5-6-remote-g-s5-2026-06-11-0549.md`). **Phase 0a 완료.**
-[x] Phase 0b (golden N≥20~30 확대)  — ★결재 (진산 2026-07-02 "권고대로") + "진행". 메인 구축 착수(draft-only·순환편향 차단·진산 검수 후 동결). 4c 잣대 강화 3종(빌더 일반화·expandedNodes·500자 천장) 게이트 병합.
+[x] Phase 0b (golden N≥20~30 확대)  — ★결재 (진산 2026-07-02 "권고대로") + "진행". **draft 생성 완료 (동일 일자)**: 신규 22문항 라벨(+pilot 12 = N=34) — 선정 순환차단·라벨 증거 인용·독립 적대검증(APPROVE 21/FIX 1 반영). `s5-6-measurements/golden-expansion-draft-20260702.{json,md}` — **진산 검수 대기** → 승인분 병합 동결 → queryBody 파생 → 재측정. 4c 잣대 강화 3종 집행 완료(빌더 일반화+과제거 가드·expandedNodes·debug 측정 배선).
 [ ] Phase 1 (보수 algo: L1·L3·L4)   — Phase 0b 재현 후. PITR 권고 채택/조정: ____________
 [ ] Phase 1-D (D안: graph 동결+lexical fusion) — 비교군 **등재는 결재 #7 ☑(2026-06-11) 집행 완료(2026-06-12)**. 구현 착수 = 본 체크 + 상세 plan 별건(L3 검색 경로). PITR D-A/D-B/D-C 권고 채택/조정: ____________
 [ ] Phase 2 (ADR 랭킹 분리)         — Phase 1 잔존 시. ADR 선작성 후 별도 결재.

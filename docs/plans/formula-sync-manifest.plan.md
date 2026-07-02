@@ -224,6 +224,11 @@ FROM formulas` 덤프 → 순수 코어가 `ALL_FORMULAS` 와 대조 → 리포�
 [ ] MASTER_PLAN "소비자 batch QG 단 1곳" 표현 §1.4 3분해로 정밀화 여부
 ```
 
+- ★ **드리프트 55건 진실원 방향 확정 (2026-07-02, 진산 "승인 진행" 위임)**: 크로스워크 실측(순열 0 —
+  양 계보 상이 커버리지) ⇒ **이원 정본**(ID 정본 = D1 / 계산 정본 = 코드) + 검증된 매핑층 =
+  `master-remediation-20260610/g-ws3-formula-sync/formula-crosswalk-20260702.{md,json}` (same 19 /
+  **variant 24 — 계수·조건 차이 실재, 교재 원문 대조 판정 후속 큐** / none 12 — D1 미적재분, E0-8 A-4 교차).
+  단일화(물리 통합)는 2027 R-BATCH 이월 유지(⑥ 정합).
 - **코드 착수 = 위 체크 + 진산 "진행" 후**(L3, 자율 금지). plan 작성·실측은 자율 완료분.
 - 각 단계 완료 = 해당 Binary Gate + 4-Pass(코드정합) + 리포트 출력 확인 후 "완료" 선언.
 - **집행 기록 (2026-07-02, 결재 ①②③⑥ 하 코드 집행)**: 코어 `packages/quality/src/formula-sync.ts` + 러너 `scripts/run-formula-sync-manifest.ts` + 테스트 14건(`formula-sync.test.ts`, production 동결 픽스처 포함) 작성·실행 — production SELECT-only 덤프(157행) 실측 = **일치 13(F-01~F-13)/template-mismatch 55(F-14~F-68)** (D1 = batch-N-insert.sql 스팟 대조 일치 → 코드 batch2~5-definitions 와 BATCH 적재물의 ID 배정·변수 어휘 계보 분화 = 선재 드리프트, 도구 오류 아님). 게이트: G-WS3c-1·2·3·5·6 PASS / **G-WS3c-4 FAIL(실측 — 해소 방향(코드 vs D1 진실원)은 위 ④⑤와 함께 진산 결재 대기)**. 리포트 `docs/plans/master-remediation-20260610/g-ws3-formula-sync/formula-sync-2026-07-02T03-09-05.{md,json}`.

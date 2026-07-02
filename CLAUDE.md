@@ -310,6 +310,17 @@ inventory-20260612.md` — 무결성 러너 재실행(고아 24 그대로·유�
 > 20건(로컬 — push = #14 보류). **다음**: S5-8 0b golden N≥20~30 확대 draft(잣대 도구 게이트 完) +
 > 진산 잔여 결재(위 잔존 + WS-2b §8·WS-6c §7·★55건 진실원 방향).
 
+> ★ **2026-07-02 갱신 3 (동일 세션) — 0b golden 확대 draft + 드리프트 크로스워크**: 진산 지시(0b 착수 +
+> 드리프트 진실원 "승인 진행" + Sonnet 플레이북 P1 착수) 집행 — 워크플로우 39에이전트(선정 1+라벨 8+
+> 적대검증 8 / 크로스워크 매칭 11+적대검증 11). (1) **golden 확대 draft**: 신규 22문항(2차 9+1차 법령 13,
+> multi 20/single 2, 회차 7개 전부 커버) 라벨+증거 인용, 검증 APPROVE 21/FIX 1 반영 — **N=34 (pilot 12+22)**.
+> `s5-6-measurements/golden-expansion-draft-20260702.{json,md}` = **진산 검수 대기** (행당 수초 검수표).
+> 코퍼스 한계로 상법·재배학·가축·보험료 축 제외 정직 기록. (2) **드리프트 크로스워크**: 순열 0 실측 →
+> **이원 정본 확정**(ID 정본=D1·계산 정본=코드) + 매핑층 `g-ws3-formula-sync/formula-crosswalk-20260702`
+> — same 19 / **variant 24(계수·조건 차이 실재 — 교재 원문 대조 후속 큐, 65↔60 클래스 후보)** / none 12
+> (D1 미적재분 — E0-8 A-4 교차 검토). (3) Sonnet 플레이북 §8 **P1 ☑**(진산 발화). ⚠️ 다음: ① 진산 golden
+> draft 검수 → 병합 동결 → queryBody 파생 → 재측정(E0-4) ② variant 24 교재 대조 ③ Sonnet 세션 P1 실행.
+
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),
   Worker 배포, 인증/login_history smoke PASS, ADR-034/035/036 retrofit.

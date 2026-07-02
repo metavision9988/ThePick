@@ -1,0 +1,397 @@
+{
+  "$schema": "산식 드리프트 55건 의미 크로스워크 — 코드 레지스트리(F-14~68) ↔ D1 formulas 157",
+  "method": "기호 대조(수식 계산 0) 11에이전트 + 독립 적대검증 11에이전트(반증 1건 정정 반영). 워크플로우 wf_8d793892-3b0.",
+  "verdict": {
+    "variant": 24,
+    "same": 19,
+    "none": 12
+  },
+  "decision": "이원 정본 확정(2026-07-02 진산 위임): ID 정본 = D1(production 그래프 배선) / 계산 정본 = 코드(교재 예시값 골든 100%). 본 크로스워크 = 매핑층. variant 24건의 계수·조건 차이 = 교재 원문 대조 판정 대기(후속).",
+  "pairs": [
+    {
+      "codeId": "F-14",
+      "codeName": "수확감소보험금(과수)",
+      "d1Id": "F-14",
+      "relation": "variant",
+      "evidence": "[검증자 정정 same→variant] 코드 F-14: `insured_amount * max(damage_rate - deductible_rate, 0)` ↔ D1 F-14 '종합위험 수확감소보험금': `max(insurance_amount * (damage_rate - deductible_rate), 0)`. 변수 대응: insured_amount↔insurance_amount(보험가입금액), damage_rate↔damage_rate(피해율), deductible_rate↔deductible_rate(자기부담비율). 계수 차이 없음. 유일한 표기 차이 = max 클램프 위치(코드는 차분에, D1은 곱 전체에 적용)이나 D1 variables_schema 가 insurance_amount \"number>=0\" 를 선언하므로 두 식은 기호적으로"
+    },
+    {
+      "codeId": "F-15",
+      "codeName": "피해율(수확감소)",
+      "d1Id": "F-15",
+      "relation": "variant",
+      "evidence": "코드 F-15: `max((standard_yield - actual_yield - uncompensated_loss) / standard_yield, 0)` ↔ D1 F-15 '수확감소 피해율': `(expected_yield - actual_yield - uncovered_loss) / expected_yield`. 변수 대응: standard_yield↔expected_yield(평년수확량), actual_yield↔actual_yield(수확량), uncompensated_loss↔uncovered_loss(미보상감수량). 분자·분모 구조 일치. ★차이: 코드는 max(…, 0) 하한 클램프 보유, D1 template 은 클램프 부재 — 수확량+미보상감수량 > 평년수확량 인 입력에서 D1 식은 음수 피해율 산출 가능(조건 차이). 차순위 후보: D1 F-66(논작물)·F-76(밭작물)·F-47(무화과 7/31 이전 사고피해율) = 동일 구조(reference/expected"
+    },
+    {
+      "codeId": "F-16",
+      "codeName": "미보상감수량",
+      "d1Id": "F-17",
+      "relation": "variant",
+      "evidence": "코드 F-16: `max(standard_yield - actual_yield, 0) * uncompensated_rate` ↔ D1 F-17 '미보상감수량': `(expected_yield - actual_yield) * uncovered_rate`. 변수 대응: standard_yield↔expected_yield(평년수확량), actual_yield↔actual_yield(수확량), uncompensated_rate↔uncovered_rate(미보상비율). 구조(수확량 차분 × 미보상비율) 일치. ★차이: 코드는 차분에 max(…, 0) 클램프, D1 은 부재 — actual > expected 입력에서 D1 식은 음수 감수량 산출 가능(조건 차이). ★ID 교차 드리프트: 코드 F-16(미보상감수량)↔D1 F-17 / 코드 F-17(복숭아 피해율)↔D1 F-16 으로 ID 가 서로 뒤바뀜. 차순위 후보: D1 F-81 '미보상감수량 (밭작물)' = `(reference_yie"
+    },
+    {
+      "codeId": "F-17",
+      "codeName": "복숭아 피해율",
+      "d1Id": "F-16",
+      "relation": "variant",
+      "evidence": "코드 F-17: `max((standard_yield - actual_yield - uncompensated_loss - disease_loss) / standard_yield, 0)` ↔ D1 F-16 '복숭아 피해율': `(expected_yield - actual_yield - uncovered_loss - pest_loss) / expected_yield`. 변수 대응: standard_yield↔expected_yield(평년수확량), uncompensated_loss↔uncovered_loss(미보상감수량), disease_loss↔pest_loss(병충해감수량 — D1 schema '세균구멍병 무게×0.5'). 구조(4항 차분/평년수확량) 및 병충해 항의 부호(양쪽 모두 감산 −) 일치. ★차이: 코드만 max(…, 0) 클램프 보유(조건 차이). ★관찰(코드↔D1 드리프트 아님, 파일 내용 대조 사실): 감자 피해율 쌍(코드 F-36·D1 F-77)은 병충해 감수량을 "
+    },
+    {
+      "codeId": "F-18",
+      "codeName": "수확량감소 추가보장 보험금",
+      "d1Id": "F-18",
+      "relation": "same",
+      "evidence": "코드 F-18: `insured_amount * damage_rate * 0.10` ↔ D1 F-18 '수확량감소 추가보장 특약 보험금': `insurance_amount * damage_rate * 0.10`. 변수 대응: insured_amount↔insurance_amount(보험가입금액), damage_rate↔damage_rate(피해율). 구조·계수(0.10) 완전 일치. 차순위(구조 동형·품목 상이 — 오매칭 아님): D1 F-33 '과실손해 추가보장 특약 보험금(감귤 온주밀감)' = `insurance_amount * primary_damage_rate * 0.10`, D1 F-118 '포도 농업수입감소보험금 (도복특수)' = `insurance_amount * (damage_rate * 0.10)`."
+    },
+    {
+      "codeId": "F-19",
+      "codeName": "비가림시설보험금 (카탈로그 원문 '비가림시설��험금' — 파일 내 바이트 손상, U+FFFD 2자)",
+      "d1Id": "F-21",
+      "relation": "variant",
+      "evidence": "코드: min(max(damage_amount - deductible, 0), insured_amount) / D1 F-21 '종합위험 비가림시설 보험금': min(loss_amount - deductible, insurance_amount). 변수 대응: damage_amount↔loss_amount(손해액, 재조달가액 기준), deductible↔deductible(자기부담금 — D1 variables_schema: '손해액×10%, 최소30만/최대100만, 피복재단독 최소10만/최대30만'), insured_amount↔insurance_amount(보험가입금액). 핵심 구조 min(손해액-자기부담금, 가입금액)은 일치하나 차이 = 코드에만 내부 max(...,0) 음수 clamp 존재(D1 template은 손해액<자기부담금 시 음수 산출 가능한 형태) → 조건/범위 차이로 variant. 차순위: D1 F-103 '농업용 시설물 보험금 (보험가입금액 < 보험가액)' = mi"
+    },
+    {
+      "codeId": "F-20",
+      "codeName": "감귤 등급별 피해과실수",
+      "d1Id": "NONE",
+      "relation": "none",
+      "evidence": "코드: count_30 * 0.3 + count_50 * 0.5 + count_80 * 0.8 + count_100 * 1.0. D1 157건 equation_template 전수에서 계수 0.3/0.5/0.8 가중합 구조 검색 결과 대응 산식 레코드 부재(0.3·0.5·0.8 포함 식은 F-112/F-131/F-149/F-157/F-22/F-69/F-83뿐 — 전부 버섯 생산비·한우 보험가액·부보비율 등 무관 구조). 단, 동일 정의가 D1 F-28 '감귤 온주밀감 피해율'의 variables_schema damaged_fruits 설명에 텍스트로 내장: '피해과실수(등급내+등급외×0.5; 등급내=30%형×0.3+50%형×0.5+80%형×0.8+100%형×1)' — 계수 0.3/0.5/0.8/1.0 일치(수치 드리프트 아님). 독립 산식으로는 D1에 미등재 → none."
+    },
+    {
+      "codeId": "F-21",
+      "codeName": "감귤 총 피해과실수",
+      "d1Id": "NONE",
+      "relation": "none",
+      "evidence": "코드: grade_in_damaged + grade_out_damaged * 0.5. D1 157건 equation_template 전수에서 '등급내 + 등급외×0.5' 구조의 독립 산식 부재(0.5 계수 포함 식은 F-131 한우 보험가액 조건식 등 무관 구조뿐). 동일 정의가 D1 F-28 variables_schema damaged_fruits 설명에 텍스트로 내장: '피해과실수(등급내+등급외×0.5; ...)' — 계수 0.5 일치(수치 드리프트 아님). 변수 대응(내장 텍스트 기준): grade_in_damaged↔등급내, grade_out_damaged↔등급외. 독립 산식으로는 D1에 미등재 → none."
+    },
+    {
+      "codeId": "F-22",
+      "codeName": "감귤 피해율",
+      "d1Id": "F-28",
+      "relation": "same",
+      "evidence": "코드: (damaged_fruit_count / base_fruit_count) * (1 - uncompensated_rate) / D1 F-28 '감귤 온주밀감 피해율': (damaged_fruits / standard_fruits) * (1 - uncovered_rate). 구조·연산 완전 일치((피해과실수÷기준과실수)×(1-미보상비율)), 계수 차이 없음. 변수 대응: damaged_fruit_count↔damaged_fruits(피해과실수), base_fruit_count↔standard_fruits(기준과실수 — '표본주 과실수 총합계'), uncompensated_rate↔uncovered_rate(미보상비율 0..1). 변수명만 상이 → same. 차순위: D1 F-29 '두릅 피해율' (damaged_buds/total_buds)*(1-uncovered_rate) — 구조 동일하나 품목(두릅 정아지수) 상이."
+    },
+    {
+      "codeId": "F-23",
+      "codeName": "동상해 피해율",
+      "d1Id": "NONE",
+      "relation": "none",
+      "evidence": "코드: (frost_80_count * 0.8 + frost_100_count * 1.0) / base_fruit_count. D1 157건 전수(name+equation_template+variables_schema)에서 '동상해' 검색 결과: F-12 '가을동상해 피해인정계수' = 0.0031 * remaining_days(잔여일수 기반 피해인정계수 — 구조·산출물 전혀 다름, 대응 아님), F-32 '동상해 과실손해보험금(감귤 온주밀감)' = max(loss_amount - deductible, 0)(보험금 산식 — loss_amount 설명에 '...×동상해피해율×(1-미보상비율)'로 동상해피해율을 미정의 입력변수로만 참조, 그 산출식 자체는 D1 어디에도 독립 등재 없음). 80%형×0.8+100%형×1.0 가중 구조는 D1 F-28 내장 정의(주계약용, 30/50/80/100 4등급)와도 등급 구성이 달라(동상해는 80/100 2등급만) 별개 산식 → none."
+    },
+    {
+      "codeId": "F-24",
+      "codeName": "잔존비율(12월)",
+      "d1Id": "NONE",
+      "relation": "none",
+      "evidence": "코드 template: `max((61 - 0.935 * day_of_month) / 100, 0)` — 코드 F-20~F-23이 감귤(등급별 피해과실수/총 피해과실수/피해율/동상해 피해율) 연속 블록이므로 감귤 온주밀감 동상해 '수확기 잔존비율' 12월분. D1 157건 전수 검증: (a) 계수 61/0.935 를 포함한 equation_template 0건(grep 확인), (b) '잔존비율' 명칭의 독립 산식 0건 — D1 F-32 '동상해 과실손해보험금(감귤 온주밀감)' variables_schema 의 loss_amount 설명 \"{보험가입금액-(보험가입금액×기사고피해율)}×수확기잔존비율×동상해피해율×(1-미보상비율)\" 에서 입력 변수로만 텍스트 언급되고 그 산출 산식 자체는 미등재, (c) 유사 구조(월별 1차식 잔여비율)는 무화과 F-155 `R = 100 - 1.06 * D` / F-156 `R = 67 - 1.13 * D` / F-157 `R = 33 - 0.84 *"
+    },
+    {
+      "codeId": "F-25",
+      "codeName": "잔존비율(1월)",
+      "d1Id": "NONE",
+      "relation": "none",
+      "evidence": "코드 template: `max((32 - 0.774 * day_of_month) / 100, 0)` — F-24와 동일 시리즈(감귤 온주밀감 동상해 수확기 잔존비율)의 1월분. D1 157건 전수 검증: 계수 32/0.774 포함 template 0건, '잔존비율' 독립 산식 0건(D1 내 '잔존' 히트는 F-130 잔존물 제거비용 `min(removal_cost, loss_amount * 0.10)`, F-148/F-87 잔존보험가입금액 `insurance_amount - paid_insurance` 류 — 전부 별개 개념). D1 F-32 변수 설명의 '수확기잔존비율' 텍스트 참조만 존재, 월별 산출식 미등재. 무화과 월별식 F-155~157은 품목·계수 상이. ⇒ 대응 부재."
+    },
+    {
+      "codeId": "F-26",
+      "codeName": "잔존비율(2월) (덤프 원문 '잔��비율(2월)' — 인코딩 깨짐, F-24 '잔존비율(12월)'·F-25 '잔존비율(1월)' 동일 시리즈로 재구성)",
+      "d1Id": "NONE",
+      "relation": "none",
+      "evidence": "코드 template: `max((8 - 0.286 * day_of_month) / 100, 0)` — F-24/F-25 시리즈의 2월분. D1 157건 전수 검증: 계수 8/0.286 포함 template 0건, '잔존비율' 명칭 독립 산식 0건. D1 F-32 '동상해 과실손해보험금(감귤 온주밀감)' variables_schema 에 '수확기잔존비율' 입력 변수 텍스트 참조만 존재. 유일한 월별 1차식 계열인 무화과 F-155~157(100-1.06D / 67-1.13D / 33-0.84D)은 품목·계수 상이. ⇒ 대응 부재."
+    },
+    {
+      "codeId": "F-27",
+      "codeName": "두릅 피해율",
+      "d1Id": "F-29",
+      "relation": "same",
+      "evidence": "코드 template: `(damaged_buds / total_buds) * (1 - uncompensated_rate)` ↔ D1 F-29 '두릅 피해율' template: `(damaged_buds / total_buds) * (1 - uncovered_rate)`. 이름 완전 일치(두릅 피해율), 구조 완전 일치((피해 정아지수÷총 정아지수)×(1-미보상비율)). 변수 대응: damaged_buds↔damaged_buds(피해 정아지수), total_buds↔total_buds(총 정아지수), uncompensated_rate↔uncovered_rate(미보상비율 — 명칭만 상이, D1 variables_schema 가 '미보상비율 number 0..1' 로 정의). 계수·연산 차이 0. ⇒ 동일 산식."
+    },
+    {
+      "codeId": "F-28",
+      "codeName": "블루베리 잔여수확량비율 (덤프 원문 '블루베리 잔여수확량���율' — 인코딩 깨짐, D1 F-30 변수 설명의 '잔여수확량비율' 용어로 재구성)",
+      "d1Id": "F-30",
+      "relation": "variant",
+      "evidence": "코드 template: `max(1 - (days_since_harvest / standard_harvest_days), 0)`. D1 대응물은 독립 산식이 아니라 D1 F-30 '블루베리 과실손해피해율'(template: `(dead_trees_ratio * residual_yield_ratio) + (survey_trees_ratio * (sample_damaged_fruits * residual_yield_ratio) / sample_total_fruits)`)의 변수 residual_yield_ratio 설명: \"재배종별 잔여수확량비율(수확개시이전=1, 수확개시이후=1-(사고일자-수확개시일자)÷30, 음수 시 0)\". 변수 대응: days_since_harvest↔(사고일자-수확개시일자), max(…,0)↔'음수 시 0', 1-경과/분모 구조 일치. ★차이 2건: (1) 분모 — 코드=standard_harvest_days 변수(가변) vs D1=30일 고정 상수 (65↔60"
+    },
+    {
+      "codeId": "F-29",
+      "codeName": "블루베리 최종 꽃 고사율",
+      "d1Id": "NONE",
+      "relation": "none",
+      "evidence": "코드 F-29: \"bud_death_rate + (1 - bud_death_rate) * flower_death_rate\" (최종 꽃 고사율 = 꽃눈 고사율 + (1-꽃눈 고사율)×꽃 고사율). D1 157건 전수 대조 결과 '최종 꽃 고사율'을 산출하는 산식 부재. 블루베리 관련 D1 항목은 2건뿐: D1 F-30 \"블루베리 과실손해피해율\" = \"(dead_trees_ratio * residual_yield_ratio) + (survey_trees_ratio * (sample_damaged_fruits * residual_yield_ratio) / sample_total_fruits)\" (전혀 다른 구조), D1 F-31 \"블루베리 꽃 피해 시 종합 피해율\" = \"final_flower_damage + (1 - final_flower_damage) * fruit_damage_rate * (1 - uncovered_rate)\". D1 F-31은 골격 a+(1-a)*b가 유사하나 변수"
+    },
+    {
+      "codeId": "F-30",
+      "codeName": "무화과 잔여수확량비율(8월)",
+      "d1Id": "F-155",
+      "relation": "variant",
+      "evidence": "코드 F-30: \"max((100 - 1.06 * day_of_month) / 100, 0)\" ↔ D1 F-155 \"별표5 무화과 8월 잔여수확량 비율 (%)\": \"R = 100 - 1.06 * D\". 변수 대응: day_of_month↔D(사고발생일자, 8월 일자), 산출 R↔코드 반환값. 핵심 계수 완전 일치(절편 100, 기울기 1.06, 8월 동일) — 65↔60 클래스 계수 드리프트 없음. 차이 2가지: ① 단위 스케일 — D1은 %값(R, ÷100 없음), 코드는 ÷100으로 비율[0,1] 정규화. ② 코드는 max(...,0) 하한 클램프 존재, D1 template에는 부재(음수 방지 조건 미명시). 차순위: D1 F-48 \"무화과 8/1 이후 사고피해율\"의 variables_schema에 elapsed_ratio 설명으로 \"8월=100-1.06×사고일자\" 동일 계수 내장(독립 산식 아닌 변수 설명). 참고로 코드 F-53(9월)↔D1 F-156(67, 1.13), 코"
+    },
+    {
+      "codeId": "F-31",
+      "codeName": "이앙·직파불능 보험금",
+      "d1Id": "F-61",
+      "relation": "same",
+      "evidence": "코드 F-31: \"insured_amount * 0.15\" ↔ D1 F-61 \"벼 이앙·직파불능 보험금\": \"insurance_amount * 0.15\" (variables_schema: insurance_amount=보험가입금액). 변수 대응: insured_amount↔insurance_amount(보험가입금액, 명칭만 상이). 계수 0.15 일치, 구조(가입금액×단일계수) 일치, 산출물(이앙·직파불능 보험금) 일치 → same. 다른 0.15 계수 후보인 D1 F-70 \"당근(고랭지/가을·월동) 재파종 보험금\" = \"insurance_amount * 0.15 * area_damage_rate\"는 면적피해율 인자가 추가된 다른 품목·다른 보장 산식으로 비대응."
+    },
+    {
+      "codeId": "F-32",
+      "codeName": "재이앙·재직파 보험금",
+      "d1Id": "F-62",
+      "relation": "same",
+      "evidence": "코드 F-32: \"insured_amount * 0.25 * area_damage_rate\" ↔ D1 F-62 \"벼 재이앙·재직파 보험금\": \"insurance_amount * 0.25 * area_damage_rate\". 변수 대응: insured_amount↔insurance_amount(보험가입금액), area_damage_rate↔area_damage_rate(면적피해율=피해면적÷보험가입면적, 트리거 > 0.10). 계수 0.25 일치, 3항 곱 구조 일치, 산출물 일치 → same. 차순위(동일 계수 0.25이나 상이): D1 F-67 \"마늘 조기파종 재파종 보험금 (난지형)\" = \"insurance_amount * 0.25 * standard_damage_rate\" — rate가 표준 피해율(F-68, 30,000주 기준)로 정의 상이·품목 상이."
+    },
+    {
+      "codeId": "F-33",
+      "codeName": "면적피해율",
+      "d1Id": "F-63",
+      "relation": "same",
+      "evidence": "코드 F-33: \"damaged_area / insured_area\" ↔ D1 F-63 \"면적피해율 (논·밭작물 공통)\": \"damage_area / insured_area\" (variables_schema: damage_area=피해면적, insured_area=보험가입면적). 변수 대응: damaged_area↔damage_area(피해면적, 명칭만 상이), insured_area↔insured_area(보험가입면적, 동일). 나눗셈 구조·분모 정의(보험가입면적) 일치 → same. D1 F-62(재이앙·재직파)의 area_damage_rate 설명 \"면적피해율(피해면적÷보험가입면적)\"과도 정합(코드 F-32→F-33 체인과 D1 F-62→F-63 체인 대응). 차순위(비대응): D1 F-54 \"논작물 면적피해율\" = \"damaged_area / actual_area\" — 분모가 실제경작면적(actual_area)으로 코드 F-33의 보험가입면적과 상이한 정의(변형 아님, 별개 "
+    },
+    {
+      "codeId": "F-34",
+      "codeName": "수확감소보험금(논작물)",
+      "d1Id": "F-65",
+      "relation": "variant",
+      "evidence": "코드 F-34: `insured_amount * max(damage_rate - deductible_rate, 0)` ↔ D1 F-65 '논작물 수확감소보험금': `insurance_amount * (damage_rate - deductible_rate)` (vars: insurance_amount=보험가입금액, damage_rate=피해율 0..1, deductible_rate=자기부담비율 0..1). 변수 대응: insured_amount↔insurance_amount / damage_rate↔damage_rate / deductible_rate↔deductible_rate — 곱·차 구조와 명칭(논작물 수확감소보험금) 완전 대응. 차이: 코드는 `max(…, 0)` 음수 하한 클램프 보유, D1 template 은 클램프 부재(damage_rate<deductible_rate 시 기호상 음수 허용). 차순위: D1 F-14 '종합위험 수확감소보험금' `max(insurance_"
+    },
+    {
+      "codeId": "F-35",
+      "codeName": "조사료용 벼 경작불능보험금",
+      "d1Id": "F-64",
+      "relation": "same",
+      "evidence": "코드 F-35: `insured_amount * coverage_rate * elapsed_rate` ↔ D1 F-64 '조사료용 벼 경작불능 보험금': `insurance_amount * coverage_rate * progress_rate` (vars: coverage_rate=보장비율 45%형0.45/42%형0.42/40%형0.40/35%형0.35/30%형0.30, progress_rate=경과비율 5월0.80/6월0.85/7월0.90/8월1.00). 변수 대응: insured_amount↔insurance_amount(보험가입금액) / coverage_rate↔coverage_rate(보장비율) / elapsed_rate↔progress_rate(경과비율). 3-인자 곱 구조·명칭(조사료용 벼 경작불능) 완전 일치, 변수명만 상이(elapsed↔progress) — same. 단 코드 카탈로그에 variables_schema 부재로 계수표(보장비율·경과비율 값) 자체의 코드측"
+    },
+    {
+      "codeId": "F-36",
+      "codeName": "감자 피해율",
+      "d1Id": "F-77",
+      "relation": "variant",
+      "evidence": "코드 F-36: `min(max(((standard_yield - actual_yield - uncompensated_loss) + disease_loss) / standard_yield, 0), 1)` ↔ D1 F-77 '감자 피해율 (병충해 가산)': `((reference_yield - actual_yield - uncovered_loss) + pest_loss) / reference_yield` (vars: reference_yield=평년수확량, actual_yield=수확량, uncovered_loss=미보상감수량(F-81 결과), pest_loss=병충해감수량(F-82 결과)). 변수 대응: standard_yield↔reference_yield / actual_yield↔actual_yield / uncompensated_loss↔uncovered_loss / disease_loss↔pest_loss — 분자 (평년수확량−수확량−미보상감수량+병충해감수량)·분모 평년수확"
+    },
+    {
+      "codeId": "F-37",
+      "codeName": "옥수수 수확감소보험금",
+      "d1Id": "F-78",
+      "relation": "variant",
+      "evidence": "코드 F-37: `max(min(insured_amount, damage_yield * price) - insured_amount * deductible_rate, 0)` ↔ D1 F-78 '옥수수 수확감소 보험금 (특수)': `min(insurance_amount, loss_amount) - deductible_amount` (vars: loss_amount=손해액(F-79 결과), deductible_amount=자기부담금(insurance_amount × 자기부담비율)). 변수 대응: insured_amount↔insurance_amount / damage_yield*price↔loss_amount — D1 F-79 '옥수수 손해액' `damage_yield * subscription_price`(damage_yield=피해수확량, subscription_price=가입가격)와 인라인 동형 / insured_amount*deductible_rate↔deductible_amoun"
+    },
+    {
+      "codeId": "F-38",
+      "codeName": "인삼 피해율",
+      "d1Id": "F-99",
+      "relation": "variant",
+      "evidence": "코드 F-38: `max((1 - actual_yield / standard_yield) * (damaged_area / cultivated_area), 0)` ↔ D1 F-99 '인삼 피해율': `(yield / per_year_reference_yield) * (damage_area / planted_area)` (vars: yield=수확량(F-127 결과 — 단위면적당 조사수확량+단위면적당 미보상감수량), per_year_reference_yield=연근별 기준수확량(CONCEPT-099), damage_area=피해면적, planted_area=재배면적). 변수 대응: actual_yield↔yield(수확량) / standard_yield↔per_year_reference_yield(기준수확량) / damaged_area↔damage_area / cultivated_area↔planted_area. ★핵심 구조 차이(드리프트 의심 1급): 코드 첫 인자는 `(1 - act"
+    },
+    {
+      "codeId": "F-39",
+      "codeName": "마늘 재파종보험금",
+      "d1Id": "F-69",
+      "relation": "same",
+      "evidence": "코드 F-39 template: `insured_amount * 0.35 * standard_damage_rate` ↔ D1 F-69 '마늘 재파종 보험금 (난지형 일반)' template: `insurance_amount * 0.35 * standard_damage_rate`. 변수 대응: insured_amount↔insurance_amount(보험가입금액), standard_damage_rate↔standard_damage_rate(표준 피해율, D1 schema는 F-68 결과 참조). 계수 0.35 양측 일치, 곱셈 3항 구조 일치 — 변수명만 상이. D1 노드명에 '(난지형 일반)' 한정 표기가 있으나 산식 자체는 동일. 차순위: D1 F-67 '마늘 조기파종 재파종 보험금 (난지형)' `insurance_amount * 0.25 * standard_damage_rate` — 동일 구조·계수 0.25 상이(조기파종 특칙 자매 산식, 코드 레지스트리에는 대응물 별도 미확인)"
+    },
+    {
+      "codeId": "F-40",
+      "codeName": "마늘 표준피해율",
+      "d1Id": "F-68",
+      "relation": "variant",
+      "evidence": "코드 F-40 template: `max((30000 - plant_count) / 30000, 0)` ↔ D1 F-68 '마늘 표준 피해율 (10a 30,000주 기준)' template: `(30000 - plant_count_per_10a) / 30000`. 변수 대응: plant_count↔plant_count_per_10a(10a당 식물체 주수). 기준주수 계수 30000 양측 일치, (기준-실측)/기준 구조 일치. 차이 = 코드에만 max(…, 0) 하한 클램프 존재(주수가 30000 초과 시 음수 피해율 차단 가드) — D1 template에는 클램프 부재. 계수 드리프트 아님, 연산(클램프) 차이만."
+    },
+    {
+      "codeId": "F-41",
+      "codeName": "재파종보험금(면적형)",
+      "d1Id": "F-70",
+      "relation": "variant",
+      "evidence": "코드 F-41 template: `insured_amount * rate * area_damage_rate` — rate가 자유변수(고정계수 없음)인 일반형. D1에는 자유 rate형 대응물이 없고 품목별 고정계수 산식군으로 분할됨: 대표 F-70 '당근(고랭지/가을·월동) 재파종 보험금' `insurance_amount * 0.15 * area_damage_rate` (변수 대응: insured_amount↔insurance_amount, rate↔고정 0.15, area_damage_rate↔area_damage_rate(F-63 면적피해율)). 차순위 동일 구조군: F-71 가을무·감자(가을재배) 재파종 `* 0.20 *`, F-84 재파종·재정식(생산비보장 전 품목) `* 0.20 *`, F-62 벼 재이앙·재직파 `* 0.25 *`. 차이 = 코드는 계수를 런타임 변수 rate로 파라미터화, D1은 품목별 고정계수(0.15/0.20/0.25)로 개별 산식화 — 1:多 대응이"
+    },
+    {
+      "codeId": "F-42",
+      "codeName": "재정식보험금",
+      "d1Id": "F-72",
+      "relation": "same",
+      "evidence": "코드 F-42 template: `insured_amount * 0.20 * area_damage_rate` ↔ D1 F-72 '재정식보험금 (양배추/단호박/가을배추/양파)' template: `insurance_amount * 0.20 * area_damage_rate`. 변수 대응: insured_amount↔insurance_amount(보험가입금액), area_damage_rate↔area_damage_rate(면적피해율, D1 schema는 F-63 결과·트리거 > 자기부담비율). 계수 0.20 양측 일치, 곱셈 3항 구조 일치 — 변수명만 상이. D1 명칭은 품목 열거형, 코드는 일반 명칭. 차순위 동일 template: F-84 '재파종·재정식 보험금 (생산비보장 전 품목)' `insurance_amount * 0.20 * area_damage_rate` (보장방식만 상이, 산식 동일)."
+    },
+    {
+      "codeId": "F-43",
+      "codeName": "수확감소보험금(밭작물)",
+      "d1Id": "F-75",
+      "relation": "variant",
+      "evidence": "코드 F-43 template: `insured_amount * max(damage_rate - deductible_rate, 0)` ↔ D1 F-75 '밭작물 수확감소 보험금 (일반)' template: `insurance_amount * (damage_rate - deductible_rate)`. 변수 대응: insured_amount↔insurance_amount, damage_rate↔damage_rate(피해율), deductible_rate↔deductible_rate(자기부담비율). 명칭·도메인(밭작물) 정확 일치, 감산 구조 일치. 차이 = 코드에만 max(…, 0) 하한 클램프(피해율<자기부담비율 시 음수 보험금 차단) — F-75 template에는 클램프 부재. 차순위: D1 F-14 '종합위험 수확감소보험금' `max(insurance_amount * (damage_rate - deductible_rate), 0)` — 클램프 포함 연산 구성은 코드와 가장 근접"
+    },
+    {
+      "codeId": "F-44",
+      "codeName": "경과비율(수확기 이전)",
+      "d1Id": "F-106",
+      "relation": "same",
+      "evidence": "코드 F-44: `alpha + (1 - alpha) * min(growth_days / standard_growth_days, 1)` ↔ D1 F-106 시설작물·버섯 경과비율(수확기 이전, α 가변): `alpha + (1 - alpha) * min(growth_days / standard_growth_days, 1.0)`. 변수 대응: alpha↔alpha(준비기 생산비 계수), growth_days↔growth_days(생장일수), standard_growth_days↔standard_growth_days(표준생장일수) — 변수명까지 완전 일치, 구조·연산 동일(1 vs 1.0 은 표기 차이). 차순위: D1 F-90 경과비율(생산비보장 수확기 이전, 고추/브로콜리) `preparation_coefficient + (1 - preparation_coefficient) * min(growth_days / standard_growth_days, 1.0)` — 동일 구조, 변수명만"
+    },
+    {
+      "codeId": "F-45",
+      "codeName": "경과비율(수확기 중)",
+      "d1Id": "F-107",
+      "relation": "variant",
+      "evidence": "코드 F-45: `max(1 - harvest_days / standard_harvest_days, 0)` ↔ D1 F-107 시설작물·버섯 경과비율(수확기 중): `1 - (harvest_days / standard_harvest_days)`. 변수 대응: harvest_days↔harvest_days(수확일수), standard_harvest_days↔standard_harvest_days(표준수확일수). ★차이: 코드는 `max(…, 0)` 하한 클램프로 음수(harvest_days > standard_harvest_days 시)를 0 으로 절단하나, D1 F-107 에는 클램프가 없어 음수 산출 가능 — 핵심 항 구조는 동일하나 경계 조건 처리가 상이. 차순위: D1 F-91 경과비율(생산비보장 수확기 중, 고추/브로콜리) `1 - (harvest_days / standard_harvest_days)` — F-107 과 동일 template 로 같은 클램프 부재 차이."
+    },
+    {
+      "codeId": "F-46",
+      "codeName": "고추 피해율",
+      "d1Id": "F-92",
+      "relation": "same",
+      "evidence": "코드 F-46: `area_damage_rate * avg_loss_ratio * (1 - uncompensated_rate)` ↔ D1 F-92 고추 피해율: `area_damage_rate * average_damage_severity_rate * (1 - uncovered_ratio)`. 변수 대응: area_damage_rate↔area_damage_rate(면적피해율), avg_loss_ratio↔average_damage_severity_rate(평균손해정도비율), uncompensated_rate↔uncovered_ratio(미보상비율). 이름(고추 피해율)·3인자 곱·(1-미보상비율) 구조 완전 일치, 변수명만 상이. 다른 후보 없음(D1 내 고추 피해율은 F-92 유일)."
+    },
+    {
+      "codeId": "F-47",
+      "codeName": "생산비보장보험금",
+      "d1Id": "F-104",
+      "relation": "same",
+      "evidence": "코드 F-47: `cultivated_area * unit_cost * elapsed_rate * damage_rate` ↔ D1 F-104 시설작물 생산비보장보험금(일반): `planted_area * unit_area_guaranteed_production_cost * progress_rate * damage_rate`. 변수 대응: cultivated_area↔planted_area(재배면적), unit_cost↔unit_area_guaranteed_production_cost(단위면적당 보장생산비), elapsed_rate↔progress_rate(경과비율), damage_rate↔damage_rate(피해율). 4인자 곱 구조 동일, 변수명만 상이. 차순위: D1 F-110(표고 톱밥배지)/F-111(느타리 균상)/F-114(양송이 균상)도 동일 4인자 구조이나 기준단위(배지수/균상면적)가 품목 특화 — F-104 가 '일반형'으로 가장 정확. (D1 F-86 고추 생산비보"
+    },
+    {
+      "codeId": "F-48",
+      "codeName": "생산비보장보험금 비례보상",
+      "d1Id": "F-105",
+      "relation": "same",
+      "evidence": "코드 F-48: `base_insurance * insured_amount / (unit_cost * cultivated_area)` ↔ D1 F-105 시설작물·버섯 비례보상 재계산: `original_payout * insurance_amount / (unit_guaranteed_production_cost * planted_count)`. 변수 대응: base_insurance↔original_payout(기 산출 생산비보장보험금), insured_amount↔insurance_amount(보험가입금액), unit_cost↔unit_guaranteed_production_cost(단위당 보장생산비), cultivated_area↔planted_count(재배 면적/원목/배지/병 수 — D1 은 단위를 일반화, 코드는 면적 명칭). 곱/나눗셈 구조·계수 완전 일치, 변수명만 상이. 다른 후보 없음(D1 F-153/F-154 별표8 비례분담은 L*(S_i/ΣS_k) 구조로 별개)."
+    },
+    {
+      "codeId": "F-49",
+      "codeName": "메밀 피해율",
+      "d1Id": "F-96",
+      "relation": "variant",
+      "evidence": "코드 F-49: `area_damage_rate * (1 - uncompensated_rate)` ↔ D1 F-96 '메밀 피해율 + 면적피해율 (도복/도복외 통합)': `((lodge_area * 0.70) + (non_lodge_area * average_damage_severity_rate)) / planted_area * (1 - uncovered_ratio)`. 변수 대응: area_damage_rate ↔ ((lodge_area*0.70 + non_lodge_area*average_damage_severity_rate)/planted_area) [D1은 면적피해율 산출을 본식에 인라인 통합], uncompensated_rate ↔ uncovered_ratio. 차이 = 산식 범위(코드는 2단 분해: F-49 피해율 + F-50 피해면적 / D1은 이름 그대로 '통합' 1식). 코드 F-50을 area_damage_rate에 대입하면 구조·계수(0.70) 완전 일치 — 계수"
+    },
+    {
+      "codeId": "F-50",
+      "codeName": "메밀 피해면적",
+      "d1Id": "F-96",
+      "relation": "variant",
+      "evidence": "코드 F-50: `lodging_area * 0.70 + non_lodging_area * avg_loss_ratio` ↔ D1 F-96 분자 부분식: `(lodge_area * 0.70) + (non_lodge_area * average_damage_severity_rate)`. 변수 대응: lodging_area ↔ lodge_area(도복 피해면적), 0.70 ↔ 0.70(계수 일치), non_lodging_area ↔ non_lodge_area(도복 외 피해면적), avg_loss_ratio ↔ average_damage_severity_rate(평균손해정도비율). 부분식 자체는 기호·계수 완전 일치. 차이 = D1에는 '메밀 피해면적' 독립 산식이 부재하고 F-96 통합식(`... / planted_area * (1 - uncovered_ratio)` 포함)의 부분식으로만 존재. D1 157건 전수에서 '메밀' 포함 산식은 F-85(경작불능)·F-95(생산비보장 보험금)·F"
+    },
+    {
+      "codeId": "F-51",
+      "codeName": "브로콜리 피해율",
+      "d1Id": "F-94",
+      "relation": "same",
+      "evidence": "코드 F-51: `area_damage_rate * crop_damage_rate * (1 - uncompensated_rate)` ↔ D1 F-94 '브로콜리 피해율': `area_damage_rate * crop_damage_rate * (1 - uncovered_ratio)`. 변수 대응: area_damage_rate ↔ area_damage_rate(면적피해율=피해면적㎡÷재배면적㎡), crop_damage_rate ↔ crop_damage_rate(작물피해율=피해인정계수 합계÷총 송이 수), uncompensated_rate ↔ uncovered_ratio(미보상비율). 3-인자 곱 구조·연산 완전 동일, 상이점은 미보상비율 변수명 표기(uncompensated_rate vs uncovered_ratio)뿐 — 허용 범위. 계수 없음(순수 곱 구조)이므로 계수 드리프트 해당 없음."
+    },
+    {
+      "codeId": "F-52",
+      "codeName": "고추 생산비보장보험금(병충해)",
+      "d1Id": "F-89",
+      "relation": "variant",
+      "evidence": "코드 F-52: `max(remaining_insured * elapsed_rate * damage_rate * disease_recognition_rate - remaining_insured * deductible_rate, 0)` ↔ D1 F-89 '고추 생산비보장 보험금 (병충해 있음 — 노지 고추만)': `(remaining_insurance * progress_rate * damage_rate * pest_grade_ratio) - deductible_amount`. 변수 대응: remaining_insured ↔ remaining_insurance(잔존보험가입금액, F-87 결과), elapsed_rate ↔ progress_rate(경과비율 F-90/F-91), damage_rate ↔ damage_rate(피해율 F-92), disease_recognition_rate ↔ pest_grade_ratio(병충해 등급별 인정비율), 코드 인라인 `remaining_insu"
+    },
+    {
+      "codeId": "F-53",
+      "codeName": "무화과 잔여수확량비율(9월)",
+      "d1Id": "F-156",
+      "relation": "variant",
+      "evidence": "코드 F-53: `max((67 - 1.13 * day_of_month) / 100, 0)` ↔ D1 F-156 '별표5 무화과 9월 잔여수확량 비율 (%)': `R = 67 - 1.13 * D`. 변수 대응: day_of_month ↔ D(사고발생일자, 9월 일자), 결과값 ↔ R(잔여수확량 비율 %). 계수 67·1.13 양쪽 완전 일치 — 계수 드리프트 없음. 차이 2건: ① 단위 스케일 — D1은 % 값(0~100), 코드는 `/100`으로 0..1 분수 ② 코드는 `max(..., 0)` 음수 클램프 보유, D1은 부재. 교차 확증: D1 F-48(무화과 8/1 이후 사고피해율) variables_schema에 '9월=(100-33)-1.13×사고일자' = 67-1.13×D로 동일 계수 기재. 차순위: F-155(8월: 100-1.06*D)·F-157(10월: 33-0.84*D)는 월 상이로 비대응."
+    },
+    {
+      "codeId": "F-54",
+      "codeName": "시설물 보험금",
+      "d1Id": "F-103",
+      "relation": "variant",
+      "evidence": "코드 F-54 '시설물 보험금': `max(damage_amount - deductible, 0)` ↔ D1 F-103 '농업용 시설물 보험금 (보험가입금액 < 보험가액)': `min(loss_amount - deductible_amount, insurance_amount)`. 변수 대응: damage_amount↔loss_amount(손해액), deductible↔deductible_amount(자기부담금). 차이: ①코드는 0 하한 플로어(max)만 있고 보험가입금액 상한 캡 부재, D1은 insurance_amount 상한 캡(min)만 있고 명시적 0 플로어 부재 ②D1 명칭에 '보험가입금액 < 보험가액' 조건 한정이 붙으나 코드는 무조건형. 차순위 후보: D1 F-21 '종합위험 비가림시설 보험금' `min(loss_amount - deductible, insurance_amount)`(F-103과 동일 구조, 비가림시설 한정). 참고: 코드와 문자 그대로 동일한 `max("
+    },
+    {
+      "codeId": "F-55",
+      "codeName": "시설물 자기부담금",
+      "d1Id": "F-128",
+      "relation": "variant",
+      "evidence": "코드 F-55 '시설물 자기부담금': `min(max(damage_amount * 0.10, min_deductible), max_deductible)` ↔ D1 F-128 '해가림시설 자기부담금 (10/100/10%)': `max(min(loss_amount * 0.10, 1000000), 100000)`. 변수 대응: damage_amount↔loss_amount(손해액), 계수 0.10↔0.10 일치, min_deductible↔리터럴 100000, max_deductible↔리터럴 1000000. 둘 다 '손해액×10%를 하한·상한 사이로 클램프' 구조(min/max 중첩 순서만 상이). 차이: ①D1은 하한 10만/상한 100만을 하드코딩한 해가림시설(인삼) 전용, 코드는 min/max를 변수화한 일반 '시설물'형(적용범위·계수 고정 여부 상이) ②D1 F-21 variables_schema에는 비가림시설 자기부담금이 '손해액×10%, 최소30만/최대100만, 피복재단독 최"
+    },
+    {
+      "codeId": "F-56",
+      "codeName": "시설작물 생산비보장보험금",
+      "d1Id": "F-104",
+      "relation": "same",
+      "evidence": "코드 F-56 '시설작물 생산비보장보험금': `cultivated_area * unit_cost * elapsed_rate * damage_rate` ↔ D1 F-104 '시설작물 생산비보장보험금 (일반)': `planted_area * unit_area_guaranteed_production_cost * progress_rate * damage_rate`. 4인자 곱 구조 1:1 대응 — cultivated_area↔planted_area(재배면적), unit_cost↔unit_area_guaranteed_production_cost(단위면적당 보장생산비), elapsed_rate↔progress_rate(경과비율, D1 스키마가 F-106/F-107 참조 명시), damage_rate↔damage_rate(피해율, F-108). 계수·연산 차이 없음, 변수명만 상이 = same. 차순위: D1 F-111/F-114(느타리·양송이 균상재배, 동일 템플릿이나 버섯 품목 한정). ★I"
+    },
+    {
+      "codeId": "F-57",
+      "codeName": "시설작물 경과비율(수확기 이전)",
+      "d1Id": "F-106",
+      "relation": "same",
+      "evidence": "코드 F-57 '시설작물 경과비율(수확기 이전)': `alpha + (1 - alpha) * min(growth_days / standard_growth_days, 1)` ↔ D1 F-106 '시설작물·버섯 경과비율 (수확기 이전, α 가변)': `alpha + (1 - alpha) * min(growth_days / standard_growth_days, 1.0)`. 변수 대응: alpha↔alpha(준비기 생산비 계수), growth_days↔growth_days(생장일수), standard_growth_days↔standard_growth_days(표준생장일수). 구조·계수·연산 완전 일치 — 유일한 표기 차이는 상한 리터럴 `1` vs `1.0`(동일 값 표기 차이) = same. D1 variables_schema는 α를 작물별 가변(표고 톱밥배지 0.814/느타리 균상 0.697/양송이 균상 0.703 등)으로 문서화. 차순위: D1 F-90(고추/브로콜리 생산비보장 수확"
+    },
+    {
+      "codeId": "F-58",
+      "codeName": "시설작물 경과비율(수확기 중)",
+      "d1Id": "F-107",
+      "relation": "variant",
+      "evidence": "코드 F-58 '시설작물 경과비율(수확기 중)': `max(1 - harvest_days / standard_harvest_days, 0)` ↔ D1 F-107 '시설작물·버섯 경과비율 (수확기 중)': `1 - (harvest_days / standard_harvest_days)`. 변수 대응: harvest_days↔harvest_days(수확일수), standard_harvest_days↔standard_harvest_days(표준수확일수). 핵심 항 `1 - harvest_days/standard_harvest_days`는 일치하나, 코드에만 `max(…, 0)` 0 하한 클램프가 존재하고 D1 템플릿에는 부재 — harvest_days > standard_harvest_days 입력 시 D1 산식은 음수 경과비율 가능(구조 차이) = variant. 차순위: D1 F-91 '경과비율 (생산비보장 — 수확기 중, 고추/브로콜리)' — F-107과 문자 동일 템플릿(역시 클램프"
+    },
+    {
+      "codeId": "F-59",
+      "codeName": "시설작물 피해율",
+      "d1Id": "F-108",
+      "relation": "same",
+      "evidence": "코드 F-59 'damage_area_rate * loss_degree_rate * (1 - uncompensated_rate)' ↔ D1 F-108 '시설작물 피해율' 'damage_ratio * damage_severity_rate * (1 - uncovered_ratio)'. 구조 동일(3인자 A×B×(1−C)), 이름 동일. 변수 대응: damage_area_rate↔damage_ratio(피해비율=피해면적÷재배면적), loss_degree_rate↔damage_severity_rate(손해정도비율, 별표6), uncompensated_rate↔uncovered_ratio(미보상비율). 변수명만 상이, 계수·연산 차이 없음. D1 내 동명 중복 후보 없음(157건 이름 스캔 '시설작물 피해율' 유일)."
+    },
+    {
+      "codeId": "F-60",
+      "codeName": "장미 생산비보장보험금(나무생존)",
+      "d1Id": "NONE",
+      "relation": "none",
+      "evidence": "코드 F-60 'cultivated_area * unit_cost_alive * damage_rate'(3인자, 경과비율 없음, 나무생존시 보장생산비). D1 157건 전수 스캔(name+equation_template+variables_schema, 키워드 장미/rose/alive/나무/생존): 장미 전용 산식 부재. 차순위 후보 D1 F-104 '시설작물 생산비보장보험금 (일반)' = 'planted_area * unit_area_guaranteed_production_cost * progress_rate * damage_rate' 는 progress_rate(경과비율) 4번째 인자 존재 + 나무생존/고사 보장생산비 구분 부재로 구조 불일치 — F-104의 정확 대응물은 코드 F-56(시설작물 일반: 'cultivated_area * unit_cost * elapsed_rate * damage_rate')로 별도 매칭됨. D1 3항곱 산식 전수 스캔에서도 면적×생존단가×피해율 형"
+    },
+    {
+      "codeId": "F-61",
+      "codeName": "부추 생산비보장보험금",
+      "d1Id": "NONE",
+      "relation": "none",
+      "evidence": "코드 F-61 'cultivated_area * unit_cost * damage_rate * 0.70'(경과비율 없이 70% 고정계수). D1 157건 전수 스캔: '부추' 문자열 0건(name/template/variables 전 필드). 0.70 계수 보유 D1 산식 전수 대조 — F-96 메밀 '((lodge_area * 0.70) + …)'(도복면적 가중, 구조 상이), F-142 산란계 'max(egg_price - egg_production_cost, 10) * 0.70 * (550 - accident_age_days)'(축산, 무관) — 면적×보장생산비×피해율×0.70 형태 부재. 차순위 후보 D1 F-104(시설작물 일반)는 progress_rate 인자 사용·0.70 계수 없음으로 불일치(코드 F-56과 매칭). ⇒ 부추 예외 산식(70% 계수) D1 누락."
+    },
+    {
+      "codeId": "F-62",
+      "codeName": "표고버섯(원목) 생산비보장보험금",
+      "d1Id": "F-109",
+      "relation": "same",
+      "evidence": "코드 F-62 'log_count * unit_cost_per_log * damage_rate' ↔ D1 F-109 '표고버섯(원목재배) 생산비보장보험금' 'planted_log_count * unit_log_guaranteed_production_cost * damage_rate'. 3인자 곱 구조·순서 동일, 양쪽 모두 경과비율 항 없음(원목재배 특성 일치). 변수 대응: log_count↔planted_log_count(재배원목수), unit_cost_per_log↔unit_log_guaranteed_production_cost(원목당 보장생산비), damage_rate↔damage_rate(피해율, D1 variables_schema 'F-108 결과 — 피해비율=피해원목수/재배원목수'). ※ D1 ID공간은 코드와 별개(D1 F-62=벼 재이앙·재직파, 무관) — 의미 매칭 기준."
+    },
+    {
+      "codeId": "F-63",
+      "codeName": "표고버섯(톱밥배지) 생산비보장보험금",
+      "d1Id": "F-110",
+      "relation": "same",
+      "evidence": "코드 F-63 'bag_count * unit_cost_per_bag * elapsed_rate * damage_rate' ↔ D1 F-110 '표고버섯(톱밥배지재배) 생산비보장보험금' 'planted_substrate_count * unit_substrate_guaranteed_production_cost * progress_rate * damage_rate'. 4인자 곱 구조·순서 동일. 변수 대응: bag_count↔planted_substrate_count(재배배지수), unit_cost_per_bag↔unit_substrate_guaranteed_production_cost(배지당 보장생산비), elapsed_rate↔progress_rate(경과비율 — D1 variables_schema 'F-106 α=0.814 / F-107' 참조, 코드측 경과비율은 F-57/F-58 대응), damage_rate↔damage_rate(피해율). 계수·연산 차이 없음, 변수명만 상이."
+    },
+    {
+      "codeId": "F-64",
+      "codeName": "시설물 감가상각액(단동하우스)",
+      "d1Id": "NONE",
+      "relation": "none",
+      "evidence": "코드: original_value * min(0.08 * elapsed_years, 1). D1 157 전수 스캔 — 명칭에 '감가/상각/경년/내용연수' 포함 0건, template·variables_schema 에 '0.08'·'elapsed_years'·연 단위 경과연수 변수 0건(유일한 'year' 히트는 인삼 per_year_reference_yield F-99/F-126 로 무관). 시설물 계열 D1 산식(F-101~F-103, F-21)은 전부 보험금 지급식이며 감가상각액 산출식 아님. 주의: D1 의 동일 ID F-64 는 '조사료용 벼 경작불능 보험금'(insurance_amount * coverage_rate * progress_rate)으로 전혀 다른 산식 — ID 충돌이며 대응물 아님."
+    },
+    {
+      "codeId": "F-65",
+      "codeName": "시설물 감가상각액(연동하우스)",
+      "d1Id": "NONE",
+      "relation": "none",
+      "evidence": "코드: original_value * min(0.053 * elapsed_years, 1). D1 157 전수 스캔 — 계수 '0.053' 출현 0건, 감가상각/경년감가율 계열 명칭 0건, elapsed_years 류 경과연수 변수 0건. F-64(단동 0.08)와 동일하게 D1 에 감가상각 산식 카테고리 자체가 부재. D1 의 동일 ID F-65 는 '논작물 수확감소보험금'(insurance_amount * (damage_rate - deductible_rate))으로 무관."
+    },
+    {
+      "codeId": "F-66",
+      "codeName": "시설물 시가",
+      "d1Id": "NONE",
+      "relation": "none",
+      "evidence": "코드: max(original_value - depreciation, 0) — 시가 = 재조달가액 − 감가상각액. D1 157 전수 스캔 — 명칭 '시가' 0건, 변수 'depreciation' 0건, '재조달가액 − 감가' 구조의 감산식 부재. 형태상 근접한 D1 F-148 '잔존보험가입금액'(insurance_amount - paid_insurance)은 기지급 보험금 차감으로 의미가 다르고, F-102 의 replacement_value(재조달가액)는 분모 변수로만 존재하며 시가 산출식 아님. D1 의 동일 ID F-66 은 '수확감소 피해율 (논작물 일반)'으로 무관."
+    },
+    {
+      "codeId": "F-67",
+      "codeName": "비례보상 보험금",
+      "d1Id": "F-101",
+      "relation": "variant",
+      "evidence": "코드: max(damage_amount - deductible, 0) * (insured_amount / insured_value). D1 F-101 '해가림시설 보험금 (보험가입금액 ≥ 보험가액)': min(insurance_amount, max(0, loss_amount - deductible_amount) * (insurance_amount / actual_value)). 내부 핵심식은 기호 단위 일치 — damage_amount↔loss_amount(손해액), deductible↔deductible_amount(자기부담금), insured_amount↔insurance_amount(보험가입금액), insured_value↔actual_value(보험가액). ★차이: (1) D1 은 외곽 min(insurance_amount, ·) 지급 상한 캡 존재, 코드는 캡 없음 (2) D1 은 해가림시설 + 보험가입금액≥보험가액 조건 한정, 코드는 범용 명칭. 차순위 후보: F-152 "
+    },
+    {
+      "codeId": "F-68",
+      "codeName": "무화과 잔여수확량비율(10월)",
+      "d1Id": "F-157",
+      "relation": "variant",
+      "evidence": "코드: max((33 - 0.84 * day_of_month) / 100, 0). D1 F-157 '별표5 무화과 10월 잔여수확량 비율 (%)': R = 33 - 0.84 * D (variables_schema: R=잔여수확량 비율(%), D=사고발생일자(10월 일자)). 계수 33·0.84 완전 일치, 변수 대응 day_of_month↔D(10월 사고발생 일자). ★차이(계수 드리프트 아님): (1) 단위 표현 — D1 은 % 값, 코드는 /100 으로 소수 비율화 (2) 코드만 max(·, 0) 음수 클램프(범위 가드) 존재. 65↔60 류 수치 드리프트 없음. 참고: 8월분 F-155(100 - 1.06*D)·9월분 F-156(67 - 1.13*D)은 월이 달라 비대상. D1 의 동일 ID F-68 은 '마늘 표준 피해율'로 무관."
+    }
+  ]
+}
