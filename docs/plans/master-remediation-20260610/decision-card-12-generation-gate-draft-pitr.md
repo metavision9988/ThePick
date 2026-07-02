@@ -33,3 +33,5 @@
 **(a) 명문화 채택 + (b-2) mock(격리 스테이징) 테이블**. 근거: ① production 본체 무접촉 = 가역 ② 기결재 0038 D-2 불변 ③ Hard Limit 의 "격리 후 인간 검수" 의도와 구조 정합 ④ (b-1) 재생성 비용은 지연될수록 증가. 단 (b-2)의 컬럼 드리프트·승격 경로는 S11 ADR + L3 plan 에서 Binary Gate("무게이트 적재 경로 0")로 못박는 조건부. 두 안 모두 SQL 작성·production 적용 = L3 plan 승인 후이며 본 카드 채택만으로 코드 착수하지 않음(2026-05-29 실수 로그 절차 — approved_by 명시 전환 선행).
 
 > 진산 확인란: (a) ☑ 게이트 선행 원칙 명문화 채택 / ☐ (a) 보류 ‖ (b) ☐ b-1 CHECK 재정의 / ☑ b-2 mock_exam_questions 테이블 **(진산 2026-07-02 "권고대로")** / ☐ (b) 보류
+>
+> **집행 기록 (2026-07-02)**: (a) = `docs/plans/phase2-entry-gate-checklist.md` 신설(G-WS6 ⑤ 충족 형식·진입 조건 5항 정직 표기) + (b-2) = `docs/plans/ws-6c-mock-exam-questions.plan.md` L3 plan 작성(스키마 초안·승격 계약·G-6c-1~7 — **SQL 0줄**, 착수 = plan §7 결재란 승인 후).
