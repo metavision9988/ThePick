@@ -17,6 +17,8 @@ import { createStudyRoutes, type StudyBindings } from '../routes.js';
 // Step 3-UX-5a — normalize/isAnswerCorrect 로직은 packages/learning-modes로 분리.
 // 본 테스트는 분리 후에도 동일 회귀 정합 검증 (Pass 1 CRIT-1 + Pass 1 M1).
 import { gradeFillBlank, normalizeAnswer, todayDateString } from '@thepick/learning-modes';
+// ADR-048 (결재 #10) — 구현-정의 일치 테스트(G-WS5 ④)가 저장값을 D2 산식으로 역검증.
+import { computeWeakScore, normalizeStability } from '@thepick/srs';
 
 /** Step 3-UX-5 이전 호환 helper — gradeFillBlank wrapper. */
 function isAnswerCorrect(expected: string | null, userAnswer: string): boolean {
@@ -746,6 +748,156 @@ describe('POST /api/study/grade', () => {
       .prepare(`SELECT total_reviews FROM user_progress WHERE user_id='u2' AND card_id='eq-1'`)
       .get() as { total_reviews: number };
     expect(u2Row.total_reviews).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ADR-048 (결재 #10 (a) 단계 집행) — weak_score D2 정의 복원 구현-정의 일치 (G-WS5 ④)
+//   α축 = subject 단위 사용자 정답률 (user_progress ⋈ exam_questions.subject 집계)
+//   β축 = 카드 자신의 FSRS stability 폴백 (node FSRS 누적 미구현 — 2단계 이연)
+// 저장된 weak_score 를 D2 산식(computeWeakScore)으로 역검증 — FSRS 내부값 하드코딩 없이
+// 영속 row 의 fsrs_stability 를 β 입력으로 재계산해 α 배선(집계 vs 카드 단위)을 판별한다.
+// ---------------------------------------------------------------------------
+
+describe('POST /api/study/grade — weak_score D2 복원 (ADR-048)', () => {
+  function progressRowFor(
+    userId: string,
+    questionId: string,
+  ): { weak_score: number; fsrs_stability: number } {
+    return ctx.raw
+      .prepare(
+        `SELECT weak_score, fsrs_stability FROM user_progress
+           WHERE user_id = ? AND card_id = ? AND card_type = 'exam' AND node_id IS NULL`,
+      )
+      .get(userId, questionId) as { weak_score: number; fsrs_stability: number };
+  }
+
+  it('α축 — subject 집계가 여러 카드 리뷰를 횡단 반영 (카드 1건 아님) + 타과목 격리', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-s1', subject: '농작물재해보험 손해평가', answer: '1' });
+    seedExamQuestion({ id: 'eq-s2', subject: '농작물재해보험 손해평가', answer: '1' });
+    seedExamQuestion({ id: 'eq-x1', subject: '상법(보험편)', answer: '1' });
+    // 같은 과목 다른 카드의 이력 — subject 집계에 반영되어야 함 (4시도 1정답).
+    seedProgressForQuestion({
+      userId: 'u1',
+      questionId: 'eq-s1',
+      totalReviews: 4,
+      correctCount: 1,
+    });
+    // 다른 과목 poison — 집계에 새면 rate 가 크게 왜곡됨 (10/10 전부 정답).
+    seedProgressForQuestion({
+      userId: 'u1',
+      questionId: 'eq-x1',
+      totalReviews: 10,
+      correctCount: 10,
+    });
+
+    const res = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-s2', userAnswer: '1' }),
+    });
+    expect(res.status).toBe(200);
+
+    const row = progressRowFor('u1', 'eq-s2');
+    // 과목 집계: (1 + 본리뷰 정답 1) / (4 + 본리뷰 1) = 2/5 = 0.4 — eq-x1 10/10 은 제외.
+    const expected = computeWeakScore({
+      subjectCorrectRate: 2 / 5,
+      conceptStability: row.fsrs_stability,
+    });
+    expect(row.weak_score).toBeCloseTo(expected, 10);
+    // 반증: 카드 단위(구 Silent Pivot)라면 rate=1/1=1 → α성분 0 으로 더 낮은 값이어야 함.
+    const cardLevelWould = computeWeakScore({
+      subjectCorrectRate: 1,
+      conceptStability: row.fsrs_stability,
+    });
+    expect(row.weak_score).toBeGreaterThan(cardLevelWould + 0.3);
+  });
+
+  it('α축 — 다른 user 의 같은 과목 이력은 집계 제외 (사용자 격리)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedUser('u2', 'u2@test.com');
+    seedExamQuestion({ id: 'eq-iso-s', subject: '재배학', answer: '1' });
+    seedExamQuestion({ id: 'eq-iso-t', subject: '재배학', answer: '1' });
+    // u2 의 같은 과목 대량 오답 이력 — u1 집계에 새면 안 됨.
+    seedProgressForQuestion({
+      userId: 'u2',
+      questionId: 'eq-iso-s',
+      totalReviews: 10,
+      correctCount: 0,
+    });
+
+    const res = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-iso-t', userAnswer: '1' }),
+    });
+    expect(res.status).toBe(200);
+
+    const row = progressRowFor('u1', 'eq-iso-t');
+    // u1 의 과목 이력은 본 리뷰 1건뿐 → rate = 1/1.
+    const expected = computeWeakScore({
+      subjectCorrectRate: 1,
+      conceptStability: row.fsrs_stability,
+    });
+    expect(row.weak_score).toBeCloseTo(expected, 10);
+  });
+
+  it('α축 — subject NULL 문항은 카드 단위 폴백 (NULL 을 과목으로 뭉치지 않음)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-n1', subject: null, answer: '1' });
+    seedExamQuestion({ id: 'eq-n2', subject: null, answer: '1' });
+    // NULL-subject poison — NULL 끼리 집계됐다면 rate 왜곡 (5시도 0정답).
+    // (seed 고정 FSRS 값은 본 카드가 재채점되지 않는 한 FSRS 미접촉 — 집계 대상만.)
+    seedProgressForQuestion({
+      userId: 'u1',
+      questionId: 'eq-n1',
+      totalReviews: 5,
+      correctCount: 0,
+    });
+    // 채점 카드 자신의 이력은 실제 /grade 2회로 구성 (정답 1 + 오답 1 = UPDATE 경로 검증).
+    await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-n2', userAnswer: '1' }),
+    });
+    const res = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-n2', userAnswer: '9' }),
+    });
+    expect(res.status).toBe(200);
+
+    const row = progressRowFor('u1', 'eq-n2');
+    // 카드 단위 폴백: (정답 1) / (2시도) = 0.5. NULL 횡단 집계라면 (0+1)/(5+2) = 1/7 로 달라짐.
+    const expected = computeWeakScore({
+      subjectCorrectRate: 1 / 2,
+      conceptStability: row.fsrs_stability,
+    });
+    expect(row.weak_score).toBeCloseTo(expected, 10);
+  });
+
+  it('β축 폴백 — 영속된 카드 fsrs_stability 로 β 성분 정합 (2단계 전 정직 폴백)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-beta', subject: '수확량조사', answer: '1' });
+
+    const res = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-beta', userAnswer: '1' }),
+    });
+    expect(res.status).toBe(200);
+
+    const row = progressRowFor('u1', 'eq-beta');
+    // α성분 0 (rate 1/1) → weak_score 전체가 β·(1 − normalize(카드 stability)) 와 일치해야 함.
+    const expected = computeWeakScore({
+      subjectCorrectRate: 1,
+      conceptStability: row.fsrs_stability,
+    });
+    expect(row.weak_score).toBeCloseTo(expected, 10);
+    // 첫 정답 카드 stability 는 마스터 임계(30일) 미만 → β 폴백이 실제로 기여 (0 아님).
+    expect(normalizeStability(row.fsrs_stability)).toBeLessThan(1);
+    expect(row.weak_score).toBeGreaterThan(0);
   });
 });
 

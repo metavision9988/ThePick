@@ -67,6 +67,8 @@ export interface ScheduleReviewResult {
  *
  * subjectCorrectRate: 사용자의 해당 과목 정답률 (0~1)
  * conceptStability: 해당 concept의 FSRS stability (0~∞, 정규화 필요)
+ *   ★ node 단위 FSRS 누적 경로 구현 전까지 caller 가 카드 자신의 stability 를
+ *   폴백으로 전달할 수 있다 (ADR-048 2단계 이연 — 폴백 사실은 caller 주석 명시 의무).
  */
 export interface WeakScoreInput {
   readonly subjectCorrectRate: number;

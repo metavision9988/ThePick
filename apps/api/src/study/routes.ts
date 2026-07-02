@@ -1179,10 +1179,45 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       });
       const nextState = reviewResult.nextState;
 
-      // weak_score 계산 — subjectCorrectRate + conceptStability (D2 lock).
+      // weak_score 산출 — ADR-048 (결재 #10 (a) D2 정의 복원, 단계 집행 1단계):
+      //   α축 = subject 단위 사용자 정답률 (user_progress ⋈ exam_questions.subject 집계
+      //         + 본 리뷰 1건 delta 가산). subject NULL/'' 문항은 과목 축 부재 → 카드 단위 폴백.
+      //   β축 = ★카드 자신의 FSRS stability **폴백** — D2 원정의(concept 노드 stability)는
+      //         node 단위 FSRS 누적 경로 미구현(progress/routes.ts 고정 시드)이라 2단계 이연.
+      //         폴백 사실을 숨기지 않는다 (ADR-048 §3).
       const newTotal = Number(existing?.total_reviews ?? 0) + 1;
       const newCorrect = Number(existing?.correct_count ?? 0) + (isCorrect ? 1 : 0);
-      const subjectCorrectRate = newTotal > 0 ? newCorrect / newTotal : 0;
+      const cardCorrectRate = newTotal > 0 ? newCorrect / newTotal : 0;
+      let subjectCorrectRate = cardCorrectRate;
+      if (question.subject !== null && question.subject !== '') {
+        try {
+          const subjectAgg = await c.env.DB.prepare(
+            `SELECT COALESCE(SUM(up.total_reviews), 0) AS subject_total,
+                    COALESCE(SUM(up.correct_count), 0) AS subject_correct
+               FROM user_progress up
+               JOIN exam_questions eq ON eq.id = up.card_id
+              WHERE up.user_id = ?
+                AND up.card_type = 'exam'
+                AND up.node_id IS NULL
+                AND eq.subject = ?`,
+          )
+            .bind(userId, question.subject)
+            .first<{ subject_total: number; subject_correct: number }>();
+          // 집계는 UPDATE/INSERT 전 스냅샷 — 본 리뷰 1건을 delta 가산해 post-review 과목 성적.
+          const subjectTotal = Number(subjectAgg?.subject_total ?? 0) + 1;
+          const subjectCorrect = Number(subjectAgg?.subject_correct ?? 0) + (isCorrect ? 1 : 0);
+          subjectCorrectRate = subjectCorrect / subjectTotal;
+        } catch (err) {
+          // 집계 실패 시 채점 가용성 우선 — 카드 단위 폴백으로 강등 + warn 로깅 (무음 아님).
+          // study_reviews INSERT 실패와 동일 계열 (보조 신호 강등, core UPSERT 비차단).
+          logger.warn('subject aggregate failed (weak_score card-level fallback)', {
+            err: err instanceof Error ? err.message : String(err),
+            userId,
+            questionId,
+            subject: question.subject,
+          });
+        }
+      }
       const weakScore = computeWeakScore({
         subjectCorrectRate,
         conceptStability: nextState.stability,
