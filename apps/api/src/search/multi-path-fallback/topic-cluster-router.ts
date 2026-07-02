@@ -55,6 +55,7 @@ import { TRUTH_WEIGHTS, type ExamId, type NodeType } from '@thepick/shared';
 import { parsePageRefToInt } from '../../vectorize/page-ref.js';
 import { TOPIC_CLUSTER_NODE_TYPE } from '../../vectorize/topic-cluster-fetcher.js';
 import {
+  STAGE1_TABLE_VECTOR_EXCLUDE_PREFIXES,
   UserSearchError,
   type UserSearchD1,
   type UserSearchHit,
@@ -114,8 +115,16 @@ export const KNOWLEDGE_NODE_NODE_TYPE = 'knowledge_node';
  *   TROW- : table_headers.id (row axis)
  *   TCOL- : table_headers.id (col axis)
  *   TCELL-: table_cells.id
+ *
+ * 표 prefix 4종은 `STAGE1_TABLE_VECTOR_EXCLUDE_PREFIXES`(user-search.ts,
+ * ADR-047 §D-3)가 단일 진실원 — Stage 1 잠식 필터와 목록 drift 차단.
+ * TC- 는 본 Stage 3(cluster 임베딩 2nd query = cluster 끼리 최고 cosine)
+ * 전용 추가 제외분.
  */
-export const STAGE3_NODE_ID_EXCLUDE_PREFIXES = ['TC-', 'TBL-', 'TROW-', 'TCOL-', 'TCELL-'] as const;
+export const STAGE3_NODE_ID_EXCLUDE_PREFIXES = [
+  'TC-',
+  ...STAGE1_TABLE_VECTOR_EXCLUDE_PREFIXES,
+] as const;
 
 /** Stage 3 topic cluster top-K. */
 export const TOPIC_CLUSTER_TOP_K = 3;

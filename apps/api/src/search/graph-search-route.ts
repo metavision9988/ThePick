@@ -22,6 +22,12 @@
  *
  * fail-loud: graph-walk / D1 실패는 빈 결과로 삼키지 않고 전파 (CLAUDE.md
  *   빈 catch 금지). 시드 0건(graceful/stage2=0)은 정상 — 확장 미적용 명시.
+ *
+ * debug 플래그 (MASTER_PLAN WS-4 4c, 기본 off — 응답 계약 additive):
+ *   (a) `graphExpansion.expandedNodes` 확장 전체집합 surface (랭크미달 vs
+ *       미도달 진단, G-WS4 ③)
+ *   (b) query 상한 500 → GRAPH_QUERY_DEBUG_MAX_LENGTH 측정 경로 한정 우회
+ *       (golden Q-004 583자 영구 제외 해소, G-WS4 ④ — 공개 계약 500 불변)
  */
 
 import { Hono } from 'hono';
@@ -74,19 +80,74 @@ export interface GraphSearchRouteBindings {
  */
 export const GRAPH_SEED_WALK_LIMIT = 5;
 
-const GraphSearchBodySchema = z.object({
-  examId: z.string().min(1),
-  query: z.string().min(1).max(500),
-  topK: z.number().int().min(1).max(MAX_RESULT_TOP_K).default(DEFAULT_RESULT_TOP_K),
-  /**
-   * graph-walk maxDepth. HTTP 계약 상한 = 엔진 hard ceiling
-   * `MAX_ALLOWED_DEPTH`(D-2=4). 초과 시 silent clamp 아닌 **400 정직 거부**
-   * (S5-5 Pass3 Minor-1). 엔진 clampInt 는 방어선으로 잔존(이중 방어).
-   */
-  maxDepth: z.number().int().min(1).max(MAX_ALLOWED_DEPTH).optional(),
-  /** graph-walk resultCap. HTTP 상한 = 엔진 `MAX_ALLOWED_RESULT_CAP`. */
-  resultCap: z.number().int().min(1).max(MAX_ALLOWED_RESULT_CAP).optional(),
-});
+/**
+ * 공개 계약 query 상한 — 기존 500 **유지** (`/api/search` routes.ts:61 정합,
+ * DoS/임베딩 비용 가드). MASTER_PLAN WS-4 4c "query 500자 천장 처리" 는
+ * 공개 계약 분리가 아닌 **측정 경로 한정 우회**(debug 플래그 결합 상향)로
+ * 처분 — 보수적 택1.
+ */
+export const GRAPH_QUERY_PUBLIC_MAX_LENGTH = 500;
+
+/**
+ * debug(측정) 플래그 결합 시 query 절대 상한 — golden Q-004(583자, queryBody
+ * 정화로도 미회복 → 종전 영구 제외)와 정화 전 최장 golden(Q-015 원문 922자)
+ * 을 여유 있게 커버. bge-m3 입력 한도(8192 tokens) 대비 안전 + rate-limit
+ * (60/min per IP) 병행으로 남용 표면 bounded. 무제한이 아닌 절대 상한 유지
+ * (Reality Anchor — 측정 경로도 계약은 있다).
+ */
+export const GRAPH_QUERY_DEBUG_MAX_LENGTH = 2000;
+
+const GraphSearchBodySchema = z
+  .object({
+    examId: z.string().min(1),
+    query: z.string().min(1).max(GRAPH_QUERY_DEBUG_MAX_LENGTH),
+    topK: z.number().int().min(1).max(MAX_RESULT_TOP_K).default(DEFAULT_RESULT_TOP_K),
+    /**
+     * graph-walk maxDepth. HTTP 계약 상한 = 엔진 hard ceiling
+     * `MAX_ALLOWED_DEPTH`(D-2=4). 초과 시 silent clamp 아닌 **400 정직 거부**
+     * (S5-5 Pass3 Minor-1). 엔진 clampInt 는 방어선으로 잔존(이중 방어).
+     */
+    maxDepth: z.number().int().min(1).max(MAX_ALLOWED_DEPTH).optional(),
+    /** graph-walk resultCap. HTTP 상한 = 엔진 `MAX_ALLOWED_RESULT_CAP`. */
+    resultCap: z.number().int().min(1).max(MAX_ALLOWED_RESULT_CAP).optional(),
+    /**
+     * 진단·측정 플래그 (MASTER_PLAN WS-4 4c, 기본 off). true 시:
+     *   (a) `graphExpansion.expandedNodes` 로 graph 확장 전체집합 surface
+     *       — 랭크미달 vs 미도달 판별(Binary Gate G-WS4 ③) 재료.
+     *   (b) query 상한 500 → `GRAPH_QUERY_DEBUG_MAX_LENGTH` 상향
+     *       — golden Q-004(583자) 측정 포함(G-WS4 ④), 공개 계약 500 불변.
+     * 응답 계약 additive — 기존 필드 전부 불변.
+     */
+    debug: z.boolean().default(false),
+  })
+  .superRefine((data, ctx) => {
+    // 공개 계약(debug 미사용) = 종전 그대로 500 상한. debug=true 만 측정
+    // 경로 한정 우회 — silent 완화 아닌 명시 opt-in.
+    if (!data.debug && data.query.length > GRAPH_QUERY_PUBLIC_MAX_LENGTH) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.too_big,
+        maximum: GRAPH_QUERY_PUBLIC_MAX_LENGTH,
+        type: 'string',
+        inclusive: true,
+        path: ['query'],
+        message: `query length > ${GRAPH_QUERY_PUBLIC_MAX_LENGTH} (public contract; debug flag required)`,
+      });
+    }
+  });
+
+/**
+ * debug=true 한정 확장 노드 진단 뷰 — `GraphWalkNode` 에서 description 만
+ * 제외(법령 본문 텍스트 payload 비대 차단; 진단은 id/depth/weight 로 충분).
+ */
+export interface GraphExpansionDebugNode {
+  readonly id: string;
+  /** 시드로부터 hop 거리 (시드별 최단 — 다중 시드 재도달은 첫 도달분 1회). */
+  readonly depth: number;
+  readonly type: string;
+  readonly name: string;
+  readonly truthWeight: number;
+  readonly pageRef: string | null;
+}
 
 interface GraphExpansionMeta {
   readonly applied: boolean;
@@ -103,6 +164,14 @@ interface GraphExpansionMeta {
   readonly maxDepth: number;
   readonly resultCap: number;
   readonly edgeTypeWhitelist: ReadonlyArray<string>;
+  /**
+   * debug=true 한정 — graph 확장 전체집합 (dedup 후, baseline 교집합 제외분.
+   * 교집합 노드는 `baseline.results` 로 이미 관측 가능). 진단 규약(MASTER_PLAN
+   * WS-4 4c / G-WS4 ③): 정답 노드가 이 집합에 있으나 `results` top-K 밖 =
+   * **랭크미달**, 이 집합에도 `baseline.results` 에도 없음 = **미도달**.
+   * 기본 off — 응답 계약 additive (기존 소비자 shape 불변).
+   */
+  readonly expandedNodes?: ReadonlyArray<GraphExpansionDebugNode>;
 }
 
 interface GraphSearchResponse {
@@ -135,7 +204,7 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
     if (!parsed.success) {
       return c.json({ error: ErrorCode.VALIDATION_ERROR, details: parsed.error.format() }, 400);
     }
-    const { examId: rawExamId, query, topK, maxDepth, resultCap } = parsed.data;
+    const { examId: rawExamId, query, topK, maxDepth, resultCap, debug } = parsed.data;
 
     let examId: ExamId;
     try {
@@ -161,6 +230,9 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
         seedWalkCount: meta.seedWalkCount,
         expandedNodeCount: meta.expandedNodeCount,
         truncated: meta.truncated,
+        // 측정 경로 식별 — debug=true 는 query 상한 우회·payload 확대 요청이라
+        // on-call 이 정상/측정 트래픽을 로그에서 분리 가능해야 한다 (4c).
+        debug,
         elapsedMs: Date.now() - startedAt,
       });
     };
@@ -197,6 +269,8 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
           maxDepth: maxDepth ?? 0,
           resultCap: resultCap ?? 0,
           edgeTypeWhitelist: [],
+          // debug 계약 일관성 — 플래그 on 이면 필드 상시 존재 (walk 미실행 = 빈 집합)
+          ...(debug ? { expandedNodes: [] as ReadonlyArray<GraphExpansionDebugNode> } : {}),
         };
         const resp: GraphSearchResponse = {
           query,
@@ -276,6 +350,22 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
         maxDepth: effectiveMaxDepth,
         resultCap: effectiveResultCap,
         edgeTypeWhitelist,
+        // WS-4 4c: debug=true 한정 확장 전체집합 surface — 랭크미달 vs 미도달
+        // 진단 (description 제외 = GraphExpansionDebugNode 주석 참조).
+        ...(debug
+          ? {
+              expandedNodes: [...expandedNodes.values()].map(
+                (n): GraphExpansionDebugNode => ({
+                  id: n.id,
+                  depth: n.depth,
+                  type: n.type,
+                  name: n.name,
+                  truthWeight: n.truthWeight,
+                  pageRef: n.pageRef,
+                }),
+              ),
+            }
+          : {}),
       };
       const resp: GraphSearchResponse = {
         query,

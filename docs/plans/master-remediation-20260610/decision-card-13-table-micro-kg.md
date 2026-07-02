@@ -58,3 +58,5 @@
   부분적 — ADR 에 한계 명기).
 
 > 진산 확인란: ☐ (a) 채널 단일화 마이그 즉시 + 필터 / ☑ (b) ADR 결정 영속·마이그 이연 + 필터 즉시 **(진산 2026-07-02 "권고대로")** / ☐ (c) 표 전용 인덱스 분리 / ☐ 보류
+>
+> **집행 기록 (2026-07-02)**: (b) 집행 완료 — Stage 1 표 벡터 prefix post-filter(`apps/api/src/search/user-search.ts` `STAGE1_TABLE_VECTOR_EXCLUDE_PREFIXES` + 테스트 5건, $nin 미작동 실측으로 prefix 폴백 직행) + **ADR-047 Accepted**(`docs/adr/ADR-047-table-supersedes-channel-unification.md` — 채널 단일화 방향·표→표 구조·"첫 표 개정 전" 마이그 게이트·필터 부분 회복 한계 명기). 마이그 SQL = 미작성(§D-2 게이트 이연, L3 plan 선행).

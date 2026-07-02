@@ -47,6 +47,39 @@ export const ADR_008_RETRY_COUNT = 1;
 /** Stage 1 Vector Recall top-K (Stage 2/3 input candidate). */
 export const STAGE1_TOP_K = 20;
 
+/**
+ * Stage 1 결과에서 client-side 제외할 표 벡터 id prefix — 결재 #13 (b) /
+ * ADR-047 (2026-07-02 진산 결재).
+ *
+ * production `thepick-embeddings` 인덱스에는 knowledge_nodes 794 외에 표 벡터
+ * 433(TBL- 20 / TROW-·TCOL- 167 / TCELL- 246 — ADR-032 Table-as-Micro-KG)이
+ * 동거한다. Stage 1 filter 는 `{ exam_id }` 단독 → 표 벡터가 top-20 후보
+ * 슬롯을 잠식하고, Stage 2 `fetchApprovedNodes` 는 knowledge_nodes 한정이라
+ * 표 벡터는 슬롯만 소모 후 **무음 탈락** + 표 벡터가 top-1 이면 top1Score/
+ * gracefulDegradation 판정까지 왜곡(제공 불가 후보가 graceful 억제)한다.
+ *
+ * 서버측 제외가 정공법이나 불가: knowledge_node 벡터의 node_type metadata 는
+ * 'knowledge_node' 고정값이 아닌 실 노드 type 12종(vectorize/routes.ts:367)
+ * → equality 단독으론 "표 제외" 표현 불가, `$nin`/`$ne` 는 V2 binding 미작동
+ * 실측(Session 061 — 아래 topic-cluster-router.ts STAGE3 선례 주석 참조).
+ * 따라서 client-side prefix post-filter 채택. **한계(ADR-047 §D-3 명기)**:
+ * 슬롯 회복은 부분적 — top-20 회수 자체엔 표 벡터가 여전히 참여하며 제거분
+ * 만큼 knowledge_node 후보가 보충되진 않는다. 완전 회복은 표 전용 인덱스
+ * 분리(카드 #13 (c)) 또는 V2 filter 연산자 정상화 후 서버측 제외(Year 2
+ * carry-over) 몫. supersedes 채널 단일화 마이그는 "첫 표 개정 전" 게이트로
+ * 이연 (ADR-047 §D-2).
+ */
+export const STAGE1_TABLE_VECTOR_EXCLUDE_PREFIXES = ['TBL-', 'TROW-', 'TCOL-', 'TCELL-'] as const;
+
+/**
+ * 표 벡터 id 판별 (ADR-047 §D-3) — Stage 1 잠식 차단 단일 판별원.
+ * TC-(topic_clusters)는 본 필터 범위 밖 — 카드 #13 은 표 벡터 433 한정
+ * (동일 잠식 기전이나 별도 처분, ADR-047 §결과 ⚠️).
+ */
+export function isTableVectorId(id: string): boolean {
+  return STAGE1_TABLE_VECTOR_EXCLUDE_PREFIXES.some((prefix) => id.startsWith(prefix));
+}
+
 /** 사용자 응답 default top-K (SEARCH_PIPELINE.md §4). */
 export const DEFAULT_RESULT_TOP_K = 3;
 
@@ -228,7 +261,14 @@ export async function searchKnowledgeNodesForUser(
       : await embedQuery(deps.ai, query);
 
   // Stage 1.b: Vectorize.query (timeout + retry)
-  const vectorMatches = await runVectorizeQueryWithTimeout(deps.vectorize, queryVector, examId);
+  const rawMatches = await runVectorizeQueryWithTimeout(deps.vectorize, queryVector, examId);
+
+  // ADR-047 §D-3 (결재 #13 (b)): 표 벡터(TBL-/TROW-/TCOL-/TCELL-) 잠식 차단 —
+  // Stage 2 knowledge_nodes 한정으로 어차피 무음 탈락할 후보를 회수 직후 제외해
+  // top1Score/graceful 판정·stage1Count 를 제공 가능 후보만으로 정화한다.
+  // 서버측 $nin 미작동(V2 binding 실측) → client-side prefix post-filter
+  // (STAGE1_TABLE_VECTOR_EXCLUDE_PREFIXES 주석의 부분 회복 한계 참조).
+  const vectorMatches = rawMatches.filter((m) => !isTableVectorId(m.id));
 
   if (vectorMatches.length === 0) {
     return buildEmptyResult(query, examId, effectiveTopK, 0);

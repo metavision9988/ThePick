@@ -17,8 +17,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EXAM_IDS } from '@thepick/shared';
 import {
   searchKnowledgeNodesForUser,
+  isTableVectorId,
   ADR_008_GRACEFUL_THRESHOLD,
   STAGE1_VECTOR_RECALL_MIN_SIMILARITY,
+  STAGE1_TABLE_VECTOR_EXCLUDE_PREFIXES,
   type UserSearchDeps,
   type UserSearchD1,
   type VectorizeQueryBinding,
@@ -142,6 +144,100 @@ describe('searchKnowledgeNodesForUser', () => {
       const callArgs = vectorize.query.mock.calls[0];
       expect(callArgs[1].filter).toEqual({ exam_id: exam });
       expect(callArgs[1].topK).toBe(20); // STAGE1_TOP_K
+    });
+  });
+
+  // ============================================================
+  // ADR-047 §D-3 표 벡터 잠식 차단 (결재 #13 (b) — Stage 1 prefix post-filter)
+  // ============================================================
+  describe('ADR-047 표 벡터 Stage 1 잠식 차단', () => {
+    const approvedLaw: KnRow = {
+      id: 'LAW-001',
+      type: 'LAW',
+      name: 'law',
+      description: null,
+      page_ref: 'p.100',
+      truth_weight: 10,
+      status: 'approved',
+      is_current_active: 1,
+    };
+
+    /** bind 파라미터 capture — 표 벡터 id 의 Stage 2 IN 절 진입 여부 직접 검증. */
+    function makeCapturingD1(rows: ReadonlyArray<KnRow>, captured: unknown[][]): UserSearchD1 {
+      const inner = makeMockD1(rows);
+      return {
+        prepare(sql: string) {
+          const stmt = inner.prepare(sql);
+          return {
+            bind(...params: unknown[]) {
+              captured.push(params);
+              return stmt.bind(...params);
+            },
+          };
+        },
+      };
+    }
+
+    it('표 벡터 4종 prefix 는 Stage 1 후보 제외 — Stage 2 IN 절 미진입', async () => {
+      const matches = [
+        { id: 'TBL-001', score: 0.95, metadata: {} },
+        { id: 'TROW-001-01', score: 0.93, metadata: {} },
+        { id: 'TCOL-001-01', score: 0.92, metadata: {} },
+        { id: 'TCELL-001-01-01', score: 0.91, metadata: {} },
+        { id: 'LAW-001', score: 0.85, metadata: {} },
+      ];
+      const captured: unknown[][] = [];
+      const deps = makeDeps(
+        makeMockAi(),
+        makeMockVectorize(matches),
+        makeCapturingD1([approvedLaw], captured),
+      );
+      const result = await searchKnowledgeNodesForUser(deps, exam, '질문', 3);
+      // 표 벡터 4건은 stage1Count 에서도 제외 (제공 가능 후보만 계수)
+      expect(result.stage1Count).toBe(1);
+      expect(result.results.map((r) => r.id)).toEqual(['LAW-001']);
+      // Stage 2 D1 IN 절에 표 벡터 id 가 한 건도 진입하지 않음 (슬롯만 소모 후
+      // 무음 탈락하던 종전 경로 자체를 차단)
+      const boundIds = captured.flat();
+      expect(boundIds).toEqual(['LAW-001']);
+    });
+
+    it('표 벡터가 top-1 이어도 top1Score/graceful 판정은 제공 가능 후보 기준 (왜곡 차단)', async () => {
+      const matches = [
+        { id: 'TBL-009', score: 0.95, metadata: {} }, // 제공 불가 — 종전엔 graceful 억제
+        { id: 'LAW-001', score: 0.55, metadata: {} }, // 임계(0.60) 미달
+      ];
+      const deps = makeDeps(makeMockAi(), makeMockVectorize(matches), makeMockD1([approvedLaw]));
+      const result = await searchKnowledgeNodesForUser(deps, exam, '질문', 3);
+      expect(result.top1Score).toBeCloseTo(0.55, 5); // 0.95(표) 아님
+      expect(result.gracefulDegradation).toBe(true); // Multi-Path Fallback 진입 신호 보존
+      expect(result.stage1Count).toBe(0);
+      expect(result.results).toEqual([]);
+    });
+
+    it('전 후보가 표 벡터 → 빈 결과 + graceful=true (무음 탈락 아닌 정직 empty)', async () => {
+      const matches = [
+        { id: 'TBL-001', score: 0.9, metadata: {} },
+        { id: 'TCELL-001-01-01', score: 0.8, metadata: {} },
+      ];
+      const deps = makeDeps(makeMockAi(), makeMockVectorize(matches), makeMockD1([approvedLaw]));
+      const result = await searchKnowledgeNodesForUser(deps, exam, '질문', 3);
+      expect(result.results).toEqual([]);
+      expect(result.gracefulDegradation).toBe(true);
+      expect(result.stage1Count).toBe(0);
+      expect(result.stage2Count).toBe(0);
+    });
+
+    it('판별 범위 고정 — 표 4종만 (TC-/knowledge_node id 는 카드 #13 범위 밖)', () => {
+      expect(STAGE1_TABLE_VECTOR_EXCLUDE_PREFIXES).toEqual(['TBL-', 'TROW-', 'TCOL-', 'TCELL-']);
+      expect(isTableVectorId('TBL-001')).toBe(true);
+      expect(isTableVectorId('TROW-001-01')).toBe(true);
+      expect(isTableVectorId('TCOL-001-01')).toBe(true);
+      expect(isTableVectorId('TCELL-001-01-01')).toBe(true);
+      // TC-(topic_clusters)는 동일 잠식 기전이나 본 필터 범위 밖 (ADR-047 §결과 ⚠️)
+      expect(isTableVectorId('TC-01')).toBe(false);
+      expect(isTableVectorId('LAW-001')).toBe(false);
+      expect(isTableVectorId('CONCEPT-023')).toBe(false);
     });
   });
 

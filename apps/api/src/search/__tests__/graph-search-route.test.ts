@@ -15,7 +15,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
 import { EXAM_IDS } from '@thepick/shared';
-import { createGraphSearchRoutes, type GraphSearchRouteBindings } from '../graph-search-route.js';
+import {
+  createGraphSearchRoutes,
+  GRAPH_QUERY_DEBUG_MAX_LENGTH,
+  GRAPH_QUERY_PUBLIC_MAX_LENGTH,
+  type GraphExpansionDebugNode,
+  type GraphSearchRouteBindings,
+} from '../graph-search-route.js';
 import {
   createD1FromAllMigrations,
   type SqliteBackedD1,
@@ -339,6 +345,174 @@ describe('/api/search/graph route', () => {
     const body = (await res.json()) as { error: string; phase?: string };
     expect(body.error).toBeTruthy();
     expect(body.phase).toBe('query');
+  });
+
+  describe('debug 플래그 (MASTER_PLAN WS-4 4c — expandedNodes surface + query 천장 측정 우회)', () => {
+    it('debug 미지정(기본 off) → expandedNodes 필드 부재 (응답 계약 불변)', async () => {
+      await insertApproved(backend.db, 'SEED-DBG0', 'LAW', 10);
+      await insertApproved(backend.db, 'EXP-DBG0', 'CONCEPT', 5);
+      await insertEdge(backend.db, 'SEED-DBG0', 'EXP-DBG0', 'DEPENDS_ON');
+      env = {
+        DB: backend.db,
+        VECTORIZE: makeMockVectorize([{ id: 'SEED-DBG0', score: 0.9, metadata: {} }]),
+        AI: makeMockAi(),
+        ENVIRONMENT: 'test',
+      };
+      const res = await post({ examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: 'q', topK: 5 });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { graphExpansion: Record<string, unknown> };
+      expect('expandedNodes' in body.graphExpansion).toBe(false);
+    });
+
+    it('debug=true → graphExpansion.expandedNodes 확장 전체집합 surface (랭크미달 vs 미도달 재료)', async () => {
+      // SEED →(1hop) EXP-A, EXP-B. topK=1 로 EXP 가 top-K 밖이어도(랭크미달)
+      // expandedNodes 에는 전체집합이 남아야 진단 가능.
+      await insertApproved(backend.db, 'SEED-DBG1', 'LAW', 10);
+      await insertApproved(backend.db, 'EXP-DBG-A', 'CONCEPT', 5);
+      await insertApproved(backend.db, 'EXP-DBG-B', 'CONCEPT', 5);
+      await insertEdge(backend.db, 'SEED-DBG1', 'EXP-DBG-A', 'DEPENDS_ON');
+      await insertEdge(backend.db, 'SEED-DBG1', 'EXP-DBG-B', 'USES_FORMULA');
+      env = {
+        DB: backend.db,
+        VECTORIZE: makeMockVectorize([{ id: 'SEED-DBG1', score: 0.9, metadata: {} }]),
+        AI: makeMockAi(),
+        ENVIRONMENT: 'test',
+      };
+      const res = await post({
+        examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+        query: 'q',
+        topK: 1,
+        debug: true,
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        graphExpansion: { expandedNodes?: GraphExpansionDebugNode[] };
+        results: Array<{ id: string }>;
+      };
+      // top-K(1) = SEED 만 — EXP 2건은 랭크미달이나 확장 전체집합엔 존재
+      expect(body.results.map((h) => h.id)).toEqual(['SEED-DBG1']);
+      const expanded = body.graphExpansion.expandedNodes ?? [];
+      expect(expanded.map((n) => n.id).sort()).toEqual(['EXP-DBG-A', 'EXP-DBG-B']);
+      for (const n of expanded) {
+        expect(n.depth).toBe(1);
+        expect(n.truthWeight).toBe(5);
+        expect(typeof n.name).toBe('string');
+        // 진단 뷰는 description 미포함 (payload 비대 차단 — GraphExpansionDebugNode)
+        expect('description' in n).toBe(false);
+      }
+    });
+
+    it('debug=true + baseline 교집합 → expandedNodes 에서 제외 (baseline.results 로 관측)', async () => {
+      // CO6-4(a) 시나리오 재사용 — 둘 다 baseline 인 SEED-A→SEED-B 는 확장 집합 밖.
+      await insertApproved(backend.db, 'SEED-DBG-A', 'LAW', 10);
+      await insertApproved(backend.db, 'SEED-DBG-B', 'LAW', 10);
+      await insertEdge(backend.db, 'SEED-DBG-A', 'SEED-DBG-B', 'DEPENDS_ON');
+      env = {
+        DB: backend.db,
+        VECTORIZE: makeMockVectorize([
+          { id: 'SEED-DBG-A', score: 0.92, metadata: {} },
+          { id: 'SEED-DBG-B', score: 0.71, metadata: {} },
+        ]),
+        AI: makeMockAi(),
+        ENVIRONMENT: 'test',
+      };
+      const res = await post({
+        examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+        query: 'q',
+        topK: 5,
+        debug: true,
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        graphExpansion: { expandedNodes?: GraphExpansionDebugNode[] };
+      };
+      expect(body.graphExpansion.expandedNodes).toEqual([]);
+    });
+
+    it('debug=true + 시드 0건 → expandedNodes=[] (플래그 on 이면 필드 상시 존재)', async () => {
+      env = {
+        DB: backend.db,
+        VECTORIZE: makeMockVectorize([]),
+        AI: makeMockAi(),
+        ENVIRONMENT: 'test',
+      };
+      const res = await post({
+        examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+        query: 'q',
+        debug: true,
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        graphExpansion: { applied: boolean; expandedNodes?: GraphExpansionDebugNode[] };
+      };
+      expect(body.graphExpansion.applied).toBe(false);
+      expect(body.graphExpansion.expandedNodes).toEqual([]);
+    });
+
+    it('query 501자 + debug=true → 200 (측정 경로 한정 우회 — Q-004 583자 영구 제외 해소)', async () => {
+      env = {
+        DB: backend.db,
+        VECTORIZE: makeMockVectorize([]),
+        AI: makeMockAi(),
+        ENVIRONMENT: 'test',
+      };
+      const res = await post({
+        examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+        query: 'a'.repeat(GRAPH_QUERY_PUBLIC_MAX_LENGTH + 83), // 583 = Q-004 실측 길이
+        debug: true,
+      });
+      expect(res.status).toBe(200);
+    });
+
+    it('query 501자 + debug 명시 false → 400 (공개 계약 500 유지)', async () => {
+      env = {
+        DB: backend.db,
+        VECTORIZE: makeMockVectorize([]),
+        AI: makeMockAi(),
+        ENVIRONMENT: 'test',
+      };
+      const res = await post({
+        examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+        query: 'a'.repeat(GRAPH_QUERY_PUBLIC_MAX_LENGTH + 1),
+        debug: false,
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('query > 절대 상한(GRAPH_QUERY_DEBUG_MAX_LENGTH) → debug=true 여도 400', async () => {
+      env = {
+        DB: backend.db,
+        VECTORIZE: makeMockVectorize([]),
+        AI: makeMockAi(),
+        ENVIRONMENT: 'test',
+      };
+      const res = await post({
+        examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+        query: 'a'.repeat(GRAPH_QUERY_DEBUG_MAX_LENGTH + 1),
+        debug: true,
+      });
+      expect(res.status).toBe(400);
+    });
+  });
+
+  it('ADR-047 — 표 벡터가 vector 후보에 섞여도 baseline 후보·top1Score 에서 제외', async () => {
+    await insertApproved(backend.db, 'SEED-TBL', 'LAW', 10);
+    env = {
+      DB: backend.db,
+      VECTORIZE: makeMockVectorize([
+        { id: 'TBL-001', score: 0.99, metadata: {} }, // 표 벡터 — 제외 대상
+        { id: 'SEED-TBL', score: 0.9, metadata: {} },
+      ]),
+      AI: makeMockAi(),
+      ENVIRONMENT: 'test',
+    };
+    const res = await post({ examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: 'q', topK: 5 });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      baseline: { top1Score: number; results: Array<{ id: string }> };
+    };
+    expect(body.baseline.results.map((h) => h.id)).toEqual(['SEED-TBL']);
+    expect(body.baseline.top1Score).toBeCloseTo(0.9, 5); // 0.99(표) 아님
   });
 
   it('D-1 — SUPERSEDES 엣지는 기본 화이트리스트에서 미순회 (확장 0)', async () => {
