@@ -1,0 +1,1218 @@
+{
+  "generatedAt": "2026-07-02T03:09:05.788Z",
+  "codeFormulaCount": 68,
+  "d1FormulaCount": 157,
+  "engineBacked": [
+    {
+      "id": "F-01",
+      "codeTemplate": "damaged_fruits / (damaged_fruits + normal_fruits)",
+      "d1Template": "damaged_fruits / (damaged_fruits + normal_fruits)",
+      "match": true,
+      "normalizedMatch": true,
+      "codeFingerprint": "e8e90ccfc4694e2ed6e2b2da288fcfb1edeb8ba4424612bc5cb95dd21df7d870",
+      "d1Fingerprint": "e8e90ccfc4694e2ed6e2b2da288fcfb1edeb8ba4424612bc5cb95dd21df7d870"
+    },
+    {
+      "id": "F-02",
+      "codeTemplate": "defoliated / (defoliated + attached)",
+      "d1Template": "defoliated / (defoliated + attached)",
+      "match": true,
+      "normalizedMatch": true,
+      "codeFingerprint": "4eeb1b1441c38c1d03b68c55986ee878367ac602306b4f29d7724ea4727cfa33",
+      "d1Fingerprint": "4eeb1b1441c38c1d03b68c55986ee878367ac602306b4f29d7724ea4727cfa33"
+    },
+    {
+      "id": "F-03",
+      "codeTemplate": "ceil(total_sample * (variety_target / total_target))",
+      "d1Template": "ceil(total_sample * (variety_target / total_target))",
+      "match": true,
+      "normalizedMatch": true,
+      "codeFingerprint": "9f78eb3a83bad12c068aaf8a19d4126ee5b7881998d7acec90b65b9b2e284c76",
+      "d1Fingerprint": "9f78eb3a83bad12c068aaf8a19d4126ee5b7881998d7acec90b65b9b2e284c76"
+    },
+    {
+      "id": "F-04",
+      "codeTemplate": "(sample_fruits_sum / sample_trees_sum) * target_trees",
+      "d1Template": "(sample_fruits_sum / sample_trees_sum) * target_trees",
+      "match": true,
+      "normalizedMatch": true,
+      "codeFingerprint": "4fc85976552f4d9b42eddb34963076d4f8e4b5e613eddf87939e5b25615edffb",
+      "d1Fingerprint": "4fc85976552f4d9b42eddb34963076d4f8e4b5e613eddf87939e5b25615edffb"
+    },
+    {
+      "id": "F-05",
+      "codeTemplate": "flooded_trees * (flooded_fruits / total_fruits)",
+      "d1Template": "flooded_trees * (flooded_fruits / total_fruits)",
+      "match": true,
+      "normalizedMatch": true,
+      "codeFingerprint": "13b2b27e12cdeea518a5cc5aab989ffa5e0b800576cd9f14aaa60b7b052f064f",
+      "d1Fingerprint": "13b2b27e12cdeea518a5cc5aab989ffa5e0b800576cd9f14aaa60b7b052f064f"
+    },
+    {
+      "id": "F-06",
+      "codeTemplate": "max(1.0115 * defoliation_rate - 0.0014 * elapsed_days, 0)",
+      "d1Template": "max(1.0115 * defoliation_rate - 0.0014 * elapsed_days, 0)",
+      "match": true,
+      "normalizedMatch": true,
+      "codeFingerprint": "e447d2a24803e6b1b5998508bf5ce49b19632825ab117a9599bcb1c773fde871",
+      "d1Fingerprint": "e447d2a24803e6b1b5998508bf5ce49b19632825ab117a9599bcb1c773fde871"
+    },
+    {
+      "id": "F-07",
+      "codeTemplate": "max(0.9662 * defoliation_rate - 0.0703, 0)",
+      "d1Template": "max(0.9662 * defoliation_rate - 0.0703, 0)",
+      "match": true,
+      "normalizedMatch": true,
+      "codeFingerprint": "9e61534962a4fb275e9416ba490732bb5d8ece3fe258a7a02e6be2eb3c94de0b",
+      "d1Fingerprint": "9e61534962a4fb275e9416ba490732bb5d8ece3fe258a7a02e6be2eb3c94de0b"
+    },
+    {
+      "id": "F-08",
+      "codeTemplate": "max(fruit_reduction - uncompensated - self_bearing, 0) * price * coverage",
+      "d1Template": "max(fruit_reduction - uncompensated - self_bearing, 0) * price * coverage",
+      "match": true,
+      "normalizedMatch": true,
+      "codeFingerprint": "df92ee7628855966955fdf34f1e2160669a83eb093c535c414e32afdf347f031",
+      "d1Fingerprint": "df92ee7628855966955fdf34f1e2160669a83eb093c535c414e32afdf347f031"
+    },
+    {
+      "id": "F-09",
+      "codeTemplate": "max(accumulated_reduction - self_bearing, 0) * price",
+      "d1Template": "max(accumulated_reduction - self_bearing, 0) * price",
+      "match": true,
+      "normalizedMatch": true,
+      "codeFingerprint": "c371d86ec1688369738361abc347f3b051a50dcfe41807e6775fcf69f1ce01e0",
+      "d1Fingerprint": "c371d86ec1688369738361abc347f3b051a50dcfe41807e6775fcf69f1ce01e0"
+    },
+    {
+      "id": "F-10",
+      "codeTemplate": "damaged_trees / actual_bearing_trees",
+      "d1Template": "damaged_trees / actual_bearing_trees",
+      "match": true,
+      "normalizedMatch": true,
+      "codeFingerprint": "aa030365e771f95e7d25342a6353aa6357e1881aab5be668234a699925302376",
+      "d1Fingerprint": "aa030365e771f95e7d25342a6353aa6357e1881aab5be668234a699925302376"
+    },
+    {
+      "id": "F-11",
+      "codeTemplate": "insured_amount * max(damage_rate - 0.05, 0)",
+      "d1Template": "insured_amount * max(damage_rate - 0.05, 0)",
+      "match": true,
+      "normalizedMatch": true,
+      "codeFingerprint": "c7d4d0544b245b7db180d5b59266f89eb2f537c4a503cac1828107badbe6ef14",
+      "d1Fingerprint": "c7d4d0544b245b7db180d5b59266f89eb2f537c4a503cac1828107badbe6ef14"
+    },
+    {
+      "id": "F-12",
+      "codeTemplate": "0.0031 * remaining_days",
+      "d1Template": "0.0031 * remaining_days",
+      "match": true,
+      "normalizedMatch": true,
+      "codeFingerprint": "eec10297ec089bf5d5806a4373f7f7ccd0db2d0e1558f117c74533df9625a1cd",
+      "d1Fingerprint": "eec10297ec089bf5d5806a4373f7f7ccd0db2d0e1558f117c74533df9625a1cd"
+    },
+    {
+      "id": "F-13",
+      "codeTemplate": "max(sunburn_fruits - fruits_after_thinning * 0.06, 0)",
+      "d1Template": "max(sunburn_fruits - fruits_after_thinning * 0.06, 0)",
+      "match": true,
+      "normalizedMatch": true,
+      "codeFingerprint": "f15374a4d93170ad2f63b8d3be289161188af8499d654b5c6b08c31ad881d6c4",
+      "d1Fingerprint": "f15374a4d93170ad2f63b8d3be289161188af8499d654b5c6b08c31ad881d6c4"
+    },
+    {
+      "id": "F-14",
+      "codeTemplate": "insured_amount * max(damage_rate - deductible_rate, 0)",
+      "d1Template": "max(insurance_amount * (damage_rate - deductible_rate), 0)",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "23547f903297026576bcb2f9e6eb56e6af5341a2fd5cc15cbb25d60c9a7f806f",
+      "d1Fingerprint": "cb7813d8a4598a027ea704bb2eac1810cc3daee31daac77e55a1dd95d4c815d5"
+    },
+    {
+      "id": "F-15",
+      "codeTemplate": "max((standard_yield - actual_yield - uncompensated_loss) / standard_yield, 0)",
+      "d1Template": "(expected_yield - actual_yield - uncovered_loss) / expected_yield",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "b24dce4814adf824d9f2ae53ceda7e65c50bfd8f46fbfaecddb0842a40015fa9",
+      "d1Fingerprint": "8f24d191cba742684a2c32614483746b11b8fc939002130add93605676e74b40"
+    },
+    {
+      "id": "F-16",
+      "codeTemplate": "max(standard_yield - actual_yield, 0) * uncompensated_rate",
+      "d1Template": "(expected_yield - actual_yield - uncovered_loss - pest_loss) / expected_yield",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "148787d9f9874a4563a0c4de8533315731dee3a26bc1af1c9f5419136298fc14",
+      "d1Fingerprint": "6d671e4f6672263277fb81db3dfb444df34caded2f87247ca35be0d6477dba65"
+    },
+    {
+      "id": "F-17",
+      "codeTemplate": "max((standard_yield - actual_yield - uncompensated_loss - disease_loss) / standard_yield, 0)",
+      "d1Template": "(expected_yield - actual_yield) * uncovered_rate",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "d406df23a34e0ff55a47d116f26f84bdd8e479148defdd2d8e8d89ebac2a6894",
+      "d1Fingerprint": "f2fd595b756062a72c1d53dd24270bab5f73fa1f657b38aabb524a0155a32704"
+    },
+    {
+      "id": "F-18",
+      "codeTemplate": "insured_amount * damage_rate * 0.10",
+      "d1Template": "insurance_amount * damage_rate * 0.10",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "9bcac09846d3d16a929c0478777954f57ab60b84f60c605e74bbb7b963a6a72a",
+      "d1Fingerprint": "ccad3fa23ad25a66da7167bd506d372b9fde6b0b9e21a33d077862887edee4b2"
+    },
+    {
+      "id": "F-19",
+      "codeTemplate": "min(max(damage_amount - deductible, 0), insured_amount)",
+      "d1Template": "max(insurance_amount * (damage_rate - deductible_rate), 0)",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "1cc10248c41c233216c6c6b8731060e322f965d72c2d78285c8b0b34737e9f9f",
+      "d1Fingerprint": "cb7813d8a4598a027ea704bb2eac1810cc3daee31daac77e55a1dd95d4c815d5"
+    },
+    {
+      "id": "F-20",
+      "codeTemplate": "count_30 * 0.3 + count_50 * 0.5 + count_80 * 0.8 + count_100 * 1.0",
+      "d1Template": "dead_trees / actual_trees",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "6493966b58bb6cc67a6c89ccdd09e960ae435f837cd096ba22f61532e60539c0",
+      "d1Fingerprint": "269f04edfbf1db6fd428e65fa99a21250275201800380e6e74262edcd6fff8d0"
+    },
+    {
+      "id": "F-21",
+      "codeTemplate": "grade_in_damaged + grade_out_damaged * 0.5",
+      "d1Template": "min(loss_amount - deductible, insurance_amount)",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "a65b48b6363d8674b1b15656fafc4f0e93b1ea78752b5f06f6bea35ceddd0446",
+      "d1Fingerprint": "643dd76e041b068452b0b71deda1d4b0a7635359d36ae08ff4baf566c8d4ec34"
+    },
+    {
+      "id": "F-22",
+      "codeTemplate": "(damaged_fruit_count / base_fruit_count) * (1 - uncompensated_rate)",
+      "d1Template": "(normal_weight + small_weight * 0.8) / sample_count",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "b844102911a43144cbb0f2686ac760b576d30b051b3a5182b7ed716e0c9f3d56",
+      "d1Fingerprint": "2da0263eb00a91527de2d254fea696ea4214864f1cc6193a9608f59ce524fbf7"
+    },
+    {
+      "id": "F-23",
+      "codeTemplate": "(frost_80_count * 0.8 + frost_100_count * 1.0) / base_fruit_count",
+      "d1Template": "sample_fruit_weight / sample_tree_count",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "d1c617b359290d4417f768eb6ae6ce02dd96789ee296b2802f479dd355e9300f",
+      "d1Fingerprint": "712ae034768de61728fce7cbcb3c7ff750e51a4c6ee7522653cab5a9e61a9b9a"
+    },
+    {
+      "id": "F-24",
+      "codeTemplate": "max((61 - 0.935 * day_of_month) / 100, 0)",
+      "d1Template": "raw_weight * inflation_index * half_factor",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "0c8132bfed4a6f996ab82bd0cb7b75ea3ebea57316b5fb232588acab4eed744f",
+      "d1Fingerprint": "97046ac52ddb5cc1cacef01bf6241dbe7da96c85ef066018b1223653c0d86068"
+    },
+    {
+      "id": "F-25",
+      "codeTemplate": "max((32 - 0.774 * day_of_month) / 100, 0)",
+      "d1Template": "max(insurance_amount * (damage_rate - deductible_rate), 0)",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "ab2caab2f9fcecdb2b58416fea660061fac06ab9fd323b9058c1fb43a6643368",
+      "d1Fingerprint": "cb7813d8a4598a027ea704bb2eac1810cc3daee31daac77e55a1dd95d4c815d5"
+    },
+    {
+      "id": "F-26",
+      "codeTemplate": "max((8 - 0.286 * day_of_month) / 100, 0)",
+      "d1Template": "(expected_fruits - surveyed_fruits - uncovered_fruits) / expected_fruits",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "2797b0940d56171b0a2736ae5f367dcf0ec31b65106ba9d62391f17f75aabeb7",
+      "d1Fingerprint": "2c05e3e1535c021a535240d23093368f81aea28dccea58d6ee43a3db32cd0e88"
+    },
+    {
+      "id": "F-27",
+      "codeTemplate": "(damaged_buds / total_buds) * (1 - uncompensated_rate)",
+      "d1Template": "max(loss_amount - deductible, 0)",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "d9ab5c027f26709f114fc43c87173f25738a167bc75cd53870a3f7c4979bf29c",
+      "d1Fingerprint": "546fb067819e28d69997da410b2860108a6164d928780b259cb42e4e5d99fed0"
+    },
+    {
+      "id": "F-28",
+      "codeTemplate": "max(1 - (days_since_harvest / standard_harvest_days), 0)",
+      "d1Template": "(damaged_fruits / standard_fruits) * (1 - uncovered_rate)",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "3ac8b98cc043c1021b53653fe7d9b4a3f5602f415fa1295230d7f93dfa6d0b14",
+      "d1Fingerprint": "2f7dcd926550998e452be9800e7330bd30d1cdcac76fcafcce43e6af68f1308a"
+    },
+    {
+      "id": "F-29",
+      "codeTemplate": "bud_death_rate + (1 - bud_death_rate) * flower_death_rate",
+      "d1Template": "(damaged_buds / total_buds) * (1 - uncovered_rate)",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "41fc5978ec9dca22c2f4f32f279efb97eb0b8a8b9e395d51b1f3c3e48cdce1ec",
+      "d1Fingerprint": "ba4e92fe5d827264ace558b31f8a00e35f9b873fbc3506048e240ec50a1d7f50"
+    },
+    {
+      "id": "F-30",
+      "codeTemplate": "max((100 - 1.06 * day_of_month) / 100, 0)",
+      "d1Template": "(dead_trees_ratio * residual_yield_ratio) + (survey_trees_ratio * (sample_damaged_fruits * residual_yield_ratio) / sample_total_fruits)",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "f4882a34ae277e441d4380d4e6d4e8b7819afa6aae5c50bd740a1de0be22cfd6",
+      "d1Fingerprint": "1965005b150d5a002e760a3cea64b52da816bc4e0543104004f648bbb03a0892"
+    },
+    {
+      "id": "F-31",
+      "codeTemplate": "insured_amount * 0.15",
+      "d1Template": "final_flower_damage + (1 - final_flower_damage) * fruit_damage_rate * (1 - uncovered_rate)",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "3561f1bb6bdec34e6825e8705c3ac6b7fefef8c6495c900a02e513e58b3494da",
+      "d1Fingerprint": "615554f7886042f74beecedce7c014c71b4ecd9a1a394a927e5cfa1328e658d4"
+    },
+    {
+      "id": "F-32",
+      "codeTemplate": "insured_amount * 0.25 * area_damage_rate",
+      "d1Template": "max(loss_amount - deductible, 0)",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "dfa14b0a0302a1453bb548e5f4696bb0a7b618d775ec109b7fe2d4a36b835093",
+      "d1Fingerprint": "546fb067819e28d69997da410b2860108a6164d928780b259cb42e4e5d99fed0"
+    },
+    {
+      "id": "F-33",
+      "codeTemplate": "damaged_area / insured_area",
+      "d1Template": "insurance_amount * primary_damage_rate * 0.10",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "37c2ab157bf44fdb3f2a9690ca8b801d17ffa5aa793165456709edfec5d00a28",
+      "d1Fingerprint": "7e8d16b99c96d88aa9a844a3e6fb8bc09ec949202452701533eb4401922f58c4"
+    },
+    {
+      "id": "F-34",
+      "codeTemplate": "insured_amount * max(damage_rate - deductible_rate, 0)",
+      "d1Template": "insurance_amount * deductible_payout_rate",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "23547f903297026576bcb2f9e6eb56e6af5341a2fd5cc15cbb25d60c9a7f806f",
+      "d1Fingerprint": "8f0b7a18bf0108227fa62ad3431ac3a3bc0bb2a3110fbe21594c9356624744ba"
+    },
+    {
+      "id": "F-35",
+      "codeTemplate": "insured_amount * coverage_rate * elapsed_rate",
+      "d1Template": "max(insurance_amount * (damage_rate - deductible_rate), 0)",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "8e66e3d4232f5d61b12816a43a4384301fe1e7ca44e3c30ef2e71ef770b866da",
+      "d1Fingerprint": "cb7813d8a4598a027ea704bb2eac1810cc3daee31daac77e55a1dd95d4c815d5"
+    },
+    {
+      "id": "F-36",
+      "codeTemplate": "min(max(((standard_yield - actual_yield - uncompensated_loss) + disease_loss) / standard_yield, 0), 1)",
+      "d1Template": "dead_branches / expected_branches",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "52d2d78f2e638dd6467cf65668a6ba91e0cce4ed8139b88d9eeda1761e1a1c5a",
+      "d1Fingerprint": "ac0f0655ead0ed8f53afe44064a95196387cb0aa06828448a95040245b8da661"
+    },
+    {
+      "id": "F-37",
+      "codeTemplate": "max(min(insured_amount, damage_yield * price) - insured_amount * deductible_rate, 0)",
+      "d1Template": "(expected_branches - alive_branches) + invalid_pollination_dead - uncovered_dead",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "d630634534aa96b975a642bab6241b284d39658c42b357427b53720efc2d5d8c",
+      "d1Fingerprint": "51f74d710eb3ff089c88477b45a6af1082fd7a34c3dc3d6efea0b259cc6b72e9"
+    },
+    {
+      "id": "F-38",
+      "codeTemplate": "max((1 - actual_yield / standard_yield) * (damaged_area / cultivated_area), 0)",
+      "d1Template": "yield_loss_dead - uncovered_dead",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "7d4b672d09f6725ad28686486e596045ec1dd06324a0c21634ab1527f1bc2c54",
+      "d1Fingerprint": "6201825a7122b57066a9f1cee714f742bce9be69960bc552fab7265737206179"
+    },
+    {
+      "id": "F-39",
+      "codeTemplate": "insured_amount * 0.35 * standard_damage_rate",
+      "d1Template": "alive_branches * invalid_pollination_factor",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "4239096606b8a2a93f96a4d2c7f538c94bbb71e58fc0fe7795d23fe87ec16af3",
+      "d1Fingerprint": "36e6ab458a2f6bb45318b93b381f332c39480c90aa4c5de3426cecc43c6c9358"
+    },
+    {
+      "id": "F-40",
+      "codeTemplate": "max((30000 - plant_count) / 30000, 0)",
+      "d1Template": "max((invalid_fruits / total_fruits) - natural_invalid_rate, 0)",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "b6be3a4d6b0286cf3987adf5ee1cd1d682209983f74912497e94cd4f831e807d",
+      "d1Fingerprint": "49e8f5bbc9c6762b81a39c515ccaa714afff27574c53519a651126f267244303"
+    },
+    {
+      "id": "F-41",
+      "codeTemplate": "insured_amount * rate * area_damage_rate",
+      "d1Template": "(alive_branches - invalid_pollination_dead) * cumulative_yield_loss_factor",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "cd5ffef3bfbf9365fe027a22de907eafad91aa36681bb05aaa560ed092fbe788",
+      "d1Fingerprint": "520479bba2822f470952ee8d2483e847194fcf14eeb5844d1f00f06b45a3d1d3"
+    },
+    {
+      "id": "F-42",
+      "codeTemplate": "insured_amount * 0.20 * area_damage_rate",
+      "d1Template": "expected_branches * cumulative_yield_loss_factor",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "d6a1229f42964aac7a098534df08745cffd2f9da6bdb7d6b1edb0d58a26eac67",
+      "d1Fingerprint": "362103ce69ae2212fe1b4120516bfca739ff5cdfc0b3fea193e84ab32b682771"
+    },
+    {
+      "id": "F-43",
+      "codeTemplate": "insured_amount * max(damage_rate - deductible_rate, 0)",
+      "d1Template": "residual_yield_ratio - fruit_setting_rate",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "23547f903297026576bcb2f9e6eb56e6af5341a2fd5cc15cbb25d60c9a7f806f",
+      "d1Fingerprint": "72de95944486734b0a5a92b3f7a0501cba0047ffbf9a4086e12bb89fc33ba94c"
+    },
+    {
+      "id": "F-44",
+      "codeTemplate": "alpha + (1 - alpha) * min(growth_days / standard_growth_days, 1)",
+      "d1Template": "total_fruits / total_blossoms",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "53f635eea6225f78affde5035b3b3a96e735e74ff95b8d0d41435b777dbb81a5",
+      "d1Fingerprint": "1cbfa33c03d156db69087a47b15fe5e03409d1e48dc920306da70aaf9d6cd243"
+    },
+    {
+      "id": "F-45",
+      "codeTemplate": "max(1 - harvest_days / standard_harvest_days, 0)",
+      "d1Template": "yield_loss_dead * max_uncovered_rate",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "2c2e9a46dd6c6d24c7144653d54bba0abbcfe27e6b23f3d1e0fbaf5e8b88fe89",
+      "d1Fingerprint": "154b4a1ea224c8c146a756bcac4e67187da4d4dc25d0bf228a57b6ec85b71147"
+    },
+    {
+      "id": "F-46",
+      "codeTemplate": "area_damage_rate * avg_loss_ratio * (1 - uncompensated_rate)",
+      "d1Template": "max(insurance_amount * (damage_rate - deductible_rate), 0)",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "2914b8923cdf6e5de953846de8da242a35e0a86b3b7eb03094deac57ca5bfdf0",
+      "d1Fingerprint": "cb7813d8a4598a027ea704bb2eac1810cc3daee31daac77e55a1dd95d4c815d5"
+    },
+    {
+      "id": "F-47",
+      "codeTemplate": "cultivated_area * unit_cost * elapsed_rate * damage_rate",
+      "d1Template": "(expected_yield - actual_yield - uncovered_loss) / expected_yield",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "590a48c1ffef04806395776a675662d4c5232156056726953baa534e40a39d4e",
+      "d1Fingerprint": "8f24d191cba742684a2c32614483746b11b8fc939002130add93605676e74b40"
+    },
+    {
+      "id": "F-48",
+      "codeTemplate": "base_insurance * insured_amount / (unit_cost * cultivated_area)",
+      "d1Template": "(1 - prior_damage_rate) * elapsed_ratio * branch_damage_rate",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "48d0437ff84918ef868744503bfad9332fc6e1f7abcac17f561bd25d9243e8ae",
+      "d1Fingerprint": "b897e1a9c0227f1e7f62f0d370e857e1e313c932d8635f84fb140ba9bcfbae4c"
+    },
+    {
+      "id": "F-49",
+      "codeTemplate": "area_damage_rate * (1 - uncompensated_rate)",
+      "d1Template": "(dead_branches + alive_branches * fruit_damage_rate - uncovered_dead_branches) / standard_branches",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "125a50b1ebd5757dd117f984c6fff39c23dc9ea27728aa01a2b797b7c7bb4fb8",
+      "d1Fingerprint": "74666ee94a5ff1a9b53979531fe8e36619a347809589e38b6fcc1b3fb7a768a0"
+    },
+    {
+      "id": "F-50",
+      "codeTemplate": "lodging_area * 0.70 + non_lodging_area * avg_loss_ratio",
+      "d1Template": "dead_branches + alive_branches",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "3c77cc2c94a447a82912d334d09fa3ff5e801d22cd2d823b3b00c436fa0b743d",
+      "d1Fingerprint": "f7fd9e21d2786597ad76fcb6b8d015d3a1408bc52dddcd59a31ec6d5fdc1c14a"
+    },
+    {
+      "id": "F-51",
+      "codeTemplate": "area_damage_rate * crop_damage_rate * (1 - uncompensated_rate)",
+      "d1Template": "covered_dead + uncovered_dead",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "482b22ec2fd3fb5311adfa7249e4b320c7f9d808e893bb48bcebe9cab7d4d47c",
+      "d1Fingerprint": "ed0cc2f13c759f055a208539f0021cea3e1bc03814d2db3f7d1e20965436efed"
+    },
+    {
+      "id": "F-52",
+      "codeTemplate": "max(remaining_insured * elapsed_rate * damage_rate * disease_recognition_rate - remaining_insured * deductible_rate, 0)",
+      "d1Template": "max(insurance_amount * (damage_rate - 0.05), 0)",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "d4cce9ae5b388d17cd17fdd78346c03d854b5d1cafc01ac8240104072404e070",
+      "d1Fingerprint": "179b026b4b417d02a3dd70f00ab08fba837bb448be3d6231b0f32c6a778bde20"
+    },
+    {
+      "id": "F-53",
+      "codeTemplate": "max((67 - 1.13 * day_of_month) / 100, 0)",
+      "d1Template": "dead_trees / actual_trees",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "5c7093b9bbb8cbe6d7b1a2490fa8f72ac1d001ad8f2a1ab306aeaf24513c3ed7",
+      "d1Fingerprint": "269f04edfbf1db6fd428e65fa99a21250275201800380e6e74262edcd6fff8d0"
+    },
+    {
+      "id": "F-54",
+      "codeTemplate": "max(damage_amount - deductible, 0)",
+      "d1Template": "damaged_area / actual_area",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "2888eeb651e5d7d94a79313c03bed3e081dc79b3b4ba3d57e81fadbc7974f113",
+      "d1Fingerprint": "6a2f99cdb7c83ef5af441d60a1330958e1df9a0068ed8a6cd4561d67af22e266"
+    },
+    {
+      "id": "F-55",
+      "codeTemplate": "min(max(damage_amount * 0.10, min_deductible), max_deductible)",
+      "d1Template": "damaged_plant_ratio",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "b028138280cb50e5b3e2894eed1f3277be487ae28d419ffbad84c44c36ff1b0d",
+      "d1Fingerprint": "ae29591ff6f37283c53f1ff3b8a8df7ff5706a48df2cfc0200877054d241e25d"
+    },
+    {
+      "id": "F-56",
+      "codeTemplate": "cultivated_area * unit_cost * elapsed_rate * damage_rate",
+      "d1Template": "actual_area - dead_area - other_uncovered_area - already_harvested_area",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "590a48c1ffef04806395776a675662d4c5232156056726953baa534e40a39d4e",
+      "d1Fingerprint": "72ce4625a9c35d0c348358ffc6a50a01412f5d59a66e7fb8b55146c32ed325da"
+    },
+    {
+      "id": "F-57",
+      "codeTemplate": "alpha + (1 - alpha) * min(growth_days / standard_growth_days, 1)",
+      "d1Template": "husk_removed_rate",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "53f635eea6225f78affde5035b3b3a96e735e74ff95b8d0d41435b777dbb81a5",
+      "d1Fingerprint": "19ddb539fcbd1bf2a8b002134afb6fd9977df62e2039f706054b568bf3031495"
+    },
+    {
+      "id": "F-58",
+      "codeTemplate": "max(1 - harvest_days / standard_harvest_days, 0)",
+      "d1Template": "sum_panicle_scores + sum_full_grain_scores",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "2c2e9a46dd6c6d24c7144653d54bba0abbcfe27e6b23f3d1e0fbaf5e8b88fe89",
+      "d1Fingerprint": "8a0f39540e3d0b8d51a83c42274606cfacfbb823875f2f5ce5d18c17f68a886f"
+    },
+    {
+      "id": "F-59",
+      "codeTemplate": "damage_area_rate * loss_degree_rate * (1 - uncompensated_rate)",
+      "d1Template": "score_to_yield_ratio_lookup(score_sum)",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "1731dbb49d07ee271d770e64d736bd504b23b9ca3b1076f420f4950c4c15ce3c",
+      "d1Fingerprint": "f59be0fb6bb5ac442e85ea703de3b20e40471d40db1d849f318faaa858dbe685"
+    },
+    {
+      "id": "F-60",
+      "codeTemplate": "cultivated_area * unit_cost_alive * damage_rate",
+      "d1Template": "damage_correction_factor",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "fcd99b48e1ad60884891c439a4bd0aef17b0a55525c65d35e5cb5db883440941",
+      "d1Fingerprint": "8062ed1391e7fa10345a2ec1e3d1cd55a5b5886c31fcb2952face19979824db9"
+    },
+    {
+      "id": "F-61",
+      "codeTemplate": "cultivated_area * unit_cost * damage_rate * 0.70",
+      "d1Template": "insurance_amount * 0.15",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "24586a1b57af6c79a8c4b20013db5d1c281224e42bf064ca9e72feaac84c1116",
+      "d1Fingerprint": "6780444ff47f7b9103821b0b758d81057113e326c3328d81917cf310bd63e4cf"
+    },
+    {
+      "id": "F-62",
+      "codeTemplate": "log_count * unit_cost_per_log * damage_rate",
+      "d1Template": "insurance_amount * 0.25 * area_damage_rate",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "16080e51b14cb06384d48b01329ff6176326913b0015a72bb764a52ce02c975f",
+      "d1Fingerprint": "2a64e1032ce57f479e6417d0f63285317d11201ac3aaf4c90a30d610d462a66a"
+    },
+    {
+      "id": "F-63",
+      "codeTemplate": "bag_count * unit_cost_per_bag * elapsed_rate * damage_rate",
+      "d1Template": "damage_area / insured_area",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "188fe7643095b9fdfe37f8b524ae248ec9ed561ed156e085409f7c967da28569",
+      "d1Fingerprint": "497a8a45c014e6b1e39ec9db3af3c1aa1e5d8bbbde9355e2b1e8275a7778c75a"
+    },
+    {
+      "id": "F-64",
+      "codeTemplate": "original_value * min(0.08 * elapsed_years, 1)",
+      "d1Template": "insurance_amount * coverage_rate * progress_rate",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "054b71531903557f9a094e62244fee291162f5acc73873977f97500d0231b2d4",
+      "d1Fingerprint": "83f54a7778eb0920e8ec5be45cdb88dac6b70cc5acb851149d45073e34b344c2"
+    },
+    {
+      "id": "F-65",
+      "codeTemplate": "original_value * min(0.053 * elapsed_years, 1)",
+      "d1Template": "insurance_amount * (damage_rate - deductible_rate)",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "63ae98c1577cbf6618de520ff3c97945ce4415dc0591a6d33e483b53bf0f2654",
+      "d1Fingerprint": "e6a7faad3804abdb37a771a9e49a00cd888febff2af283e4cf4a09c79f5e0a05"
+    },
+    {
+      "id": "F-66",
+      "codeTemplate": "max(original_value - depreciation, 0)",
+      "d1Template": "(reference_yield - actual_yield - uncovered_loss) / reference_yield",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "9305dd547bb70675f8f4e34bb5d7ee03ea1021bd3bf9e5b7b6f7f3b71c42c56e",
+      "d1Fingerprint": "fee0677175e4ec235148afbae913d8559594a66dcba64824c92b453f97645095"
+    },
+    {
+      "id": "F-67",
+      "codeTemplate": "max(damage_amount - deductible, 0) * (insured_amount / insured_value)",
+      "d1Template": "insurance_amount * 0.25 * standard_damage_rate",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "53d043dd65ed6159cf493a5a5bfbe3a38f2f9b75c7438cc996f2d88aeea47e23",
+      "d1Fingerprint": "604cf8c11efe210d2500760378cbce4e951ff9ec6e7b1d5ea8ea7983923af16b"
+    },
+    {
+      "id": "F-68",
+      "codeTemplate": "max((33 - 0.84 * day_of_month) / 100, 0)",
+      "d1Template": "(30000 - plant_count_per_10a) / 30000",
+      "match": false,
+      "normalizedMatch": false,
+      "codeFingerprint": "0801ccff3d392c9c3531bb5d483d677eef4c13f131d6f8a0356f767592d6cb1c",
+      "d1Fingerprint": "1bb65badcdbab4f38991ed5b1c3d54a8757628b4abc2885b4fbda3d6f316a27d"
+    }
+  ],
+  "displayOnly": [
+    {
+      "id": "F-69",
+      "d1Template": "insurance_amount * 0.35 * standard_damage_rate"
+    },
+    {
+      "id": "F-70",
+      "d1Template": "insurance_amount * 0.15 * area_damage_rate"
+    },
+    {
+      "id": "F-71",
+      "d1Template": "insurance_amount * 0.20 * area_damage_rate"
+    },
+    {
+      "id": "F-72",
+      "d1Template": "insurance_amount * 0.20 * area_damage_rate"
+    },
+    {
+      "id": "F-73",
+      "d1Template": "insurance_amount * coverage_rate"
+    },
+    {
+      "id": "F-74",
+      "d1Template": "insurance_amount * coverage_rate * progress_rate"
+    },
+    {
+      "id": "F-75",
+      "d1Template": "insurance_amount * (damage_rate - deductible_rate)"
+    },
+    {
+      "id": "F-76",
+      "d1Template": "(reference_yield - actual_yield - uncovered_loss) / reference_yield"
+    },
+    {
+      "id": "F-77",
+      "d1Template": "((reference_yield - actual_yield - uncovered_loss) + pest_loss) / reference_yield"
+    },
+    {
+      "id": "F-78",
+      "d1Template": "min(insurance_amount, loss_amount) - deductible_amount"
+    },
+    {
+      "id": "F-79",
+      "d1Template": "damage_yield * subscription_price"
+    },
+    {
+      "id": "F-80",
+      "d1Template": "(sample_yield_sum / sample_area_sum) * survey_target_area + (reference_yield / actual_area) * (other_area + harvested_area)"
+    },
+    {
+      "id": "F-81",
+      "d1Template": "(reference_yield - actual_yield) * uncovered_ratio"
+    },
+    {
+      "id": "F-82",
+      "d1Template": "infected_tuber_weight * damage_severity_rate * accept_ratio"
+    },
+    {
+      "id": "F-83",
+      "d1Template": "total_seed_weight * (1 - moisture_rate) / 0.86"
+    },
+    {
+      "id": "F-84",
+      "d1Template": "insurance_amount * 0.20 * area_damage_rate"
+    },
+    {
+      "id": "F-85",
+      "d1Template": "insurance_amount * coverage_rate"
+    },
+    {
+      "id": "F-86",
+      "d1Template": "(remaining_insurance * progress_rate * damage_rate) - deductible_amount"
+    },
+    {
+      "id": "F-87",
+      "d1Template": "insurance_amount - prior_payouts"
+    },
+    {
+      "id": "F-88",
+      "d1Template": "remaining_insurance * deductible_rate"
+    },
+    {
+      "id": "F-89",
+      "d1Template": "(remaining_insurance * progress_rate * damage_rate * pest_grade_ratio) - deductible_amount"
+    },
+    {
+      "id": "F-90",
+      "d1Template": "preparation_coefficient + (1 - preparation_coefficient) * min(growth_days / standard_growth_days, 1.0)"
+    },
+    {
+      "id": "F-91",
+      "d1Template": "1 - (harvest_days / standard_harvest_days)"
+    },
+    {
+      "id": "F-92",
+      "d1Template": "area_damage_rate * average_damage_severity_rate * (1 - uncovered_ratio)"
+    },
+    {
+      "id": "F-93",
+      "d1Template": "(remaining_insurance * progress_rate * damage_rate) - deductible_amount"
+    },
+    {
+      "id": "F-94",
+      "d1Template": "area_damage_rate * crop_damage_rate * (1 - uncovered_ratio)"
+    },
+    {
+      "id": "F-95",
+      "d1Template": "insurance_amount * (damage_rate - deductible_rate)"
+    },
+    {
+      "id": "F-96",
+      "d1Template": "((lodge_area * 0.70) + (non_lodge_area * average_damage_severity_rate)) / planted_area * (1 - uncovered_ratio)"
+    },
+    {
+      "id": "F-97",
+      "d1Template": "insurance_amount * ((damage_area / planted_area * average_damage_severity_rate * (1 - uncovered_ratio)) - deductible_rate)"
+    },
+    {
+      "id": "F-98",
+      "d1Template": "insurance_amount * (damage_rate - deductible_rate)"
+    },
+    {
+      "id": "F-99",
+      "d1Template": "(yield / per_year_reference_yield) * (damage_area / planted_area)"
+    },
+    {
+      "id": "F-100",
+      "d1Template": "pillar_distance * (mound_width + furrow_width)"
+    },
+    {
+      "id": "F-101",
+      "d1Template": "min(insurance_amount, max(0, loss_amount - deductible_amount) * (insurance_amount / actual_value))"
+    },
+    {
+      "id": "F-102",
+      "d1Template": "(loss_amount - deductible_amount) * (insurance_amount / replacement_value)"
+    },
+    {
+      "id": "F-103",
+      "d1Template": "min(loss_amount - deductible_amount, insurance_amount)"
+    },
+    {
+      "id": "F-104",
+      "d1Template": "planted_area * unit_area_guaranteed_production_cost * progress_rate * damage_rate"
+    },
+    {
+      "id": "F-105",
+      "d1Template": "original_payout * insurance_amount / (unit_guaranteed_production_cost * planted_count)"
+    },
+    {
+      "id": "F-106",
+      "d1Template": "alpha + (1 - alpha) * min(growth_days / standard_growth_days, 1.0)"
+    },
+    {
+      "id": "F-107",
+      "d1Template": "1 - (harvest_days / standard_harvest_days)"
+    },
+    {
+      "id": "F-108",
+      "d1Template": "damage_ratio * damage_severity_rate * (1 - uncovered_ratio)"
+    },
+    {
+      "id": "F-109",
+      "d1Template": "planted_log_count * unit_log_guaranteed_production_cost * damage_rate"
+    },
+    {
+      "id": "F-110",
+      "d1Template": "planted_substrate_count * unit_substrate_guaranteed_production_cost * progress_rate * damage_rate"
+    },
+    {
+      "id": "F-111",
+      "d1Template": "planted_area * unit_area_guaranteed_production_cost * progress_rate * damage_rate"
+    },
+    {
+      "id": "F-112",
+      "d1Template": "planted_bottle_count * unit_bottle_guaranteed_production_cost * 0.887 * damage_rate"
+    },
+    {
+      "id": "F-113",
+      "d1Template": "planted_bottle_count * unit_bottle_guaranteed_production_cost * 0.917 * damage_rate"
+    },
+    {
+      "id": "F-114",
+      "d1Template": "planted_area * unit_area_guaranteed_production_cost * progress_rate * damage_rate"
+    },
+    {
+      "id": "F-115",
+      "d1Template": "(reference_revenue - actual_revenue) / reference_revenue"
+    },
+    {
+      "id": "F-116",
+      "d1Template": "reference_yield * reference_price"
+    },
+    {
+      "id": "F-117",
+      "d1Template": "reference_yield * max(reference_price, harvest_period_price)"
+    },
+    {
+      "id": "F-118",
+      "d1Template": "insurance_amount * (damage_rate * 0.10)"
+    },
+    {
+      "id": "F-119",
+      "d1Template": "insurance_amount * (damage_rate - deductible_rate)"
+    },
+    {
+      "id": "F-120",
+      "d1Template": "dead_tree_count / actual_result_tree_count"
+    },
+    {
+      "id": "F-121",
+      "d1Template": "insurance_amount * (damage_rate - deductible_rate)"
+    },
+    {
+      "id": "F-122",
+      "d1Template": "reference_revenue * (damage_rate - deductible_rate)"
+    },
+    {
+      "id": "F-123",
+      "d1Template": "(reference_price - harvest_period_price) * (reference_yield - damage_yield)"
+    },
+    {
+      "id": "F-124",
+      "d1Template": "reference_price * damage_yield"
+    },
+    {
+      "id": "F-125",
+      "d1Template": "total_yield / harvest_area_at_time"
+    },
+    {
+      "id": "F-126",
+      "d1Template": "(per_year_reference_yield - per_area_actual_yield) * uncovered_ratio"
+    },
+    {
+      "id": "F-127",
+      "d1Template": "per_area_actual_yield + per_area_uncovered_loss"
+    },
+    {
+      "id": "F-128",
+      "d1Template": "max(min(loss_amount * 0.10, 1000000), 100000)"
+    },
+    {
+      "id": "F-129",
+      "d1Template": "insurance_amount * coverage_rate"
+    },
+    {
+      "id": "F-130",
+      "d1Template": "min(removal_cost, loss_amount * 0.10)"
+    },
+    {
+      "id": "F-131",
+      "d1Template": "calf_price * (0.5 if month_age < threshold_month else 1.0)"
+    },
+    {
+      "id": "F-132",
+      "d1Template": "weight_kg * price_per_kg"
+    },
+    {
+      "id": "F-133",
+      "d1Template": "weaning_price + (mating_price - weaning_price) / 6 * (accident_month - 7)"
+    },
+    {
+      "id": "F-134",
+      "d1Template": "mating_price + (first_birth_price - mating_price) / 6 * (accident_month - 18)"
+    },
+    {
+      "id": "F-135",
+      "d1Template": "first_birth_price + (multi_birth_price - first_birth_price) / 9 * (accident_month - 31)"
+    },
+    {
+      "id": "F-136",
+      "d1Template": "multi_birth_price + (old_birth_price - multi_birth_price) / 12 * (accident_month - 55)"
+    },
+    {
+      "id": "F-137",
+      "d1Template": "carcass_price * 0.75"
+    },
+    {
+      "id": "F-138",
+      "d1Template": "carcass_weight * carcass_price_per_kg * 0.75"
+    },
+    {
+      "id": "F-139",
+      "d1Template": "sow_price * 1.20"
+    },
+    {
+      "id": "F-140",
+      "d1Template": "pork_price_per_kg * 110 * 0.768"
+    },
+    {
+      "id": "F-141",
+      "d1Template": "piglet_price + (applied_weight - 30) * (pig_110kg_price - piglet_price) / 80"
+    },
+    {
+      "id": "F-142",
+      "d1Template": "max(egg_price - egg_production_cost, 10) * 0.70 * (550 - accident_age_days)"
+    },
+    {
+      "id": "F-143",
+      "d1Template": "sow_count * 2.5 * piglet_price"
+    },
+    {
+      "id": "F-144",
+      "d1Template": "max((avg_pig_price - operation_cost) / avg_pig_price, 0.165)"
+    },
+    {
+      "id": "F-145",
+      "d1Template": "breeding_sow_count * 10 * avg_pig_price * profit_rate"
+    },
+    {
+      "id": "F-146",
+      "d1Template": "min(loss_amount, insurance_value) - deductible"
+    },
+    {
+      "id": "F-147",
+      "d1Template": "loss_amount * insurance_amount / insurance_value - deductible"
+    },
+    {
+      "id": "F-148",
+      "d1Template": "insurance_amount - paid_insurance"
+    },
+    {
+      "id": "F-149",
+      "d1Template": "loss_amount * insurance_amount / (insurance_value * 0.80)"
+    },
+    {
+      "id": "F-150",
+      "d1Template": "max(loss_amount * deductible_rate, 500000)"
+    },
+    {
+      "id": "F-151",
+      "d1Template": "max(loss_amount * deductible_rate, 2000000)"
+    },
+    {
+      "id": "F-152",
+      "d1Template": "P = L * (S / V)"
+    },
+    {
+      "id": "F-153",
+      "d1Template": "P = L * (S_i / sum(S_k))"
+    },
+    {
+      "id": "F-154",
+      "d1Template": "P = L * (B_i / sum(B_k))"
+    },
+    {
+      "id": "F-155",
+      "d1Template": "R = 100 - 1.06 * D"
+    },
+    {
+      "id": "F-156",
+      "d1Template": "R = 67 - 1.13 * D"
+    },
+    {
+      "id": "F-157",
+      "d1Template": "R = 33 - 0.84 * D"
+    }
+  ],
+  "drift": [
+    {
+      "id": "F-14",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-15",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-16",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-17",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-18",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-19",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-20",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-21",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-22",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-23",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-24",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-25",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-26",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-27",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-28",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-29",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-30",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-31",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-32",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-33",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-34",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-35",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-36",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-37",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-38",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-39",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-40",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-41",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-42",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-43",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-44",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-45",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-46",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-47",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-48",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-49",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-50",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-51",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-52",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-53",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-54",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-55",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-56",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-57",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-58",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-59",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-60",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-61",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-62",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-63",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-64",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-65",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-66",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-67",
+      "kind": "template-mismatch"
+    },
+    {
+      "id": "F-68",
+      "kind": "template-mismatch"
+    }
+  ],
+  "unpopulatedColumns": {
+    "equation_display": 0,
+    "expected_inputs": 0,
+    "graceful_degradation": 0
+  },
+  "versionYear": {
+    "excludedFromComparison": true,
+    "d1Distribution": {
+      "2025": 13,
+      "2026": 144
+    },
+    "codeValueNote": "FormulaDefinition.versionYear 는 비교 키가 아니다 (PITR A) — 코드 68건 전부 2025 고정 vs D1 per-batch ctx.versionYear bind = 코드값 사문 (PITR B 명문화, plan §1.2·§4)"
+  },
+  "gate": {
+    "diffExact": true,
+    "engineBackedAllMatch": false,
+    "driftCount": 55,
+    "pass": false
+  }
+}

@@ -493,6 +493,9 @@ importers:
         specifier: workspace:*
         version: link:../shared
     devDependencies:
+      '@thepick/formula-engine':
+        specifier: workspace:*
+        version: link:../formula-engine
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.0.0
         version: 8.58.1(@typescript-eslint/parser@8.58.1(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1)(typescript@5.9.3)
@@ -538,9 +541,6 @@ importers:
 
   packages/srs:
     dependencies:
-      '@thepick/learning-modes':
-        specifier: workspace:*
-        version: link:../learning-modes
       '@thepick/shared':
         specifier: workspace:*
         version: link:../shared

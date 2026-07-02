@@ -36,3 +36,25 @@ export type {
   UnreachableNode,
   ProductionAuditReport,
 } from './production-audit';
+
+// WS-3c (G-WS3 ⑤) — 코드 산식 레지스트리 ↔ D1 formulas 동기 대조 코어 (2026-07-02).
+export {
+  buildFormulaSyncManifest,
+  equationTemplateFingerprint,
+  expectedEngineBackedFormulaIds,
+  normalizeEquationTemplate,
+  CODE_VERSION_YEAR_DEAD_NOTE,
+  EXPECTED_ENGINE_BACKED_FORMULA_COUNT,
+} from './formula-sync';
+
+export type {
+  BuildFormulaSyncManifestOptions,
+  CodeFormulaEntry,
+  D1FormulaSyncRow,
+  DisplayOnlyEntry,
+  EngineBackedComparison,
+  FormulaDriftEntry,
+  FormulaDriftKind,
+  FormulaSyncManifest,
+  UnpopulatedColumnStats,
+} from './formula-sync';
