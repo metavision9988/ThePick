@@ -5,6 +5,9 @@
 > **근거 측정**: `s5-6-g-s5-2026-06-05-querybody-analysis.md` (2차 실측, node-grounded).
 > **현 구현 매핑**: 4 영역 병렬 탐사(wf_68e0dffd) + 메인 cycle-closure(엣지 도달성 batch 1274 직접 검증).
 > **G-1 준수**: 본 plan 은 "graph 가 개선된다"를 단언하지 않는다. 옵션·게이트·천장만 못박고 GO 는 진산.
+> **결재 #7 집행 (2026-06-12)**: Phase 1 비교군에 **D안(graph-walk 동결 + lexical fusion)** 등재 —
+> §3 Phase 1-D·§4·§7·§9 (MASTER_PLAN §6 #7 ☑ 진산 승인 2026-06-11 "추천한 것으로". 등재만 집행,
+> D안 구현 착수는 §9 별도 체크 + 상세 plan 별건).
 
 ---
 
@@ -98,6 +101,34 @@
 - **검증**: 확대 golden 재측정(depth1) → graphOnlyRecovery>0 (INS-27·F-103류 회수) **AND** regression=0
   **AND** 기존 6 Binary Gate + ranking-core/graph-search-route/user-search 테스트 PASS + /api/search 불변.
 
+### Phase 1-D — D안: graph-walk 동결 + lexical fusion (비교군 — 결재 #7 등재)
+
+> **위상**: Phase 1(보수 graph algo)의 **대조군**. graph-walk 는 depth1(0a) 동결로 두고, 자체 스펙이면서
+> 정상 경로 미배선인 **lexical(keyword) 신호 융합**이 같은 실패 표적을 더 싸게 회수하는지 **동일 확대
+> golden(0b)에서 비교 측정**한다. 비교 측정 결과 = **#8(G-S5 GO/NO-GO) 재상신 트리거** (MASTER_PLAN §6
+> #8 조건부 보류 원문: "실질 처분 = #6(depth1 차단)+#7(D안 비교군) 집행 후 D안 vs graph 재설계 비교
+> 측정 결과로 재상신").
+
+- **근거 스펙 (Accepted, 융합만 미배선)**: SEARCH_PIPELINE.md §2 — Keyword Search(D1 N-gram, ~50ms) +
+  "Vector 0.60~0.75 → Hybrid + Keyword 결합" 분기 (ADR-019 Accepted — 정상경로 Concurrent 원형·**미구현**
+  / ADR-015 Accepted — fallback 경로·기실재. 두 ADR 의 귀속 경로가 다름에 주의). 현 실재: lexical 매처는
+  `multi-path-fallback/keyword-fallback.ts` 가 **fallback Stage 2 한정** 가동(vector 실패/graceful 시에만
+  진입 — routes.ts runMultiPathFallback) — 정상 경로 랭킹에 lexical 융합 = **0건**(user-search.ts 무결합).
+- **표적 정합 (실측 F2 직격)**: Q-015 정답 F-103(0.63) 이 무관 FORMULA×5(0.65) 아래 rank6 고착 = vector
+  0.02차 변별 불능. 질문 토큰 lexical 일치는 vector 동률대의 **직교 변별 신호 후보**이고, graph 와 달리
+  엣지 밀도(§0-2 데이터 천장)·seed 품질(§0-3)에 **비종속**. 단 명칭 비포함(NOT-NAMED) 표적의 lexical
+  회수 여부는 **측정 전 단언 불가**(G-1) — 확대 golden 비교 측정이 판정.
+- **PITR (D안 내부 갈림길 — 채택 시 상세 plan 별건·L3 검색 경로)**: (D-A) `/api/search/graph` 의 walk
+  호출을 lexical 융합으로 대체(비교 격리 명확) vs (D-B) 기존 keyword-fallback 매처를 정상 경로 re-rank
+  tiebreak 로 재사용(신규 표면 최소) vs (D-C) Concurrent 3-way 전면 배선(SEARCH_PIPELINE §2 원형, 비용
+  최대). 권고 = **D-B** — 단 권고일 뿐, 채택·조정은 진산.
+- **게이트 (Phase 1 동일 기준 준용)**: 동일 확대 golden 에서 lexicalOnlyRecovery(graphOnlyRecovery 상당
+  지표) > 0 AND regression = 0 AND `/api/search` 불변(byte-동치) AND CPU p95 예산 내(G-R-5 준용) + 기존
+  테스트 PASS.
+- **비용·천장 정직**: 매처 기실재라 신규 표면은 융합·계측뿐 — Phase 1(graph 3종 수술 L1·L3·L4) 대비
+  저비용 [추정, 구현 전]. 단 한국어 어미 변화 미대응(D-MPF-1=A 채택 한계)·LIKE 단순 매칭이라 lexical
+  천장도 유한 — SP-T06 ≥ 85% 미달 시 옵션 B(bge-m3 reranking) 보강 의무 조항이 동일 적용.
+
 ### Phase 2 — 전략 랭킹 (ADR-gated, 진산 별도 결재)
 
 > 전제: Phase 1 후에도 F2(동일-type 무변별·cross-type 범람)가 잔존하고 확대 측정이 정당화할 때만.
@@ -124,15 +155,16 @@
 
 ## 4. PITR 요약 (권고 default — 진산 1줄 조정 가능)
 
-| Phase     | 권고                      | 근거                                    |
-| :-------- | :------------------------ | :-------------------------------------- |
-| 0a depth  | depth1 기본               | 측정: depth2 순손실 확정. 무관 변수 0   |
-| 0b golden | N≥20~30 확대 후 재측정    | N=1 과적합 차단(하드 게이트)            |
-| 1 L1 범람 | USES_FORMULA depth1 한정  | 측정 F1 직격·최보수                     |
-| 1 L3 도달 | inbound 1-hop 양방향      | batch 검증: F-103→INS-27 회수, CPU 최소 |
-| 1 L4 seed | type round-robin          | seed 품질 = vector 종속 완화            |
-| 2 랭킹    | graph 전용 re-ranker(ADR) | baseline 격리·CO-3 준수                 |
-| 3 데이터  | 누락 엣지 BATCH 보강      | 자기부담금류 = algo 불가                |
+| Phase      | 권고                                          | 근거                                                                    |
+| :--------- | :-------------------------------------------- | :---------------------------------------------------------------------- |
+| 0a depth   | depth1 기본                                   | 측정: depth2 순손실 확정. 무관 변수 0                                   |
+| 0b golden  | N≥20~30 확대 후 재측정                        | N=1 과적합 차단(하드 게이트)                                            |
+| 1 L1 범람  | USES_FORMULA depth1 한정                      | 측정 F1 직격·최보수                                                     |
+| 1 L3 도달  | inbound 1-hop 양방향                          | batch 검증: F-103→INS-27 회수, CPU 최소                                 |
+| 1 L4 seed  | type round-robin                              | seed 품질 = vector 종속 완화                                            |
+| 1-D 비교군 | D안: graph 동결 + lexical fusion (D-B 재사용) | F2(0.02차 변별 불능) 직격·데이터 천장 비종속·매처 기실재 (결재 #7 등재) |
+| 2 랭킹     | graph 전용 re-ranker(ADR)                     | baseline 격리·CO-3 준수                                                 |
+| 3 데이터   | 누락 엣지 BATCH 보강                          | 자기부담금류 = algo 불가                                                |
 
 ## 5. Binary Gates (재설계 완료 판정)
 
@@ -158,7 +190,10 @@
 ```
 Phase 0a(depth1, 즉시·단독결재) ──┐
 Phase 0b(golden 확대) ───────────┼─→ [확대 측정 재현?] ─yes→ Phase 1(보수 algo) ─→ [잔존?] ─yes→ Phase 2(ADR 랭킹)
-Phase 3(BATCH 엣지, 병렬·독립) ──┘                          no→ 재설계 재검토(진산 보고)
+Phase 3(BATCH 엣지, 병렬·독립) ──┘            │               no→ 재설계 재검토(진산 보고)
+                                              └─→ Phase 1-D(D안: lexical fusion·graph 동결, 결재 #7 등재·0b 선결)
+                                                  — Phase 1 과 동일 확대 golden 병렬 비교 측정
+                                                  → D안 vs graph 재설계 결과로 #8(GO/NO-GO) 재상신
 ```
 
 ## 8. 측정 ROI 정직 (감사 "시기상조"와 정합)
@@ -175,9 +210,10 @@ Phase 3(BATCH 엣지, 병렬·독립) ──┘                          no→ �
 [x] Phase 0a (depth1 기본화)        — ★결재 #6 (진산 2026-06-11 "추천한 것으로") + 집행 완료: 엔진 DEFAULT_MAX_DEPTH 2→1 (plan 문언 "route override" 와 동등·더 보수 — 직접 호출자까지 보호, 리뷰 m-3). 4-Pass C0/M2 해소. G-R0a **완료** (2026-06-11): Worker 재배포(8d2e6ea3) 후 REMOTE 재측정 — hit-rate 83.3/83.3 Δ0.0%·regression 0 (`s5-6-remote-g-s5-2026-06-11-0549.md`). **Phase 0a 완료.**
 [ ] Phase 0b (golden N≥20~30 확대)  — 알고리즘 재설계 하드 선결. 승인 시 메인 구축(draft-only).
 [ ] Phase 1 (보수 algo: L1·L3·L4)   — Phase 0b 재현 후. PITR 권고 채택/조정: ____________
+[ ] Phase 1-D (D안: graph 동결+lexical fusion) — 비교군 **등재는 결재 #7 ☑(2026-06-11) 집행 완료(2026-06-12)**. 구현 착수 = 본 체크 + 상세 plan 별건(L3 검색 경로). PITR D-A/D-B/D-C 권고 채택/조정: ____________
 [ ] Phase 2 (ADR 랭킹 분리)         — Phase 1 잔존 시. ADR 선작성 후 별도 결재.
 [ ] Phase 3 (BATCH 엣지 보강)       — 콘텐츠 트랙. 별도 결재(loader·검수·환각 차단).
-[ ] 보류(graph 현 상태 동결)        — 확대 측정 전까지 depth1(0a)만 적용하고 투자 보류.
+[ ] 보류(graph 현 상태 동결)        — 확대 측정 전까지 depth1(0a)만 적용하고 투자 보류. ※ Phase 1-D 와 구별: 본 체크 = lexical 투자(D안)도 보류 → #8 재상신 전제(D안 vs graph 비교 측정) 정지.
 ```
 
 - **코드 착수 = 위 체크 + 진산 "진행" 후**(L3, 자율 금지). depth1(0a)·golden(0b)은 저위험 → 우선 권고.
