@@ -55,6 +55,8 @@ interface Args {
   limit: number | null;
   /** graph-walk maxDepth (route 계약 1..MAX_ALLOWED_DEPTH=4). null = 미주입(엔진 기본). */
   maxDepth: number | null;
+  /** 디버그 측정 모드 — route debug:true (query ≤2000 우회 + expandedNodes surface). G-WS4 ③④ 배선. */
+  debug: boolean;
 }
 
 /**
@@ -72,10 +74,12 @@ function parseArgs(argv: string[]): Args {
   let goldenPath: string | null = null;
   let limit: number | null = null;
   let maxDepth: number | null = null;
+  let debug = false;
   let outDir = join(HERE, '..', 'docs', 'plans', 's5-6-measurements');
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--golden') goldenPath = argv[++i] ?? null;
+    else if (a === '--debug') debug = true;
     else if (a === '--out') outDir = argv[++i] ?? outDir;
     else if (a === '--limit') {
       const rawLimit = argv[++i] ?? '';
@@ -108,7 +112,7 @@ function parseArgs(argv: string[]): Args {
       );
     }
   }
-  return { goldenPath, outDir, limit, maxDepth };
+  return { goldenPath, outDir, limit, maxDepth, debug };
 }
 
 /**
@@ -123,7 +127,7 @@ function parseArgs(argv: string[]): Args {
 const REMOTE_MAX_ATTEMPTS = 4;
 async function fetchGraphWithRetry(
   url: string,
-  requestBody: { examId: string; query: string; topK: number; maxDepth?: number },
+  requestBody: { examId: string; query: string; topK: number; maxDepth?: number; debug?: boolean },
   questionId: string,
 ): Promise<GraphSearchResponseShape> {
   let lastStatus = 0;
@@ -158,6 +162,7 @@ async function runRemote(
   goldenPath: string | null,
   limit: number | null,
   maxDepth: number | null,
+  debug: boolean,
 ): Promise<{ per: PerQuestionResult[]; golden: EvalGoldenItem[]; coverage: string }> {
   // 사전조건 = 순수 코어 단일 진실원 (G-6a-5 — 게이트 정책 drift 0).
   const { apiBase, goldenPath: gp } = assertRemoteMeasurementInputs(
@@ -184,12 +189,20 @@ async function runRemote(
     golden.push(item);
     // maxDepth 미주입 시 키 자체를 빼서 route 기본(엔진 default) 경로 보존 —
     // 원 측정(2026-06-01)과 byte-동치. 주입 시에만 명시 (maxDepth=1 재측정).
-    const requestBody: { examId: string; query: string; topK: number; maxDepth?: number } = {
+    const requestBody: {
+      examId: string;
+      query: string;
+      topK: number;
+      maxDepth?: number;
+      debug?: boolean;
+    } = {
       examId,
       query: it.content,
       topK: 5,
     };
     if (maxDepth !== null) requestBody.maxDepth = maxDepth;
+    // 디버그 측정(G-WS4 ③④) — 미지정 시 키 자체를 빼서 원 측정과 byte-동치 유지.
+    if (debug) requestBody.debug = true;
     // 간헐적 ADR-008 800ms timeout(504) 흡수 후 fail-loud — 채점 본문 불변.
     const body = await fetchGraphWithRetry(
       `${apiBase.replace(/\/$/, '')}/api/search/graph`,
@@ -211,8 +224,8 @@ async function runRemote(
 }
 
 async function main(): Promise<void> {
-  const { goldenPath, outDir, limit, maxDepth } = parseArgs(process.argv);
-  const { per, golden, coverage } = await runRemote(goldenPath, limit, maxDepth);
+  const { goldenPath, outDir, limit, maxDepth, debug } = parseArgs(process.argv);
+  const { per, golden, coverage } = await runRemote(goldenPath, limit, maxDepth, debug);
 
   const report = aggregate(per, golden, coverage);
   const generatedAt = new Date().toISOString();

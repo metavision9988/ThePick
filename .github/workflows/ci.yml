@@ -68,6 +68,11 @@ jobs:
                --filter @thepick/srs \
                test
 
+      # 5-페르소나 리뷰(2026-07-02) MAJOR-4 — 루트 scripts/ 테스트는 workspace 밖이라
+      # turbo 필터 미커버. golden 빌더 G-WS4 ② 게이트(byte-동치·leak·과제거 가드) 배선.
+      - name: Test (root scripts — golden builder G-WS4)
+        run: pnpm test:scripts
+
       # Step 18 — Engine Hardening 자동 검증 (master-test-checklist v1 / Cat 1+4+6+7).
       # vitest 합계 + Hard Rule 17 + 동적 코드 실행 차단 + XSS + console.* 회귀 방어.
       # 미달 시 exit 1 → CI 차단. JSON 결과는 artifact 로 업로드 (PR 리뷰 시 진척도 추적).
