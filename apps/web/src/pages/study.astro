@@ -2,6 +2,7 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { StudyFlow } from '@/components/StudyFlow';
 import { ProgressViz } from '@/components/progress/ProgressViz';
+import { DueQueue } from '@/components/review/DueQueue';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
 ---
 
@@ -18,8 +19,11 @@ import { OfflineIndicator } from '@/components/OfflineIndicator';
         </a>
       </div>
       <ProgressViz examType="1st" client:load />
+      <div class="mt-6">
+        <DueQueue client:load />
+      </div>
     </aside>
-    <main class="flex-1 lg:max-w-[720px]">
+    <main id="study-main" class="flex-1 lg:max-w-[720px]">
       <header class="mb-6">
         <h1 class="text-2xl font-medium text-gray-900">학습</h1>
         <p class="mt-1 text-sm text-gray-500">학습 모드를 선택하면 세션이 시작된다.</p>

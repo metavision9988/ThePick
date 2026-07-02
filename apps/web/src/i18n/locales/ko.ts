@@ -55,6 +55,8 @@ export const ko: TranslationDictionary = {
     learning: '학습중',
     new: '새로운',
     due: '복습 예정',
+    dueCards: '복습 예정 {{count}}장',
+    dueEmpty: '지금 복습할 카드가 없습니다',
   },
 
   content: {

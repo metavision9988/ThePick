@@ -15,6 +15,7 @@ export function emptyCounters(): ApiCallCounters {
     authLogin: 0,
     modeStats: 0,
     progress: 0,
+    progressDue: 0,
     modeStart: 0,
     sessionDetail: 0,
     sessionComplete: 0,

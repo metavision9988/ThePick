@@ -41,10 +41,14 @@ test.describe('mobile 375px viewport', () => {
     // horizontal overflow 검증
     await assertNoHorizontalOverflow(page);
 
-    // 5개 모드 버튼 모두 44px+ height
-    const buttons = await page.getByRole('button', { name: /학습 시작 \(\d+문제\)/ }).all();
-    expect(buttons.length).toBe(5);
-    for (const btn of buttons) {
+    // 모드 버튼 5개 = wired 3(weak/mixed/category — N문제 표기) + 미배선 2(준비 중).
+    // WS-0d 모드 정직성 + WS-5a category 배선 계약 정합 (2026-06-12 — 구 '5개 전부 enabled'
+    // 전제는 WS-0d 도입 시점부터 stale, 픽스처 wired 수리와 함께 갱신).
+    const wiredButtons = await page.getByRole('button', { name: /학습 시작 \(\d+문제\)/ }).all();
+    expect(wiredButtons.length).toBe(3);
+    const pendingButtons = await page.getByRole('button', { name: /\(준비 중\)/ }).all();
+    expect(pendingButtons.length).toBe(2);
+    for (const btn of [...wiredButtons, ...pendingButtons]) {
       const box = await btn.boundingBox();
       expect(box).not.toBeNull();
       expect(box!.height).toBeGreaterThanOrEqual(TOUCH_TARGET_MIN);

@@ -41,11 +41,23 @@ export interface ConfusionTypeEntry {
   readonly count: number;
 }
 
+/** WS-5a — GET /api/study/mode 응답 category subject 선택지 (subject 픽커 데이터 — 과목명 하드코딩 금지). */
+export interface CategorySubjectEntry {
+  readonly subject: string;
+  readonly available: number;
+}
+
 /** GET /api/study/mode 응답 envelope */
 export interface ModeStatsResponse {
   readonly examId: string;
   readonly examType: ExamType;
   readonly modes: ReadonlyArray<ModeAvailability>;
+  /**
+   * WS-5a — category 모드 subject 픽커 데이터 (additive 서버 필드). optional = 구버전
+   * API(필드 미전송) 대비 graceful — 부재 시 픽커가 빈 안내를 표시하고 시작이 막힌다
+   * (무필터 category 세션 생성 차단, 서버도 /mode/start 422 로 이중 방어).
+   */
+  readonly categorySubjects?: ReadonlyArray<CategorySubjectEntry>;
   readonly weakTop: ReadonlyArray<WeakTopEntry>;
   readonly confusionTypes: ReadonlyArray<ConfusionTypeEntry>;
   /** Step 3-UX-6c-2 — 진입 시 streak / 일일 목표 progress surface. */

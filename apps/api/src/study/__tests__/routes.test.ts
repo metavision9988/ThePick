@@ -175,14 +175,22 @@ function seedStudySession(params: {
   correctCount?: number;
   startedAt?: string;
   endedAt?: string | null;
+  /** WS-5a — object 는 JSON 직렬화, string 은 원문 그대로(파손 JSON 시나리오용). */
+  modeParams?: Record<string, unknown> | string | null;
 }): string {
   const id = params.id ?? crypto.randomUUID();
+  const modeParamsValue =
+    params.modeParams === undefined || params.modeParams === null
+      ? null
+      : typeof params.modeParams === 'string'
+        ? params.modeParams
+        : JSON.stringify(params.modeParams);
   ctx.raw
     .prepare(
       `INSERT INTO study_sessions
          (id, user_id, started_at, ended_at, mode, mode_params, phase,
           cards_planned, cards_completed, correct_count)
-       VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id,
@@ -190,6 +198,7 @@ function seedStudySession(params: {
       params.startedAt ?? new Date().toISOString(),
       params.endedAt ?? null,
       params.mode ?? 'mixed',
+      modeParamsValue,
       params.phase ?? 'warmup',
       params.cardsPlanned ?? 20,
       params.cardsCompleted ?? 0,
@@ -857,14 +866,15 @@ describe('GET /api/study/mode', () => {
   });
 
   // WS-0d 모드 정직성 (결재 #9 위임 = 비활성 표기, 2026-06-11) — wired 가 서버 단일 진실원.
-  it('wired — weak/mixed 만 true, 미배선 category/topic/confusion 은 false', async () => {
+  // WS-5a (2026-06-12): category 배선 → true (topic/confusion 은 데이터 실측상 미배선 잔류).
+  it('wired — weak/mixed/category 만 true, 미배선 topic/confusion 은 false', async () => {
     seedUser('u1', 'u1@test.com');
     const res = await fetchAs('u1', '/mode?examType=2nd');
     const body = (await res.json()) as ModeStatsBody;
     const wiredOf = new Map(body.modes.map((m) => [m.mode, m.wired]));
     expect(wiredOf.get('weak')).toBe(true);
     expect(wiredOf.get('mixed')).toBe(true);
-    expect(wiredOf.get('category')).toBe(false);
+    expect(wiredOf.get('category')).toBe(true);
     expect(wiredOf.get('topic')).toBe(false);
     expect(wiredOf.get('confusion')).toBe(false);
   });
@@ -957,8 +967,8 @@ describe('GET /api/study/mode', () => {
 
   it('exam_type 필터 + weak top + confusion breakdown', async () => {
     seedUser('u1', 'u1@test.com');
-    seedExamQuestion({ id: 'eq-c1', examType: '2nd', confusionType: 'numeric' });
-    seedExamQuestion({ id: 'eq-c2', examType: '2nd', confusionType: 'numeric' });
+    seedExamQuestion({ id: 'eq-c1', examType: '2nd', confusionType: 'numeric', subject: '2과목' });
+    seedExamQuestion({ id: 'eq-c2', examType: '2nd', confusionType: 'numeric', subject: null });
     seedExamQuestion({ id: 'eq-other', examType: '1st' }); // 다른 examType 제외
     // user_progress weak_score
     seedProgressForQuestion({ userId: 'u1', questionId: 'eq-c1', weakScore: 0.7 });
@@ -968,7 +978,10 @@ describe('GET /api/study/mode', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as ModeStatsBody;
     const category = body.modes.find((m) => m.mode === 'category');
-    expect(category?.available).toBe(2); // 2nd 만
+    // WS-5a G1 정합 — category available = subject NOT NULL 풀 (구 total 의미에서 변경).
+    expect(category?.available).toBe(1);
+    const mixedRow = body.modes.find((m) => m.mode === 'mixed');
+    expect(mixedRow?.available).toBe(2); // 2nd 전체 (NULL subject 포함)
     const weak = body.modes.find((m) => m.mode === 'weak');
     expect(weak?.available).toBe(2);
     const confusion = body.modes.find((m) => m.mode === 'confusion');
@@ -1223,9 +1236,11 @@ describe('POST /api/study/mode/start', () => {
   });
 
   // WS-0d 모드 정직성 — 미배선 모드는 서버가 거부 (UI disabled 의 API 우회 차단).
-  it('미배선 모드(category/topic/confusion) → 422 MODE_NOT_AVAILABLE', async () => {
+  // WS-5a (2026-06-12): category 배선 → 본 목록에서 제외 (topic/confusion 잔류 —
+  // topic_cluster 0/534·confusion 데이터 NULL 실측, S10 전 비활성).
+  it('미배선 모드(topic/confusion) → 422 MODE_NOT_AVAILABLE', async () => {
     seedUser('u1', 'u1@test.com');
-    for (const mode of ['category', 'topic', 'confusion'] as const) {
+    for (const mode of ['topic', 'confusion'] as const) {
       const res = await fetchAs('u1', '/mode/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1234,8 +1249,187 @@ describe('POST /api/study/mode/start', () => {
       expect(res.status).toBe(422);
       const body = (await res.json()) as { error: string; wiredModes: string[] };
       expect(body.error).toBe('MODE_NOT_AVAILABLE');
-      expect(body.wiredModes.sort()).toEqual(['mixed', 'weak']);
+      expect(body.wiredModes.sort()).toEqual(['category', 'mixed', 'weak']);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WS-5a — category 모드 배선 (ADR-039: category = subject 단위 학습)
+// ---------------------------------------------------------------------------
+
+describe('WS-5a — category 모드 배선 (/mode/start subject 검증 + /next WHERE 필터)', () => {
+  it('/mode/start category — modeParams.subject 누락 → 422 MODE_PARAMS_INVALID', async () => {
+    seedUser('u1', 'u1@test.com');
+    for (const body of [
+      { mode: 'category', cardsPlanned: 10 },
+      { mode: 'category', modeParams: {}, cardsPlanned: 10 },
+      { mode: 'category', modeParams: { subject: '' }, cardsPlanned: 10 },
+      { mode: 'category', modeParams: { subject: '   ' }, cardsPlanned: 10 },
+      { mode: 'category', modeParams: { subject: 42 }, cardsPlanned: 10 },
+      { mode: 'category', modeParams: { subject: 'x'.repeat(101) }, cardsPlanned: 10 },
+    ]) {
+      const res = await fetchAs('u1', '/mode/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      expect(res.status).toBe(422);
+      const resBody = (await res.json()) as { error: string };
+      expect(resBody.error).toBe('MODE_PARAMS_INVALID');
+    }
+  });
+
+  it('/mode/start category — 유효 subject → 200 + mode_params 영속', async () => {
+    seedUser('u1', 'u1@test.com');
+    const res = await fetchAs('u1', '/mode/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'category',
+        modeParams: { subject: '상법 보험편' },
+        cardsPlanned: 10,
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as ModeStartBody;
+    expect(body.mode).toBe('category');
+    const row = ctx.raw
+      .prepare(`SELECT mode_params FROM study_sessions WHERE id = ?`)
+      .get(body.sessionId) as { mode_params: string };
+    expect(JSON.parse(row.mode_params)).toEqual({ subject: '상법 보험편' });
+  });
+
+  it('/next category session → subject WHERE 필터 적용 (타 과목 제외)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-cat-law-1', examType: '2nd', subject: '상법 보험편' });
+    seedExamQuestion({ id: 'eq-cat-law-2', examType: '2nd', subject: '상법 보험편' });
+    seedExamQuestion({ id: 'eq-cat-agri-1', examType: '2nd', subject: '농학개론' });
+    seedExamQuestion({ id: 'eq-cat-null-1', examType: '2nd', subject: null });
+    const sid = seedStudySession({
+      userId: 'u1',
+      mode: 'category',
+      modeParams: { subject: '상법 보험편' },
+      cardsPlanned: 10,
+    });
+    const res = await fetchAs('u1', `/next?examType=2nd&sessionId=${sid}&count=5`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as NextWithSessionBody;
+    expect(body.exhausted).toBe(false);
+    expect(body.questions!.map((q) => q.id).sort()).toEqual(['eq-cat-law-1', 'eq-cat-law-2']);
+    expect(body.session?.mode).toBe('category');
+  });
+
+  it('/next category session — 해당 subject 0건 → exhausted (무필터 폴백 금지)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-cat-other', examType: '2nd', subject: '농학개론' });
+    const sid = seedStudySession({
+      userId: 'u1',
+      mode: 'category',
+      modeParams: { subject: '상법 보험편' },
+      cardsPlanned: 10,
+    });
+    const res = await fetchAs('u1', `/next?examType=2nd&sessionId=${sid}`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as NextWithSessionBody;
+    expect(body.exhausted).toBe(true);
+    expect(body.questions).toEqual([]);
+  });
+
+  it('/next category session — mode_params 결손/파손 → 422 MODE_PARAMS_INVALID', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-cat-x', examType: '2nd', subject: '상법 보험편' });
+    const cases: ReadonlyArray<Record<string, unknown> | string | null> = [
+      null,
+      '{not-json',
+      { conceptId: 'CONCEPT-001' },
+      { subject: '' },
+    ];
+    for (const modeParams of cases) {
+      const sid = seedStudySession({
+        userId: 'u1',
+        mode: 'category',
+        modeParams,
+        cardsPlanned: 10,
+      });
+      const res = await fetchAs('u1', `/next?examType=2nd&sessionId=${sid}`);
+      expect(res.status).toBe(422);
+      const body = (await res.json()) as { error: string };
+      expect(body.error).toBe('MODE_PARAMS_INVALID');
+    }
+  });
+
+  it('/next 비-category 모드 — subject 필터 미적용 (회귀: mixed 전체 풀)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-mix-1', examType: '2nd', subject: '상법 보험편' });
+    seedExamQuestion({ id: 'eq-mix-2', examType: '2nd', subject: '농학개론' });
+    const sid = seedStudySession({ userId: 'u1', mode: 'mixed', cardsPlanned: 10 });
+    const res = await fetchAs('u1', `/next?examType=2nd&sessionId=${sid}&count=5`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as NextWithSessionBody;
+    expect(body.questions).toHaveLength(2);
+  });
+
+  it('/mode → category wired=true + categorySubjects breakdown (NULL subject 제외)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-md-1', examType: '2nd', subject: '상법 보험편' });
+    seedExamQuestion({ id: 'eq-md-2', examType: '2nd', subject: '상법 보험편' });
+    seedExamQuestion({ id: 'eq-md-3', examType: '2nd', subject: '농학개론' });
+    seedExamQuestion({ id: 'eq-md-4', examType: '2nd', subject: null });
+    const res = await fetchAs('u1', '/mode?examType=2nd');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      modes: ReadonlyArray<{ mode: string; wired: boolean; available: number }>;
+      categorySubjects: ReadonlyArray<{ subject: string; available: number }>;
+    };
+    const category = body.modes.find((m) => m.mode === 'category');
+    expect(category?.wired).toBe(true);
+    const topic = body.modes.find((m) => m.mode === 'topic');
+    expect(topic?.wired).toBe(false);
+    expect(body.categorySubjects).toEqual([
+      { subject: '농학개론', available: 1 },
+      { subject: '상법 보험편', available: 2 },
+    ]);
+  });
+
+  // S9 완료 게이트 G1 (5-페르소나 MAJOR 흡수, 2026-06-12) — "모드별 /next 풀 = available".
+  // category: available = Σ categorySubjects = subject NOT NULL 풀(/next eq.subject 필터와
+  // 동치 — total 을 빌리면 NULL subject 데이터에서 게이트가 정의상 깨짐). mixed: 전체 풀.
+  it('G1 — 모드별 /next 풀 = available 카운트 (category subject별 + mixed)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedExamQuestion({ id: 'eq-g1-a1', examType: '2nd', subject: '상법 보험편' });
+    seedExamQuestion({ id: 'eq-g1-a2', examType: '2nd', subject: '상법 보험편' });
+    seedExamQuestion({ id: 'eq-g1-b1', examType: '2nd', subject: '농학개론' });
+    seedExamQuestion({ id: 'eq-g1-n1', examType: '2nd', subject: null });
+
+    const modeRes = await fetchAs('u1', '/mode?examType=2nd');
+    const modeBody = (await modeRes.json()) as {
+      modes: ReadonlyArray<{ mode: string; available: number }>;
+      categorySubjects: ReadonlyArray<{ subject: string; available: number }>;
+    };
+    const category = modeBody.modes.find((m) => m.mode === 'category')!;
+    const mixed = modeBody.modes.find((m) => m.mode === 'mixed')!;
+    expect(category.available).toBe(3); // NULL subject 제외 (total 4 아님)
+    expect(modeBody.categorySubjects.reduce((s, e) => s + e.available, 0)).toBe(category.available);
+    expect(mixed.available).toBe(4);
+
+    for (const entry of modeBody.categorySubjects) {
+      const sid = seedStudySession({
+        userId: 'u1',
+        mode: 'category',
+        modeParams: { subject: entry.subject },
+        cardsPlanned: 10,
+      });
+      const res = await fetchAs('u1', `/next?examType=2nd&sessionId=${sid}&count=5`);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as NextWithSessionBody;
+      expect(body.questions).toHaveLength(entry.available);
+    }
+
+    const sidMixed = seedStudySession({ userId: 'u1', mode: 'mixed', cardsPlanned: 10 });
+    const resMixed = await fetchAs('u1', `/next?examType=2nd&sessionId=${sidMixed}&count=5`);
+    const bodyMixed = (await resMixed.json()) as NextWithSessionBody;
+    expect(bodyMixed.questions).toHaveLength(mixed.available);
   });
 });
 

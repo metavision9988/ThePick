@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 
-import type { LearningMode } from './types';
+import type { CategorySubjectEntry, LearningMode } from './types';
 import { MODE_META } from './types';
 
 interface SessionStartProps {
@@ -19,8 +19,11 @@ interface SessionStartProps {
   readonly dailyGoal: number;
   /** Step 3-UX-6c-2 — 오늘 누적 review / dailyGoal (0~1 cap). */
   readonly dailyGoalProgress: number;
+  /** WS-5a — category 모드 subject 선택지 (/mode categorySubjects). category 외 모드는 미사용. */
+  readonly categorySubjects?: ReadonlyArray<CategorySubjectEntry>;
   readonly disabled: boolean;
-  readonly onStart: (cardsPlanned: number) => void;
+  /** WS-5a — category 는 modeParams { subject } 동반 (서버 /mode/start 422 계약). */
+  readonly onStart: (cardsPlanned: number, modeParams?: Record<string, unknown>) => void;
   readonly onCancel: () => void;
 }
 
@@ -39,6 +42,7 @@ export function SessionStart({
   streakLongest,
   dailyGoal,
   dailyGoalProgress,
+  categorySubjects,
   disabled,
   onStart,
   onCancel,
@@ -46,6 +50,20 @@ export function SessionStart({
   const meta = MODE_META[mode];
   const cappedDefault = Math.min(DEFAULT_CARDS, available);
   const [cardsPlanned, setCardsPlanned] = useState<number>(cappedDefault);
+
+  // WS-5a — category 모드 과목 선택 (ADR-039: category = subject 단위 학습).
+  // 미선택 상태로는 시작 불가 (무필터 세션 = 계약 위반, 서버 422 와 이중 방어).
+  const isCategory = mode === 'category';
+  const subjects = categorySubjects ?? [];
+  const [subject, setSubject] = useState<string | null>(null);
+  const selectedEntry = isCategory ? (subjects.find((s) => s.subject === subject) ?? null) : null;
+  const effectiveAvailable = isCategory ? (selectedEntry?.available ?? 0) : available;
+
+  function handleSelectSubject(entry: CategorySubjectEntry): void {
+    setSubject(entry.subject);
+    // 카드 수가 선택 과목 풀을 넘지 않게 즉시 클램프.
+    setCardsPlanned((prev) => Math.max(MIN_CARDS, Math.min(prev, entry.available)));
+  }
 
   // 4-Pass C-2 흡수 — NaN/Infinity/음수 가드 (Math.min/max는 인자에 NaN 시 NaN 반환).
   const safeProgress = Number.isFinite(dailyGoalProgress)
@@ -59,7 +77,7 @@ export function SessionStart({
   function handleChange(raw: string): void {
     const num = Number.parseInt(raw, 10);
     if (Number.isFinite(num)) {
-      const clamped = Math.max(MIN_CARDS, Math.min(num, Math.min(MAX_CARDS, available)));
+      const clamped = Math.max(MIN_CARDS, Math.min(num, Math.min(MAX_CARDS, effectiveAvailable)));
       setCardsPlanned(clamped);
     }
   }
@@ -79,6 +97,42 @@ export function SessionStart({
         <p className="mt-2 text-xs tabular-nums text-gray-500">이 mode 대상 {available}문제</p>
       </section>
 
+      {isCategory && (
+        <section className="mb-4 rounded-lg border border-gray-200 bg-white px-5 py-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">과목 선택</p>
+          {subjects.length === 0 ? (
+            <p className="mt-2 text-xs text-gray-400">선택할 수 있는 과목이 없습니다</p>
+          ) : (
+            <div className="mt-2 flex flex-col gap-2" role="radiogroup" aria-label="과목 선택">
+              {subjects.map((entry) => {
+                const selected = subject === entry.subject;
+                return (
+                  <button
+                    key={entry.subject}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => handleSelectSubject(entry)}
+                    disabled={disabled || entry.available === 0}
+                    className={`flex items-baseline justify-between rounded-lg border px-4 py-2 text-left disabled:cursor-not-allowed disabled:opacity-50 ${
+                      selected
+                        ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-200'
+                        : 'border-gray-200 bg-white hover:bg-gray-50'
+                    }`}
+                    style={{ minHeight: 44 }}
+                  >
+                    <span className="text-sm text-gray-900">{entry.subject}</span>
+                    <span className="ml-2 text-xs tabular-nums text-gray-500">
+                      {entry.available}문제
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
       <section className="mb-4 rounded-lg border border-gray-200 bg-white px-5 py-4">
         <label
           htmlFor="cards-planned"
@@ -92,10 +146,10 @@ export function SessionStart({
             type="number"
             inputMode="numeric"
             min={MIN_CARDS}
-            max={Math.min(MAX_CARDS, available)}
+            max={Math.min(MAX_CARDS, effectiveAvailable)}
             value={cardsPlanned}
             onChange={(e) => handleChange(e.target.value)}
-            disabled={disabled || available === 0}
+            disabled={disabled || effectiveAvailable === 0}
             className="w-24 rounded-lg border border-gray-200 px-3 py-2 text-base tabular-nums text-gray-900 focus-visible:border-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 disabled:bg-gray-50 disabled:text-gray-500"
             style={{ minHeight: 44 }}
           />
@@ -104,7 +158,8 @@ export function SessionStart({
           </span>
         </div>
         <p className="mt-2 text-xs text-gray-400">
-          최대 {Math.min(MAX_CARDS, available)} · 권장 {Math.min(DEFAULT_CARDS, available)}
+          최대 {Math.min(MAX_CARDS, effectiveAvailable)} · 권장{' '}
+          {Math.min(DEFAULT_CARDS, effectiveAvailable)}
         </p>
       </section>
 
@@ -165,8 +220,15 @@ export function SessionStart({
         </button>
         <button
           type="button"
-          onClick={() => onStart(cardsPlanned)}
-          disabled={disabled || available === 0 || cardsPlanned < MIN_CARDS}
+          onClick={() =>
+            onStart(cardsPlanned, isCategory && subject !== null ? { subject } : undefined)
+          }
+          disabled={
+            disabled ||
+            effectiveAvailable === 0 ||
+            cardsPlanned < MIN_CARDS ||
+            (isCategory && subject === null)
+          }
           className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
           style={{ minHeight: 44 }}
         >

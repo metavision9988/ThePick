@@ -51,6 +51,14 @@ function resolveLoggerEnv(envName: string | undefined): LoggerEnvironment {
     : 'development';
 }
 
+/**
+ * 5-페르소나 MAJOR 흡수 (2026-06-12, WS-5c DueQueue 가 /due 를 hot path 로 승격):
+ * progress read(/summary·/due) rate-limit — study read(M-D1, 60/min) 와 동형 방어선.
+ * group suffix 로 POST /review(20/min) 카운터와 분리.
+ */
+const PROGRESS_READ_RATE_GROUP_SUFFIX = ':progress-read';
+const PROGRESS_READ_LIMIT_PER_MINUTE = 60;
+
 export interface ProgressBindings {
   readonly DB: D1Database;
   readonly ENVIRONMENT?: string;
@@ -102,6 +110,32 @@ type ProgressEnv = {
 };
 
 /**
+ * progress read(/summary·/due) per-user 분당 상한 — study enforceStudyReadRateLimit 동형
+ * (429 + Retry-After + sleepJitter 타이밍 oracle 차단). 통과 시 null, 차단 시 Response.
+ */
+async function enforceProgressReadRateLimit(
+  c: import('hono').Context<ProgressEnv>,
+  userId: string,
+  logger: Logger,
+): Promise<Response | null> {
+  try {
+    await checkAndIncrementRateLimit(c.env.DB, `${userId}${PROGRESS_READ_RATE_GROUP_SUFFIX}`, {
+      limitPerMinute: PROGRESS_READ_LIMIT_PER_MINUTE,
+    });
+    return null;
+  } catch (err) {
+    if (err instanceof RateLimitExceeded) {
+      await sleepJitter();
+      c.header('Retry-After', String(err.retryAfterSeconds));
+      return c.json({ error: 'RATE_LIMIT_EXCEEDED' }, 429);
+    }
+    logger.error('progress-read rate-limit check failed', err, { userId });
+    c.header('Retry-After', '5');
+    return c.json({ error: 'SERVICE_UNAVAILABLE' }, 503);
+  }
+}
+
+/**
  * Phase 1 5-페르소나 B-C1 흡수 (Hard Rule 16 zero-cost 약속) — examId query 시그니처 강제.
  *
  * Year 1 (현): user_progress 테이블 exam_id 컬럼 부재 — 검증만 수행, WHERE 절 미추가
@@ -145,6 +179,9 @@ export function createProgressRoutes(): Hono<ProgressEnv> {
   router.get('/summary', async (c) => {
     const logger = buildLogger(c.env).child({ route: 'summary' });
     const userId = c.var.userId;
+
+    const limited = await enforceProgressReadRateLimit(c, userId, logger);
+    if (limited !== null) return limited;
 
     // Hard Rule 16 — examId 시그니처 강제 (B-C1 흡수)
     const examIdParam = requireExamId(c.req.query('examId'));
@@ -306,6 +343,9 @@ export function createProgressRoutes(): Hono<ProgressEnv> {
     const logger = buildLogger(c.env).child({ route: 'due' });
     const userId = c.var.userId;
 
+    const limited = await enforceProgressReadRateLimit(c, userId, logger);
+    if (limited !== null) return limited;
+
     // Hard Rule 16 — examId 시그니처 강제 (B-C1 흡수)
     const examIdParam = requireExamId(c.req.query('examId'));
     if (examIdParam.error || !examIdParam.examId) {
@@ -318,15 +358,19 @@ export function createProgressRoutes(): Hono<ProgressEnv> {
     void examIdParam.examId;
 
     try {
+      // 4-Pass MAJOR-1 흡수 (2026-06-12, WS-5c 위젯이 표면화한 선재 결함): 저장 포맷은
+      // ISO 8601('...T...Z', srs toIsoString → study /grade bind)인데 datetime('now')는
+      // 'YYYY-MM-DD HH:MM:SS' — 'T'(0x54) > ' '(0x20) 바이트 비교로 당일(UTC) due 가
+      // 전부 누락(최대 ~24h 지연)됐다. 비교 기준을 저장 포맷과 동일한 ISO bind 로 통일.
       const result = await c.env.DB.prepare(
         `SELECT id, node_id, card_type, fsrs_next_review
          FROM user_progress
          WHERE user_id = ?
-           AND (fsrs_next_review IS NULL OR fsrs_next_review <= datetime('now'))
+           AND (fsrs_next_review IS NULL OR fsrs_next_review <= ?)
          ORDER BY fsrs_next_review IS NULL, fsrs_next_review ASC
          LIMIT ?`,
       )
-        .bind(userId, DUE_LIMIT)
+        .bind(userId, new Date().toISOString(), DUE_LIMIT)
         .all<ProgressDueRow>();
 
       const items = result.results.map((row) => ({

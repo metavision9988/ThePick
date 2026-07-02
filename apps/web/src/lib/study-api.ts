@@ -127,6 +127,32 @@ export async function completeSession(sessionId: string): Promise<SessionComplet
   });
 }
 
+/**
+ * WS-5c — GET /api/progress/due 응답 항목 (FSRS 복습 큐, user_progress 행).
+ * ★ card_type 무필터 — node 행(POST /progress/review 시드) + exam 카드 행(study /grade
+ * FSRS 영속분, nodeId null) 모두 포함 (4-Pass MAJOR 정정 — "node 전용" 아님).
+ */
+export interface DueItem {
+  readonly id: string;
+  /** node 행은 노드 ID, exam 카드 행은 null. */
+  readonly nodeId: string | null;
+  readonly cardType: string;
+  /** ISO datetime 또는 null (미스케줄 행 — 서버가 due 로 포함). */
+  readonly fsrsNextReview: string | null;
+}
+
+export interface DueQueueResponse {
+  readonly items: ReadonlyArray<DueItem>;
+  readonly count: number;
+}
+
+/** WS-5c — FSRS due 복습 큐 조회 (/api/progress/due, 서버 LIMIT 적용). */
+export async function fetchDueQueue(): Promise<DueQueueResponse> {
+  const url = new URL(`${API_BASE}/api/progress/due`);
+  url.searchParams.set('examId', EXAM_ID);
+  return safeFetch<DueQueueResponse>(url.toString(), { method: 'GET' });
+}
+
 /** 401 redirect 헬퍼 — 호출자가 catch 후 사용. */
 export function redirectToLogin(): void {
   const next = encodeURIComponent(window.location.pathname + window.location.search);

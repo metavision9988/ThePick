@@ -15,6 +15,8 @@ export interface ApiCallCounters {
   authLogin: number;
   modeStats: number;
   progress: number;
+  /** WS-5c — GET /api/progress/due (DueQueue 위젯). */
+  progressDue: number;
   modeStart: number;
   sessionDetail: number;
   sessionComplete: number;

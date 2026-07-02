@@ -261,7 +261,7 @@ export function StudyFlow({ examType = '1st' }: StudyFlowProps) {
   }, [state]);
 
   const handleStart = useCallback(
-    async (cardsPlanned: number): Promise<void> => {
+    async (cardsPlanned: number, modeParams?: Record<string, unknown>): Promise<void> => {
       if (state.status !== 'session-start') return;
       setState({
         status: 'starting',
@@ -270,7 +270,12 @@ export function StudyFlow({ examType = '1st' }: StudyFlowProps) {
         cardsPlanned,
       });
       try {
-        const res = await startMode({ mode: state.mode, cardsPlanned });
+        // WS-5a — category 는 { subject } modeParams 동반 (SessionStart 픽커가 공급).
+        const res = await startMode({
+          mode: state.mode,
+          cardsPlanned,
+          ...(modeParams !== undefined ? { modeParams } : {}),
+        });
         finalizingRef.current = false;
         const startBaseline = streak.longest;
         setStreak((prev) => ({ ...prev, baselineLongest: startBaseline }));
@@ -296,7 +301,9 @@ export function StudyFlow({ examType = '1st' }: StudyFlowProps) {
         setState({ status: 'error', message: formatApiError(err) });
       }
     },
-    [state],
+    // streak.longest — handleStart 가 closure 로 읽어 baselineLongest 영속 (4-Pass m 흡수:
+    // exhaustive-deps 정합. setStreak 단독 갱신 경로 추가 시 stale 영속 차단).
+    [state, streak.longest],
   );
 
   const finalizeSession = useCallback(
@@ -398,8 +405,9 @@ export function StudyFlow({ examType = '1st' }: StudyFlowProps) {
         streakLongest={streak.longest}
         dailyGoal={streak.dailyGoal}
         dailyGoalProgress={streak.dailyGoalProgress}
+        categorySubjects={state.stats.categorySubjects}
         disabled={state.status === 'starting'}
-        onStart={(c) => void handleStart(c)}
+        onStart={(c, mp) => void handleStart(c, mp)}
         onCancel={handleCancelStart}
       />
     );

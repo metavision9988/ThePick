@@ -438,6 +438,28 @@ describe('GET /api/progress/due', () => {
     expect(body.items[0]!.cardType).toBe('flashcard');
   });
 
+  // 4-Pass MAJOR-1 회귀 가드 (2026-06-12) — 당일(UTC) due. 구 predicate(datetime('now')
+  // 'YYYY-MM-DD HH:MM:SS' vs ISO 'T...Z' 바이트 비교)는 같은 날짜 접두사에서 ISO 가 항상
+  // 더 커 당일 due 를 전부 누락했다 (기존 -24h 케이스는 전날 날짜 접두사라 마스킹).
+  it('fsrs_next_review 당일(1시간 전 ISO) → due 포함 (포맷 통일 회귀 가드)', async () => {
+    const userId = crypto.randomUUID();
+    seedUser(userId, 'due-sameday@example.com');
+    seedNode('CONCEPT-DUE-SAMEDAY');
+    seedProgress({
+      userId,
+      nodeId: 'CONCEPT-DUE-SAMEDAY',
+      cardType: 'flashcard',
+      fsrsNextReview: new Date(Date.now() - 3600 * 1000).toISOString(),
+    });
+
+    const token = await accessToken(userId);
+    const res = await call('/due', {}, token);
+    const body = (await res.json()) as DueBody;
+
+    expect(body.count).toBe(1);
+    expect(body.items[0]!.nodeId).toBe('CONCEPT-DUE-SAMEDAY');
+  });
+
   it('fsrs_next_review NULL → due 포함 (처음 본 카드)', async () => {
     const userId = crypto.randomUUID();
     seedUser(userId, 'firstseen@example.com');

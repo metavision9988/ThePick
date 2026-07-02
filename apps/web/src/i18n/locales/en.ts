@@ -55,6 +55,8 @@ export const en: TranslationDictionary = {
     learning: 'Learning',
     new: 'New',
     due: 'Due',
+    dueCards: '{{count}} cards due',
+    dueEmpty: 'No cards due right now',
   },
 
   content: {

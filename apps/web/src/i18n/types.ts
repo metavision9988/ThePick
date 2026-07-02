@@ -62,6 +62,10 @@ export interface TranslationDictionary {
     learning: string;
     new: string;
     due: string;
+    /** WS-5c — 복습 큐 카운트 문구 ({{count}} 치환). */
+    dueCards: string;
+    /** WS-5c — due 0건 안내. */
+    dueEmpty: string;
   };
 
   content: {

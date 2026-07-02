@@ -12,6 +12,7 @@
  *   - GET  /api/study/session/:id                    (path-based, examId 무관)
  *   - POST /api/study/session/:id/complete           (path-based, examId 무관)
  *   - GET  /api/study/next?examId=...
+ *   - GET  /api/progress/due?examId=...               (WS-5c DueQueue)
  *   - POST /api/study/grade?examId=...
  *
  * Admin (spec-only):
@@ -37,6 +38,7 @@ import {
 import {
   makeCompleteResponse,
   makeGradeResponse,
+  makeDueQueue,
   makeModeStats,
   makeNextQuestion,
   makeProgress,
@@ -149,11 +151,31 @@ app.get('/api/study/mode', (c) => {
   return c.json(makeModeStats());
 });
 
-app.post('/api/study/mode/start', (c) => {
+app.post('/api/study/mode/start', async (c) => {
   const violation = ensureExamId(c);
   if (violation !== null) return violation;
   recordCall('modeStart');
-  return c.json(makeStartResponse());
+  // 5-페르소나 MAJOR 흡수 (2026-06-12) — 실 서버 422 계약 동형 (구 핸들러는 body 를
+  // 읽지 않아 web modeParams 와이어 회귀가 e2e 에 비가시였음. /grade 의 payload
+  // contract drift 차단 패턴과 동형). study/routes.ts WIRED_MODES + category subject 정합.
+  const body = (await c.req.json().catch(() => null)) as {
+    mode?: unknown;
+    modeParams?: Record<string, unknown>;
+  } | null;
+  const WIRED = ['weak', 'mixed', 'category'] as const;
+  const mode = body?.mode;
+  if (typeof mode !== 'string' || !(WIRED as readonly string[]).includes(mode)) {
+    console.error(`[mock-server] mode/start contract violation: mode=${String(mode)}`);
+    return c.json({ error: 'MODE_NOT_AVAILABLE', wiredModes: [...WIRED] }, 422);
+  }
+  if (mode === 'category') {
+    const subject = body?.modeParams?.['subject'];
+    if (typeof subject !== 'string' || subject.trim().length === 0) {
+      console.error('[mock-server] mode/start category without modeParams.subject');
+      return c.json({ error: 'MODE_PARAMS_INVALID' }, 422);
+    }
+  }
+  return c.json(makeStartResponse({ mode: mode as (typeof WIRED)[number] }));
 });
 
 app.get('/api/study/progress', (c) => {
@@ -262,6 +284,17 @@ app.get('/api/study/session/:id', (c) => {
   recordCall('sessionDetail');
   const body = state.overrides.sessionDetailResponse ?? makeSessionDetail();
   return c.json(body);
+});
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Progress — WS-5c DueQueue (FSRS 복습 큐)
+ * ──────────────────────────────────────────────────────────────────────── */
+
+app.get('/api/progress/due', (c) => {
+  recordCall('progressDue');
+  const invalid = ensureExamId(c);
+  if (invalid) return invalid;
+  return c.json(makeDueQueue());
 });
 
 /* unhandled fallback — fail-loud (silent 404 차단). */

@@ -179,15 +179,38 @@ const modeStartSchema = z.object({
  * 실배선 모드 (design-audit WS-0d, 결재 #9 위임 = "비활성 표기", 2026-06-11).
  *
  * 등재 기준 = "/next 서빙 의미가 모드 계약과 일치하는 모드" (리뷰 m-1 정정: weak 는
- * WHERE 가 아닌 ORDER BY weak_score 분기, mixed 는 무필터가 곧 계약). category/topic/
- * confusion 은 modeParams 저장·표시만 되고 서빙 풀이 mixed 와 동일(ADR-039:41-43 계약
- * 위반 상태, 기보고 RC-3)라 제외. 미배선 모드는 ① /mode 응답 wired=false (UI "준비 중"
- * disabled 근거) ② /mode/start 422 거부 (UI 우회 차단). ★ WS-5a 에서 해당 모드 서빙
+ * WHERE 가 아닌 ORDER BY weak_score 분기, mixed 는 무필터가 곧 계약). topic/confusion
+ * 은 modeParams 저장·표시만 되고 서빙 풀이 mixed 와 동일(ADR-039:41-43 계약 위반 상태,
+ * 기보고 RC-3)라 제외. 미배선 모드는 ① /mode 응답 wired=false (UI "준비 중" disabled
+ * 근거) ② /mode/start 422 거부 (UI 우회 차단). ★ WS-5a 에서 해당 모드 서빙
  * 배선 완료 시 본 Set 등재가 재활성의 유일 경로 — UI 는 wired 를 따르므로 자동 추종.
  * 단 Set 등재 전 "해당 모드 /next 필터 통합 테스트 PASS" 가 선행 게이트 (Set 은 선언이지
  * 검증이 아님 — 리뷰 m-3).
+ *
+ * WS-5a (2026-06-12) — category 등재: /next WHERE eq.subject 필터 + /mode/start
+ * modeParams.subject 필수 검증 배선 (ADR-039: category = subject 단위 학습. production
+ * 실측 subject 534/534 populate — 1차 3과목×175 + 2차 9). **topic 은 미배선 잔류**:
+ * 동일 실측에서 topic_cluster 0/534 = 배선 시 모든 topic 풀이 공허(빈 세션만 생성)
+ * → 정직성 위반. populate(BATCH) 후 재상신 (스키마 존재 ≠ 데이터 populate).
  */
-const WIRED_MODES: ReadonlySet<LearningMode> = new Set<LearningMode>(['weak', 'mixed']);
+const WIRED_MODES: ReadonlySet<LearningMode> = new Set<LearningMode>(['weak', 'mixed', 'category']);
+
+/** WS-5a — category subject 파라미터 길이 상한 (오입력·과장 입력 가드. 실데이터 최장 ≈ 20자). */
+const MAX_SUBJECT_PARAM_LEN = 100;
+
+/**
+ * WS-5a — modeParams 에서 category subject 추출 (ADR-039: category = subject 단위).
+ * 비문자열 / 공백 / 길이 초과 → null (호출 측이 422 MODE_PARAMS_INVALID 로 거부 —
+ * subject 누락 category 세션은 무필터(mixed 동치) 서빙이 되므로 정직성 위반).
+ */
+function extractCategorySubject(params: Record<string, unknown> | null | undefined): string | null {
+  if (params === null || params === undefined) return null;
+  const raw = params['subject'];
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (trimmed.length === 0 || trimmed.length > MAX_SUBJECT_PARAM_LEN) return null;
+  return trimmed;
+}
 
 interface ExamQuestionRow {
   readonly id: string;
@@ -886,6 +909,42 @@ export function createStudyRoutes(): Hono<StudyEnv> {
                 COALESCE(up.total_reviews, 0) ASC,
                 eq.id ASC`;
 
+    // WS-5a — category 모드 서빙 풀 WHERE 필터 (ADR-039: category = subject 단위 학습).
+    // mode_params 는 /mode/start 가 검증·영속하나, 그 전에 생성된 행/수동 행 방어로
+    // 재검증 — 결손 시 무필터(mixed 동치) 서빙 = 계약 위반이므로 422 로 정직 거부.
+    let categorySubject: string | null = null;
+    if (nextMode === 'category' && nextSessionRow !== null) {
+      let parsedParams: Record<string, unknown> | null = null;
+      if (nextSessionRow.mode_params !== null) {
+        try {
+          const parsed: unknown = JSON.parse(nextSessionRow.mode_params);
+          if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            parsedParams = parsed as Record<string, unknown>;
+          }
+        } catch (err) {
+          logger.warn('category session mode_params JSON parse failed', {
+            err: String(err),
+            sessionId: nextSessionRow.id,
+          });
+        }
+      }
+      categorySubject = extractCategorySubject(parsedParams);
+      if (categorySubject === null) {
+        return c.json(
+          {
+            error: 'MODE_PARAMS_INVALID',
+            message: 'category session has no valid modeParams.subject',
+          },
+          422,
+        );
+      }
+    }
+    const subjectClause = categorySubject !== null ? 'AND eq.subject = ?' : '';
+    const nextBinds: ReadonlyArray<string | number> =
+      categorySubject !== null
+        ? [userId, examType, categorySubject, countNum]
+        : [userId, examType, countNum];
+
     let questions: ReadonlyArray<ExamQuestionRow>;
     try {
       const result = await c.env.DB.prepare(
@@ -899,10 +958,11 @@ export function createStudyRoutes(): Hono<StudyEnv> {
             AND up.card_type = 'exam'
           WHERE eq.status = 'active'
             AND eq.exam_type = ?
+            ${subjectClause}
           ${orderClause}
           LIMIT ?`,
       )
-        .bind(userId, examType, countNum)
+        .bind(...nextBinds)
         .all<ExamQuestionRow>();
       questions = result.results;
     } catch (err) {
@@ -1491,6 +1551,7 @@ export function createStudyRoutes(): Hono<StudyEnv> {
         confusionBreakdownResult,
         streakRow,
         todayReviewRow,
+        categorySubjectsResult,
       ] = await Promise.all([
         c.env.DB.prepare(
           `SELECT COUNT(*) AS cnt FROM exam_questions WHERE status = 'active' AND exam_type = ?`,
@@ -1554,11 +1615,31 @@ export function createStudyRoutes(): Hono<StudyEnv> {
         )
           .bind(userId, todayBounds.startUtc, todayBounds.endUtc)
           .first<{ cnt: number }>(),
+        // WS-5a — category 모드 subject 선택지 + 풀 크기 (UI 가 subject 픽커를 데이터로
+        // 구성 — 과목명 하드코딩 금지. subject NULL 행은 category 풀 대상 아님).
+        c.env.DB.prepare(
+          `SELECT subject, COUNT(*) AS cnt
+             FROM exam_questions
+            WHERE status = 'active'
+              AND exam_type = ?
+              AND subject IS NOT NULL
+            GROUP BY subject
+            ORDER BY subject`,
+        )
+          .bind(examType)
+          .all<{ subject: string; cnt: number }>(),
       ]);
 
       const total = totalRow?.cnt ?? 0;
       const confusion = confusionRow?.cnt ?? 0;
       const weak = weakRow?.cnt ?? 0;
+      // WS-5a G1 정합 (5-페르소나 MAJOR 흡수, 2026-06-12): category 서빙 풀 = subject
+      // NOT NULL 행만(/next 의 eq.subject = ? 필터와 동치). total(NULL subject 포함)을
+      // 빌리면 "모드별 /next 풀 = available" 게이트(S9 G1·G-WS5 ①)가 정의상 깨진다.
+      const categoryAvailable = categorySubjectsResult.results.reduce(
+        (sum, row) => sum + row.cnt,
+        0,
+      );
 
       const dailyGoal = streakRow?.daily_goal ?? DEFAULT_DAILY_GOAL;
       // dailyGoalProgress — DISTINCT card_id 누적 / dailyGoal (4-Pass silent M-3 흡수).
@@ -1570,12 +1651,17 @@ export function createStudyRoutes(): Hono<StudyEnv> {
         examId: examIdParam.examId,
         examType,
         modes: [
-          { mode: 'category', available: total, wired: WIRED_MODES.has('category') },
+          { mode: 'category', available: categoryAvailable, wired: WIRED_MODES.has('category') },
           { mode: 'topic', available: total, wired: WIRED_MODES.has('topic') },
           { mode: 'confusion', available: confusion, wired: WIRED_MODES.has('confusion') },
           { mode: 'weak', available: weak, wired: WIRED_MODES.has('weak') },
           { mode: 'mixed', available: total, wired: WIRED_MODES.has('mixed') },
         ] satisfies ReadonlyArray<{ mode: LearningMode; available: number; wired: boolean }>,
+        // WS-5a — category subject 픽커 데이터 (additive 필드 — 기존 클라이언트 무영향).
+        categorySubjects: categorySubjectsResult.results.map((row) => ({
+          subject: row.subject,
+          available: row.cnt,
+        })),
         weakTop: weakTopResult.results.map((row) => ({
           cardId: row.card_id,
           subject: row.subject,
@@ -1796,6 +1882,18 @@ export function createStudyRoutes(): Hono<StudyEnv> {
           error: 'MODE_NOT_AVAILABLE',
           message: `mode '${mode}' is not wired to the serving pool yet`,
           wiredModes: [...WIRED_MODES],
+        },
+        422,
+      );
+    }
+
+    // WS-5a — category 는 subject 파라미터가 서빙 계약의 일부 (ADR-039). 누락 세션은
+    // /next 에서 무필터(mixed 동치) 서빙이 되므로 시작 시점에 정직 거부.
+    if (mode === 'category' && extractCategorySubject(modeParams) === null) {
+      return c.json(
+        {
+          error: 'MODE_PARAMS_INVALID',
+          message: `mode 'category' requires modeParams.subject (non-empty string, length <= ${MAX_SUBJECT_PARAM_LEN})`,
         },
         422,
       );

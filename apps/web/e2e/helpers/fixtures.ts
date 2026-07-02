@@ -33,12 +33,18 @@ export function makeModeStats(overrides: Partial<ModeStatsResponse> = {}): ModeS
   return {
     examId: EXAM_ID,
     examType: '1st',
+    // wired — 실 서버 WIRED_MODES 정합 (WS-0d 도입 시 본 픽스처 미갱신으로 E2E 전체
+    // 파손됐던 선재 결함을 2026-06-12 수리. WS-5a: category wired=true + categorySubjects).
     modes: [
-      { mode: 'category', available: 50 },
-      { mode: 'topic', available: 30 },
-      { mode: 'confusion', available: 8 },
-      { mode: 'weak', available: 12 },
-      { mode: 'mixed', available: 100 },
+      { mode: 'category', available: 50, wired: true },
+      { mode: 'topic', available: 30, wired: false },
+      { mode: 'confusion', available: 8, wired: false },
+      { mode: 'weak', available: 12, wired: true },
+      { mode: 'mixed', available: 100, wired: true },
+    ],
+    categorySubjects: [
+      { subject: '상법 보험편', available: 25 },
+      { subject: '농학개론 중 재배학 및 원예작물학', available: 25 },
     ],
     weakTop: [],
     confusionTypes: [],
@@ -75,6 +81,32 @@ export function makeProgress(
     streak: { current: 3, longest: 7, dailyGoalProgress: 5 },
     ...overrides,
   };
+}
+
+/**
+ * WS-5c — GET /api/progress/due 픽스처 (DueQueue 위젯). 실 서버 응답 shape 정합
+ * (progress/routes.ts /due — card_type 무필터: node 행 + exam 카드 행(nodeId null) 모두.
+ * 4-Pass MAJOR 정정 2026-06-12).
+ */
+export interface DueQueueFixture {
+  readonly items: ReadonlyArray<{
+    readonly id: string;
+    readonly nodeId: string | null;
+    readonly cardType: string;
+    readonly fsrsNextReview: string | null;
+  }>;
+  readonly count: number;
+}
+
+export function makeDueQueue(count = 2): DueQueueFixture {
+  const items = Array.from({ length: count }, (_, i) => ({
+    id: `up-due-${i + 1}`,
+    // 짝수 인덱스 = node 행(시드 NULL 스케줄), 홀수 = exam 카드 행(nodeId null + ISO due).
+    nodeId: i % 2 === 0 ? `CONCEPT-00${i + 1}` : null,
+    cardType: i % 2 === 0 ? 'flashcard' : 'exam',
+    fsrsNextReview: i % 2 === 0 ? null : new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+  }));
+  return { items, count: items.length };
 }
 
 export function makeStartResponse(overrides: Partial<ModeStartResponse> = {}): ModeStartResponse {

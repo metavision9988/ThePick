@@ -112,6 +112,7 @@ function mapToEndpointKey(method: string, url: string): EndpointKey | null {
   if (url.includes('/api/study/mode/start')) return 'modeStart';
   if (url.includes('/api/study/mode')) return 'modeStats';
   if (url.includes('/api/study/progress')) return 'progress';
+  if (url.includes('/api/progress/due')) return 'progressDue';
   if (/\/api\/study\/session\/[^/]+\/complete/.test(url)) return 'sessionComplete';
   if (/\/api\/study\/session\/[^/]+(?:\?|$)/.test(url)) return 'sessionDetail';
   if (url.includes('/api/study/next')) return 'next';
