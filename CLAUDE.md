@@ -337,6 +337,21 @@ gap-P1.md`) **CRITICAL 0 / MAJOR 1(게이트 증거 과대분모=정정완료) /
 > (Opus 실행이라 Sonnet 프록시 아님) / approved 승급 전 정책 2건(상법 book_page 축·미시행 개정 시행시점 축).
 > 상세 [[project_content_coverage_audit_20260615]] + batch-loadmap "E0-8 갭 보강 적재 이력".
 
+> ★ **2026-07-03 갱신 (동일 세션, Opus 4.8) — E0-8 갭 보강 P2 실행 + production draft 적재 완료**:
+> 진산 "P2 착수" + **override 결재**(P1 검수 FIX율 게이트 명시 생략 = 불변규칙 #5 예외 명문화, 근거 = P1
+> 독립 적대검증 2회 CRITICAL 0 + Opus 실행이라 Sonnet-FIX율 프록시 무의미. 플레이북 §8 P2 [x]). (1) **P2 =
+> 부록 요령 전문 18조 + 운영규정 18조 + 목적물고시 1 = 37노드(LAW-166~202)/41엣지** (교재 부록2-3/2-4/2-5,
+> book 807~826). ★계획 중 발견: 요령 제11·12조가 기존 LAW-003/004(요약 스텁)로 존재 → P1 **A안 패턴**
+> (요령 원문 신규 + CROSS_REF, 4건). ★ESCALATE: 별표1(산식)·별표2/3(표)·목적물 범위표·응시수수료 상수
+> (노드 원문 참조만, formulas/constants INSERT 0). (2) **독립 리뷰 2에이전트(PDF 원문 재추출 대조)**:
+> CRITICAL 0/MAJOR 0/MINOR 6 → 실행분 전건 수정(요령 제6조 ④항 보강·엣지 앵커 정밀화·주석 정리), 잔여
+> 관측(LAW-004 기존 노드 라벨 결함 승계·draft 타깃 결합)은 검수 인지. 보고서 `review-20260703-gap-P2.md`.
+> (3) **production 적재**: 카운트 검산 정확 +37/+41 = knowledge_nodes **816→853** / edges **1302→1343**,
+> draft 37/37. **무결성 러너: P2 신규 위반 0**(고아 delta 0=24 유지·끊김 0·순환 0·신규 41엣지 전부 활성),
+> 게이트 FAIL = 선재 24-고아 debt(WS-2a) = P2 무관. (4) ⚠️ **잔여**: draft→approved = 진산 검수
+> (`gap-P2-review-sheet.md`, ★E-5 요령 제11·12조 중복 판정·E-3 응시수수료 constants·E-1 별표1 노드화) /
+> P3~P6 = P2 검수 후. 상세 [[project_content_coverage_audit_20260615]].
+
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),
   Worker 배포, 인증/login_history smoke PASS, ADR-034/035/036 retrofit.
