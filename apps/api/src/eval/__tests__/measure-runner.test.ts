@@ -128,7 +128,16 @@ async function runLocalSmoke(
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA, query: q.content, topK: 5 }),
+        // maxDepth=2 명시 — 본 픽스처 손계산(SMOKE-Q1: LAW-1→CONCEPT-1→FORMULA-1 = 2-hop
+        // 회수)은 depth-2 walk 전제. S5-8 Phase 0a(결재 #6, 2026-06-11)가 엔진 기본값을
+        // 2→1 로 내리면서 기본값 의존이 무음 회귀를 유발 → 측정 입력을 명시 주입으로 고정
+        // (G-6a-1 결정성: 엔진 기본값 변경에 비종속).
+        body: JSON.stringify({
+          examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+          query: q.content,
+          topK: 5,
+          maxDepth: 2,
+        }),
       },
       env,
     );
