@@ -321,6 +321,22 @@ inventory-20260612.md` — 무결성 러너 재실행(고아 24 그대로·유�
 > (D1 미적재분 — E0-8 A-4 교차 검토). (3) Sonnet 플레이북 §8 **P1 ☑**(진산 발화). ⚠️ 다음: ① 진산 golden
 > draft 검수 → 병합 동결 → queryBody 파생 → 재측정(E0-4) ② variant 24 교재 대조 ③ Sonnet 세션 P1 실행.
 
+> ★ **2026-07-02 갱신 4 (동일 세션, Opus 4.8) — E0-8 갭 보강 P1 실행 + production draft 적재 완료**:
+> 진산 지시로 P1(법령 본체 조문 22)을 Opus 가 직접 실행(핸드오프는 Sonnet 설계였으나 진산이 Opus 세션
+> 지정). (1) **계획 검토 중 결함 발견·결재**: 법률 제8·11조가 이미 approved(실측 draft) 노드 LAW-001/002
+> (교재 개관장 요약본)로 존재 → 진산 **A안** 결재 = 법령 원문 노드 신규 + CROSS_REF(중복 아님·UPDATE 아님).
+> (2) **산출**: `docs/batch-load/gap-P1/` insert.sql(22노드 LAW-144~165 + 28엣지 draft) + knowledge-graph.json
+> (SQL 파생) + review-sheet + 재현 스크립트 3. (3) **검증 3중**: 로컬 G-GAP-1·2·5·6·7pre + quality 86 +
+> 내부 적대검증(PDF 재추출 3에이전트) **CRITICAL 0** + **step7 독립리뷰**(3+종합, `review-20260702-165005-
+gap-P1.md`) **CRITICAL 0 / MAJOR 1(게이트 증거 과대분모=정정완료) / MINOR 4**. (4) **production 적재**
+> (진산 게이트 이행): `wrangler d1 execute --file --remote` → 카운트 검산 **정확 +22/+28** = knowledge_nodes
+> **794→816** / knowledge_edges **1274→1302**, status='draft' 22/22. **무결성 러너: P1 신규 위반 0**(신규 노드
+> 고아 0·끊김 0·순환 0·신규 28엣지 전부 활성) — 게이트 E0-2 는 **선재 24-고아 debt**(WS-2a 별도 트랙)로
+> FAIL 유지(P1 무관·delta 0). (5) **커밋·푸시**: `0b9baec` push 완료(#14 push 보류 = 진산 지시로 해제).
+> ⚠️ **잔여**: draft→approved 전이 = 진산 검수(`gap-P1-review-sheet.md` 행당) / P2~P6 = P1 FIX율 게이트 후
+> (Opus 실행이라 Sonnet 프록시 아님) / approved 승급 전 정책 2건(상법 book_page 축·미시행 개정 시행시점 축).
+> 상세 [[project_content_coverage_audit_20260615]] + batch-loadmap "E0-8 갭 보강 적재 이력".
+
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),
   Worker 배포, 인증/login_history smoke PASS, ADR-034/035/036 retrofit.
