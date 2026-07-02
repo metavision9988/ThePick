@@ -32,3 +32,5 @@ Track B 는 INSERT-only(plan §2 명문 `:52` — Track B 수리 SQL 자체는 �
 (b)로 자연 분리(손실 없음). plan 작성 소요 [추정 — 미측정]. SQL 작성·집행 승인은 plan §결재란에서 별도.
 
 > 진산 확인란: ☑ (a) plan 착수 승인 + Track B 결재 묶음 **(진산 2026-07-02 "권고대로")** / ☐ (b) plan 착수만 승인·집행 별건 / ☐ 보류
+>
+> **집행 기록 (2026-07-02)**: WS-2b L3 plan 작성 완료 — `docs/plans/ws-2b-knowledge-edges-guard.plan.md` (PITR A안=컬럼별 IS NOT 화이트리스트 권고 / 마이그 슬롯 0039 실측 예약 / Binary Gate G-WS2b-1~9 / Track B 묶음 시퀀스 §7 = 가드 선적용→INSERT / §8 결재란 5항 전부 ☐). ★SQL 미작성 — SQL 작성·집행 = plan §8 별도 결재 대기.
