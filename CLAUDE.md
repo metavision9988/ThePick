@@ -240,6 +240,35 @@ score=0 병합` 튜닝 아티팩트, 알고리즘 한계 아님. (2) graph **유
 > 097~098 + 06-05 측정 산출물 전부 미커밋**(마지막 커밋 33f0387, 라이브 `/status/`만 커밋). feasibility
 > R3=측정완료 / R4·R5=진산 대기. 상세 [[project_s5_6_eval_measurement_gate]] + [[project_g_s5_golden_data_gap]].
 
+> ★ **2026-06-12 갱신 (셧다운 복귀 세션) — 자율 가능 작업 일괄 집행 (미커밋, 진산 검수·결재 대기)**:
+> (1) **결재 #7 집행 완료** — S5-8 plan §3 Phase 1-D(D안: graph 동결+lexical fusion)·§4·§7·§9 등재
+> (독립 검증 2회 FAIL 0, 구현 착수는 §9 별도 체크). (2) **결재 카드 9종 상신** — #3·#4·#10·#12·#13·
+> #18·#19 PITR 카드 + **#22 신설**(Phase B 진입, 이행 누락이던 상신 의무 해소) + Track B 검수 안내
+> 카드(`e0-2-track-b-review-card.md`, 정밀 집계 24 = B-1 2·B-2 12·B-3 9·C 1). 전부 MASTER_PLAN §6
+> 결재란에 링크, 18 에이전트 드래프트+적대검증. (3) **E0-8 사전 자료** `docs/audit/e0-8-prestage-d1-
+inventory-20260612.md` — 무결성 러너 재실행(고아 24 그대로·유령 0 유지) + 정본 approved 488/draft
+> 306 + ★페이지축 발견: book_page 는 chapter 별 자체 축(교재 본문 p394~696 권역) — E0-8 대조는 출처
+> 묶음 단위 매핑 필수. (4) **WS-5a/5c 배선 완료 (S9, [L2] 결재 #1 위임)** — category 모드 배선(/mode/
+> start subject 검증 + /next WHERE 필터 + categorySubjects + web 과목 픽커). ★**topic 미배선 잔류**:
+> production 실측 topic_cluster **0/534** → 배선 시 전 풀 공허(스키마≠populate, 기획 'category·topic'
+> 대비 축소 — 보고 사항). due 복습 큐 위젯(DueQueue, /api/progress/due 첫 소비자) + `/study/next` due
+> 반영 PITR 상신(`ws-5c-study-next-due-pitr.md` 권고 C). 4-Pass C0/M5→전부 해소(`review-20260612-
+141347`) + 5-페르소나 C0/M4→전부 해소(`review-20260612-5persona-ws5a5c.md`: category 와이어 e2e
+> `category-start.spec` + progress read rate-limit 60/min + **G1 게이트 = category available 을
+> subject NOT NULL 풀로 정합 + 통합 테스트 충족(API 수준 — 브라우저 수준은 mock /next 모드 무시
+> 한계, 부채 기록)). (4b) **WS-3c 산식 동기 plan 작성 완료** (2026-06-13, L3 plan까지만·코드 무접촉,
+> 진입 결재 #5 ☑): `docs/plans/formula-sync-manifest.plan.md`. 실측 — 코드 68=formula-engine
+> batch1~5-definitions.ts F-01~F-68(math.js AST·동적실행 throwing stub 차단) / D1 157 중 **89건
+> (F-69~F-157 등)은 코드 미등록=계산 불가=display-only** / equation_display·expected_inputs·
+> graceful_degradation 0/157(loader INSERT 제외) / RC-5 5중 보관처 file:line 확정 / 런타임 계산
+> 소비자 0(학습자 미배선)·QG-2 는 code calculate(D1 안 읽음). PITR+G-WS3c-1~6+§9 결재 6항(★89건
+> display-only 분류=검증 영구부재 명문화 RULE#5 / F-55 TODO 처분 / 정규화 모듈 경로). 독립 사실검증
+> FAIL 0. **코드 착수 = §9 결재 후**. (5) **선재 결함 3건 발견·수리**(전부 HEAD red 재현으로 선재 확증): ① eval local-smoke 가
+> Phase 0a depth1 기본화로 파손(픽스처 maxDepth:2 명시 복원) ② **web E2E 전체 15건이 S2(wired 도입)
+> 부터 파손**(mock 픽스처 wired 미갱신 — 수리 후 19/19 PASS) ③ **/api/progress/due 당일 due 무음 누락**
+> (ISO 'T' vs datetime('now') ' ' 바이트 비교 — ISO bind 통일+회귀 가드). 검증: api **694** PASS/web
+> 31/E2E **19\*\*/typecheck·lint·G-1 PASS. ⚠️ 커밋 = 진산 지시 대기(플레이북 §1.9).
+
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),
   Worker 배포, 인증/login_history smoke PASS, ADR-034/035/036 retrofit.
