@@ -16,7 +16,13 @@
 > 목적물고시)이 **BATCH-GAP-P2 로 production draft 적재됨**(LAW-166~202, 37노드 = 요령 18조+운영규정 18조+
 > 목적물고시 1, 진산 P2 착수+override). 부록2-1/2-2(법·시행령 재수록)·부록3(참고문헌)은 스코프 제외 유지.
 > 행별 검수 = `docs/batch-load/gap-P2/gap-P2-review-sheet.md`. ★요령 제11·12조(LAW-177/178)는 기존
-> LAW-003/004 와 CROSS_REF(중복 판정 = 진산 검수 E-5). P3~P6은 P2 검수 후.
+> LAW-003/004 와 CROSS_REF(중복 판정 = 진산 검수 E-5).
+>
+> **★ 적재 이력 (2026-07-03, gap-P3)**: 본 표 라인 686·687·692·698(❌ B-항목3b 착과수조사 시기·3c
+> 과수4종 수확량조사·4b 무화과 조사시기·5d 표본구간 면적표)이 **BATCH-GAP-P3 로 production draft 적재됨**
+> (CONCEPT-219~222, 4노드, 진산 P3 착수+override). 개정 축 CONCEPT-178 →PREREQUISITE→ 자식 배선.
+> ★교재 본체(BATCH-1~7=개정 반영본) CONTENT 중복 여부 = 진산 검수 판정(E-1). 검수 = `docs/batch-load/
+gap-P3/gap-P3-review-sheet.md`. P4~P6은 P3 검수 후.
 
 ## 요약
 

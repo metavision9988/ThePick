@@ -352,6 +352,18 @@ gap-P1.md`) **CRITICAL 0 / MAJOR 1(게이트 증거 과대분모=정정완료) /
 > (`gap-P2-review-sheet.md`, ★E-5 요령 제11·12조 중복 판정·E-3 응시수수료 constants·E-1 별표1 노드화) /
 > P3~P6 = P2 검수 후. 상세 [[project_content_coverage_audit_20260615]].
 
+> ★ **2026-07-03 갱신 2 (동일 세션, Opus 4.8) — E0-8 갭 보강 P3 실행 + production draft 적재 완료**:
+> 진산 "P3 착수"(P2 override 연속). **P3 = 개정 2차 B-항목 4건 = 4노드(CONCEPT-219~222)/4엣지** (착과수조사
+> 시기·과수4종 수확량조사 준용·무화과 조사시기·품목별 표본구간 면적표. 출처 = 26년 개정 2차 정리 한종찬 rev-2026-2nd
+> p2·3·5, inventory ❌ 4건 = E0-8 A-5). 엣지 = CONCEPT-178(개정 META) →PREREQUISITE→ 자식(기존 25노드 관례).
+> **독립 리뷰 1에이전트(PDF 재추출)**: 콘텐츠·수치 CRITICAL 0(전수 대조 불일치 0) + ★자체 게이트가 못 잡은
+> **구조 MAJOR 2건** 포착 → 전건 수정: ①엣지 방향/타입 역전(자식→DEPENDS_ON→META 초안 = META 워크 발견성 결함 →
+> 관례대로 교체) ②build_gap_json.py \_meta P1 복붙 오염(출처·계보 거짓 → P3 실값 정정). 보고서 `review-20260703-gap-P3.md`.
+> **적재**: nodes **853→857** / edges **1343→1347**(+4/+4), draft 4/4. 무결성 러너 P3 신규 위반 0(고아 24 유지·
+> walk 도달불가 171 유지=신규 노드 META 도달 가능=MAJOR-1 수정 검증). ⚠️ **잔여**: draft→approved = 진산 검수
+> (`gap-P3-review-sheet.md`, ★E-1 교재 본체 중복 판정·E-2 3c 산식 등록·E-3 book_page 앵커) / P4~P6 = P3 검수 후.
+> 상세 [[project_content_coverage_audit_20260615]].
+
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),
   Worker 배포, 인증/login_history smoke PASS, ADR-034/035/036 retrofit.
