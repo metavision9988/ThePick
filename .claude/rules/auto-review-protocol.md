@@ -74,7 +74,7 @@
 - Workers 제약: fs/path 사용 금지, CPU 시간 제한, 번들 크기
 - D1 스키마 일치: Drizzle ORM 타입과 실제 D1 테이블 shape 일치
 - Ontology Lock: 새 노드/엣지 ID가 ontology-registry.json에 등록되어 있는가
-- truth_weight 정렬: RAG 결과 LLM 주입 시 LAW > FORMULA > CONCEPT 순서 준수
+- truth_weight 정렬: RAG 결과 LLM 주입 시 LAW > FORMULA > CONCEPT 순서 준수 (★ 2026-07-04 각주: 이 순서는 **손해평가사 종목 registry 기준**. 종목별 팩[`exams/{id}/registry`]이 자체 `TRUTH_WEIGHTS`로 정렬을 정의하며, 검증은 **해당 종목 registry 정렬을 따른다**[전기기사 등 = KEC/기술기준 노드타입 별도 가중]. 근거: `docs/FRAMEWORK.md` T3 + 엔진분리 R5 결재)
 - Temporal Graph: UPDATE 대신 INSERT + SUPERSEDES 패턴 사용 확인
 - IndexedDB ↔ D1 동기화: 오프라인 큐 → Background Sync 흐름 정상
 - 다이어그램 정합성: `docs/architecture/ARCHITECTURE.md`의 Mermaid 다이어그램과 실제 구현 일치

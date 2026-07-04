@@ -87,6 +87,14 @@ pnpm g1:check                          # G-1 금지어 게이트
 ★ 인프라 견고화 마스터 플랜(2026-06-10~, 진행 중): `docs/plans/master-remediation-20260610/MASTER_PLAN.md` (WS-0~7 + 확장 게이트 E0~E4 + 결재란 — 차세션 1차 참조)
 아키텍처 다이어그램: `docs/architecture/ARCHITECTURE.md` 참조 (Mermaid DaC — 시스템 조감도, 데이터 흐름, 의존관계, 배치 파이프라인, 오프라인 동기화, Hexagonal 규칙)
 
+## 멀티트랙 개발 구조 (2026-07-04 진산 결재 — 1호·2호 동시진행)
+
+- **단일 레포 유지(A안 기결)** + **git worktree 이중 워크스페이스**: 메인 `/home/soo/ClaudePro/ThePick`(main) = 1호 손해평가사+템플릿(코어) 트랙 / worktree `/home/soo/ClaudePro/ThePick-jeongi`(브랜치 `track/jeon-gi-gi-sa`) = 2호 전기기사 트랙. VSCode·Claude Code 세션 트랙별 병행.
+- **트랙 경계(위반 금지)**: 2호 트랙은 `exams/jeon-gi-gi-sa/`·`docs/plans/exam2*`·`docs/feasibility/exam2*`·`docs/manual-electrical/`만 접촉. packages/·apps/ 코어 수정 필요 발견 = STOP → diff 원장 기록 → 메인 트랙 이관. 병합 = 매 세션 종료 시 track→main(3세션 이상 미병합 금지). 동시 wrangler deploy 금지.
+- **프레임워크 정본** = `packages/`(코드)+`docs/playbooks/_template/`(프로세스)+`migrations-v2/`(스키마) — 별도 FrameWork/ 폴더 불채택. 단일 지도 = `docs/FRAMEWORK.md`.
+- **서비스 전개** = `{exam}.thepick.co.kr` 서브도메인(루트 도메인 미정 — config 주입, 하드코딩 금지) + 통합 계정(플랫폼 공유 D1+SSO 쿠키). 프론트엔드 디자인 = 진산 Claude Design 프로젝트 산출 → apps/web 통합.
+- **모델 체제(한시)**: Opus 4.8 = 실행 / Fable 5 = 주간 검토 / 진산 = R5·L3 결재. **실행 정본 = `docs/plans/opus-dual-track-playbook-20260704.md`** (W0~W6 순서·가드레일 15·에스컬레이션 7규칙·Fable 검토 게이트 §7).
+
 ## 상용 품질 원칙 (★ 최우선)
 
 이 서비스는 상용 출시를 목표한다. "당장 돌아가는 코드"가 아닌 "10K 유저, 매년 개정, 다른 시험 확장에서도 버티는 코드"를 작성한다.
@@ -363,6 +371,39 @@ gap-P1.md`) **CRITICAL 0 / MAJOR 1(게이트 증거 과대분모=정정완료) /
 > walk 도달불가 171 유지=신규 노드 META 도달 가능=MAJOR-1 수정 검증). ⚠️ **잔여**: draft→approved = 진산 검수
 > (`gap-P3-review-sheet.md`, ★E-1 교재 본체 중복 판정·E-2 3c 산식 등록·E-3 book_page 앵커) / P4~P6 = P3 검수 후.
 > 상세 [[project_content_coverage_audit_20260615]].
+
+> ★ **2026-07-04 갱신 (Fable 5, 울트라코드) — 엔진 분리 R5 + 2호 전기기사 결재 + 동시진행 체제 전환**:
+> (1) **엔진 분리·종목별 확장 종합 검토**(31 에이전트: 감사4+전략3+심판3+적대검증20[REFUTED 0]+비평) →
+> 진산 R5 결재: **A안**(단일 레포+exams/+종목별 배포+서브도메인)·**통합 계정**·기결 게이트 E3-1 번복·
+> **AutoVerify Gate**(ground-truth-first, draft 차단 필터/승격=인간) 지시. 핵심 실측: 파이프라인 B "분리"=허구
+> (study-material-generator 1 LOC — 신설 대상), 파이프라인 A 실질 엔진=플레이북·게이트·검수 프로세스, 오염 3진앙
+> (shared 유니온 3중선언/batch 프롬프트 :105-284/D1 enum 소성). 정본 `docs/학습자료저장및도출/ENGINE_SEPARATION_
+REVIEW_20260704.md`+`decision-card-20260704-engine-separation-r5.md`. (2) **2호=전기기사 결재 + 전략 검토**
+> (12 에이전트 웹 실사·재검증): "정본 교재만 없는 유계 시험" 재정의(출제기준 3단 ~679세세항목 hwp 파싱 실증×기출
+> 히트맵[문제은행 공식]×KEC 원문). ★CBT 절벽(확정답안 기출 2022-2회 영구 동결→GT 2계층 official/reconstructed)
+> +KEC 연 1~3회 개정(effective*date 1급 필수). R5 Q1~Q5 전건 결재: 동시진행/패밀리 ID `ELEC-{SUBJ}-###`(과목-스코프,
+> 전기 4종목이 3과목 완전 공유)/**회로도 랜덤 생성=킬러 서비스 승격**(오픈소스 링크 입력 대기)/복원분 노출 허용
+> ("복원" 라벨)/현행 기준 착수+**Revision Watch(개정 대응·최신성) 모듈 필수**. 정본 `EXAM2_UNBOUNDED_SCOPE*
+> STRATEGY_20260704.md`+`exam2-electrical.feasibility.md`+`exam2-electrical-onboarding.plan.md`. (3) **체제 전환**:
+Fable 주간 한도 임박 → **Opus 4.8 실행 체제**(`docs/plans/opus-dual-track-playbook-20260704.md`= 실행 정본,
+W0~W6·가드레일 15·Fable 검토 게이트) + git worktree 이중 워크스페이스(위 "멀티트랙 개발 구조" 섹션). +`docs/FRAMEWORK.md` 신설. ⚠️ 07-03~04 산출물 전부 미커밋(진산 커밋 지시 대기). 잔여 기결충돌 문면 개정(D-6)=
+> 플레이북 W1. 상세 [[project_engine_separation_review_20260704]]+[[project_exam2_electrical_strategy_20260704]].
+
+> ★ **2026-07-04 갱신 2 (Opus 4.8) — 플레이북 W1(문면 정합 D-6) 집행 완료 (문서만·코드 0·미커밋)**:
+> 세션 복귀(W0) 후 **W1 = 이미 R5 결재된(07-04) 엔진분리·2호=전기기사 결정을 stale 문서에 개정 주석 반영**
+> (원문 보존+주석 블록 — 가드레일 #13, 새 R5/L3 결정 0·production 무접촉). (1) **5종 amendment**: MASTER_PLAN
+> #17 인라인 마커+🔄 개정 블록(§2.3 Year 2 이월 부분개정) / EXPANSION_GATE 상단 🔄 배너+H3·E2-0·E3-1 마커 3
+> ("전기기사=2호 배제→3호" 번복, E3-1=A안 즉시착수 궤도·B안 레포밖추출은 E3 예약 존속) / ADR-007 `## Amendment`
+> (A안 조기집행, **supersede 아님**, 1호 in-place exam_id 소급·B안은 이연 존속, E3-4 미소비 명시) / ADR-036
+> `## Amendment note`(서브도메인 통합=SameSite 복원 조기이행, 루트도메인 미정·하드코딩 금지) / auto-review-protocol
+> Pass2 truth_weight=종목별 registry 정렬 각주. (2) **D-7 신설** `docs/playbooks/_template/`(README 인스턴스화 절차+
+> 버전 스탬프 규약 + content-load.playbook.template.md = e0-8 골격 종목 파라미터화) + FRAMEWORK.md T4 "(신설 예정)"→
+> 실재. (3) **독립 리뷰**(Workflow 14에이전트: 원문보존/R5정확/모순/템플릿충실 4렌즈+발견별 적대 반증,
+> `review-20260704-220341-w1-doc-amendment-d6.md`): raw 10 → **CRITICAL 0 / MAJOR 0 생존**(MAJOR 2 반증 격추),
+> **CONFIRMED 1(MINOR·타 파일 선재)** = exam2 feasibility 헤더 "R5 진산 대기" ↔ 본문 §R5 "결재 완료" 모순 →
+> 헤더 정합 수정(순수 문면 정합). 원문 보존 git-numstat/byte-match 확증·R5 정확·모순 0·템플릿 불변9+Gate7+에스컬7 보존.
+> ⚠️ **미커밋 유지**(진산 커밋 지시 대기 — W0 게이트). **다음**: W1 완료 → (진산 커밋 지시 시) 일괄 커밋+worktree 셋업 /
+> W2 R3 spike(2호 스테이징) / W3 Revision Watch plan / 1호 병행(E0-8 P4~P6 검수 후·G-S5 0b). 상세 [[project_engine_separation_review_20260704]].
 
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),

@@ -1,6 +1,6 @@
 # ADR-007: v3.0 멀티시험 전환 — Year 2 이월 결정
 
-- **상태:** Accepted
+- **상태:** Accepted (2026-07-04 Amended — A안 조기집행 반영; supersede 아님, 아래 §Amendment)
 - **결정일:** 2026-04-18 (Session 8)
 - **결정자:** 진산 + Claude Opus 4.7
 - **관련 문서:**
@@ -159,6 +159,28 @@ Temporal guard 트리거가 모든 기존 테이블 UPDATE를 차단하므로 �
 - ADR-004 (Vectorize — exam_id 필터 추가 필요)
 - ADR-006 (Cloudflare 단일 벤더 — v3.0과 정합)
 
+## Amendment (2026-07-04): A안 조기집행 — 확장 단위 시점 개정 (supersede 아님)
+
+- **개정자**: 진산 R5 결재 (구두, 2026-07-04) — 기록 Claude Code
+- **근거 정본**: `docs/plans/decision-card-20260704-engine-separation-r5.md` §2 + `docs/feasibility/engine-separation.feasibility.md` R5 + 플레이북 `docs/plans/opus-dual-track-playbook-20260704.md`
+- **성격**: **Amend(부분 개정), supersede 아님.** 본 ADR의 확장 단위(모노레포 `exams/{id}` 구조)와 Hardest-First 원칙은 **유지**되며 원안과 정합한다. 개정되는 것은 **시점(timing)** 뿐이다.
+
+**무엇이 바뀌는가 (시점만):**
+
+- 원안: 멀티시험 구조 전환(`exams/{id}` 분리 + 종목별 스택)을 **Year 2 Phase 4**로 이월.
+- 개정: **A안 즉시 조기집행** — 단일 레포 + `exams/{id}` 종목별 분리 + 종목별 Cloudflare 스택(Worker/D1/Vectorize/Pages) + `{exam}.thepick.co.kr` 서브도메인 + **통합 계정**(플랫폼 공유 D1: users/sessions/구독/webhook_events + `Domain=.{루트도메인}` SSO 쿠키). 근거 = 확장이 급하다는 진산 결재(rule-of-three 달력 대기 해제).
+
+**무엇이 유지되는가 (이월 존속 — 이 개정의 범위 밖):**
+
+- 1호 기존 9테이블 **in-place `exam_id` 소급 마이그레이션**(구 "옵션 A / 0005 breaking migration": ALTER ADD exam_id + `lv1_insurance→lv1` 등 rename + 노드타입 CHECK 재정의)은 **여전히 이연**. 2호(전기기사)는 이를 우회 — **종목별 별도 콘텐츠 D1** 신설(1호 테이블 무접촉). ADR-017 재해석: 코드 `_common` 유지 + 데이터는 종목별 D1 + 플랫폼 공유 D1(계정) 신설.
+- 레포 **밖** 프레임워크 추출(B안 — 별도 레포/npm 배포)은 **E3 예약 존속**(rule-of-three). 본 개정은 A안 채택이지 B안 앞당김이 아니다(decision-card §2).
+- Hard Rule 15~17(멀티시험 격리) 원칙 + `packages/shared/src/types.ts` 손해평가사 특화 리터럴의 `exams/{id}/domain.ts` 이전 = **M1 plan 대상**(shared 탈오염, L3 — plan+진산 승인 후 코드).
+
+**미결정(이 개정이 정하지 않는 것 — 후속 게이트):** 신규 종목 중립 스키마 전략의 구체(`migrations-v2/` 범용 DDL·provenance·effective_date 컬럼), 1호 계정 데이터의 플랫폼 D1 이전 시점(L3, 사용자 데이터), 노드 ID prefix 정책은 **M1 plan + 진산 결재** 영역이다. 본 Amendment는 R5 결재된 사실(구조·시점·통합 계정)만 기록한다.
+
+**연동 개정 (D-6 문면 정합)**: MASTER_PLAN #17·§2.3 + EXPANSION_GATE_DESIGN E2-0/E3-1(각 문서 🔄 개정 블록) + ADR-036(서브도메인 통합 = SameSite 복원 의무 조기 이행). EXPANSION_GATE E3-4 "ADR-007 supersede Accepted"는 **B안(레포 밖 추출) 시점에 유효** — 본 A안 Amendment는 supersede가 아니므로 E3-4를 소비하지 않는다.
+
 ## 수정 이력
 
 - 2026-04-18 (Session 8): 초안 작성 (v3.0 FINAL 수용 결정 + Year 2 이월 범위 확정)
+- 2026-07-04: **Amendment** — A안(단일 레포 `exams/` 조기집행) + 통합 계정 반영. 확장 단위·원칙 유지, 시점만 조기화(supersede 아님). 1호 in-place `exam_id` 소급 + B안 레포외 추출은 이연 존속. 근거 = 엔진분리 R5 결재(decision-card-20260704).
