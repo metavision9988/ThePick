@@ -1,0 +1,25 @@
+{
+  "id": "RLC-SERIES-A1-001",
+  "exam_class": "A",
+  "class_note": "클래스 A(1차 회로이론)만 — 수변전 단선도·시퀀스(클래스 B·C)는 백로그 BL-3 (playbook S10 스코프)",
+  "title": "직렬 RLC 회로의 공진주파수·품질계수·감쇠비",
+  "topology_provenance": "인간 승인된 양호 토폴로지 스켈레톤. 값(V/R/L/C)만 난수화되며 토폴로지는 불변 (가드레일 16-①: 무작위 토폴로지 생성 금지).",
+  "netlist_template": "V1 1 0 step {V}\nR1 1 2 {R}\nL1 2 3 {L}\nC1 3 0 {C}",
+  "output_across": { "pos": 3, "neg": 0, "element": "C1", "meaning": "커패시터 양단 전압 V_C", "expected_dc_gain": 1, "expected_response": "저역통과(2차) — DC에서 C 개방 → V_C=V_in" },
+  "input_across": { "pos": 1, "neg": 0, "meaning": "전원 입력 V_in" },
+  "variables": {
+    "V": { "unit": "V", "choices": [10, 12, 24, 50, 100] },
+    "R": { "unit": "Ω", "choices": [10, 22, 47, 100, 220, 470, 680, 1000] },
+    "L": { "unit": "H", "choices": [1e-3, 2.2e-3, 4.7e-3, 1e-2, 2.2e-2, 4.7e-2, 1e-1] },
+    "C": { "unit": "F", "choices": [1e-9, 1e-8, 4.7e-8, 1e-7, 2.2e-7, 1e-6, 4.7e-6] }
+  },
+  "asks": [
+    { "symbol": "f0", "name": "공진주파수", "unit": "Hz", "reference_formula": "1/(2*pi*sqrt(L*C))" },
+    { "symbol": "Q", "name": "품질계수", "unit": "(무차원)", "reference_formula": "(1/R)*sqrt(L/C)" },
+    { "symbol": "zeta", "name": "감쇠비", "unit": "(무차원)", "reference_formula": "(R/2)*sqrt(C/L)" }
+  ],
+  "gate": {
+    "difficulty_band_f0_hz": [10, 200000],
+    "note": "G2 난이도: f0가 시험 상식 범위(10Hz~200kHz)를 벗어나면 값 재난수화. G1 유일해·G4 단위는 solver_gate.py 참조."
+  }
+}
