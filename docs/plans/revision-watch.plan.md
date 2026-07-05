@@ -3,6 +3,7 @@
 > **상태**: DRAFT · **L3** (스키마/마이그레이션 + 트리거 개정 + effective_date 축 → **코드·SQL 착수 = §9 진산 결재 후**, 자율 금지)
 > **작성**: 2026-07-05, Opus 4.8 (울트라코드 세션). **근거 = 5축 자산 실사 워크플로우** `wf_d0871ca3-e03`(survey 5에이전트·0에러·file:line 전수).
 > **rev2 (독립 리뷰 반영)**: 2 렌즈(사실검증+적대 설계비평) + 발견별 적대 검증 = 10에이전트 → **8 findings / 8 CONFIRMED / 0 반증**(MAJOR 3·MINOR 5) 전건 반영. 보고서 `.claude/reviews/review-20260705-170953-w3-revision-watch-plan.md`. ★핵심 = G-RW-4 A안 불완전(승격시 flip 동반 트리거 필수)·"단일 필터점" 오류(study/grade·vectorize 누락)·C-3↔B안 트리거 충돌.
+> **rev3 (감지 spike 실측 반영)**: `docs/feasibility/spike-revision-watch-detection.md`(라이브 curl + 리서치 wf `wf_da79f227-f2d`) → ④ 감지 = 🔻 미측정 → **🟡 실측 조건부 GO**. law.go.kr DRF OpenAPI(법령+행정규칙/고시)가 `시행일자` 구조화 필드까지 제공(diffable). 선결 = OC 키(진산 무료) + ★**OC IP-바인딩 ↔ Workers 동적 egress 충돌**(감지 호스트 보정). §0.1 ④·§3-A·§3-B·§7·§9 Q4 반영.
 > **출처 지시**: `opus-dual-track-playbook-20260704.md` §3 W3 + exam2 R5 Q5 결재("Revision Watch 반드시") + Q5 필수 지시. **1호+전종목 표준**(손해평가사 법령·요령·고시 + 전기기사 KEC·기술기준·출제기준 공통).
 > **PITR·Reality Anchor 포함**(상용 품질 원칙 — L2+ 신기능 기술선택 비교 의무). **RULE #5**: 본 문서는 🟢/🟡/🔴 사실과 권고만 못박고, GO/STOP·L3 승인은 §9에서 진산이 결정.
 
@@ -24,6 +25,8 @@
 | **④ 감지(DETECT)**                      | 🔻 **미측정** — 외부 포털(law.go.kr·kec.kea.kr·큐넷) 프로그래밍 접근성 **in-repo 미검증** → **feasibility spike 선행 게이트**(G-1 규칙 1: 측정 전 단언 금지) | AXIS 3 gap "stable programmatic access ... unverified in-repo"                              |
 
 **핵심 판정**: ①②③ = 구축 경로 명확(자산 재사용). ④ 감지 = **천장 미측정** → 본 plan은 ④를 **spike-gated Phase**로 격리(감지 자동화를 "가능"이라 단언하지 않음). 현행 수동 개정(R1/R2 교수 PDF) 대비 자동화는 **소스 API 실재성 실측 후에만** 약속.
+
+> **★ 2026-07-05 감지 spike 실측 완료** (`spike-revision-watch-detection.md`): ④ = 🔻 → **🟡 실측 조건부 GO** — law.go.kr DRF OpenAPI(법령 target=law + 행정규칙/고시 target=admrul)가 `시행일자` 구조화 필드 제공(diffable, 발령번호+시행일자 버전키·신구법비교 API). ★**시행일자 소스 취득 = G-RW-1 근본 해소 경로**. 선결 = OC 키(진산 무료 신청) + ★OC IP-바인딩↔Workers 동적 egress 충돌(§3-B 호스트 보정). 2호 KEC/기술기준=동일 admrul🟢 / 큐넷 출제기준=HTML+HWP🟡.
 
 ### 0.2 범위
 
@@ -97,7 +100,7 @@
 
 ### 3-A. 시행시점(effective_date) 축 [L3 스키마]
 
-- **A-1** `revision_changes` + `effective_date TEXT`(ISO, nullable ADD COLUMN — 0019 book_page 선례). `revision_date`(공포일)와 구분 유지. 소스 `[시행일:...]` 마커에서 파생.
+- **A-1** `revision_changes` + `effective_date TEXT`(ISO, nullable ADD COLUMN — 0019 book_page 선례). `revision_date`(공포일)와 구분 유지. ★**소스 = DRF `시행일자` 구조화 필드**(spike 확증 — 원문 `[시행일:...]` 파싱보다 견고) + 발령일자·발령번호 동반 취득 / 기존 수동 노드는 소스 마커 파생.
 - **A-2** `knowledge_nodes`(+formulas/constants)에 `valid_from`/`valid_until TEXT`(nullable) — `exam_questions` 패턴(schema.ts:360-361) 미러. → 미시행 노드를 지금 INSERT하되 **시행일 전까지 학습자 검색에서 배제**. ★**필터점은 단일이 아님**(리뷰 확증) — 전 read 경로 배선 필요: (i) `approved-nodes-sql.ts`(4 caller: graph-walk·user-search·keyword-fallback·topic-cluster-router) (ii) **`study/routes.ts:579-582` enrichRelatedNodes**(학습자 GET /next·POST /grade sourceCitation — 현재 `is_current_active=1`만 필터 = 미시행 노드 누출 경로) (iii) **`vectorize/routes.ts:329-333`** 임베딩(전 노드 — 미시행 배제 정책 결정 필요). 각 경로에 valid_from 게이트 or 필터 라우팅.
 - **A-3** 개정 lifecycle status enum: `detected → pending_effective → effective → superseded`. `CHANGE_TYPES` + `RevisionChange` 타입을 **`packages/shared`로 승격**(현재 schema.ts 국한) — 양 종목 단일 타입.
 - **A-4** UPDATE 금지 트리거(0014:34-95) WHEN 절에 `effective_date`/`valid_from` 추가 = INSERT-only 유지(backfill도 SUPERSEDES로만, UPDATE 금지).
@@ -108,7 +111,7 @@
 
 - **B-1** `scheduled()` 다중 cron 리팩터: 단일 `if` 가드(index.ts:213-216) → `cron→handler` map. 기존 GC/silent-failure 잡 구조 보존.
 - **B-2** `apps/api/src/scheduled/revision-watch.ts` = 순수 clock-주입 모듈(rate-limit-gc 미러) — fake-timer 단위테스트.
-- **B-3** outbound 폴링 = hibp.ts 패턴(AbortController+timeout+graceful, URL/timeout named const + host allowlist). **1차 소스 우선순위**: law.go.kr **법령정보 Open API**(있으면) > HTML diff. 큐넷·kec.kea.kr = spike로 접근성 판정.
+- **B-3** outbound 폴링 = hibp.ts 패턴(AbortController+timeout+graceful, URL/timeout named const + host allowlist). **1차 소스 = law.go.kr DRF OpenAPI 확정**(spike 실측): `lawSearch.do?target=law|admrul` 목록(`modYd`·`prmlYd` 범위) + `lawService.do` 본문 + `admrulOldAndNew` 신구법비교. 2호 KEC·기술기준=동일 admrul / 큐넷 출제기준=HTML+HWP 스크래핑(🟡). ★**감지 호스트 재검토**: DRF OC 키가 IP/도메인 바인딩 → 순수 Workers cron 동적 egress 거부 가능 → 도메인 등록 or 고정 IP 스케줄 잡 필요(spike §4-2). 부처 하드코딩 금지(규칙명/admRulSeq 폴링 — 2025 부처 개편).
 - **B-4** poll state 영속: D1 신규 테이블 `revision_watch_sources`/`revision_watch_runs`(last-hash·ETag·last-run) — KV보다 감사성·조인 우위. at-most-once cron 대비 idempotent diff.
 - **B-5** 감지 산출 = **draft** `revision_changes` 행 + (reflect 후보) — 절대 자동 approved 아님.
 
@@ -173,7 +176,7 @@
 
 - **E-1(비가역)**: effective_date/트리거 개정 = L3 스키마 → 마이그 SQL 작성 전 §9 결재. `migrations-v2` vs `migrations` 결정 선행.
 - **E-2(정답 정확성)**: 감지 diff의 개정 해석 = LLM 요약이나 **수치/조문은 원문 대조 100%**(빈 catch 금지, 불일치 원인규명 전 진행 금지). draft-only이므로 학습자 노출 전 인간 검수.
-- **E-3(소스 접근 미검증)**: law.go.kr/kec/큐넷 접근성 = **미측정**. spike 미달 시 "자동 감지 불가 → 수동 개정 배치(현행) 유지 + 알림만 자동"으로 정직 축소(RULE #5).
+- **E-3(소스 접근 — spike 실측 완료)**: law.go.kr DRF 🟢(1호 법령·요령·고시 + 2호 KEC/기술기준), 큐넷 🟡(HTML+HWP). 선결 = **OC 키 발급(진산 무료)** + **OC IP-바인딩↔Workers egress 충돌**(§3-B 호스트 보정). OC 미보유로 실 pull·admrulOldAndNew 실응답은 미검증 → 발급 후 1건 확정(spike §4).
 - **E-4(외부 인용)**: 소스 API 스펙은 실호출 대조 후에만 전제(가드레일 17).
 - **E-5(2호 연동)**: exam-generic 스키마 = M1 exams/ 골격 결재(§9 M1)와 상호의존 — 순서 조율 필요.
 
@@ -198,7 +201,7 @@
 - [ ] **Q1 (GO/STOP)**: 본 Revision Watch L3 plan 진입 승인? (Q5 필수 지시 이행)
 - [ ] **Q2 (G-RW-4 지뢰)**: draft SUPERSEDES 게이트 = §5-D **A안**(트리거 status 조건 **+ 승격시 flip 동반 트리거** 필수) vs **B안**(edge status 컬럼 **+ C-3 화이트리스트**)? — ★A 단독 불완전, 완전성·트리거 비용 상이.
 - [ ] **Q3 (effective_date)**: §5 배치 **B안**(knowledge_nodes valid_from) 채택?
-- [ ] **Q4 (감지 소스)**: spike 우선순위 = law.go.kr Open API 우선 + 미달 시 수동 폴백 정직 축소 동의?
+- [ ] **Q4 (감지 소스 — spike 실측 반영)**: 감지 = **law.go.kr DRF 확정**(🟢, 시행일자 필드 제공). **진산 OC 키 발급**(open.law.go.kr 무료) + **감지 호스트 = 도메인 등록/고정 IP**(Workers 동적 egress↔OC IP-바인딩) 방향 동의? 큐넷 출제기준(🟡 HTML+HWP)은 2호 진입 시.
 - [ ] **Q5 (알람)**: MVP = D1 review-queue+admin 대시보드(무벤더) 채택 / Email = 2차 이월 동의?
 - [ ] **Q6 (첫 검증)**: 4 미시행 노드(LAW-022/023/053/INV-087) backfill을 첫 케이스로 = E0-8 §D 트랙 통합?
 - [ ] **Q7 (스키마 홈)**: RW 마이그 = `migrations/`(0041+) vs `migrations-v2/` 신설(exam-generic T5)? — M1 exams/ 연동.

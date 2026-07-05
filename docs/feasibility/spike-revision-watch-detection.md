@@ -1,0 +1,53 @@
+# Spike — Revision Watch 감지(DETECT) 소스 접근성 실측 (G-1 R3)
+
+> **유형**: Feasibility Spike (버려질 스파이크 — 코드 무커밋, **본 verdict 문서만 영속**). W3 plan §8 Phase 3a.
+> **일시**: 2026-07-05, Opus 4.8 (울트라코드). **방법 = 라이브 실측**(프로젝트 env curl 5+건) + **리서치 워크플로우** `wf_da79f227-f2d`(WebFetch/WebSearch 2에이전트, exam2 성공·exam1 전용 에이전트 StructuredOutput 실패나 admrul 경유 전수 보완).
+> **대상 질문(plan §0.1 ④ 🔻 미측정 해소)**: 개정 감지를 프로그램으로 자동화할 수 있는가? 1차 소스(law.go.kr 등)는 접근 가능·diffable한가? 시행일(effective_date)을 소스에서 얻는가?
+> **G-1 형식**: 아래는 측정된 사실. "가능성" 단언 아님 — OC 키 미보유로 **실 데이터 pull은 미검증**(구조·인증 게이트까지만 실측).
+
+---
+
+## 1. 측정 결과 (라이브 curl — ground truth)
+
+| 프로브                                                                       | 결과                                                                                            | 해석                                                             |
+| :--------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------- | :--------------------------------------------------------------- |
+| `www.law.go.kr/DRF/lawSearch.do?target=law&query=농어업재해보험법` (OC 없음) | HTTP 200 · `application/xml` · `<result>필수입력요소 검증에 실패</result>`                      | **법령 Open API(DRF) 엔드포인트 실재**, OC 파라미터 필수         |
+| `?target=admrul&query=손해평가요령` (OC 없음)                                | 동일 XML `필수입력요소`                                                                         | **행정규칙(요령·고시)도 동일 DRF API**                           |
+| `?OC=test&target=law` / `?OC=test&target=admrul`                             | `<result>사용자 정보 검증에 실패</result>` + `정확한 서버 IP주소 및 도메인주소를 등록해 주세요` | ★**OC 키는 등록 서버 IP/도메인에 바인딩** — 임의 키·임의 IP 거부 |
+| `DRF/lawService.do` (본문, OC 없음)                                          | HTML 로그인/에러 페이지                                                                         | 본문 조회도 OC 필요                                              |
+| `open.law.go.kr`                                                             | 301 → `/LSO/index.html` (국가법령정보 공동활용 포털)                                            | OC 발급 포털 실재                                                |
+| `q-net.or.kr` 200 / `kea.kr` 302                                             | 접근 가능                                                                                       | 2호 소스 reachable                                               |
+
+## 2. 리서치 보강 (워크플로우 — admrul/KEC/큐넷)
+
+- **DRF admrul API 스펙 확증**: 목록 `lawSearch.do?OC={key}&target=admrul&type=XML|JSON&query={규칙명}`(필터 `knd`=고시/공고, `prmlYd`·`modYd` 발령·개정일 범위) / 본문 `lawService.do?target=admrul&ID={admRulSeq}` / **개정 diff 전용 `target=admrulOldAndNew`(신구법비교)**.
+- ★★ **응답에 `시행일자` 구조화 필드 실재** (+ `발령일자`·`발령번호`·`제개정구분명`·`소관부처명`). 실측 사례: KEC 공고 제2025-227호 **시행 2026-01-05**(직전 제2025-198호 2025-12-30) / 전기설비 기술기준 고시 제2025-87호 시행 2025-06-04. → **effective_date를 소스에서 직접 취득 가능**.
+- **법령(target=law)**: OC=test 동일 IP-바인딩 거부로 parity 확인. 법령 목록 API는 표준적으로 `공포일자`·`공포번호`·`시행일자`·`법령일련번호`·`현행연혁코드` 노출(가이드 동적로딩으로 grep 미포착 — 고신뢰, OC 후 1건 확인 권장).
+- **2호**: KEC·기술기준 = law.go.kr admrul(동일 🟢) / **큐넷 출제기준 = API 무·HTML 게시판(Q006/code=1202)+HWP 첨부 다운로드만** = 스크래핑+HWP 파싱(🟡).
+
+## 3. Verdict (🟢/🟡 — 측정 기반)
+
+| 소스                          | Verdict     | 근거                                                              |
+| :---------------------------- | :---------- | :---------------------------------------------------------------- |
+| 1호 법령(농어업재해보험법 등) | 🟢 diffable | DRF target=law, XML/JSON, 시행일자 필드, 발령번호+시행일자 버전키 |
+| 1호 손해평가요령·목적물고시   | 🟢 diffable | DRF target=admrul(동일 API·필드)                                  |
+| 2호 KEC·전기설비 기술기준     | 🟢 diffable | law.go.kr admrul(고시/공고) — 동일 파이프라인                     |
+| 2호 큐넷 출제기준             | 🟡 반자동   | API 무 → HTML 목록 폴링 + HWP 해시/텍스트 diff                    |
+
+**종합**: 🟢 **1호 감지 자동화 = 구조적으로 실현 가능**(수동 교수 PDF → 1차 소스 DRF 직결). ★**시행일자 소스 취득 = G-RW-1(effective_date 축 부재) 근본 해소 경로**. 단 아래 2개 선결.
+
+## 4. 선결·에스컬레이션 (E-3)
+
+1. **OC 키 발급 = 진산 액션**(비차단이나 라이브 감지 차단): open.law.go.kr → OPEN API 이용신청(`/LSO/openApi/cuAskList.do`) 무료. OC 값 = 신청 계정 이메일 ID. 문의 02-2109-6446.
+2. ★ **OC 키 IP/도메인 바인딩 ↔ Cloudflare Workers egress 동적 IP 충돌** (신규 구조 리스크): 순수 Workers cron이 DRF를 호출하면 egress IP가 유동적이라 등록 IP 불일치로 거부될 수 있음. → **도메인 기반 등록** 또는 **고정 IP 프록시/스케줄 잡** 필요(순수 Worker 아님). plan §3-B 감지 호스트 설계 보정 대상.
+3. **부처 개편 반영**: 산업통상자원부 → 기후에너지환경부(2025 개편). 발령번호 접두·소관부처명 변동 → **부처 하드코딩 금지**, `규칙명`/`admRulSeq` 기준 폴링.
+4. **미검증(OC 키 없이 불가)**: 실 admrul/law 데이터 pull, `admrulOldAndNew`가 실 조문 side-by-side 텍스트를 반환하는지 vs 메타 목록만인지, 손해평가요령의 정확한 admRulSeq, robots/ToS. → **OC 발급 후 실응답 1건으로 확정**.
+
+## 5. plan 반영 (§0.1 ④ / §3-B / §7 / §9 Q4)
+
+- §0.1 ④: 🔻 미측정 → **🟡 실측(조건부 GO: OC 키 + IP 바인딩 인프라 해소 시 🟢)**.
+- §3-B: 1차 소스 = law.go.kr DRF(law+admrul) 확정 / **감지 호스트 = 순수 Workers cron 불충분 가능성**(IP 바인딩) → 도메인 등록 or 고정 IP 스케줄 잡 검토.
+- §3-A: effective_date 축을 **DRF `시행일자` 필드에서 직접 populate**(소스 원문 파싱보다 견고).
+- §9 Q4: "감지 = law.go.kr DRF 확정, 선결 = OC 키/IP 바인딩" 으로 결재 문구 구체화.
+
+> **다음**: 진산 OC 키 발급(§4-1) → OC 실응답 1건으로 §4-4 미검증분 확정 → plan §9 결재 후 Phase 3b 코드. **본 spike 코드는 무커밋(버려질 스파이크), 본 verdict만 영속.**
