@@ -1,11 +1,12 @@
 {
   "id": "RLC-SERIES-A1-001",
+  "reference_id": "series_lowpass_vc",
   "exam_class": "A",
   "class_note": "클래스 A(1차 회로이론)만 — 수변전 단선도·시퀀스(클래스 B·C)는 백로그 BL-3 (playbook S10 스코프)",
   "title": "직렬 RLC 회로의 공진주파수·품질계수·감쇠비",
   "topology_provenance": "인간 승인된 양호 토폴로지 스켈레톤. 값(V/R/L/C)만 난수화되며 토폴로지는 불변 (가드레일 16-①: 무작위 토폴로지 생성 금지).",
   "netlist_template": "V1 1 0 step {V}\nR1 1 2 {R}\nL1 2 3 {L}\nC1 3 0 {C}",
-  "output_across": { "pos": 3, "neg": 0, "element": "C1", "meaning": "커패시터 양단 전압 V_C", "expected_dc_gain": 1, "expected_response": "저역통과(2차) — DC에서 C 개방 → V_C=V_in" },
+  "output_across": { "pos": 3, "neg": 0, "element": "C1", "meaning": "커패시터 양단 전압 V_C", "expected_dc_gain": 1, "expected_hf_gain": 0, "expected_response": "저역통과(2차) — DC에서 C 개방(H(0)=1), 고주파에서 C 단락(H(∞)=0)" },
   "input_across": { "pos": 1, "neg": 0, "meaning": "전원 입력 V_in" },
   "variables": {
     "V": { "unit": "V", "choices": [10, 12, 24, 50, 100] },

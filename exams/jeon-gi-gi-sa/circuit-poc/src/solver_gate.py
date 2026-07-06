@@ -7,7 +7,8 @@
   G1 유일해   : lcapy 해석 성공 + 특성방정식 2차 + 최고차계수≠0 + 계수 유한·실수 + 물리적 해(ω0>0, ζ>0).
                 특이행렬/부동노드/모순전원/비실수계수 → 여기서 거부.
   V1 극점     : lcapy-유도 극점(ω0, ζ) vs 폐형식(1/LC, R/L) 상대오차 ≤ 1e-6.
-  V1 출력탭   : DC 이득 H(0) = 템플릿 기대값 (분자/출력소자 확인 — 극점만으론 출력탭 오배선 불검출).
+  V1 출력탭   : DC 이득 H(0) + 고주파 이득 H(∞) = 템플릿 기대값 (분자/출력소자 확인 — 극점만으론 불검출).
+                (H(0),H(∞)) 쌍이 탭 유일 식별: 저역통과(1,0)·대역통과(0,0)·고역통과(0,1).
   G4 단위     : 모든 답에 단위 문자열 존재.
   G2 난이도   : f0가 시험 상식 난이도 밴드 내 (값-수준 → 재난수화 대상, 구조 실패 아님).
 """
@@ -54,16 +55,18 @@ def hard_validate(result: dict[str, Any]) -> None:
     elif rel > V1_REL_TOL:
         fails.append(f"V1 극점 위반: lcapy-유도 vs 폐형식 상대오차 {rel:.2e} > {V1_REL_TOL:.0e}")
 
-    # --- V1 출력탭 검증 (DC 이득 = 분자/출력소자 확인) -------------------
-    #   극점(ω0,ζ)은 출력탭에 불변이므로, 출력 소자 오배선(예: 커패시터↔인덕터 스왑)은
-    #   DC 이득으로만 잡힌다. 템플릿 expected_dc_gain과 대조.
-    exp = result.get("expected_dc_gain")
-    if exp is not None:
-        dc = result.get("dc_gain")
-        if dc is None or not math.isfinite(dc):
-            fails.append(f"V1 출력탭 위반: DC 이득 비유한 (dc_gain={dc})")
-        elif abs(dc - exp) > DC_GAIN_TOL:
-            fails.append(f"V1 출력탭 위반: DC 이득 {dc:.6g} ≠ 기대 {exp} (출력 소자/분자 불일치)")
+    # --- V1 출력탭 검증 (DC 이득 H(0) + 고주파 이득 H(∞) = 분자/출력소자 확인) -
+    #   극점(ω0,ζ)은 출력탭에 불변이므로 출력 소자 오배선은 이득으로만 잡힌다.
+    #   (H(0),H(∞)) 쌍이 탭을 유일 식별: 저역통과(1,0)·대역통과(0,0)·고역통과(0,1).
+    for key, label in (("dc_gain", "DC 이득 H(0)"), ("hf_gain", "고주파 이득 H(∞)")):
+        exp = result.get(f"expected_{key}")
+        if exp is None:
+            continue  # 템플릿이 해당 이득을 선언 안 함 → 검증 생략
+        obs = result.get(key)
+        if obs is None or not math.isfinite(obs):
+            fails.append(f"V1 출력탭 위반: {label} 비유한 ({key}={obs})")
+        elif abs(obs - exp) > DC_GAIN_TOL:
+            fails.append(f"V1 출력탭 위반: {label} {obs:.6g} ≠ 기대 {exp} (출력 소자/분자 불일치)")
 
     # --- G4 단위 ---------------------------------------------------------
     for ans in result.get("answers", []):
@@ -75,9 +78,19 @@ def hard_validate(result: dict[str, Any]) -> None:
 
 
 def within_difficulty(result: dict[str, Any], template: dict[str, Any]) -> tuple[bool, str]:
-    """G2 난이도 밴드 — 값-수준 검사(구조 실패 아님, 재난수화 신호)."""
-    lo, hi = template["gate"]["difficulty_band_f0_hz"]
+    """G2 난이도 밴드 — 값-수준 검사(구조 실패 아님, 재난수화 신호).
+
+    f0 밴드는 필수, 선택도(Q) 밴드는 템플릿이 선언 시 추가 검사(대역통과는 과감쇠 Q 제외)."""
+    gate = template["gate"]
+    lo, hi = gate["difficulty_band_f0_hz"]
     f0 = result["f0"]
-    if lo <= f0 <= hi:
-        return True, f"G2 난이도 PASS: f0={f0:.2f}Hz ∈ [{lo},{hi}]"
-    return False, f"G2 난이도 이탈: f0={f0:.2f}Hz ∉ [{lo},{hi}] → 재난수화"
+    if not (lo <= f0 <= hi):
+        return False, f"G2 난이도 이탈: f0={f0:.2f}Hz ∉ [{lo},{hi}] → 재난수화"
+    qband = gate.get("difficulty_band_Q")
+    if qband:
+        qlo, qhi = qband
+        q = result.get("Q", 0.0)
+        if not (qlo <= q <= qhi):
+            return False, f"G2 선택도 이탈: Q={q:.3g} ∉ [{qlo},{qhi}] (과감쇠/과협대역 = 대역통과 특성 미흡) → 재난수화"
+        return True, f"G2 난이도 PASS: f0={f0:.2f}Hz ∈ [{lo},{hi}], Q={q:.3g} ∈ [{qlo},{qhi}]"
+    return True, f"G2 난이도 PASS: f0={f0:.2f}Hz ∈ [{lo},{hi}]"

@@ -1,45 +1,66 @@
-"""Solver-Validated Gate 거부 실증 — 특정 게이트가 실제로 발화하는지 검증.
+"""Solver-Validated Gate 실증 — 다중 템플릿 관통 + 특정 게이트 실발화 검증.
 
-독립 리뷰(review wf_a1fd2c69) 반영:
-  - MAJOR-1: 종전 테스트는 V1이 먼저 걸려 G1을 실검증 못함 → 각 케이스가 발화해야 할 게이트 id를 assert.
-    + 포지티브 컨트롤(V1·G4는 통과, G1만 위반)로 G1 회귀를 뮤테이션-검출.
-  - MAJOR-2: 출력탭 오배선(L↔C 스왑)이 DC-이득 게이트로 거부되는지 실증.
-  - MINOR-3: G2 난이도 밴드 판별 동작 단위검증.
+독립 리뷰(wf_a1fd2c69) 반영 + 대역통과 템플릿 추가(일반화 실증):
+  - 다중 템플릿(저역통과·대역통과)이 단일 파이프라인을 관통하는지.
+  - MAJOR-1: 게이트 id 실발화 assert + 포지티브 컨트롤(V1·G4 통과·G1만 위반) = G1 회귀 뮤테이션 가드.
+  - MAJOR-2: 출력탭 오배선을 이득 게이트가 거부 — L↔C 스왑(저역통과 기준 H(0)=0≠1) +
+    ★ 고역통과 오배선(대역통과 기준 H(0)=0 통과하나 H(∞)=1≠0) = **H(∞) 게이트가 대역통과(0,0)와 고역통과(0,1) 구별**.
+  - MINOR-3: G2 난이도 밴드 판별 동작.
 사일런트 드롭 금지(가드레일 16-③): 거부는 SolverGateError 예외로만.
 """
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
-from generate import closed_form, crosscheck, solve
-from solver_gate import SolverGateError, hard_validate, within_difficulty
+from generate import ROOT, crosscheck, generate_one, solve
+from references import get_reference
+from solver_gate import SolverGateError, within_difficulty
 
-TEMPLATE = json.loads((Path(__file__).resolve().parents[1] / "templates" / "rlc_series.json").read_text(encoding="utf-8"))
-IN_P = (TEMPLATE["input_across"]["pos"], TEMPLATE["input_across"]["neg"])
-OUT_P = (TEMPLATE["output_across"]["pos"], TEMPLATE["output_across"]["neg"])
-EXP_DC = TEMPLATE["output_across"]["expected_dc_gain"]
+LOWPASS = json.loads((ROOT / "templates" / "rlc_series.json").read_text(encoding="utf-8"))
+BANDPASS = json.loads((ROOT / "templates" / "rlc_series_bandpass.json").read_text(encoding="utf-8"))
+VALS = {"V": 10, "R": 22, "L": 0.001, "C": 4.7e-8}  # 스왑/오배선 테스트 공통값
 
 
-def _norm(sol: dict) -> dict:
-    sol.setdefault("crosscheck_rel_err", None)
-    sol.setdefault("expected_dc_gain", EXP_DC)
-    sol.setdefault(
-        "answers",
-        [{"symbol": "f0", "unit": "Hz"}, {"symbol": "Q", "unit": "(무차원)"}, {"symbol": "zeta", "unit": "(무차원)"}],
-    )
+def _mag_bandpass(f: float, R: float, L: float, C: float) -> float:
+    """직렬 RLC 저항 양단 |H(j2πf)| = |R/(R+jωL+1/(jωC))| — _cutoffs 공식과 독립(폐형식 미사용)."""
+    w = 2 * math.pi * f
+    return abs(R / complex(R, w * L - 1 / (w * C)))
+
+
+def _ports(t: dict) -> tuple[tuple[int, int], tuple[int, int]]:
+    o, i = t["output_across"], t["input_across"]
+    return (i["pos"], i["neg"]), (o["pos"], o["neg"])
+
+
+def _gate_input(template: dict, netlist: str, vals: dict | None = None) -> dict:
+    """generate_one과 동일한 게이트 입력 구성(derive+crosscheck+이득)을 재현."""
+    ref = get_reference(template["reference_id"])
+    in_p, out_p = _ports(template)
+    sol = solve(netlist, in_p, out_p)
+    if sol.get("solved") and len(sol.get("den_coeffs", [])) == 3:
+        derived = ref["derive"](sol["den_coeffs"])
+        sol.update(derived)
+        # vals 주면 실제 교차검증(극점 일치 → V1 통과 → 출력탭/구조 게이트만 남김), 없으면 0.0
+        sol["crosscheck_rel_err"] = crosscheck(derived, ref["reference"](vals)) if vals else 0.0
+    else:
+        sol["crosscheck_rel_err"] = None
+    sol["expected_dc_gain"] = template["output_across"]["expected_dc_gain"]
+    sol["expected_hf_gain"] = template["output_across"].get("expected_hf_gain")
+    sol["answers"] = [{"symbol": a["symbol"], "unit": a["unit"]} for a in template["asks"]]
     return sol
 
 
 def expect_reject(name: str, sol: dict, must_fire: str) -> bool:
-    """거부 + 지정 게이트('G1'/'출력탭'/…)가 실제 발화했는지 검증."""
+    from solver_gate import hard_validate
+
     try:
-        hard_validate(_norm(sol))
+        hard_validate(sol)
     except SolverGateError as e:
         msg = str(e)
         if must_fire in msg:
-            print(f"  ✅ 거부 [{name}] — '{must_fire}' 발화")
-            print(f"       {msg}")
+            print(f"  ✅ 거부 [{name}] — '{must_fire}' 발화\n       {msg}")
             return True
         print(f"  ❌ 거부되나 기대 게이트 '{must_fire}' 미발화 [{name}]: {msg}")
         return False
@@ -50,15 +71,49 @@ def expect_reject(name: str, sol: dict, must_fire: str) -> bool:
 def main() -> int:
     results: list[bool] = []
 
-    print("== G1 특이 토폴로지 거부 (게이트 id 실발화 검증) ==")
+    print("== 다중 템플릿 단일 파이프라인 관통 + 상이 물리 직접 검증 ==")
+    ans_by_id: dict[str, dict] = {}
+    for t in (LOWPASS, BANDPASS):
+        ref = get_reference(t["reference_id"])
+        try:
+            p = generate_one(t, ref, 1, ROOT / "out")
+            ans_by_id[t["id"]] = {a["symbol"]: a["value"] for a in p["answers"]}
+            ok = p["gate_report"]["G1_unique_solution"] == "PASS" and len(p["answers"]) == len(t["asks"])
+            print(f"  {'✅' if ok else '❌'} {t['id']} → {', '.join(f'{k}={v}' for k, v in ans_by_id[t['id']].items())}")
+            results.append(ok)
+        except (SolverGateError, KeyError) as e:
+            print(f"  ❌ {t['id']} 생성 실패: {e}")
+            results.append(False)
+
+    # 상이/공유 물리 직접 검증 (동일 seed → 동일 값 → 극점 공유; 대역만 BW·차단주파수)
+    lp, bp = ans_by_id.get(LOWPASS["id"], {}), ans_by_id.get(BANDPASS["id"], {})
+    phys = bool(lp and bp) and (
+        abs(lp["f0"] - bp["f0"]) < 1.0  # 극점 공유(동일 값)
+        and abs(lp["Q"] - bp["Q"]) < 0.01
+        and bp["f_low"] < bp["f0"] < bp["f_high"]  # 대역통과 차단주파수 순서
+        and abs((bp["f_high"] - bp["f_low"]) - bp["BW"]) < max(1.0, 0.01 * bp["BW"])  # BW 항등
+    )
+    print(f"  {'✅' if phys else '❌'} 상이 물리: 극점 공유(저역 f0/Q=대역 f0/Q) + f_low<f0<f_high + (f_high−f_low)≈BW")
+    results.append(phys)
+
+    print("\n== 차단주파수 −3dB 독립 검증 (MINOR-1 backstop: _cutoffs 공식) ==")
+    ref_bp = get_reference(BANDPASS["reference_id"])["reference"](VALS)
+    target = 1 / math.sqrt(2)
+    mags = {k: _mag_bandpass(ref_bp[k], VALS["R"], VALS["L"], VALS["C"]) for k in ("f_low", "f_high")}
+    cut_ok = all(abs(m - target) < 1e-3 for m in mags.values())
+    print(f"  {'✅' if cut_ok else '❌'} |H(j2πf_c)| @ (f_low={ref_bp['f_low']:.1f},f_high={ref_bp['f_high']:.1f}) = "
+          f"({mags['f_low']:.4f},{mags['f_high']:.4f}), 기대 {target:.4f}")
+    results.append(cut_ok)
+
+    print("\n== G1 특이 토폴로지 거부 (게이트 id 실발화) ==")
     degenerate = [
-        ("부동노드: 커패시터 제거 → 노드3 부유", "V1 1 0 step 10\nR1 1 2 100\nL1 2 3 0.01"),
+        ("부동노드: 커패시터 제거", "V1 1 0 step 10\nR1 1 2 100\nL1 2 3 0.01"),
         ("출력단락: 커패시터를 도선으로", "V1 1 0 step 10\nR1 1 2 100\nL1 2 3 0.01\nW1 3 0"),
         ("모순전원: 상이 전압원 병렬", "V1 1 0 dc 10\nV2 1 0 dc 5\nR1 1 0 100"),
-        ("R=0: 감쇠 소실(ζ=0) 비물리", "V1 1 0 step 10\nR1 1 2 0\nL1 2 3 0.01\nC1 3 0 1e-6"),
+        ("R=0: 감쇠 소실(ζ=0)", "V1 1 0 step 10\nR1 1 2 0\nL1 2 3 0.01\nC1 3 0 1e-6"),
     ]
     for name, net in degenerate:
-        results.append(expect_reject(name, solve(net, IN_P, OUT_P), "G1"))
+        results.append(expect_reject(name, _gate_input(LOWPASS, net), "G1"))
 
     print("\n== 포지티브 컨트롤: V1·G4 통과 & G1만 위반 (G1 회귀 뮤테이션 가드) ==")
     pc = {
@@ -66,29 +121,33 @@ def main() -> int:
         "den_coeffs": [1.0],  # 0차 → 2차 아님 = G1 위반
         "w0": 0.0,
         "zeta": 0.0,
-        "dc_gain": EXP_DC,  # V1 출력탭 통과
-        "expected_dc_gain": EXP_DC,
+        "dc_gain": 1.0,
+        "hf_gain": 0.0,  # V1 출력탭(H(0),H(∞)) 통과
+        "expected_dc_gain": 1.0,
+        "expected_hf_gain": 0.0,
         "crosscheck_rel_err": 0.0,  # V1 극점 통과
+        "answers": [{"symbol": "f0", "unit": "Hz"}],
     }
-    results.append(expect_reject("합성: 극점·DC·단위 통과, 구조만 붕괴", pc, "G1"))
+    results.append(expect_reject("합성: 극점·이득·단위 통과, 구조만 붕괴", pc, "G1"))
 
-    print("\n== 출력탭 오배선 거부 (MAJOR-2: L↔C 스왑 → DC 이득 0≠1) ==")
-    swap_net = "V1 1 0 step 10\nR1 1 2 22\nC1 2 3 4.7e-08\nL1 3 0 0.001"  # 노드3-0 = 인덕터 양단(고역통과)
-    swap = solve(swap_net, IN_P, OUT_P)
-    swap["crosscheck_rel_err"] = crosscheck(swap, closed_form({"R": 22, "L": 0.001, "C": 4.7e-8}))  # 극점은 동일 → 통과
-    swap["expected_dc_gain"] = EXP_DC
-    results.append(expect_reject("L↔C 스왑(극점 동일·출력탭 상이)", swap, "출력탭"))
+    print("\n== 출력탭 오배선 거부 (MAJOR-2) ==")
+    # (a) L↔C 스왑 → 저역통과 기준 H(0)=0≠1
+    swap_net = "V1 1 0 step 10\nR1 1 2 22\nC1 2 3 4.7e-08\nL1 3 0 0.001"  # 노드3-0 = 인덕터 양단
+    results.append(expect_reject("L↔C 스왑 vs 저역통과(H(0) 0≠1)", _gate_input(LOWPASS, swap_net, VALS), "출력탭"))
+    # (b) ★ 고역통과 오배선 → 대역통과 기준: H(0)=0 통과하나 H(∞)=1≠0 → H(∞) 게이트가 유일하게 잡음
+    hp_net = "V1 1 0 step 10\nR1 1 2 22\nC1 2 3 4.7e-08\nL1 3 0 0.001"  # 출력=L 양단 = 고역통과 (0,1)
+    results.append(expect_reject("고역통과 오배선 vs 대역통과(H(∞) 1≠0)", _gate_input(BANDPASS, hp_net, VALS), "H(∞)"))
 
     print("\n== G2 난이도 밴드 판별 동작 (MINOR-3) ==")
-    lo_ok, _ = within_difficulty({"f0": 5.0}, TEMPLATE)  # <10 → False
-    in_ok, _ = within_difficulty({"f0": 1000.0}, TEMPLATE)  # 밴드 내 → True
+    lo_ok, _ = within_difficulty({"f0": 5.0}, LOWPASS)  # <10 → False
+    in_ok, _ = within_difficulty({"f0": 1000.0}, LOWPASS)  # 밴드 내 → True
     g2 = (not lo_ok) and in_ok
     print(f"  {'✅' if g2 else '❌'} G2: f0=5Hz→거부({not lo_ok}), f0=1kHz→허용({in_ok})")
     results.append(g2)
 
     print()
     if all(results):
-        print(f"RESULT: PASS — {len(results)}/{len(results)} 검증 통과 (사일런트 드롭 0, 게이트 id 실발화 확인).")
+        print(f"RESULT: PASS — {len(results)}/{len(results)} 검증 통과 (다중 템플릿·게이트 id 실발화·사일런트 드롭 0).")
         return 0
     print(f"RESULT: FAIL — {sum(results)}/{len(results)} 통과.")
     return 1

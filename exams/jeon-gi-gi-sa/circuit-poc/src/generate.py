@@ -1,20 +1,20 @@
 """S10 회로 생성·풀이 수직 관통 PoC (빌드타임 전용 — 가드레일 16-②).
 
-파이프라인: 인간승인 템플릿 → 값 난수화 → lcapy 전달함수 유도 → sympy 계수 추출
-            → f0/Q/ζ 산출(폐형식 교차검증) → schemdraw SVG → Solver Gate → 정적 JSON.
+파이프라인: 인간승인 템플릿 → 값 난수화 → lcapy 전달함수 유도 → sympy 계수·이득 추출
+            → references.py(템플릿별 승인 물리)로 정답 산출·독립 교차검증 → schemdraw SVG → Solver Gate → 정적 JSON.
 
-런타임(Workers/브라우저)은 여기서 나온 out/*.json + out/*.svg 만 소비한다. 이 스크립트는 절대 런타임에 반입하지 않는다.
+런타임(Workers/브라우저)은 out/*.json + out/*.svg 만 소비. 이 스크립트는 절대 런타임에 반입하지 않는다.
 
-★ 측정 포트(입력/출력)는 코드가 아니라 템플릿(input_across/output_across)이 정본이다 (가드레일 16-①).
-   Solver Gate는 특성방정식(극점)뿐 아니라 DC 이득(분자/출력탭)까지 검증하여, 템플릿-코드 불일치를 LOUD 거부한다.
+★ 측정 포트·정답 물리는 코드가 아니라 템플릿(reference_id → references.REGISTRY)이 정본이다 (가드레일 16-①).
+   Solver Gate는 극점(ω0,ζ)뿐 아니라 DC 이득 H(0)·고주파 이득 H(∞)까지 검증 → 출력탭 오배선을 LOUD 거부.
+   여러 템플릿(저역통과·대역통과…)이 단일 파이프라인을 통과 = 아키텍처 일반화 실증.
 
-사용: python src/generate.py [--seed N] [--count K] [--out DIR]
+사용: python src/generate.py [--template PATH] [--seed N] [--count K] [--out DIR]
 """
 from __future__ import annotations
 
 import argparse
 import json
-import math
 import os
 import random
 import warnings
@@ -22,12 +22,16 @@ from pathlib import Path
 
 os.environ.setdefault("MPLBACKEND", "Agg")  # 헤드리스 렌더
 
+from references import get_reference  # noqa: E402
 from solver_gate import SolverGateError, hard_validate, within_difficulty  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE_PATH = ROOT / "templates" / "rlc_series.json"
+DEFAULT_TEMPLATE = ROOT / "templates" / "rlc_series.json"
 MAX_DIFFICULTY_ATTEMPTS = 40
-IMAG_TOL = 1e-9  # 특성방정식 계수 허용 허수부(수치 오차 한계)
+IMAG_TOL = 1e-9  # 특성방정식 계수/이득 허용 허수부(수치 오차 한계)
+
+ELEM_MAP: dict[str, str] = {"R": "Resistor", "L": "Inductor2", "C": "Capacitor"}
+ELEM_UNIT: dict[str, str] = {"R": "Ω", "L": "H", "C": "F"}
 
 
 # ----------------------------------------------------------------------------- utils
@@ -36,7 +40,7 @@ def sig(x: float, n: int = 4) -> float:
 
 
 def fmt_si(x: float, unit: str) -> str:
-    """공학 접두어 표기 (µ/m/k)."""
+    """공학 접두어 표기 (n/µ/m/k/M)."""
     if x == 0:
         return f"0 {unit}"
     prefixes = [(1e-9, "n"), (1e-6, "µ"), (1e-3, "m"), (1, ""), (1e3, "k"), (1e6, "M")]
@@ -71,15 +75,26 @@ def _real_coeffs(coeffs) -> list[float] | None:
     return out
 
 
+def _finite_real(expr, s, at) -> float:
+    """H(s→at) 극한을 실수로. 비유한/복소 → nan (게이트가 LOUD 거부)."""
+    import sympy as sp
+
+    try:
+        v = complex(sp.N(sp.limit(expr, s, at)))
+        return v.real if abs(v.imag) < IMAG_TOL else float("nan")
+    except (TypeError, ValueError, NotImplementedError, OverflowError):
+        return float("nan")
+
+
 def solve(netlist: str, in_ports: tuple[int, int], out_ports: tuple[int, int]) -> dict:
-    """lcapy로 V_out/V_in 전달함수를 유도하고 특성방정식 계수 + DC 이득을 추출한다.
+    """lcapy로 V_out/V_in 전달함수를 유도하고 특성방정식 계수 + DC/고주파 이득을 추출한다(순수 추출).
 
     포트는 템플릿이 정본(하드코딩 금지). ImportError 류는 인프라 실패로 재전파(회로 거부로 오분류 금지)."""
     import sympy as sp
 
     try:
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore")  # lcapy 'removing source' 정보성 경고
+            warnings.simplefilter("ignore")
             from lcapy import Circuit
     except (ImportError, ModuleNotFoundError):
         raise  # 인프라(툴체인 부재) — 회로 G1 거부가 아님. LOUD 전파.
@@ -94,7 +109,7 @@ def solve(netlist: str, in_ports: tuple[int, int], out_ports: tuple[int, int]) -
         return {"solved": False, "solve_error": f"회로 해석 실패 — {type(e).__name__}: {e}"}
 
     s = next((x for x in Hs.free_symbols if str(x) == "s"), sp.Symbol("s"))
-    num, den = sp.fraction(Hs)
+    _, den = sp.fraction(Hs)
     try:
         raw = sp.Poly(sp.expand(den), s).all_coeffs()
     except sp.PolynomialError as e:
@@ -103,133 +118,129 @@ def solve(netlist: str, in_ports: tuple[int, int], out_ports: tuple[int, int]) -
     if coeffs is None:
         return {"solved": False, "solve_error": "특성방정식 계수 비실수(비물리 토폴로지)"}
 
-    # DC 이득 H(s→0) — 분자/출력탭 검증용 (극점만으로는 출력 소자 확인 불가)
-    try:
-        dc = complex(sp.N(Hs.subs(s, 0)))
-        dc_gain = dc.real if abs(dc.imag) < IMAG_TOL else float("nan")
-    except (TypeError, ValueError):
-        dc_gain = float("nan")
-
-    out = {"solved": True, "den_coeffs": coeffs, "H_str": str(Hs), "dc_gain": dc_gain}
-    if len(coeffs) != 3:  # 2차가 아니면 G1에서 거부됨
-        out.update(w0=0.0, zeta=0.0, f0=0.0, Q=0.0)
-        return out
-
-    a2, a1, a0 = coeffs
-    ratio = a0 / a2 if a2 else -1
-    w0 = math.sqrt(ratio) if ratio > 0 else 0.0
-    zeta = (a1 / a2) / (2 * w0) if w0 > 0 else 0.0
-    out.update(
-        w0=w0,
-        zeta=zeta,
-        f0=w0 / (2 * math.pi) if w0 > 0 else 0.0,
-        Q=1 / (2 * zeta) if zeta > 0 else 0.0,
-    )
-    return out
-
-
-def closed_form(vals: dict) -> dict:
-    """폐형식 참조값 — solver 결과 교차검증용 (V1 결정론 대조).
-
-    ★ 본 폐형식은 '직렬 RLC · 출력=C' 템플릿(RLC-SERIES-A1-001) 전용 참조다.
-      다른 토폴로지/출력탭 템플릿은 자체 참조가 필요하며, 그 전까지는 DC 이득 게이트가 불일치를 LOUD 거부한다."""
-    R, L, C = vals["R"], vals["L"], vals["C"]
-    w0 = 1 / math.sqrt(L * C)
     return {
-        "w0": w0,
-        "zeta": (R / 2) * math.sqrt(C / L),
-        "f0": w0 / (2 * math.pi),
-        "Q": (1 / R) * math.sqrt(L / C),
+        "solved": True,
+        "den_coeffs": coeffs,
+        "H_str": str(Hs),
+        "dc_gain": _finite_real(Hs, s, 0),  # H(0) — 분자/출력탭 검증
+        "hf_gain": _finite_real(Hs, s, sp.oo),  # H(∞) — 저역/대역/고역 탭 유일 식별
     }
 
 
-def crosscheck(sol: dict, cf: dict) -> float:
-    """lcapy-유도 vs 폐형식 최대 상대오차 (극점 = ω0, ζ)."""
-    errs = [abs(sol[k] - cf[k]) / abs(cf[k]) for k in ("w0", "zeta") if cf.get(k)]
-    return max(errs) if errs else 1.0
+def crosscheck(derived: dict, reference: dict) -> float:
+    """solver 유도값(lcapy) vs 폐형식 참조(원값) 최대 상대오차.
+
+    키집합 불일치 = LOUD raise (독립 대조군 계약 강제 — 한쪽에만 있는 키의 조용한 미검증 차단).
+    참조값 0(falsy) 키는 상대오차 대신 절대오차로 검증(skip 방지)."""
+    d_keys, r_keys = set(derived), set(reference)
+    if d_keys != r_keys:
+        raise SolverGateError(
+            f"교차검증 키집합 불일치 — derive 잉여={sorted(d_keys - r_keys)} / "
+            f"reference 잉여={sorted(r_keys - d_keys)} (references.py 정합 오류 — 독립성 무력화 차단)"
+        )
+    if not reference:
+        return 1.0
+    return max(abs(derived[k] - rv) / abs(rv) if rv else abs(derived[k] - rv) for k, rv in reference.items())
 
 
-# ----------------------------------------------------------------------------- steps + svg
-def build_steps(template: dict, vals: dict, sol: dict) -> list[str]:
-    R, L, C = vals["R"], vals["L"], vals["C"]
-    out_label = template["output_across"]["meaning"]
-    return [
-        f"① 소자 임피던스: Z_R = R = {fmt_si(R, 'Ω')}, Z_L = sL, Z_C = 1/(sC)  (L={fmt_si(L, 'H')}, C={fmt_si(C, 'F')})",
-        f"② 전압분배({out_label}): H(s) = V_out/V_in = Z_C / (Z_R + Z_L + Z_C) = (1/sC) / (R + sL + 1/sC)",
-        f"③ 정리(lcapy 유도): H(s) = {sol['H_str']}   [DC 이득 H(0) = {sig(sol['dc_gain'])}]",
-        "④ 표준 2차형 대조: 분모 = s² + 2ζω₀·s + ω₀²  ⇒  ω₀² = 1/(LC),  2ζω₀ = R/L",
-        f"⑤ 공진각주파수 ω₀ = 1/√(LC) = {sig(sol['w0'])} rad/s  ⇒  f₀ = ω₀/2π = {sig(sol['f0'])} Hz",
-        f"⑥ 감쇠비 ζ = (R/2)·√(C/L) = {sig(sol['zeta'])},  품질계수 Q = 1/(2ζ) = {sig(sol['Q'])}",
-    ]
-
-
-def render_svg(vals: dict, out_path: Path) -> None:
+# ----------------------------------------------------------------------------- svg
+def render_svg(template: dict, vals: dict, out_path: Path) -> None:
+    """직렬 루프 렌더 — 수동소자를 넷리스트 순서로 배치, 접지쪽(마지막) 소자 = 출력탭 명시."""
     import matplotlib
     import matplotlib.pyplot as plt
     import schemdraw
     import schemdraw.elements as elm
 
-    matplotlib.rcParams["svg.fonttype"] = "none"  # 라벨을 <path>가 아닌 선택가능 <text>로 (접근성·경량화)
+    matplotlib.rcParams["svg.fonttype"] = "none"  # 선택가능 <text> 라벨(접근성·경량화)
+
+    passives = [
+        ln.split()[0]
+        for ln in template["netlist_template"].splitlines()
+        if ln.split() and ln.split()[0][0] in ELEM_MAP
+    ]
+    out_elem = template["output_across"]["element"]
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         try:
             d = schemdraw.Drawing()
-            d += elm.SourceV().up().label(f"Vin\n{fmt_si(vals['V'], 'V')} step")
-            d += elm.Resistor().right().label(f"R = {fmt_si(vals['R'], 'Ω')}")
-            d += elm.Inductor2().right().label(f"L = {fmt_si(vals['L'], 'H')}")
-            d += elm.Capacitor().down().label(f"C = {fmt_si(vals['C'], 'F')}", loc="bottom")
-            d += elm.Line().left()
-            d += elm.Line().up()
+            src = elm.SourceV().up().label(f"Vin\n{fmt_si(vals['V'], 'V')} step")
+            d += src
+            n = len(passives)
+            for i, name in enumerate(passives):
+                prefix, last = name[0], (i == n - 1)
+                elem = getattr(elm, ELEM_MAP[prefix])()
+                elem = elem.down() if last else elem.right()
+                label = f"{prefix} = {fmt_si(vals[prefix], ELEM_UNIT[prefix])}"
+                if name == out_elem:
+                    label += "\n(V_out)"
+                d += elem.label(label, loc="bottom" if last else "top")
+            d += elm.Line().to(src.start)  # 접지 복귀 = 루프 폐합(폭 무관)
             svg = d.get_imagedata("svg")
         finally:
-            plt.close("all")  # matplotlib figure 누수 방지 (스케일 안전)
+            plt.close("all")  # matplotlib figure 누수 방지
     out_path.write_bytes(svg if isinstance(svg, bytes) else svg.encode())
 
 
 # ----------------------------------------------------------------------------- orchestrate
-def generate_one(template: dict, seed: int, out_dir: Path) -> dict:
-    """단일 문제 생성 — 관통: 난수화→풀이→게이트→SVG→JSON. 게이트 실패는 LOUD."""
+def generate_one(template: dict, ref: dict, seed: int, out_dir: Path) -> dict:
+    """단일 문제 생성 — 난수화→풀이→해석/교차검증→게이트→SVG→JSON. 게이트 실패는 LOUD."""
     rng = random.Random(seed)
     in_p = (template["input_across"]["pos"], template["input_across"]["neg"])
     out_p = (template["output_across"]["pos"], template["output_across"]["neg"])
-    expected_dc = template["output_across"]["expected_dc_gain"]
+    exp_dc = template["output_across"]["expected_dc_gain"]
+    exp_hf = template["output_across"].get("expected_hf_gain")
     last_g2 = ""
 
     for _attempt in range(MAX_DIFFICULTY_ATTEMPTS):
         vals = randomize(template, rng)
-        netlist = build_netlist(template, vals)
-        sol = solve(netlist, in_p, out_p)
-        cf = closed_form(vals) if sol.get("solved") else {}
-        sol["crosscheck_rel_err"] = crosscheck(sol, cf) if cf else None
-        sol["expected_dc_gain"] = expected_dc
+        sol = solve(build_netlist(template, vals), in_p, out_p)
+
+        if sol.get("solved") and len(sol.get("den_coeffs", [])) == 3:
+            derived = ref["derive"](sol["den_coeffs"])  # lcapy 계수 → 정답 (solver 진실)
+            sol.update(derived)
+            missing = [a["symbol"] for a in template["asks"] if a["symbol"] not in derived]
+            if missing:  # 템플릿/registry 오정합 → 조용한 0 답 금지(사일런트 결함 차단)
+                raise SolverGateError(
+                    f"템플릿/registry 정합 오류: asks 심볼 {missing} 이 references.derive 산출에 없음 (사일런트 0 금지)"
+                )
+            sol["crosscheck_rel_err"] = crosscheck(derived, ref["reference"](vals))  # vs 폐형식(독립)
+        else:
+            sol["crosscheck_rel_err"] = None  # 퇴화 → G1이 거부
+
+        sol["expected_dc_gain"], sol["expected_hf_gain"] = exp_dc, exp_hf
         sol["answers"] = [
-            {"symbol": "f0", "name": "공진주파수", "value": sig(sol.get("f0", 0)), "unit": "Hz"},
-            {"symbol": "Q", "name": "품질계수", "value": sig(sol.get("Q", 0)), "unit": "(무차원)"},
-            {"symbol": "zeta", "name": "감쇠비", "value": sig(sol.get("zeta", 0)), "unit": "(무차원)"},
+            {"symbol": a["symbol"], "name": a["name"], "value": sig(sol.get(a["symbol"], 0.0)), "unit": a["unit"]}
+            for a in template["asks"]
         ]
 
-        hard_validate(sol)  # G1·V1(극점+DC이득)·G4 — 구조/정확성 실패면 SolverGateError (재시도 안 함)
+        hard_validate(sol)  # G1·V1(극점+DC이득+HF이득)·G4 — 구조/정확성 실패면 raise(재시도 안 함)
 
         ok, last_g2 = within_difficulty(sol, template)
         if ok:
             svg_name = f"{template['id']}-{seed:04d}.svg"
-            render_svg(vals, out_dir / svg_name)
+            render_svg(template, vals, out_dir / svg_name)
             problem = {
                 "template_id": template["id"],
+                "reference_id": template["reference_id"],
                 "seed": seed,
                 "exam_class": template["exam_class"],
                 "title": template["title"],
-                "netlist": netlist,
-                "ports": {"input": list(in_p), "output": list(out_p)},
+                "netlist": build_netlist(template, vals),
+                "ports": {
+                    "input": list(in_p),
+                    "output": list(out_p),
+                    "output_element": template["output_across"]["element"],
+                },
                 "values": {k: {"value": v, "unit": template["variables"][k]["unit"]} for k, v in vals.items()},
                 "transfer_function": sol["H_str"],
-                "steps": build_steps(template, vals, sol),
+                "steps": ref["steps"](vals, sol, fmt_si),
                 "answers": sol["answers"],
                 "gate_report": {
                     "G1_unique_solution": "PASS",
                     "V1_pole_crosscheck_rel_err": sol["crosscheck_rel_err"],
-                    "V1_dc_gain": {"observed": sig(sol["dc_gain"]), "expected": expected_dc},
+                    "V1_dc_gain": {"observed": sig(sol["dc_gain"]), "expected": exp_dc},
+                    "V1_hf_gain": {"observed": sig(sol["hf_gain"]), "expected": exp_hf},
                     "G4_units": "PASS",
                     "G2_difficulty": last_g2,
                 },
@@ -246,24 +257,28 @@ def generate_one(template: dict, seed: int, out_dir: Path) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--template", type=str, default=str(DEFAULT_TEMPLATE))
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--count", type=int, default=3)
     ap.add_argument("--out", type=str, default=str(ROOT / "out"))
     args = ap.parse_args()
 
-    template = json.loads(TEMPLATE_PATH.read_text(encoding="utf-8"))
+    template = json.loads(Path(args.template).read_text(encoding="utf-8"))
+    ref = get_reference(template["reference_id"])
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"S10 PoC — 템플릿 {template['id']} ({template['title']})")
     for i in range(args.count):
         seed = args.seed + i
-        p = generate_one(template, seed, out_dir)
+        p = generate_one(template, ref, seed, out_dir)
         ans = ", ".join(f"{a['symbol']}={a['value']} {a['unit']}" for a in p["answers"])
         gr = p["gate_report"]
         print(
-            f"  [seed {seed:04d}] PASS — {ans} | V1 극점 rel_err={gr['V1_pole_crosscheck_rel_err']:.2e}"
-            f" | DC이득 {gr['V1_dc_gain']['observed']}=={gr['V1_dc_gain']['expected']}"
+            f"  [seed {seed:04d}] PASS — {ans}"
+            f" | V1 rel_err={gr['V1_pole_crosscheck_rel_err']:.2e}"
+            f" | H(0)={gr['V1_dc_gain']['observed']}=={gr['V1_dc_gain']['expected']}"
+            f" H(∞)={gr['V1_hf_gain']['observed']}=={gr['V1_hf_gain']['expected']}"
         )
     print(f"완료: {args.count}문제 → {out_dir}")
 

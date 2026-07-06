@@ -20,24 +20,28 @@ f0/Q/ζ 산출(폐형식 교차검증) → schemdraw SVG → **Solver-Validated 
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install lcapy schemdraw   # 최초 1회
-.venv/bin/python src/generate.py --seed 1 --count 3    # 생성 관통
-.venv/bin/python src/test_gate.py                      # G1 특이 토폴로지 거부 실증
+.venv/bin/python src/generate.py --seed 1 --count 3                                    # 저역통과(기본)
+.venv/bin/python src/generate.py --template templates/rlc_series_bandpass.json --seed 1 --count 3   # 대역통과
+.venv/bin/python src/test_gate.py                      # 다중 템플릿 관통 + 게이트 거부 실증
 ```
 
-## 게이트 실측 (2026-07-05, 독립 리뷰 반영본)
+## 게이트 실측 (2026-07-06, 대역통과 템플릿 추가·registry 일반화)
 
-- **관통·무회귀**: 생성 13/13 PASS. **V1 극점 대조 rel_err ≈ 0**(≤2e-16 = lcapy 유도 ≡ 폐형식) + **DC 이득 H(0)=1** 확인.
-- **게이트 실검증 7/7**: G1 특이 4종(부동노드·출력단락·모순전원·R=0) LOUD 거부 + **포지티브 컨트롤**(V1·G4 통과·G1만 위반 → G1 회귀 뮤테이션 가드) + **출력탭 오배선**(L↔C 스왑 → DC 이득 게이트 거부) + G2 판별.
-- **렌더**: SVG well-formed, 실 `<text>` 라벨(선택가능). 시각 품질 = 인간 확인 대기.
+- **다중 템플릿 관통**: 저역통과 + 대역통과 = **단일 파이프라인** 통과(템플릿 교체만). 저역 3 + 대역 23 seed 전부 PASS.
+- **V1 대조 rel_err ≈ 0**(≤4e-16 = lcapy 유도 ≡ 폐형식, 공유 키 전수: 극점+BW+차단주파수) + **출력탭 이득 H(0)·H(∞) 기대 일치**.
+- **게이트 실검증 10/10**: 다중 템플릿 관통 + G1 특이 4종 LOUD 거부 + **포지티브 컨트롤**(G1 회귀 뮤테이션 가드) + **출력탭 오배선**(L↔C 스왑 H(0) / ★고역통과 오배선 H(∞) — 대역통과와 고역통과 구별) + G2 판별.
+- **렌더**: SVG well-formed, 실 `<text>` 라벨(선택가능), 넷리스트 순서 배치 + 접지쪽=출력탭(V_out) 표시. 시각 품질 = 인간 확인 대기.
 
-> 독립 리뷰(`wf_a1fd2c69`)가 잡은 2 MAJOR(테스트가 G1 실검증 못함 / 게이트 분자 맹점) 전건 수정 — 상세: spike verdict §1.5.
+> 1차 리뷰(`wf_a1fd2c69`) 2 MAJOR(테스트 G1 미검증 / 게이트 분자 맹점) 수정 + 2차 템플릿으로 아키텍처 일반화 실증 — 상세: spike verdict §1.5~1.7.
 
 ## 파일
 
-- `templates/rlc_series.json` — 인간승인 토폴로지 + 값 범위 + 질문 스펙
-- `src/generate.py` — 난수화·lcapy 풀이·SVG·JSON 오케스트레이터
-- `src/solver_gate.py` — Solver-Validated Gate (LOUD)
-- `src/test_gate.py` — G1 특이 토폴로지 거부 실증
+- `templates/rlc_series.json` — 저역통과(출력=C) 템플릿: 인간승인 토폴로지 + 값 범위 + 질문 스펙
+- `templates/rlc_series_bandpass.json` — 대역통과(출력=R) 템플릿: 극점 공유·출력탭 상이, 대역폭·차단주파수 질문
+- `src/references.py` — 템플릿별 승인 물리(reference_id→{derive/reference/steps}), 동적실행 0
+- `src/generate.py` — 난수화·lcapy 풀이·교차검증·SVG·JSON 오케스트레이터
+- `src/solver_gate.py` — Solver-Validated Gate (LOUD): G1/V1(극점+H(0)+H(∞))/G4/G2
+- `src/test_gate.py` — 다중 템플릿 관통 + 게이트 id 실발화 거부 실증
 - `out/` — 생성 산출물(정적 JSON+SVG, 런타임 소비 형태)
 
 ## 스코프 한계
