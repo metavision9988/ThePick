@@ -45,25 +45,37 @@ def validate_template_structure(template: dict[str, Any]) -> None:
     """
     lines = [ln.split() for ln in template["netlist_template"].splitlines() if ln.split()]
     out = template["output_across"]
-    elem_nodes = {ln[0]: {int(ln[1]), int(ln[2])} for ln in lines}
+    # 노드 = 문자열 키 (폐쇄검증 MINOR 1~3 일괄 해소: int() 강제 시 이름 노드 ValueError 사망
+    #  + int("0_2")==2 무음 별칭 오귀속. 게이트 계약 = 거부는 SolverGateError로만)
+    for ln in lines:
+        if len(ln) < 3:
+            raise SolverGateError(f"V1-T 템플릿 위반: 넷리스트 라인 필드 부족(이름 노드+ 노드−) — {ln}")
+    elem_nodes = {ln[0]: {ln[1], ln[2]} for ln in lines}
 
     name = out["element"]
     if name not in elem_nodes:
         raise SolverGateError(f"V1-T 템플릿 위반: output element '{name}' 이 넷리스트에 없음")
-    if elem_nodes[name] != {out["pos"], out["neg"]}:
+    if elem_nodes[name] != {str(out["pos"]), str(out["neg"])}:
         raise SolverGateError(
             f"V1-T 템플릿 위반: output element '{name}' 노드 {sorted(elem_nodes[name])}"
             f" ≠ 출력 포트 ({out['pos']},{out['neg']}) — element/포트 모순(JSON·SVG 오라벨 차단)"
         )
 
-    degree: dict[int, int] = {}
+    degree: dict[str, int] = {}
     for ln in lines:
-        for node in (int(ln[1]), int(ln[2])):
+        for node in (ln[1], ln[2]):
             degree[node] = degree.get(node, 0) + 1
     bad = {n: d for n, d in degree.items() if d != 2}
     if bad:
         raise SolverGateError(
             f"V1-T 템플릿 위반: 직렬 단일루프 아님 (노드 차수 이상 {bad}) — 렌더러 직렬 가정 미지원 토폴로지, 무음 오도면 금지"
+        )
+
+    sources = [ln[0] for ln in lines if ln[0][0] == "V"]
+    if len(sources) != 1:
+        raise SolverGateError(
+            f"V1-T 템플릿 위반: 전압원 {sources} ≠ 단일 소스 — 렌더러 소스 1개 전제(다중 소스 무음 누락 차단)"
+            " + transfer() 모순전원 미검출 한계 보강 (§4-7 ⑦ 기계화)"
         )
 
     prefixes = [ln[0][0] for ln in lines if ln[0][0] in PASSIVE_PREFIXES]
