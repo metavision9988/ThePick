@@ -65,7 +65,7 @@
 
 - **① canonical form §8 Q1~Q5** (`decision-card-20260705-formula-canonical-form.md`) — 비가역(첫 적재 전 락). **★Q1 = 손해평가 68식 유니코드 grandfather vs LaTeX 재저작 비용** / Q3 = formula 확장 별건 분리(S6 근거) / Q5 = NFC+55드리프트 선결 묶음.
 - **② M1 plan §11 Q1~Q7** (`m1-exams-scaffold-shared-detox.plan.md`) — **★Q2 = NodeType 결합 = 검색 hot path 최대 blast**(계층별 분해 권고) / Q5 = parser-1st-exam 처분 / 코드착수 = 전건+선결(E0-8·G-S5).
-- **③ Revision Watch §9 Q1~Q8** (`revision-watch.plan.md`) — **★Q2 = G-RW-4 트리거 지뢰**(draft SUPERSEDES가 approved production 노드 자동 비활성화 = 즉사, A안 vs B안) / Q4 = law.go.kr DRF 확정 + **OC 키 발급**.
+- **③ Revision Watch §9 Q1~Q8** (`revision-watch.plan.md`) — **★Q2 = GAP-RW-4 트리거 지뢰(구칭 G-RW-4, plan rev4 개칭)**(draft SUPERSEDES가 approved production 노드 자동 비활성화 = 즉사, A안 vs B안) / Q4 = law.go.kr DRF 확정 + **OC 키 발급**.
 - **④ G-S5 graph-walk GO/NO-GO** (`MASTER_PLAN §6 #8` + `s5-8 §9` + `g-s5-multipersona-audit §4` 잔여 6항) — 북극성. 선결 = **golden 확대 draft 22문항(N=34) 검수**→병합→N≥30 재측정.
 
 ### B2. 2호 전기기사

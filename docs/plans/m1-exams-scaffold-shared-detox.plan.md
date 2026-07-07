@@ -2,6 +2,7 @@
 
 > **STATUS: DRAFT · L3 · 진산 결재 전 코드 1줄 금지** (CRITICAL RULE #1·#7 / production-quality L3).
 > **rev2 (2026-07-05)**: 독립 검증 2에이전트(사실검증 + 적대 설계비평, `add829e29`·`a9c8e830`) 발견 **CRITICAL 1 / MAJOR 6 / MINOR 5 + 게이트 결함 전건 반영**. 정정 이력 §12.
+> **rev3 (2026-07-07, 3차 검토 §7 Fable 게이트 F-3)**: MAJOR 1 정정 — **G-M1-2 게이트-단계 매핑 모순 해소**(§4 스코프 표 신설: G-M1-2(c)/(d)/전량 단계별 부분판정 + Tier-S 완료 판정 게이트 부분집합 정의. 종전 문면은 M1-c 시점 기계판정 필연 FAIL). "오염 심볼 4개"·인용 라인은 3차 검토 실코드 전수 재확증(환각 0). 리뷰 정본 `.claude/reviews/review-20260707-080709-fable-s7-gate-f1-f5.md`.
 > **근거**: 엔진분리 R5 A안(`docs/학습자료저장및도출/ENGINE_SEPARATION_REVIEW_20260704.md` §5-M1 :146) · ADR-007 Amendment(2026-07-04 조기집행) · Hard Rule 15~17(`.claude/rules/production-quality.md`) · 플레이북 W4.
 > **DEFCON**: **L3 Fortress**. plan → 인간 승인 → 코딩.
 > **작성 근거**: discovery 3에이전트(`wf_e0601f91`) + 검증 2에이전트. 모든 수치·경로 file:line 실코드 대조(검증 정정 반영).
@@ -123,12 +124,14 @@ M1을 "타입 파일 옮기기"로 과소평가하면 3가지가 터진다:
 | -------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- | -------------------------- |
 | **M1-a** | S    | exams/ workspace 골격(pnpm-workspace.yaml + package.json + 빈 파일). **★turbo 유닛 17→18**                                                                                                             | 🟢 additive                 | G-M1-1, **§5 re-baseline** |
 | **M1-b** | S    | ExamConfig 합격판정 확장(§6)                                                                                                                                                                           | 🟢 additive(소비 0)         | G-M1-8                     |
-| **M1-c** | S    | cross_crop·1st_sub\* near-dead lift(registry·CHECK 없음). schema.ts:146 CONFUSION_TYPES 병행선언은 M1 무접촉(M3)                                                                                       | 🟢 타입 importer 0          | G-M1-2                     |
+| **M1-c** | S    | cross_crop·1st_sub\* near-dead lift(registry·CHECK 없음). schema.ts:146 CONFUSION_TYPES 병행선언은 M1 무접촉(M3)                                                                                       | 🟢 타입 importer 0          | G-M1-2**(c)** 부분판정     |
 | **M1-d** | H    | insurance_rate 이전 + registry 분할(값 불변, D1 CHECK SQL 무변경)                                                                                                                                      | 🟡 3중 정합                 | G-M1-6                     |
 | **M1-e** | H    | ★NodeType 결합 재배치 = EngineNodeType 분리 → exam domain 조립 → **engine/app 소비처 ExamAdapter 주입 전환**(12파일 값-분기 전수 재스캔 선행) + TRUTH_WEIGHTS 합성 + batch prompt/GraphVisualizer 경로 | 🔴 검색 hot path·최대 blast | **G-M1-3·5·TW**            |
 | **M1-f** | H    | verifier 확장(engine↔exam↔registry↔D1, node_types·constant_categories 쌍 신규 + 멤버십 검증) → (Q3 승인 시) codegen                                                                                    | 🟡 도구 계층                | G-M1-7                     |
 
 **M1-e 세분**(최대 위험): (e1)EngineNodeType 분리+re-export →(e2)exam domain 조립 union+son-hae ExamAdapter →(e3)엔진/앱 12파일 값-분기 재스캔+주입 전환 →(e4)TRUTH_WEIGHTS 합성+G-M1-TW →(e5)batch prompt·GraphVisualizer 경로 →(e6)원본 리터럴 제거. 각 서브커밋 후 green.
+
+**★게이트-단계 스코프 (rev3, 3차 검토 F-3 MAJOR 정정)**: G-M1-2(shared 청정 grep=0)는 리터럴별 제거 시점이 다르므로(cross_crop·1st_sub=M1-c / insurance_rate=M1-d / INSURANCE·CROP=M1-e6) **단계별 부분판정으로 분해**한다 — **G-M1-2(c)** = M1-c 후 `cross_crop·1st_sub` grep=0 / **G-M1-2(d)** = M1-d 후 `insurance_rate` grep=0 / **G-M1-2(전량)** = M1-e6 후 5계열 전부 grep=0(최종판정). 종전 문면(M1-c 게이트 = G-M1-2 전 계열)은 기계판정 필연 FAIL이었음. **Tier-S 완료 판정**(Q1=(a) 채택 시) = G-M1-1 + G-M1-2(c) + G-M1-4 + G-M1-8 — Tier-H 의존 게이트(G-M1-2 전량·3·5·6·7·9)는 Tier-H 착수 후에만 판정.
 
 **시퀀싱 규율(R5 §5-M1)**: E0-8 갭 처분 + G-S5 R5 결재 후 **콘텐츠 소강기 전용**. 긴급 완화 가능하나 green 게이트 생략 불가.
 
@@ -183,7 +186,7 @@ interface ExamConfig {
 ## §7 Binary Gate G-M1-1~10
 
 1. **G-M1-1** exams/ workspace 인식(빌드 그래프 등장).
-2. **G-M1-2** shared 청정: `packages/shared/src/`에 INSURANCE·CROP·insurance_rate·cross_crop·1st_sub 리터럴 grep=**0**.
+2. **G-M1-2** shared 청정: `packages/shared/src/`에 INSURANCE·CROP·insurance_rate·cross_crop·1st_sub 리터럴 grep=**0**. **단계별 부분판정**(§4 스코프 표 — rev3): (c)=cross_crop·1st_sub / (d)=+insurance_rate / **최종판정 = M1-e6 후 전 계열**. Tier-S만 완료 시 G-M1-2(c)까지가 판정 범위.
 3. **G-M1-3 (★확장)** 방향 정합: shared→exams=0 **AND 범용(packages 비-exams·apps/\*)→exams/{특정}=0**(madge, composition-root만 예외 원장).
 4. **G-M1-4 (★re-baseline)** green 전량: M1-a 후 **turbo 18**·api 711·web 31·E2E 20·batch 332·quality 85·typecheck·lint·g1 회귀 0(원문) + verify-engine-contracts required 갱신.
 5. **G-M1-5 (★TW)** §5: `Record<NodeType>` 타입가드 + 11키∪exam키 canonical snapshot(table-fetcher no-fallback 포함). 골든은 비신뢰.
