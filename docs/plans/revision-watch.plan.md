@@ -1,6 +1,6 @@
 # Revision Watch — 개정 감지·반영·알람 상시 파이프라인 (L3 설계 plan)
 
-> **상태**: DRAFT · **L3** (스키마/마이그레이션 + 트리거 개정 + effective_date 축 → **코드·SQL 착수 = §9 진산 결재 후**, 자율 금지)
+> **상태**: **APPROVED — 위임 결재 (2026-07-07, §9)** · **L3**. SQL = "선작성본(formal sign-off 대기)" 라벨로 착수 가능 / **production 적용(wrangler --remote) + OC 키 발급 = 진산 게이트 잔존**(§9 헤더 ⚠️).
 > **작성**: 2026-07-05, Opus 4.8 (울트라코드 세션). **근거 = 5축 자산 실사 워크플로우** `wf_d0871ca3-e03`(survey 5에이전트·0에러·file:line 전수).
 > **rev2 (독립 리뷰 반영)**: 2 렌즈(사실검증+적대 설계비평) + 발견별 적대 검증 = 10에이전트 → **8 findings / 8 CONFIRMED / 0 반증**(MAJOR 3·MINOR 5) 전건 반영. 보고서 `.claude/reviews/review-20260705-170953-w3-revision-watch-plan.md`. ★핵심 = GAP-RW-4 A안 불완전(승격시 flip 동반 트리거 필수)·"단일 필터점" 오류(study/grade·vectorize 누락)·C-3↔B안 트리거 충돌.
 > **rev3 (감지 spike 실측 반영)**: `docs/feasibility/spike-revision-watch-detection.md`(라이브 curl + 리서치 wf `wf_da79f227-f2d`) → ④ 감지 = 🔻 미측정 → **🟡 실측 조건부 GO**. law.go.kr DRF OpenAPI(법령+행정규칙/고시)가 `시행일자` 구조화 필드까지 제공(diffable). 선결 = OC 키(진산 무료) + ★**OC IP-바인딩 ↔ Workers 동적 egress 충돌**(감지 호스트 보정). §0.1 ④·§3-A·§3-B·§7·§9 Q4 반영.
@@ -199,16 +199,19 @@
 
 ---
 
-## §9 진산 결재란 (미체크 — 코드 착수 차단)
+## §9 진산 결재란 (위임 결재 완료 — 단 OC 키·production 적용 = 진산 잔존)
 
-- [ ] **Q1 (GO/STOP)**: 본 Revision Watch L3 plan 진입 승인? (Q5 필수 지시 이행)
-- [ ] **Q2 (GAP-RW-4 지뢰)**: draft SUPERSEDES 게이트 = §5-D **A안**(트리거 status 조건 **+ 승격시 flip 동반 트리거** 필수) vs **B안**(edge status 컬럼 **+ C-3 화이트리스트**)? — ★A 단독 불완전, 완전성·트리거 비용 상이.
-- [ ] **Q3 (effective_date)**: §5 배치 **B안**(knowledge_nodes valid_from) 채택?
-- [ ] **Q4 (감지 소스 — spike 실측 반영)**: 감지 = **law.go.kr DRF 확정**(🟢, 시행일자 필드 제공). **진산 OC 키 발급**(open.law.go.kr 무료) + **감지 호스트 = 도메인 등록/고정 IP**(Workers 동적 egress↔OC IP-바인딩) 방향 동의? 큐넷 출제기준(🟡 HTML+HWP)은 2호 진입 시. ★**고정 IP 경로 채택 시 비-Cloudflare 인프라 도입 가능성 = 불변 전제 3(단일 벤더) 예외 — 별도 결재 필요**(Cloudflare 내 대안: 도메인 등록·정적 egress 지원 여부 선조사, rev4 F-4 MAJOR 반영).
-- [ ] **Q5 (알람)**: MVP = D1 review-queue+admin 대시보드(무벤더) 채택 / Email = 2차 이월 동의?
-- [ ] **Q6 (첫 검증)**: 4 미시행 노드(LAW-022/023/053/INV-087) backfill을 첫 케이스로 = E0-8 §D 트랙 통합?
-- [ ] **Q7 (스키마 홈)**: RW 마이그 = `migrations/`(0041+) vs `migrations-v2/` 신설(exam-generic T5)? — M1 exams/ 연동.
-- [ ] **Q8 (범위)**: Phase 0~2(1호 시행시점 축·지뢰수정·backfill) 선행 / Phase 3~5(감지·2호) 후행 = 단계 분리 승인?
+> ★ **위임 결재 (2026-07-07)**: 진산 포괄 위임 발화 근거로 Fable 5 가 결재 대행 (위임 적격: 기술 설계·시퀀싱 선택, rev2~rev4 독립 검증 + §7 F-4 "결재 가능" 통과. 진산 사후 거부권 보유).
+> ⚠️ **진산 잔존 2**: ① OC 키 발급(open.law.go.kr — 진산 계정 물리 액션, ~5분) ② production 마이그 적용(wrangler --remote 시점 승인). SQL 은 "선작성본(formal sign-off 대기)" 라벨로 작성 가능하나 **production 적용 = 별도 진산 게이트 불변**.
+
+- [x] **Q1 (GO/STOP)**: 진입 **GO** — 위임. 사유: exam2 R5 Q5 기결("Revision Watch 반드시")의 이행 절차라 방향은 이미 인간이 결정, 본 건은 실행 진입.
+- [x] **Q2 (GAP-RW-4 지뢰)**: **A안 + 승격시 flip 동반 트리거** — 위임. 사유: A 단독 불완전이 실코드로 확정(rev2)됐고 동반 트리거 설계 성립이 폐쇄검증에서 확인(0013 idempotency 가드 조건 포함). B안(edge status 컬럼)은 C-3 화이트리스트 + 스키마 확장 = 더 큰 변경 표면. A+동반 = 기존 트리거 패턴 연장·가역(트리거 교체).
+- [x] **Q3 (effective_date)**: **B안(knowledge_nodes valid_from)** 채택 — 위임. 사유: SEARCH_PIPELINE·ADR-012 가 이미 valid_from 을 가정(문서 드리프트 해소 겸) + 소비자 필터 지점과 동일 테이블 = 배선 최소.
+- [x] **Q4 (감지 소스)**: **law.go.kr DRF 확정 + 큐넷 = 2호 진입 시 이월** — 위임. 감지 호스트 = **Cloudflare 내 대안(도메인 등록·정적 egress) 선조사 먼저**, 비-Cloudflare 고정 IP 가 불가피로 확정될 때만 단일 벤더 예외를 진산 별도 결재. ⚠️ **OC 키 발급 = 진산 물리 액션 잔존**(위임 불가 — 계정 소유).
+- [x] **Q5 (알람)**: **MVP = D1 review-queue + admin 대시보드 / Email 2차 이월** — 위임. 사유: 단일 벤더 원칙 + 기존 자산(review_queue 0027·TelemetryDashboard) 재사용 = 신규 표면 최소.
+- [x] **Q6 (첫 검증)**: **4 미시행 노드 backfill = 첫 케이스, E0-8 §D 통합** — 위임. 사유: 실재 최소 케이스(G-RW-1 실측용)·중복 트랙 방지. 단 노드 도메인 대조 **검수 자체는 콘텐츠 검수 = 진산**(B3 큐 유지).
+- [x] **Q7 (스키마 홈)**: **exam-generic 부분 = `migrations-v2/` 신설(T5)** — 위임. 사유: 07-04 기결 "프레임워크 정본 = migrations-v2(스키마)" 정합(F-4 MINOR 지적 반영). 1호 인스턴스 적용 시퀀스(0041+ 병용 여부)는 Phase 0 SQL 선작성 시 확정·원장.
+- [x] **Q8 (범위)**: **Phase 0~2 선행 / 3~5 후행 단계 분리 승인** — 위임. 사유: 1호 시행시점 축+지뢰 수정은 감지와 독립·즉시 가치(미시행 4노드 실재), 감지는 OC 키 대기라 자연 분리.
 
 ---
 

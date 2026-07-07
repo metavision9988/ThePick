@@ -430,10 +430,15 @@ W0~W6·가드레일 15·Fable 검토 게이트) + git worktree 이중 워크스�
 > **갭=GAP-RW-N↔게이트=G-RW-N 식별자 분리** + Q4 단일벤더 예외 명시 + rev3 stale 2건. ★**신규 발견(정직 기록)**:
 > 모순전원(상이 전압원 병렬)은 lcapy transfer() **미검출** — 구 "모순전원 거부" 주장은 출력노드 부재 거부였음(S10 verdict
 > §1.8·§4-7 한계 등재. 방어선 = 템플릿 인간 승인). (4) **track→main 병합 완료**(`81e6318`, 진산 기지시): 2호 W2 산출물
-> (S10 회로 PoC 3차 반영판 + S6 spike) 4커밋 — 트랙 경계 준수 확증(exams/+docs/feasibility만). (5) **결재 대기 불변**:
-> B1 우선 4건(canonical §8 Q1~Q5 / M1 §11 Q1~Q7 / RW §9 Q1~Q8 + OC 키 / G-S5 GO/NO-GO + golden 22 검수) + 콘텐츠 검수
-> (E0-8 P1~P3 63행·Track B 고아 24) + 인프라 SQL(0038·0039·0040·WS-3c) + **push #14**(로컬 커밋 다수). 상세
-> [[project_engine_separation_review_20260704]] + [[project_exam2_electrical_strategy_20260704]].
+> (S10 회로 PoC 3차 반영판 + S6 spike) 4커밋 — 트랙 경계 준수 확증(exams/+docs/feasibility만). (5) ★**결재 큐 위임
+> 전환(2026-07-07 진산 포괄 위임 발화 "자체 철저히 체크해서 진행, 승인 이유 보고")**: canonical §8 Q1~Q5 전건 (a) /
+> M1 §11 Q1~Q7(Q5만 (c) 이연 — 비용자료 부족·G-1) / RW §9 Q1~Q8 전건 = **Fable 위임 결재 완료**(각 결재란에 결정+
+> 사유 기록·"위임" 라벨, 진산 사후 거부권). **위임 거절(정직 보고) = G-S5 2조각**: golden 22 검수 = 생성자=승인자
+> 순환편향(06-02 감사가 진산 검수를 표적정의층 차단막으로 지정 — 북극성 측정 신뢰 보호) / GO/NO-GO 본결재 = RULE #5
+> R5 그 자체 + 재측정(N≥30) 후 판단이 순서. **진산 잔존 액션 = ①golden 22행 검수(수초/행) ②OC 키 발급(~5분) ③
+> production 적용 인증 시점들 ④(재측정 후) G-S5 GO/NO-GO** + 콘텐츠 검수(E0-8 P1~P3 63행·Track B 고아 24) + 인프라
+> SQL 별건 게이트(0038·0039·0040·WS-3c) + **push #14**. M1 코드 착수 = §4 선결(E0-8 갭 처분) 잔존 / RW = SQL 선작성
+> 라벨 가능·production 적용 게이트 불변. 상세 [[project_engine_separation_review_20260704]] + [[project_exam2_electrical_strategy_20260704]].
 
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),
