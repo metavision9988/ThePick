@@ -1,0 +1,75 @@
+{
+  "template_id": "RLC-SERIES-A1-001",
+  "seed": 2,
+  "exam_class": "A",
+  "title": "직렬 RLC 회로의 공진주파수·품질계수·감쇠비",
+  "netlist": "V1 1 0 step 10\nR1 1 2 22\nL1 2 3 0.001\nC1 3 0 4.7e-08",
+  "ports": {
+    "input": [
+      1,
+      0
+    ],
+    "output": [
+      3,
+      0
+    ]
+  },
+  "values": {
+    "V": {
+      "value": 10,
+      "unit": "V"
+    },
+    "R": {
+      "value": 22,
+      "unit": "Ω"
+    },
+    "L": {
+      "value": 0.001,
+      "unit": "H"
+    },
+    "C": {
+      "value": 4.7e-08,
+      "unit": "F"
+    }
+  },
+  "transfer_function": "1000000000000/(47*s**2 + 1034000*s + 1000000000000)",
+  "steps": [
+    "① 소자 임피던스: Z_R = R = 22.0 Ω, Z_L = sL, Z_C = 1/(sC)  (L=1.0 mH, C=47.0 nF)",
+    "② 전압분배(커패시터 양단 전압 V_C): H(s) = V_out/V_in = Z_C / (Z_R + Z_L + Z_C) = (1/sC) / (R + sL + 1/sC)",
+    "③ 정리(lcapy 유도): H(s) = 1000000000000/(47*s**2 + 1034000*s + 1000000000000)   [DC 이득 H(0) = 1.0]",
+    "④ 표준 2차형 대조: 분모 = s² + 2ζω₀·s + ω₀²  ⇒  ω₀² = 1/(LC),  2ζω₀ = R/L",
+    "⑤ 공진각주파수 ω₀ = 1/√(LC) = 145900.0 rad/s  ⇒  f₀ = ω₀/2π = 23220.0 Hz",
+    "⑥ 감쇠비 ζ = (R/2)·√(C/L) = 0.07541,  품질계수 Q = 1/(2ζ) = 6.63"
+  ],
+  "answers": [
+    {
+      "symbol": "f0",
+      "name": "공진주파수",
+      "value": 23220.0,
+      "unit": "Hz"
+    },
+    {
+      "symbol": "Q",
+      "name": "품질계수",
+      "value": 6.63,
+      "unit": "(무차원)"
+    },
+    {
+      "symbol": "zeta",
+      "name": "감쇠비",
+      "value": 0.07541,
+      "unit": "(무차원)"
+    }
+  ],
+  "gate_report": {
+    "G1_unique_solution": "PASS",
+    "V1_pole_crosscheck_rel_err": 1.995258091599984e-16,
+    "V1_dc_gain": {
+      "observed": 1.0,
+      "expected": 1
+    },
+    "G4_units": "PASS",
+    "G2_difficulty": "G2 난이도 PASS: f0=23215.13Hz ∈ [10,200000]"
+  },
+  "svg": "RLC-SERIES-A1-001-0002.svg"
+}
