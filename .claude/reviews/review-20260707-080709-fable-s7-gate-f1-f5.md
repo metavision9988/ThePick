@@ -60,3 +60,9 @@ handoff 주장 전항(§0 표) Fable 직접 재현 일치. 가드레일 위반 0
 ## §6 폐쇄검증 (동일자 후속 — 독립 에이전트, 정정분 재검증)
 
 **verdict: CLOSED — MAJOR 6/6 전건 닫힘 확증** (test_gate 16/16·grid_check 1,960×2 재현 + V1-T 엣지 프로브 9종 + 문서 전수 grep). 신규 결함 CRITICAL 0/MAJOR 0/**MINOR 6** → 전건 즉시 마감(track `f2e0b2e` + main M1 plan): ①~③ V1-T int() 단일 근원(이름 노드 ValueError 사망·`int("0_2")` 무음 별칭·필드부족 IndexError) = **노드 문자열 키 처리**로 일괄 해소 ④ 이중 전압원 렌더 무음 누락 = **단일 소스 검사 신설**(§4-7 ⑦ 기계화) ⑤ S6 §5 잔존 78% = B1 71% 정정 ⑥ M1 G-M1-10 Tier 배정 + M1-d 행 G-M1-2(d) 표기. 최종 게이트 **19/19**(회귀 가드 3종 추가). 게이트 계약("거부는 SolverGateError로만") 복원.
+
+## §7 5-페르소나 독립 병렬 심층 리뷰 (동일자 후속 — Stop hook 의무, 기술부채 관점)
+
+5렌즈 독립 병렬(정합성·아키텍처·보안소비자·요구대조·기술부채, 상호 결론 비공유) + 실행 프로브 재현 = 적대 교차확정. **CRITICAL 0 / MAJOR 6(교차 통합) / MINOR 다수.** P4(요구대조) = MAJOR 0·Silent Pivot 0·전 수치 자릿수 재현. 즉시 반영(track `d69316b`→merge `58f1c5d`):
+①P1 위상 완결 — V1-T 자기루프+연결성+접두 화이트리스트(차수2 반례 3종 기계 차단) + nan fail-open 반전 ②P2/P5 — 접두 동치 고정 테스트 실재화(허위 주석 정정)·grid 톨러런스 단일원·템플릿 glob·**assemble_gate_input 조립 단일화** ③P1 grid nan 유한성 선검사 ④**★P3 채점 계약(정답 안전)** — answer_policy 메타+value_raw+정확일치 금지(반올림 half-up 전환 여부 = W4 승인제 부속 결재 상신) ⑤P3 SVG 바이트 결정화+requirements 위생.
+게이트 19→**23/23**·grid 1,960×2 무회귀·SVG 결정성 실측. **P5-M1(게이트 분류 1급화) = 교차판정 후 승격 1차 태스크 원장**(발화 표면은 P1·P4 무혐의 확증 — 스파이크 스코프 보정, verdict §1.9 ①~⑥). MINOR 잔여 = verdict §1.9 원장 등재.
