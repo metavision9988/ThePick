@@ -13,7 +13,7 @@
  *   - G-FE-3: 각도 규약(Q3-A안 = 라디안 전용 + deg2rad) — 도/라디안 golden 동시 PASS.
  *             등치는 prc-01 정밀도 프레임워크 경유 (EPSILON 1e-9 + toFixed(6)) —
  *             naive 등치 금지 (plan §2-(j): sin(deg2rad(30)) = 0.49999999999999994).
- *             ※ `_deg` 접미 lint 검증기(규약 위반 저작 red)는 후속 별건 검증기 스코프.
+ *   ※ `_deg` 접미 lint 검증기 = 동 커밋 `angle-lint.ts` 구현 완료 (red/green/fail-loud — angle-lint.test.ts, 4-Pass M1 처분)
  *   - G-FE-6(i): 코드 68식 변수명·템플릿 심볼 vs 신규 예약어 충돌 0건 — 상시 회귀 가드
  *               (레지스트리 전수 스캔. D1 157 스캔(ii) 증적 = plan §5b 게이트 기록 —
  *               2026-07-07 독립 리뷰: 로컬 SQL 정본 25파일 157/157 파싱·신규 예약어 충돌 0).

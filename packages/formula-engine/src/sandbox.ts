@@ -58,7 +58,24 @@ import { CalculationTimeoutError } from './errors';
 
 // --- 허용 함수 화이트리스트 ---
 
-const ALLOWED_FUNCTIONS = new Set([
+/**
+ * 각도(라디안) 인자를 받는 함수 — **단일 선언**(5-페르소나 P2-M2/P5-M1: angle-lint 가
+ * 이 목록을 import 해 `_deg` 규약을 검사한다. 사본 금지 — 신규 각도-인자 함수는 여기 +
+ * NON_ANGLE_FUNCTIONS 중 정확히 한쪽에 등재해야 하며, 전수분할 불변식 테스트가 강제).
+ * 참고: asin/acos/atan 의 *인자*는 무차원 비율이나, `_deg` 오명명 검출 대상엔 포함
+ * (역삼각에 도 단위 변수가 인자로 오는 것 자체가 저작 오류 신호).
+ */
+export const ANGLE_ARGUMENT_FUNCTIONS: ReadonlySet<string> = new Set([
+  'sin',
+  'cos',
+  'tan',
+  'asin',
+  'acos',
+  'atan',
+]);
+
+/** 각도 무관 허용 함수 — 전수분할의 나머지 반쪽 (불변식 테스트 소비). */
+export const NON_ANGLE_FUNCTIONS: ReadonlySet<string> = new Set([
   'add',
   'subtract',
   'multiply',
@@ -75,17 +92,16 @@ const ALLOWED_FUNCTIONS = new Set([
   'log',
   'unaryMinus',
   'unaryPlus',
-  // Tier 2 확장 — 삼각 6 + exp (plan §3-2. mathjs trig 는 라디안 전용 — 각도 규약 Q3-A안)
-  'sin',
-  'cos',
-  'tan',
-  'asin',
-  'acos',
-  'atan',
   'exp',
-  // 각도 규약 Q3-A안 — 커스텀 typed 함수 (아래 stub 이전 등록 블록 참조)
   'deg2rad',
 ]);
+
+/**
+ * 허용 함수 = 두 분류의 합집합으로 **파생** (수기 목록 제거 — 전수분할이 구조적으로
+ * 성립. 신규 함수는 위 두 Set 중 정확히 한쪽에만 등재: registry-guard 테스트가 서로소
+ * + 총수를 고정).
+ */
+const ALLOWED_FUNCTIONS = new Set([...ANGLE_ARGUMENT_FUNCTIONS, ...NON_ANGLE_FUNCTIONS]);
 
 // --- 내장 상수 심볼 (Tier 1 — plan §3-1 Q1-(a)) ---
 // pi/e 는 mathjs 인스턴스 내장값이 정본 (constants DB 미적재 — 이중 진실원 방지).
@@ -120,7 +136,10 @@ const BLOCKED_SYMBOL_NAMES = new Set([
 /**
  * ALLOWED_FUNCTIONS 와 1:1 매핑되는 dependency 묶음.
  * parse + typed 는 AST 파서가 반드시 필요.
- * 함수 추가 시 여기 + ALLOWED_FUNCTIONS 양쪽 동기 업데이트.
+ * ★함수 추가 체크리스트 (P5-M2 — "양쪽" 과소 서술 정정): in-file 3점(①정적 임포트
+ * ②이 dependency 묶음 ③ALLOWED_FUNCTIONS) + 분류 1점(ANGLE_ARGUMENT_FUNCTIONS 또는
+ * NON_ANGLE_FUNCTIONS 정확히 한쪽 — 전수분할 테스트가 red 로 강제) + 위성(테스트
+ * RESERVED 는 export 파생이라 자동, angle-lint 는 ANGLE_* import 라 자동).
  */
 const math = create({
   parseDependencies,

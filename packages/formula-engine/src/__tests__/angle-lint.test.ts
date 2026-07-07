@@ -32,6 +32,13 @@ describe('lintAngleConvention (G-FE-3 C축)', () => {
     expect(lintAngleConvention('temp_deg * 1.8 + 32')).toEqual([]);
   });
 
+  it('fail-loud — 복잡도 한도 초과는 raw throw 아닌 lint 불능 보고 (P1-M1/P3-MAJ-1 계약 수렴)', () => {
+    const bomb = Array.from({ length: 151 }, () => '1').join('+'); // 노드 수 한도 초과·길이 한도 내
+    const v = lintAngleConvention(bomb);
+    expect(v).toHaveLength(1);
+    expect(v[0]).toContain('lint 불능: 복잡도 한도 초과');
+  });
+
   it('fail-loud — 파싱 불가 표현식은 무음 통과가 아니라 lint 불능 보고', () => {
     const v = lintAngleConvention('sin(theta_deg');
     expect(v).toHaveLength(1);

@@ -47,7 +47,7 @@
 3. **출처 원문 추출**: `{{원문 저장소: docs/manual-{{exam}}/}}` 해당 파일 → 텍스트(pypdf/hwp5html, 페이지 마커 병기). ★페이지 오프셋 = `{{book_page↔원문 오프셋}}`(예: 손해평가사 교재 book_page = PDF_PAGE − 7). 표가 깨지면 §6-3 에스컬레이션.
 4. **노드/엣지 설계**: 출처 단위별 노드(name·type·`{{chapter/과목}}`·`{{page/조항}}`·description=원문 충실 요약), 엣지는 기존 노드와의 관계(**기존 엣지 type 어휘만** — 신조어 금지). description에 수치가 들어가면 **원문 문장 그대로** 인용 우선.
 5. **draft SQL 생성**: `{{산출 경로: docs/batch-load/{{exam}}-<패키지>-insert.sql}}` — 선례 SQL과 동일 컬럼·형식, `status='draft'` 고정. + `<패키지>-knowledge-graph.json`. **버전 스탬프 기입**(README §규약).
-6. **로컬 기계 검증**(전부 PASS 전 검수 요청 금지): `pnpm --filter @thepick/quality test` 회귀 0 / 신규 ID 중복·패턴 검사(중복 0) / SQL 행수 = 설계 노드·엣지 수 일치(무음 skip 차단) / `pnpm g1:check` + lint.
+6. **로컬 기계 검증**(전부 PASS 전 검수 요청 금지): `pnpm --filter @thepick/quality test` 회귀 0 / 신규 ID 중복·패턴 검사(중복 0) / SQL 행수 = 설계 노드·엣지 수 일치(무음 skip 차단) / `pnpm g1:check` + lint / **산식(formulas) 포함 배치**: 신규 equation_template 전건 `lintAngleConvention` 위반 0 (formula-engine 각도 규약 — 라디안 무음 오답 차단, 2026-07-07 P2-M1 원장).
 7. **독립 리뷰 + 검수표 산출**(§4·§5·§7) → **인간 검수**(§7 형식). FIX 반영 후 재검증.
 8. **적재 집행(진산 게이트)**: 진산 확인 후 wrangler 적재 → 카운트 검산(행수 = INSERT 수) → **무결성 러너 재실행**(고아·끊김·순환 0) → `{{loadmap}}` + 인벤토리에 결과 기록 → 커밋(진산 지시 시).
 

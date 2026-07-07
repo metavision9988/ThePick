@@ -111,6 +111,9 @@
 
 - 추가 방어(구현 중 실측 근거): scope 주입 `{pi:3}` 무음 shadow(π=3) 발견 → 내장 상수·허용 함수명 scope 키 fail-loud 가드. 68식 변수(e_c·e_s 등) = Set 정확 매칭으로 무사(리뷰 프로브 확증).
 - 4-Pass 리뷰: `.claude/reviews/review-20260707-170000-formula-expansion-4pass.md` (CRITICAL 0 / MAJOR 3 → 전건 본 기록으로 처분 / MINOR 4 관측).
+- **5-페르소나 독립 리뷰 (2026-07-07 2라운드, Stop hook)**: CRITICAL 0 / MAJOR 4클래스 전건 즉시 수정 — ①복잡도 예외의 lint 계약 탈출(P1·P3 교차 확증) = catch 수렴+테스트 ②TRIG 사본 드리프트(P2-M2/P5-M1 동근원) = ANGLE_ARGUMENT_FUNCTIONS/NON_ANGLE_FUNCTIONS 단일 선언 export + ALLOWED **합집합 파생**(전수분할 구조 강제) + registry-guard 테스트 ③lint 배선 원장 부재(P2-M1) = getAllFormulas 전수 lint 상시 게이트 + 플레이북 템플릿 스텝 명기 ④등록 절차 주석 arity 정정(P5-M2 체크리스트화). MINOR 처분: stale 주석(:16)·한계 명문화(역방향 과보정·이중 적용·명명 변형 = 검출 불가, 골든이 값 층 방어선)·역삼각 메시지 분기·번들 측정 커맨드 고정(아래). 리뷰 5본 = `review-20260707-190000-formula-expansion-5persona-p{1..5}.md`.
+- 번들 측정 정확 커맨드(P4-m2 고정): `esbuild src/sandbox.ts --bundle --minify --format=esm | gzip (default level)` — 재현치 94,416→95,485(+1,069B). "349→356" 표기 주의(P4-m4): 349=4-Pass 시점, 확장 전 baseline = 303.
+- **후속 원장**: lint 실배선 = 2호 W5 산식 저작 파이프라인 신설 시 의무(플레이북 템플릿 스텝이 강제) / exp 표기 lint(pow(e,x)→exp 관용구)·atan2·rad2deg = Tier 3 별건.
 
 ## §7 진산 결재란 (위임 결재 완료 — 2026-07-07)
 
