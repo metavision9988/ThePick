@@ -1,6 +1,7 @@
 # Phase 1-D — lexical fusion 비교군 상세 plan (D-B: keyword-fallback 매처 re-rank tiebreak 재사용)
 
-> **STATUS: APPROVED-ENTRY(§9 1-D GO 2026-07-07) · L3(검색 경로) · 구현 = 본 plan 독립 리뷰 후**
+> **STATUS: APPROVED-ENTRY(§9 1-D GO 2026-07-07) · L3(검색 경로) · rev2 — 구현 = rev2 재리뷰 CRITICAL 0 후**
+> **rev2 (2026-07-07, 4-Pass 독립 리뷰 C1/M5/m4 전건 반영)**: ★C-1 ε-band 쌍별 비교자 = **비추이적**(A>B>C>A 순환·sort 3종 출력 실증) → **ε-양자화 밴드키 전순서**로 교체 + G-1D-3′(순열 불변 property) 신설 / M-1 graphExpansion 채점 계약 유지(applied 의미 정의 = graph 모드와 제외집합 동일) / M-2 lexical-only 주입 폐기(★graph 를 죽인 기전의 복제 차단 — **순수 pool 재정렬**로 D-B 충실화) / M-3 NAMED 판별 = corpus read-only 조인 / M-4 실행 환경 = wrangler dev(3열 동일 환경) / M-5 ε 감도 스윕 동봉.
 > 진입 결재 원문: `docs/plans/graph-walk-s5-8-redesign.plan.md:213` §9 "[x] Phase 1-D — 구현 착수 GO
 > (진산 결재 2026-07-07 'b로 진행') + PITR 채택 = **D-B**(기존 keyword-fallback 매처를 re-rank
 > tiebreak 로 재사용)". 설계 골격 = 동 plan §3 Phase 1-D(:104~130).
@@ -15,8 +16,10 @@
    명문). 어미 변화 미대응 → lexical 천장 유한. "표적 회수" 여부는 **측정 전 단언 불가**.
 2. **tiebreak 가중 = 사실상 랭킹 변경 위험 (baseline 오염 경계)**: lexical score(일치 토큰 비율
    0~1, `keyword-fallback.ts:165-166`)와 vector cosine 은 **비가환 스케일** — 혼합 합산 금지.
-   graph 모드의 확장노드 score=0 관례(`graph-search-route.ts:325-339`)와 동일하게, lexical 은
-   **동순위(ε-band) tiebreak 보조키로만** 개입. ε 상한 없으면 "tiebreak"이 랭킹 정책 교체로 변질.
+   (rev2 정직 재서술) lexical 신호는 **vector 후보 풀(pool-K)의 재정렬 보조키로만** 개입 —
+   **lexical-only 후보 주입 없음**. 근거: score=0 주입 + truthWeight-first 는 graph 를 죽인 바로
+   그 기전(F-노드 범람 → 정답 축출, 06-01/06-05 실측)의 복제였음(리뷰 M-2). lexical-only 히트는
+   debug 관측 필드로만 surface(랭킹 무개입). ε 상한 고정 = "tiebreak"의 정책 교체 변질 차단.
 3. **측정 공정성 — 순환 리스크 (필수 축)**: golden 라벨의 명칭-동형 아티팩트는 **lexical 에 구조적으로
    유리**(vector 도 수혜였음이 06-05 실측: queryBody 정화로 baseline 100→83.3% 하향 — CLAUDE.md
    2026-06-05 갱신 (4)). LIKE name-매칭은 이 아티팩트의 직격 수혜자 → lexicalOnlyRecovery 를
@@ -27,6 +30,12 @@
 5. **순수 tiebreak(정확 동점만)은 자기무력**: F2 실측(s5-8 plan:117-120)은 0.63 vs 0.65 =
    Δ0.02 — 정확 동점 아님. 엄밀-동점 한정 tiebreak 는 측정상 no-op 에 수렴할 개연 [추정] → ε-band
    설계 필수(§2). 단 ε 는 provenance 각인 + 상한 고정(Anchor 2).
+6. **(rev2·C-1) 쌍별 ε-band 비교자는 비추이적 = sort 미정의 동작**: "in-band 쌍은 lex, out-of-band
+   쌍은 score" 는 A(0.66,lex0)>B(0.62,lex1)>C(0.64,lex.5)>A 순환을 만들고(리뷰 실증: 6 순열 입력 →
+   3종 출력), G-1D-3(동일 입력 재실행)로는 **못 잡는다**. → 비교키는 반드시 **원소 단독 함수**(전순서)
+   여야 하며 G-1D-3′(순열 불변) property 게이트가 이 클래스를 기계 차단한다.
+7. **(rev2·M-5) ε=0.03 은 측정셋 유래(F2 = golden v2 채점 문항) = train-test 누출 클래스**: 일반화
+   근거 아님 — ε ∈ {0.01, 0.03, 0.05} 감도 스윕 동봉 + 리포트 해석 각주 의무.
 
 ## §1 실코드 discovery (전부 실측 — file:line)
 
@@ -50,37 +59,55 @@
   `apps/api/src/eval/multihop-accuracy.ts:85-88` `GraphSearchResponseShape` 는 `baseline.results[].id`
   - `results[].id` 만 소비(:141-158) → **응답 shape 만 유지하면 코어 무변경으로 lexical 모드 채점**.
 
-## §2 설계 — D-B 배선 (격리 mode 파라미터)
+## §2 설계 — D-B 배선 (격리 mode 파라미터) [rev2 개정판]
 
 1. **스키마 additive**: `GraphSearchBodySchema`(graph-search-route.ts:100)에
-   `mode: z.enum(['graph','lexical']).default('graph')` 추가. **default='graph' = 기존 계약
-   byte-동치**(G-1D-2). 요청 예: `POST /api/search/graph {..., "mode": "lexical"}`.
+   `mode: z.enum(['graph','lexical']).default('graph')` + `eps: z.number().min(0).max(0.1).default(0.03)`
+   (eps 의 '수용' = **graph 경로는 eps 미독(무시)** — 거부 아님(rev3 m-N2: default 주입과 사용자 송신 구분 불가). 감도 스윕(M-5)·동치 테스트 전용. mode='lexical' 은 debug=true 필수라 비-debug lexical 은 400 — '비-debug 고정' 문언은 사문 삭제(m-N5)). **mode 미지정 = 기존 계약 byte-동치**(G-1D-2). (m-3) mode='lexical' 은
+   `debug=true` 필수 — 측정 전용 명시 게이트(공개 남용 표면 차단, rate-limit 60/min 병행).
 2. **mode='lexical' 경로** (graphWalk 호출 0 — graph-walk 모듈 무접촉):
-   - baseline = 기존 :249-251 그대로(topK 요청분) → 응답 `baseline` 필드 **불변 보존**(A/B 격리, graph 모드와 동일 구조).
-   - **후보 풀 확대**: 동일 `precomputedEmbedding` 재사용, `searchKnowledgeNodesForUser`
-     pool-K=`MAX_RESULT_TOP_K`(10) 1회 추가 호출 [비용 정직: Vectorize query +1/req, 측정 경로 한정].
-     F2 표적(vector rank6 F-103류)은 풀 확대 없이는 재정렬 무대상(Anchor 5). 1회-호출 슬라이스 최적화는
-     baseline-동치 테스트 증명 시에만 허용.
-   - **lexical 신호**: `runKeywordFallback(db, examId, query)` → `Map<nodeId, lexScore>`.
-   - **병합**: pool ∪ lexical-only hits(교집합 = vector hit 우선, CO6-4(a) 관례 :319 준용.
-     lexical-only 는 `buildHit(src, 0)` — score 0).
-   - **re-rank tiebreak 비교자**(신규, 본 route 파일 내 격리): 1차 = `compareByTruthWeightThenScore`
-     결과 그대로. 단 **동일 truthWeight ∧ |Δscore| ≤ ε** 이면 lexScore DESC 로 재판정, 그마저 동일하면
-     원 비교자 순서 유지. **ε=0.03 고정**(F2 실측 Δ0.02 직격 + tiebreak 의미 보존 상한, 리포트 provenance
-     각인). CO-3 방어: truthWeight-first 정책은 단일 진실원 위임 불변 — lex Map 공집합 ∨ ε=0 이면 정렬
-     결과가 원 비교자와 **완전 동치**임을 단위 테스트로 고정(G-1D-2b).
-   - results = 재정렬 top-K. 응답 `graphExpansion` 자리 = `lexicalFusion` 메타(applied/ε/matchedTokens
-     수/poolSize/lexicalOnlyCount — additive, debug 시 lexical 매칭 전체집합 surface).
-3. **하네스 확장**: `--mode lexical` 플래그 → `requestBody.mode='lexical'`(미지정 = 키 생략 =
-   종전 byte-동치, :203-205 패턴). coverage 각인 `mode=lexical | ε=0.03`(:217-222 maxDepth 각인 관례).
-   채점 코어 무변경 — 지표명 `graphOnlyRecovery` 는 코어 유지, 리포트 해석 각주 "lexical 모드에서는
-   fusedOnlyRecovery(=lexicalOnlyRecovery)" 정직 라벨(s5-8 M2 정직화 관례).
+   - baseline = 기존 :249-251 그대로(topK 요청분) → 응답 `baseline` 필드 불변 보존.
+   - **후보 풀**: 동일 `precomputedEmbedding` 재사용, pool-K=`MAX_RESULT_TOP_K`(10) 1회 추가 호출
+     [비용 정직: Vectorize +1/req — debug 측정 경로 한정]. **lexical-only 주입 없음**(rev2 M-2:
+     score-0 주입+truthWeight-first = graph 독성 기전 복제 — 폐기. 재정렬 대상 = vector pool 만).
+   - **lexical 신호**: `runKeywordFallback(db, examId, query)` → `Map<nodeId, lexScore>` (read-only).
+   - **★재정렬 = ε-양자화 밴드키 전순서**(rev2 C-1 — 쌍별 ε-band 는 비추이적·폐기):
+     정렬키 = `(truthWeight DESC, band DESC, lexScore DESC, score DESC)` where
+     `band = eps > 0 ? Math.floor(score / eps) : score`. 전 키가 **원소 단독 함수** → 추이성 보장.
+     성질(rev3 정밀화 — 재리뷰 M-N1): (a) **lex 전원 0 → 완전 동치**(동점 포함 전 케이스·ε 무관,
+     2,400 시행 실증) / **ε=0 → 정확 동점 제외 동치**(동점에서 lex 개입 = 순수 tiebreak 의도 동작 —
+     CO-3 위반 아님·경로 격리. 동치 assert 픽스처는 lex-0 계열, ε=0 동점-lex 개입은 별도 의도 테스트) (b) 경계쌍 비대칭(0.599 vs 0.601 이 다른 band) = 양자화의 대가 —
+     문서화 수용(리뷰 수리안 (i) 채택 사유: 결정성 > 경계 정밀. 순열 불변 실증 리뷰 프로브 기확인).
+     tie 최후 = 안정 정렬 입력순(원 비교자와 동일 관례 — m-1 확정).
+   - results = 재정렬 top-K(요청 topK).
+3. **응답 계약 (rev2 M-1 — 채점 코어 호환 유지)**: `graphExpansion` 필드 **유지**(제거·개명 금지 —
+   `multihop-accuracy.ts:85-89` 가 `{applied, truncated}` 필수 소비·:136 no_seed 분모 제외).
+   lexical 모드 의미 정의: `applied = baseline.results.length > 0`(graph 모드의 no_approved_seed
+   조건과 **동일 술어** → 제외집합 = graph 열과 구성적 동일), `reason='no_approved_seed'`(동일),
+   `truncated=false` 고정, `seedWalkCount=0`·`expandedNodeCount=0`·`edgeTypeWhitelist=[]`·`maxDepth=0`·`resultCap=0`(no-seed 분기 관례 준용 — rev3 m-N3).
+   lexical 메타는 **additive 필드 `lexicalFusion`**: {eps, poolSize, lexMatchedCount,
+   displacedBaselineHits(top-K 에서 pool 재정렬로 밀려난 원 baseline hit 수 — M-2(iii) regression
+   귀속용), matchedTokens, (debug) lexicalOnlyObserved(랭킹 무개입 관측 전용)}.
+4. **하네스 확장**: `--mode lexical` 플래그 → `requestBody.mode='lexical', debug=true` +
+   `--eps` (스윕용). 미지정 = 키 생략 = 종전 byte-동치(:203-205 패턴). coverage 각인
+   `mode=lexical | eps=N`(:217-222 관례). 채점 코어 무변경 — graphOnlyRecovery 지표명은 코어 유지,
+   리포트 각주(rev3 — 재리뷰 C-N1 처방 문언): "pool 밖(vector Stage1 20-후보·0.60 임계 미회수) 표적
+   회수 = 구조적 0(주입 없음). **pool 내 rank(topK+1..10] 표적의 top-K 진입 = 실현 경로이며 이것이
+   D안 개선 기전 = 부모 게이트(s5-8 §3 1-D) lexicalOnlyRecovery>0 의 충족 경로.** 단 graph 모드
+   graphOnlyRecovery(외부 노드 주입 회수)와 의미가 다름을 비교표에 명기." — 실측 0 이 나오면 그것은
+   음성 신호(은폐 금지).
 
 ## §3 비교 측정 프로토콜
 
 - 동일 golden = `golden-pilot-approved.v2.querybody.json`(N=34, measured 19 — facts §1). 옵션: debug
   2000자 회수 시 N=27(facts §4 ①) — 채택 시 graph 열도 동일 N 재실행(분모 동일 의무).
-- 산출 3열 비교표: **vector(baseline) vs graph(depth1, 07-07 기측정) vs lexical(본 건)** —
+- **(rev2 M-4) 실행 환경 = `wrangler dev --env production --remote` 로컬 세션**(read-path 한정 —
+  production Worker **재배포 없음** = 배포 게이트·"동시 deploy 금지" 회피). ★환경 confound 제거:
+  **3열(vector/graph/lexical) 전부 동일 dev 세션에서 재실행** — G-1D-2 의 비교 기준은 "07-07
+  production 리포트"가 아니라 **동일 세션 graph 재측정치**로 대체(방향 일치 여부는 참고 각주).
+- **(rev2 M-5) ε 감도 스윕**: lexical 열은 ε ∈ {0.01, 0.03, 0.05} 3회 실행 동봉 + "ε는 측정셋
+  유래(F2 = 채점 문항) — 일반화 근거 아님" 해석 각주 의무.
+- 산출 3열 비교표(분모 = **전체 measured 셋** 기준 — lexical 열 truncated≡false vs graph 절단 가능의 비대칭 때문에 '절단제외' bucket 대신, graph 절단 수는 각주. rev3 m-N4): **vector(baseline) vs graph(depth1, 동일 세션) vs lexical(본 건)** —
   hit-rate@5 / mean-recall@5 / onlyRecovery / regression. baseline 열은 lexical 리포트의 baseline
   필드와 graph 리포트의 baseline 필드 **상호 일치 검산**(불일치 = 측정 무효, fail-loud).
 - 결과 문서: `s5-6-measurements/s5-6-remote-lexical-*.{json,md}` + 비교표 1장 → **#8 재상신 자료**.
@@ -92,17 +119,18 @@
 `index.ts:164-165` exact-path 별개 — `/api/search` 핸들러 무접촉. ③ mode 미지정 회귀:
 graph-search-route 기존 테스트 全 PASS + 동일 golden depth1 재실행 수치 = 07-07 리포트 동일.
 
-## §5 Binary Gate
+## §5 Binary Gate [rev2]
 
-| Gate    | 판정 (입력→출력, 기계 판정)                                                                                                                   |
-| :------ | :-------------------------------------------------------------------------------------------------------------------------------------------- |
-| G-1D-1  | `/api/search` byte-불변: §4① diff 0 + api 테스트 전체 PASS 회귀 0                                                                             |
-| G-1D-2  | mode 미지정 = 기존 graph 계약 byte-동치: 스키마 default 테스트 + depth1 재측정 수치 == 07-07 리포트                                           |
-| G-1D-2b | lex 공집합 ∨ ε=0 → 정렬 == `compareByTruthWeightThenScore` 완전 동치 (CO-3 방어 단위 테스트)                                                  |
-| G-1D-3  | lexical 측정 재현성: 동일 golden 2회 연속 실행 수치 동일 (LIKE·정렬 결정적 — 재시도는 5xx timeout 한정)                                       |
-| G-1D-4  | 비교표 3열 산출 + baseline 열 상호 일치 검산 PASS (§3)                                                                                        |
-| G-1D-5  | 순환 공정성: lexicalOnlyRecovery 문항별 NAMED(표적 명칭이 query 토큰과 LIKE-일치)/NOT-NAMED 세그먼트 분리 보고 + golden 파일 무변경(재라벨 0) |
-| G-1D-6  | CPU/latency: elapsedMs telemetry(:221-237 기존 배선)로 lexical 모드 p95 기록 — graph depth1 대비 표 동봉                                      |
+| Gate     | 판정 (입력→출력, 기계 판정)                                                                                                                                                                                                                                                    |
+| :------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| G-1D-1   | `/api/search` byte-불변: §4① diff 0 + api 테스트 전체 PASS 회귀 0                                                                                                                                                                                                              |
+| G-1D-2   | mode 미지정 = 기존 graph 계약 byte-동치(스키마 default 테스트) + graph 열 = 동일 dev 세션 재측정(§3 — production 07-07 리포트와의 방향 일치는 참고 각주)                                                                                                                       |
+| G-1D-2b  | **lex 전원 0** → 정렬 == `compareByTruthWeightThenScore` 완전 동치(동점 포함) + ε=0 동점-lex 개입 = 별도 의도 테스트 (CO-3 방어 — eps 파라미터 주입, rev3 M-N1 문언)                                                                                                           |
+| G-1D-3   | lexical 측정 재현성: 동일 golden 2회 연속 실행 수치 동일                                                                                                                                                                                                                       |
+| ★G-1D-3′ | **정렬 전순서 property**(rev2 C-1 차단): 랜덤 풀(tw·score·lex 밀집 난수) × 입력 순열 셔플 ≥50회 → **키-시퀀스 유일**(전키 동률 원소의 입력순 잔존은 안정정렬 의도 — id-시퀀스 아닌 정렬키 시퀀스 비교, rev3 m-N1) + 인접 불변식(sortKey(out[i]) ≥ sortKey(out[i+1])) 전수 PASS |
+| G-1D-4   | 비교표 3열 산출 + baseline 열 상호 일치 검산 + **제외집합(no_seed·unmeasurable) 3열 동일성 assert**(M-1 — 분모 동일 기계 검증)                                                                                                                                                 |
+| G-1D-5   | 순환 공정성: lexicalOnly… 아닌 **rerank-이득 문항별 NAMED/NOT-NAMED 세그먼트 분리** — NAMED 판별 = `approved-nodes-corpus.json` read-only 조인(name∪description 에 query 토큰 LIKE-일치, 매처 술어 :204 와 동일 정의 — golden 파일 무변경)                                     |
+| G-1D-6   | CPU/latency: lexical 모드 전용 메타 로깅 어댑트(logOk 는 GraphExpansionMeta 형상 전용 — 신규 lexical log 라인) p95 기록, graph 대비 표 동봉                                                                                                                                    |
 
 ## §6 비용·천장 정직
 
@@ -115,7 +143,11 @@ B(bge-m3 reranking) 보강 의무 조항 동일 적용(s5-8 plan:128-130). Vecto
 
 ```
 [x] 진입 결재 — 기완료 (s5-8 §9 1-D GO, 진산 2026-07-07 "b로 진행" + D-B 채택. 본 plan = 동 결재가 명한 상세 plan)
-[ ] 구현 착수 — 본 plan 독립 리뷰(4-Pass) CRITICAL 0 확인 후 자율 착수 (별도 결재 불요 — §9 GO 기부여.
-    단 리뷰가 설계 갈림길급 CRITICAL 을 내면 STOP → 진산 재상신)
+[x] rev1 독립 리뷰 — FAIL(C1 비추이 비교자 실증 + M5·m4) → **rev2 전건 반영**(본 문서. C-1 수리 = D-B
+    범위 내 비교자 역학 교체 — 설계 갈림길 아님 판단: 리뷰 자신이 "D-B 결정 보존됨" 명시)
+[x] rev2 재리뷰 — C-1 수리 VERIFIED(순환 해소·전순서·순열 불변 실험 확증) + 신규 C-N1(rev2 각주
+    "onlyRecovery≡0" 거짓·부모 게이트 모순)·M-N1(ε=0 동치 과대) 적발 → **rev3 = 재리뷰 처방 문언
+    그대로 반영**(코드 설계 골격 불변 — 문서 각주·게이트 문언 정정). 리뷰 2회 영속 = review-20260707-*-lexical-plan-*.md
+[x] 구현 착수 가능 — rev3 반영 완료(재리뷰 결론: "문서 각주 정정 수준 후 구현 착수 가능한 수준·코드 설계 골격 변경 불요")
 [ ] 비교 측정 완료 → #8(G-S5 GO/NO-GO) 재상신 — 수치 사실만 못박고 판정 = 진산 (RULE #5. AI 판정 금지)
 ```
