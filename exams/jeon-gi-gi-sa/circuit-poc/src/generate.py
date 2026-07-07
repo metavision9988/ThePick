@@ -23,7 +23,12 @@ from pathlib import Path
 os.environ.setdefault("MPLBACKEND", "Agg")  # 헤드리스 렌더
 
 from references import get_reference  # noqa: E402
-from solver_gate import SolverGateError, hard_validate, within_difficulty  # noqa: E402
+from solver_gate import (  # noqa: E402
+    SolverGateError,
+    hard_validate,
+    validate_template_structure,
+    within_difficulty,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_TEMPLATE = ROOT / "templates" / "rlc_series.json"
@@ -145,7 +150,10 @@ def crosscheck(derived: dict, reference: dict) -> float:
 
 # ----------------------------------------------------------------------------- svg
 def render_svg(template: dict, vals: dict, out_path: Path) -> None:
-    """직렬 루프 렌더 — 수동소자를 넷리스트 순서로 배치, 접지쪽(마지막) 소자 = 출력탭 명시."""
+    """직렬 루프 렌더 — 수동소자를 넷리스트 순서로 배치, 접지쪽(마지막) 소자 = 출력탭 명시.
+
+    직렬 단일루프만 지원 — 비직렬 넷리스트는 V1-T가 LOUD 거부(직접 호출 방어, 무음 오도면 금지)."""
+    validate_template_structure(template)
     import matplotlib
     import matplotlib.pyplot as plt
     import schemdraw
@@ -184,7 +192,8 @@ def render_svg(template: dict, vals: dict, out_path: Path) -> None:
 
 # ----------------------------------------------------------------------------- orchestrate
 def generate_one(template: dict, ref: dict, seed: int, out_dir: Path) -> dict:
-    """단일 문제 생성 — 난수화→풀이→해석/교차검증→게이트→SVG→JSON. 게이트 실패는 LOUD."""
+    """단일 문제 생성 — 템플릿구조검증→난수화→풀이→해석/교차검증→게이트→SVG→JSON. 게이트 실패는 LOUD."""
+    validate_template_structure(template)  # V1-T: element↔포트·직렬루프·접두유일 (저작 오류 조기 차단)
     rng = random.Random(seed)
     in_p = (template["input_across"]["pos"], template["input_across"]["neg"])
     out_p = (template["output_across"]["pos"], template["output_across"]["neg"])

@@ -1,11 +1,15 @@
 """Solver-Validated Gate 실증 — 다중 템플릿 관통 + 특정 게이트 실발화 검증.
 
-독립 리뷰(wf_a1fd2c69) 반영 + 대역통과 템플릿 추가(일반화 실증):
+독립 리뷰(wf_a1fd2c69) + 2차 독립 리뷰(F-1a, §7 Fable 게이트 2026-07-07) 반영:
   - 다중 템플릿(저역통과·대역통과)이 단일 파이프라인을 관통하는지.
-  - MAJOR-1: 게이트 id 실발화 assert + 포지티브 컨트롤(V1·G4 통과·G1만 위반) = G1 회귀 뮤테이션 가드.
-  - MAJOR-2: 출력탭 오배선을 이득 게이트가 거부 — L↔C 스왑(저역통과 기준 H(0)=0≠1) +
+  - 1차 MAJOR-1: 게이트 id 실발화 assert + 포지티브 컨트롤(V1·G4 통과·G1만 위반) = G1 회귀 뮤테이션 가드.
+  - 1차 MAJOR-2: 출력탭 오배선을 이득 게이트가 거부 — L↔C 스왑(저역통과 기준 H(0)=0≠1) +
     ★ 고역통과 오배선(대역통과 기준 H(0)=0 통과하나 H(∞)=1≠0) = **H(∞) 게이트가 대역통과(0,0)와 고역통과(0,1) 구별**.
+  - 2차 MAJOR-1·2: V1-T 템플릿 구조 게이트 — element↔포트 모순·비직렬(렌더러 오도면) LOUD 거부.
+  - 2차 MINOR-5: 이득 기대값 미선언 = LOUD (H(∞) 판별 무음 OFF 차단).
   - MINOR-3: G2 난이도 밴드 판별 동작.
+★정직 기록(2026-07-07 실측): 병렬 상이 전압원(모순전원)은 lcapy transfer()가 거부하지 않고
+  정상 H를 반환 — G1이 못 잡는 알려진 한계. 방어선 = 템플릿 인간 승인(단일 소스).
 사일런트 드롭 금지(가드레일 16-③): 거부는 SolverGateError 예외로만.
 """
 from __future__ import annotations
@@ -14,9 +18,9 @@ import json
 import math
 from pathlib import Path
 
-from generate import ROOT, crosscheck, generate_one, solve
+from generate import ROOT, build_netlist, crosscheck, generate_one, solve
 from references import get_reference
-from solver_gate import SolverGateError, within_difficulty
+from solver_gate import SolverGateError, validate_template_structure, within_difficulty
 
 LOWPASS = json.loads((ROOT / "templates" / "rlc_series.json").read_text(encoding="utf-8"))
 BANDPASS = json.loads((ROOT / "templates" / "rlc_series_bandpass.json").read_text(encoding="utf-8"))
@@ -68,15 +72,31 @@ def expect_reject(name: str, sol: dict, must_fire: str) -> bool:
     return False
 
 
+def expect_template_reject(name: str, template: dict, must_fire: str) -> bool:
+    """V1-T 템플릿 구조 게이트 실발화 검증 (F-1a 2차 MAJOR-1·2)."""
+    try:
+        validate_template_structure(template)
+    except SolverGateError as e:
+        msg = str(e)
+        if must_fire in msg:
+            print(f"  ✅ 거부 [{name}] — '{must_fire}' 발화\n       {msg}")
+            return True
+        print(f"  ❌ 거부되나 기대 '{must_fire}' 미발화 [{name}]: {msg}")
+        return False
+    print(f"  ❌ 미거부 [{name}] — V1-T 를 통과하면 안 됨")
+    return False
+
+
 def main() -> int:
     results: list[bool] = []
+    (ROOT / "out-test").mkdir(exist_ok=True)
 
     print("== 다중 템플릿 단일 파이프라인 관통 + 상이 물리 직접 검증 ==")
     ans_by_id: dict[str, dict] = {}
     for t in (LOWPASS, BANDPASS):
         ref = get_reference(t["reference_id"])
         try:
-            p = generate_one(t, ref, 1, ROOT / "out")
+            p = generate_one(t, ref, 1, ROOT / "out-test")  # 테스트 산출 격리(실 out/ 오염 방지, 2차 MINOR-6)
             ans_by_id[t["id"]] = {a["symbol"]: a["value"] for a in p["answers"]}
             ok = p["gate_report"]["G1_unique_solution"] == "PASS" and len(p["answers"]) == len(t["asks"])
             print(f"  {'✅' if ok else '❌'} {t['id']} → {', '.join(f'{k}={v}' for k, v in ans_by_id[t['id']].items())}")
@@ -106,10 +126,12 @@ def main() -> int:
     results.append(cut_ok)
 
     print("\n== G1 특이 토폴로지 거부 (게이트 id 실발화) ==")
+    # ★2차 리뷰 정정: 구 "모순전원" 케이스의 실거부 사유 = 출력노드 부재(Unknown node 3)였음 → 정직 라벨.
+    #   진짜 모순전원(상이 전압원 병렬, 전 노드 실재)은 transfer()가 거부하지 않음(모듈 도크스트링 한계 기록).
     degenerate = [
         ("부동노드: 커패시터 제거", "V1 1 0 step 10\nR1 1 2 100\nL1 2 3 0.01"),
         ("출력단락: 커패시터를 도선으로", "V1 1 0 step 10\nR1 1 2 100\nL1 2 3 0.01\nW1 3 0"),
-        ("모순전원: 상이 전압원 병렬", "V1 1 0 dc 10\nV2 1 0 dc 5\nR1 1 0 100"),
+        ("출력노드 부재: 넷리스트에 노드 3 없음", "V1 1 0 dc 10\nV2 1 0 dc 5\nR1 1 0 100"),
         ("R=0: 감쇠 소실(ζ=0)", "V1 1 0 step 10\nR1 1 2 0\nL1 2 3 0.01\nC1 3 0 1e-6"),
     ]
     for name, net in degenerate:
@@ -137,6 +159,31 @@ def main() -> int:
     # (b) ★ 고역통과 오배선 → 대역통과 기준: H(0)=0 통과하나 H(∞)=1≠0 → H(∞) 게이트가 유일하게 잡음
     hp_net = "V1 1 0 step 10\nR1 1 2 22\nC1 2 3 4.7e-08\nL1 3 0 0.001"  # 출력=L 양단 = 고역통과 (0,1)
     results.append(expect_reject("고역통과 오배선 vs 대역통과(H(∞) 1≠0)", _gate_input(BANDPASS, hp_net, VALS), "H(∞)"))
+
+    print("\n== V1-T 템플릿 구조 게이트 (2차 리뷰 MAJOR-1·2) ==")
+    # (a) element 오기: 포트는 C1 노드(3,0) 유지·element만 L1 변조 — 종전엔 전 게이트 통과(JSON ports≠element 모순 + SVG 오라벨)
+    bad_elem = json.loads(json.dumps(LOWPASS))
+    bad_elem["output_across"]["element"] = "L1"
+    results.append(expect_template_reject("element↔포트 모순 (element만 L1 변조)", bad_elem, "element/포트 모순"))
+    # (b) 비직렬(병렬 RLC): 렌더러 직렬 가정 → 종전엔 무음으로 직렬 오도면 생성
+    par = json.loads(json.dumps(LOWPASS))
+    par["netlist_template"] = "V1 1 0 step {V}\nR1 1 0 {R}\nL1 1 0 {L}\nC1 1 0 {C}"
+    par["output_across"] = {"element": "C1", "pos": 1, "neg": 0, "expected_dc_gain": 1, "expected_hf_gain": 0}
+    results.append(expect_template_reject("비직렬(병렬 RLC) 템플릿", par, "직렬 단일루프 아님"))
+    # (c) 정상 템플릿 2종 = V1-T 통과 (게이트 과차단 회귀 방지)
+    try:
+        validate_template_structure(LOWPASS)
+        validate_template_structure(BANDPASS)
+        print("  ✅ 정상 템플릿 2종 V1-T 통과 (과차단 없음)")
+        results.append(True)
+    except SolverGateError as e:
+        print(f"  ❌ 정상 템플릿이 V1-T 에 걸림: {e}")
+        results.append(False)
+
+    print("\n== 이득 기대값 미선언 = LOUD (H(∞) 무음 OFF 차단, 2차 MINOR-5) ==")
+    no_hf = _gate_input(LOWPASS, build_netlist(LOWPASS, VALS), VALS)  # 정상 회로 — 이득 선언만 제거
+    no_hf["expected_hf_gain"] = None
+    results.append(expect_reject("expected_hf_gain 미선언", no_hf, "미선언"))
 
     print("\n== G2 난이도 밴드 판별 동작 (MINOR-3) ==")
     lo_ok, _ = within_difficulty({"f0": 5.0}, LOWPASS)  # <10 → False
