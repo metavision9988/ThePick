@@ -40,12 +40,17 @@
  *
  * ★ 이 문자열이 status 도출 정책의 단일 진실원이다. 정책 개정은 오직 여기서.
  *   graph-walk·user-search 가 이 동일 문자열을 공유 → drift 0 (CO-4).
+ *
+ * 정책 개정(2026-07-07, 독립 리뷰 wf_83d2aa9a MAJOR): `rowid DESC` 타이브레이커 도입 —
+ *   동일 transitioned_at 타이에서 본 도출·0042 트리거·state-machine 이 서로 다른 행을
+ *   선택하는 발산이 실측 재현됨(벌크 전이 시 실현 가능). 의미 = "동시각 = 삽입순 최후 승".
+ *   타이 부재 데이터에서는 관측 동등(무회귀). 0042 트리거·state-machine·batch 도출과 동시 개정.
  */
 export const APPROVED_NODES_STATUS_CORE = `
     FROM knowledge_nodes kn
     LEFT JOIN (
       SELECT target_id, to_status,
-        ROW_NUMBER() OVER (PARTITION BY target_id ORDER BY transitioned_at DESC) AS rn
+        ROW_NUMBER() OVER (PARTITION BY target_id ORDER BY transitioned_at DESC, rowid DESC) AS rn
       FROM status_transitions
       WHERE target_type = 'node'
     ) latest ON latest.target_id = kn.id AND latest.rn = 1

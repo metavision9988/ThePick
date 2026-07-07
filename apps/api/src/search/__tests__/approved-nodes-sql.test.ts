@@ -39,8 +39,9 @@ describe('approved-nodes-sql — CO-4 단일 진실원', () => {
     expect(userSearchSql).toContain(APPROVED_NODES_STATUS_CORE);
 
     // 코어 = status_transitions ROW_NUMBER 최신 도출 + COALESCE default draft 차단.
+    // 정책 개정(2026-07-07, wf_83d2aa9a MAJOR): rowid DESC 타이브레이커 — 0042 트리거·state-machine 과 동시 개정(동시각=삽입순 최후 승).
     expect(APPROVED_NODES_STATUS_CORE).toContain(
-      'ROW_NUMBER() OVER (PARTITION BY target_id ORDER BY transitioned_at DESC) AS rn',
+      'ROW_NUMBER() OVER (PARTITION BY target_id ORDER BY transitioned_at DESC, rowid DESC) AS rn',
     );
     expect(APPROVED_NODES_STATUS_CORE).toContain(
       "COALESCE(latest.to_status, 'draft') = 'approved'",

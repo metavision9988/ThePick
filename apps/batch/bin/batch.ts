@@ -401,7 +401,7 @@ async function cmdList(args: string[]): Promise<ExitCode> {
              COALESCE(
                (SELECT to_status FROM status_transitions
                  WHERE target_type = ? AND target_id = t.id
-                 ORDER BY transitioned_at DESC LIMIT 1),
+                 ORDER BY transitioned_at DESC, rowid DESC LIMIT 1),
                'draft'
              ) AS current_status
       FROM ${table} t

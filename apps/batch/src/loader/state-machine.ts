@@ -141,7 +141,7 @@ export async function getCurrentStatus(
     .prepare(
       `SELECT to_status FROM status_transitions
        WHERE target_type = ? AND target_id = ?
-       ORDER BY transitioned_at DESC LIMIT 1`,
+       ORDER BY transitioned_at DESC, rowid DESC LIMIT 1`,
     )
     .bind(targetType, targetId)
     .first<{ to_status: TransitionStatus }>();
