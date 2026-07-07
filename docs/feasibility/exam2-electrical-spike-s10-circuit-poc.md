@@ -64,6 +64,18 @@
 - **폐쇄검증(동일자, 독립 에이전트 — 정정분 재검증)**: MAJOR 6/6 닫힘 확증(CLOSED) + 신규 MINOR 6 적발 → 즉시 마감: V1-T **노드 문자열 키 처리**(이름 노드 ValueError 사망·`int("0_2")` 무음 별칭·필드부족 IndexError = int() 단일 근원 3건 일괄 해소, 게이트 계약 "거부는 SolverGateError로만" 복원) + **단일 전압원 검사 신설**(다중 소스 렌더 무음 누락 차단 = §4-7 ⑦ 인간 규칙의 기계화) + S6 §5 잔존 78% 정정 + M1 plan G-M1-10 배정. 최종 게이트 **19/19**(+필드부족·이중전압원 거부·이름노드 통과 회귀 가드 3종).
 - 리뷰 Devil's Advocate 채택: **게이트는 내부 일관성 증명** — 기대이득과 폐형식을 같은 방향으로 함께 틀리게 저작한 템플릿은 통과한다. 최종 방어선 = 인간 템플릿 승인(§4-3·W4 템플릿 승인제) — "게이트가 있으니 안전" 과신 금지.
 
+### 1.9 5-페르소나 독립 병렬 리뷰 반영 (2026-07-07, Stop hook 의무 — CRITICAL 0 / MAJOR 6 / MINOR 다수 → 즉시분 전건 반영)
+
+5렌즈(정합성·아키텍처·보안소비자·요구대조·기술부채) 독립 병렬 + 실행 프로브 재현 기반 교차확정. 반영:
+
+- **P1(위상)**: "전 노드 차수 2" = 직렬 단일루프의 필요조건일 뿐(서로소 사이클 합집합·자기루프·미지 접두 3반례 프로브 실증 — 생성·grid 경로는 G1 백스톱 실측이나 render_svg 직접 호출 방어 문면은 반증) → **V1-T 완결**: 자기루프 금지 + 연결성(BFS) + **소자 접두 화이트리스트({V}∪R/L/C)** + hard_validate nan fail-open 비교 반전(w0/ζ·rel).
+- **P2/P5(드리프트 서식지)**: "테스트가 고정" 주석 = 허위(그런 테스트 부재) → **접두 정의역 동치 고정 테스트 실재화**(PASSIVE_PREFIXES==ELEM_MAP==ELEM_UNIT) + grid_check 톨러런스를 solver_gate 상수 import(재선언 제거) + grid_check 템플릿 목록 = **glob 자동 발견**(신규 템플릿 무음 누락 차단) + **게이트 입력 조립 단일화**(`assemble_gate_input` — production·테스트 공유, 이중화 제거).
+- **P1(검증기 fail-open)**: grid_check 이득 비교가 nan에 무음 PASS(`abs(nan-x)>tol==False`) → 유한성 선검사 LOUD.
+- **★P3(채점 계약 — Hard Stop 도메인)**: `sig()` = %g round-half-even — 시험 관례(half-up)와 .5 경계 발산 가능(sig(1234.5)=1234 실증) → **`answer_policy` 메타 신설**(sig_figs·rounding·grading_tolerance_rel=5e-4) + `answers[].value_raw`(비반올림 원값) 동봉 + README 소비 계약("정확일치 채점 금지·textContent 렌더") 명문화. **반올림 관례 자체(half-up 전환 여부) = W4 템플릿 승인제 결재 부속 질문으로 상신.**
+- **P3(재현성)**: SVG 바이트 결정화(SOURCE_DATE_EPOCH + svg.hashsalt — clip-path id 메모리주소 유래 제거, 동일 seed 2회 바이트 동일 실측) + requirements.txt 깨진 `importlib==1.0.4`(py2 backport) 핀 제거.
+- 재검증: **게이트 23/23**(위상 반례 3종 + 접두 동치 가드 추가) + grid_check 1,960×2 전수 무회귀 + 생성 무회귀 + SVG 결정성 확증.
+- **승격 1차 태스크 원장(즉시 미반영 — 스파이크 스코프 보정, 정직 기록)**: ①게이트 분류 1급화(P5 — SolverGateError code 필드 + 단일 게이트 레지스트리에서 메시지·gate_report·테스트 기대 파생. 현재는 메시지 접두 안정 + 포지티브 컨트롤이 방어) ②pytest 마이그레이션 ③--template 경로 allowlist ④1e-30·40회 재시도 등 매직값 근거 문서화 ⑤"접지쪽=출력탭" 도면 관례의 게이트 강제(중간 소자 출력 템플릿 대비) ⑥phys 테스트의 동일-seed 동기화 가정(G2 재난수화 횟수 상이 시 false FAIL — LOUD라 무해).
+
 ## 2. 실측 샘플 (seed 0002)
 
 - netlist: `V1 1 0 step 10 / R1 1 2 22 / L1 2 3 0.001 / C1 3 0 4.7e-08`

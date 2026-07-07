@@ -18,9 +18,9 @@ import json
 import math
 from pathlib import Path
 
-from generate import ROOT, build_netlist, crosscheck, generate_one, solve
+from generate import ELEM_MAP, ELEM_UNIT, ROOT, assemble_gate_input, build_netlist, generate_one
 from references import get_reference
-from solver_gate import SolverGateError, validate_template_structure, within_difficulty
+from solver_gate import PASSIVE_PREFIXES, SolverGateError, validate_template_structure, within_difficulty
 
 LOWPASS = json.loads((ROOT / "templates" / "rlc_series.json").read_text(encoding="utf-8"))
 BANDPASS = json.loads((ROOT / "templates" / "rlc_series_bandpass.json").read_text(encoding="utf-8"))
@@ -33,27 +33,11 @@ def _mag_bandpass(f: float, R: float, L: float, C: float) -> float:
     return abs(R / complex(R, w * L - 1 / (w * C)))
 
 
-def _ports(t: dict) -> tuple[tuple[int, int], tuple[int, int]]:
-    o, i = t["output_across"], t["input_across"]
-    return (i["pos"], i["neg"]), (o["pos"], o["neg"])
-
-
 def _gate_input(template: dict, netlist: str, vals: dict | None = None) -> dict:
-    """generate_one과 동일한 게이트 입력 구성(derive+crosscheck+이득)을 재현."""
-    ref = get_reference(template["reference_id"])
-    in_p, out_p = _ports(template)
-    sol = solve(netlist, in_p, out_p)
-    if sol.get("solved") and len(sol.get("den_coeffs", [])) == 3:
-        derived = ref["derive"](sol["den_coeffs"])
-        sol.update(derived)
-        # vals 주면 실제 교차검증(극점 일치 → V1 통과 → 출력탭/구조 게이트만 남김), 없으면 0.0
-        sol["crosscheck_rel_err"] = crosscheck(derived, ref["reference"](vals)) if vals else 0.0
-    else:
-        sol["crosscheck_rel_err"] = None
-    sol["expected_dc_gain"] = template["output_across"]["expected_dc_gain"]
-    sol["expected_hf_gain"] = template["output_across"].get("expected_hf_gain")
-    sol["answers"] = [{"symbol": a["symbol"], "unit": a["unit"]} for a in template["asks"]]
-    return sol
+    """게이트 입력 조립 = generate.assemble_gate_input 공유 — 단일 진실원.
+
+    (5-페르소나 P5: 종전 수동 복제는 production 조립과 드리프트 시작 상태였음 — 이중화 제거.)"""
+    return assemble_gate_input(template, get_reference(template["reference_id"]), netlist, vals)
 
 
 def expect_reject(name: str, sol: dict, must_fire: str) -> bool:
@@ -197,6 +181,24 @@ def main() -> int:
     except Exception as e:  # noqa: BLE001 — 계약 위반(비게이트 예외 포함) 전부 FAIL로 표면화
         print(f"  ❌ 이름 노드 넷리스트에서 {type(e).__name__}: {e}")
         results.append(False)
+    # (g~i) 5-페르소나 P1 위상 반례 회귀 가드 — "차수2 = 직렬 단일루프" 필요조건만으론 통과하던 3클래스
+    disj = json.loads(json.dumps(LOWPASS))
+    disj["netlist_template"] = "V1 1 0 step {V}\nR1 1 0 {R}\nL1 3 4 {L}\nC1 4 3 {C}"
+    disj["output_across"] = {"element": "C1", "pos": 4, "neg": 3, "expected_dc_gain": 1, "expected_hf_gain": 0}
+    results.append(expect_template_reject("서로소 2-루프(전 노드 차수 2 충족)", disj, "비연결"))
+    selfloop = json.loads(json.dumps(LOWPASS))
+    selfloop["netlist_template"] = "V1 1 0 step {V}\nL1 1 2 {L}\nC1 2 0 {C}\nR1 3 3 {R}"
+    selfloop["output_across"] = {"element": "C1", "pos": 2, "neg": 0, "expected_dc_gain": 1, "expected_hf_gain": 0}
+    results.append(expect_template_reject("자기루프 부동 소자(R1 3 3)", selfloop, "자기루프"))
+    alien = json.loads(json.dumps(LOWPASS))
+    alien["netlist_template"] = "V1 1 0 step {V}\nR1 1 2 {R}\nI1 2 3 dc 1\nC1 3 0 {C}"
+    alien["output_across"] = {"element": "C1", "pos": 3, "neg": 0, "expected_dc_gain": 1, "expected_hf_gain": 0}
+    results.append(expect_template_reject("미지원 접두(I1 — 렌더 무음 누락 클래스)", alien, "미지원 소자 접두"))
+
+    print("\n== 접두 정의역 동치 고정 (P2/P5 — solver_gate↔generate 이중 선언 드리프트 가드) ==")
+    eq = set(PASSIVE_PREFIXES) == set(ELEM_MAP) == set(ELEM_UNIT)
+    print(f"  {'✅' if eq else '❌'} PASSIVE_PREFIXES == ELEM_MAP == ELEM_UNIT 정의역 ({sorted(PASSIVE_PREFIXES)})")
+    results.append(eq)
 
     print("\n== 이득 기대값 미선언 = LOUD (H(∞) 무음 OFF 차단, 2차 MINOR-5) ==")
     no_hf = _gate_input(LOWPASS, build_netlist(LOWPASS, VALS), VALS)  # 정상 회로 — 이득 선언만 제거

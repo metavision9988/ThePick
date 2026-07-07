@@ -22,7 +22,7 @@ f0/Q/ζ 산출(폐형식 교차검증) → schemdraw SVG → **Solver-Validated 
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # 최초 1회 (버전 고정 — 재현성)
 .venv/bin/python src/generate.py --seed 1 --count 3                                    # 저역통과(기본)
 .venv/bin/python src/generate.py --template templates/rlc_series_bandpass.json --seed 1 --count 3   # 대역통과
-.venv/bin/python src/test_gate.py                      # 다중 템플릿 관통 + 게이트 거부 실증 (19/19)
+.venv/bin/python src/test_gate.py                      # 다중 템플릿 관통 + 게이트 거부 실증 (23/23)
 .venv/bin/python src/grid_check.py                     # 전수 그리드 물리 정확성 (1,960 조합 × 2 템플릿)
 ```
 
@@ -30,7 +30,8 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # 최초 1�
 
 - **다중 템플릿 관통**: 저역통과 + 대역통과 = **단일 파이프라인** 통과(템플릿 교체만).
 - **전수 그리드**: `grid_check.py` — **1,960 조합 × 2 템플릿 전수 0 불일치**(worst rel_err 저역 4.138e-16 / 대역 1.011e-13, lcapy 유도 ≡ 폐형식) + 이득 H(0)·H(∞) 전수 기대 일치.
-- **게이트 실검증 19/19**: 다중 템플릿 관통 + G1 특이 4종 LOUD 거부 + **포지티브 컨트롤**(G1 회귀 뮤테이션 가드) + **출력탭 오배선**(L↔C 스왑 H(0) / ★고역통과 오배선 H(∞)) + **V1-T 템플릿 구조**(element↔포트 모순·비직렬·필드부족·이중전압원 거부 + 정상 2종·이름노드 통과) + 이득 미선언 LOUD + G2 판별.
+- **게이트 실검증 23/23**: 다중 템플릿 관통 + G1 특이 4종 LOUD 거부 + **포지티브 컨트롤**(G1 회귀 뮤테이션 가드) + **출력탭 오배선**(L↔C 스왑 H(0) / ★고역통과 오배선 H(∞)) + **V1-T 템플릿 구조**(element↔포트 모순·비직렬·**서로소 루프·자기루프·미지원 접두**·필드부족·이중전압원 거부 + 정상 2종·이름노드 통과) + **접두 정의역 동치 고정**(solver_gate↔generate 드리프트 가드) + 이득 미선언 LOUD + G2 판별.
+- **산출 소비 계약**: `answers[].value` = 4유효숫자 round-half-even 표시값 — **채점은 `value_raw` + `answer_policy.grading_tolerance_rel`(상대 허용오차) 사용, 정확일치 금지**. JSON 자유텍스트(title/steps)는 PWA에서 textContent 렌더(innerHTML 금지). SVG = 바이트 결정적(dc:date·hashsalt 고정).
 - **렌더**: SVG well-formed, 실 `<text>` 라벨(선택가능), 직렬 단일루프 전용(비직렬 = V1-T LOUD 거부). 시각 품질 = 인간 확인 대기.
 - ★알려진 한계: 모순전원(상이 전압원 병렬)은 lcapy transfer() 미검출 — 방어선 = 템플릿 인간 승인(단일 소스). 상세 verdict §1.8·§4-7.
 
@@ -43,7 +44,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # 최초 1�
 - `src/references.py` — 템플릿별 승인 물리(reference_id→{derive/reference/steps}), 동적실행 0
 - `src/generate.py` — 난수화·lcapy 풀이·교차검증·SVG·JSON 오케스트레이터
 - `src/solver_gate.py` — Solver-Validated Gate (LOUD): V1-T(템플릿 구조)/G1/V1(극점+H(0)+H(∞))/G4/G2
-- `src/test_gate.py` — 다중 템플릿 관통 + 게이트 id 실발화 거부 실증 (16 케이스)
+- `src/test_gate.py` — 다중 템플릿 관통 + 게이트 id 실발화 거부 실증 (23 검증)
 - `src/grid_check.py` — 전수 그리드 물리 정확성 재현 스크립트 (증거 영속)
 - `requirements.txt` — 사이드카 venv 버전 고정 (재현성)
 - `out/` — 생성 산출물(정적 JSON+SVG, 런타임 소비 형태) / `out-test/` — 테스트 격리 산출

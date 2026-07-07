@@ -4,8 +4,10 @@
 절대 사일런트 드롭 금지 — 구조적 실패는 SolverGateError로 LOUD raise, 값-수준(난이도) 실패는 재난수화 신호 반환.
 
 게이트 (S10 스코프):
-  V1-T 템플릿 : output element↔포트 정합 + 직렬 단일루프(렌더러 전제) + 수동소자 접두 유일.
-                (2차 독립 리뷰 F-1a MAJOR-1·2 반영 — 템플릿 저작 오류의 무음 통과 차단.)
+  V1-T 템플릿 : ①output element↔포트 정합 ②직렬 단일루프(차수2+자기루프 금지+연결성 — 차수2만으론
+                서로소 사이클 합집합 통과, 5-페르소나 P1 위상 반례 반영) ③소자 접두 화이트리스트({V}∪R/L/C —
+                이물 접두는 렌더 무음 누락이라 LOUD 거부) ④단일 전압원 ⑤수동소자 접두 유일 ⑥라인 필드 형식.
+                (2차 독립 리뷰 F-1a MAJOR-1·2 + 5-페르소나 리뷰 반영 — 템플릿 저작 오류의 무음 통과 차단.)
   G1 유일해   : lcapy 해석 성공 + 특성방정식 2차 + 최고차계수≠0 + 계수 유한·실수 + 물리적 해(ω0>0, ζ>0).
                 특이행렬/부동노드/비실수계수 → 여기서 거부.
                 ★알려진 한계(실측 2026-07-07): 병렬 상이 전압원(모순전원)은 lcapy transfer()가
@@ -30,7 +32,9 @@ class SolverGateError(Exception):
 V1_REL_TOL = 1e-6
 DC_GAIN_TOL = 1e-6
 
-# 렌더러(schemdraw 직렬 체인)가 지원하는 수동소자 접두 — generate.ELEM_MAP 정의역과 동치(테스트가 고정)
+# 렌더러(schemdraw 직렬 체인)가 지원하는 수동소자 접두 — generate.ELEM_MAP 정의역과 동치.
+# solver_gate 는 leaf(의존 역전 금지)라 직접 import 불가 → 동치는 test_gate 의 동치 고정 테스트가 강제
+# (5-페르소나 P2/P5: 종전 주석이 실존하지 않는 테스트를 주장 → 테스트 실재화로 정정).
 PASSIVE_PREFIXES = ("R", "L", "C")
 
 
@@ -62,13 +66,39 @@ def validate_template_structure(template: dict[str, Any]) -> None:
         )
 
     degree: dict[str, int] = {}
+    adj: dict[str, set[str]] = {}
     for ln in lines:
-        for node in (ln[1], ln[2]):
+        a, b = ln[1], ln[2]
+        if a == b:  # 자기루프 = 차수 검사를 무음 통과하는 부동 소자 (P1 위상 반례 b)
+            raise SolverGateError(f"V1-T 템플릿 위반: 자기루프 소자 {ln[0]} (노드 {a}=={b}) — 부동 소자 금지")
+        for node in (a, b):
             degree[node] = degree.get(node, 0) + 1
+        adj.setdefault(a, set()).add(b)
+        adj.setdefault(b, set()).add(a)
     bad = {n: d for n, d in degree.items() if d != 2}
     if bad:
         raise SolverGateError(
             f"V1-T 템플릿 위반: 직렬 단일루프 아님 (노드 차수 이상 {bad}) — 렌더러 직렬 가정 미지원 토폴로지, 무음 오도면 금지"
+        )
+    # 연결성: 차수2 그래프 = 서로소 사이클들의 합집합일 수 있음 → 단일루프는 연결까지 요구 (P1 위상 반례 a)
+    start = next(iter(adj))
+    seen, stack = {start}, [start]
+    while stack:
+        for nb in adj[stack.pop()]:
+            if nb not in seen:
+                seen.add(nb)
+                stack.append(nb)
+    if seen != set(adj):
+        raise SolverGateError(
+            f"V1-T 템플릿 위반: 넷리스트 비연결(서로소 루프 — 미도달 노드 {sorted(set(adj) - seen)}) — 직렬 단일루프 아님"
+        )
+
+    # 소자 접두 화이트리스트: 미지 접두(I/E/K…)는 렌더러가 무음 생략 → 도면-넷리스트 불일치 (P1 위상 반례 c)
+    allowed = {"V"} | set(PASSIVE_PREFIXES)
+    alien = [ln[0] for ln in lines if ln[0][0] not in allowed]
+    if alien:
+        raise SolverGateError(
+            f"V1-T 템플릿 위반: 미지원 소자 접두 {alien} ∉ {sorted(allowed)} — 렌더러 무음 누락 차단(지원 확장 시 화이트리스트 동보 갱신)"
         )
 
     sources = [ln[0] for ln in lines if ln[0][0] == "V"]
@@ -102,7 +132,8 @@ def hard_validate(result: dict[str, Any]) -> None:
                 fails.append("G1 유일해 위반: 최고차 계수 0 (특이/축약 시스템)")
             if any(not math.isfinite(float(c)) for c in den):
                 fails.append(f"G1 유일해 위반: 계수 비유한(발산) coeffs={den}")
-            if result.get("w0", 0) <= 0 or result.get("zeta", 0) <= 0:
+            # 부정 조건 대신 긍정 조건의 부정 — nan 은 모든 비교에서 False 라 `<= 0` 형은 fail-open (5-페르소나 P1)
+            if not (result.get("w0", 0) > 0 and result.get("zeta", 0) > 0):
                 fails.append(
                     f"G1 유일해 위반: 비물리적 해 (ω0={result.get('w0')}, ζ={result.get('zeta')})"
                 )
@@ -111,8 +142,8 @@ def hard_validate(result: dict[str, Any]) -> None:
     rel = result.get("crosscheck_rel_err")
     if rel is None:
         fails.append("V1 극점 위반: 교차검증 미수행")
-    elif rel > V1_REL_TOL:
-        fails.append(f"V1 극점 위반: lcapy-유도 vs 폐형식 상대오차 {rel:.2e} > {V1_REL_TOL:.0e}")
+    elif not math.isfinite(rel) or rel > V1_REL_TOL:  # nan 비교 fail-open 차단 (5-페르소나 P1)
+        fails.append(f"V1 극점 위반: lcapy-유도 vs 폐형식 상대오차 {rel} > {V1_REL_TOL:.0e}")
 
     # --- V1 출력탭 검증 (DC 이득 H(0) + 고주파 이득 H(∞) = 분자/출력소자 확인) -
     #   극점(ω0,ζ)은 출력탭에 불변이므로 출력 소자 오배선은 이득으로만 잡힌다.
