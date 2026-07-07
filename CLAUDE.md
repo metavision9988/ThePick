@@ -440,6 +440,19 @@ W0~W6·가드레일 15·Fable 검토 게이트) + git worktree 이중 워크스�
 > SQL 별건 게이트(0038·0039·0040·WS-3c) + **push #14**. M1 코드 착수 = §4 선결(E0-8 갭 처분) 잔존 / RW = SQL 선작성
 > 라벨 가능·production 적용 게이트 불변. 상세 [[project_engine_separation_review_20260704]] + [[project_exam2_electrical_strategy_20260704]].
 
+> ★ **2026-07-07 갱신 2 (Fable 5) — RW SQL 선작성 + ★G-S5 3차 실측(N=19) 완료**: (1) **RW Phase 0~1 SQL 선작성**
+> (0041 시행시점 축+가드 재구축·0019 앵커 봉합 / 0042 GAP-RW-4 2단 트리거+백데이트 게이트) + **타이 결정성 정책 개정**
+> (전 status 도출 지점 4곳 rowid DESC 동시 도입 — 동시각 타이 발산 실증분 해소·CO-4 핀 갱신) + migrations-v2/ 신설.
+> 독립 리뷰 wf_83d2aa9a(17에이전트) C0/M9 확정 → 전건 처분, 테스트 19종·api 730 green. ★후속 원장 = **0043**(formulas/
+> constants 동일 지뢰 — 그 전까지 산식 적재 superseded_by 금지) + 강등 무음 공백. production 적용 = 진산 게이트.
+> (2) **formula-engine 확장 plan §7 Q1~Q4 위임 결재 완료**(진산 명시 위임 — 엔진 내장·7함수·A+C 각도규약·병행. 코드
+> 착수 가능, G-FE-1~7 게이트). (3) ★**G-S5 3차 실측**: golden v2 동결(N=34 — 진산 일괄 위임 + 대체 백스톱: 스팟 5/5
+> 반증 실패·hop 재검 6 flip[multi 20→14, 중복 인코딩 착시 기전]·2ND-006 answer-leak 내장 적발 제외). 측정 분모 19
+> (진성 multi 8): **baseline 73.7% / graph depth1 Δ−5.3%(regression 1) / depth2 Δ−15.8%(regression 3) /
+> graphOnlyRecovery 0 = 3차 연속**. ★depth1 "무해·무익"(06-05 N=6)이 확대 표본에서 **순손실로 전환**. 사실 정본
+> `docs/plans/s5-6-measurements/g-s5-v2-facts-20260707.md` — **GO/NO-GO(S5-8 §9) = 진산 R5**(위임 범위 밖).
+> (4) OC 라이브: IP 바인딩 3중 프로브 확증 → 진산 IP 등록(218.151.87.244) — 재시험 대기(전파 지연). 잔여 = 익일 재시도.
+
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),
   Worker 배포, 인증/login_history smoke PASS, ADR-034/035/036 retrofit.
