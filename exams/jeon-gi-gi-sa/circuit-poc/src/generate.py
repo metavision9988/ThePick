@@ -21,6 +21,7 @@ import warnings
 from pathlib import Path
 
 os.environ.setdefault("MPLBACKEND", "Agg")  # 헤드리스 렌더
+os.environ.setdefault("SOURCE_DATE_EPOCH", "0")  # SVG <dc:date> 고정 = 바이트 결정성(콘텐츠 해시 캐싱 안전, 5-페르소나 P3)
 
 from references import get_reference  # noqa: E402
 from solver_gate import (  # noqa: E402
@@ -91,7 +92,7 @@ def _finite_real(expr, s, at) -> float:
         return float("nan")
 
 
-def solve(netlist: str, in_ports: tuple[int, int], out_ports: tuple[int, int]) -> dict:
+def solve(netlist: str, in_ports: tuple[int | str, int | str], out_ports: tuple[int | str, int | str]) -> dict:
     """lcapy로 V_out/V_in 전달함수를 유도하고 특성방정식 계수 + DC/고주파 이득을 추출한다(순수 추출).
 
     포트는 템플릿이 정본(하드코딩 금지). ImportError 류는 인프라 실패로 재전파(회로 거부로 오분류 금지)."""
@@ -160,6 +161,7 @@ def render_svg(template: dict, vals: dict, out_path: Path) -> None:
     import schemdraw.elements as elm
 
     matplotlib.rcParams["svg.fonttype"] = "none"  # 선택가능 <text> 라벨(접근성·경량화)
+    matplotlib.rcParams["svg.hashsalt"] = "thepick-s10"  # clip-path id 결정화(기본=메모리주소) — 바이트 재현성 (P3)
 
     passives = [
         ln.split()[0]
@@ -191,37 +193,63 @@ def render_svg(template: dict, vals: dict, out_path: Path) -> None:
 
 
 # ----------------------------------------------------------------------------- orchestrate
-def generate_one(template: dict, ref: dict, seed: int, out_dir: Path) -> dict:
-    """단일 문제 생성 — 템플릿구조검증→난수화→풀이→해석/교차검증→게이트→SVG→JSON. 게이트 실패는 LOUD."""
-    validate_template_structure(template)  # V1-T: element↔포트·직렬루프·접두유일 (저작 오류 조기 차단)
-    rng = random.Random(seed)
+def assemble_gate_input(template: dict, ref: dict, netlist: str, vals: dict | None = None) -> dict:
+    """게이트 입력 조립 — 단일 진실원 (generate_one·test_gate 공유, 5-페르소나 P5 조립 이중화 제거).
+
+    vals 를 주면 폐형식 교차검증 실측, 없으면(테스트 퇴화 케이스 전용) 0.0 스텁으로 극점 게이트를
+    통과시켜 다른 게이트의 단독 발화를 노출. expected_* 는 .get — 미선언 = hard_validate 가 LOUD 거부
+    (dc/hf 대칭, 5-페르소나 P4: 종전 dc 직접 인덱싱은 무맥락 KeyError 로 게이트 계약 이탈)."""
     in_p = (template["input_across"]["pos"], template["input_across"]["neg"])
     out_p = (template["output_across"]["pos"], template["output_across"]["neg"])
-    exp_dc = template["output_across"]["expected_dc_gain"]
-    exp_hf = template["output_across"].get("expected_hf_gain")
+    sol = solve(netlist, in_p, out_p)
+
+    if sol.get("solved") and len(sol.get("den_coeffs", [])) == 3:
+        derived = ref["derive"](sol["den_coeffs"])  # lcapy 계수 → 정답 (solver 진실)
+        sol.update(derived)
+        missing = [a["symbol"] for a in template["asks"] if a["symbol"] not in derived]
+        if missing:  # 템플릿/registry 오정합 → 조용한 0 답 금지(사일런트 결함 차단)
+            raise SolverGateError(
+                f"템플릿/registry 정합 오류: asks 심볼 {missing} 이 references.derive 산출에 없음 (사일런트 0 금지)"
+            )
+        sol["crosscheck_rel_err"] = crosscheck(derived, ref["reference"](vals)) if vals else 0.0
+    else:
+        sol["crosscheck_rel_err"] = None  # 퇴화 → G1이 거부
+
+    sol["expected_dc_gain"] = template["output_across"].get("expected_dc_gain")
+    sol["expected_hf_gain"] = template["output_across"].get("expected_hf_gain")
+    sol["answers"] = [
+        {
+            "symbol": a["symbol"],
+            "name": a.get("name"),
+            "value": sig(sol.get(a["symbol"], 0.0)),
+            "value_raw": sol.get(a["symbol"], 0.0),  # 비반올림 원값 — 채점기 허용오차 판정용 (5-페르소나 P3)
+            "unit": a["unit"],
+        }
+        for a in template["asks"]
+    ]
+    return sol
+
+
+# 채점 계약 (5-페르소나 P3 — 정답 안전 Hard Stop 도메인): value 는 %g 4유효숫자 = round-half-even.
+# 시험 관례(round-half-up)와 .5 경계에서 갈릴 수 있으므로 채점기는 정확일치 금지, value_raw + 상대 허용오차 사용.
+ANSWER_POLICY: dict = {
+    "sig_figs": 4,
+    "rounding": "round-half-even (%g)",
+    "grading_tolerance_rel": 5e-4,  # 4유효숫자 반올림 최대 상대오차(≈4.95e-4) 상회 — 정확일치 채점 금지
+    "grading_value": "value_raw",
+}
+
+
+def generate_one(template: dict, ref: dict, seed: int, out_dir: Path) -> dict:
+    """단일 문제 생성 — 템플릿구조검증→난수화→조립(공용)→게이트→SVG→JSON. 게이트 실패는 LOUD."""
+    validate_template_structure(template)  # V1-T: element↔포트·연결단일루프·접두 화이트리스트 등 (저작 오류 조기 차단)
+    rng = random.Random(seed)
     last_g2 = ""
 
     for _attempt in range(MAX_DIFFICULTY_ATTEMPTS):
         vals = randomize(template, rng)
-        sol = solve(build_netlist(template, vals), in_p, out_p)
-
-        if sol.get("solved") and len(sol.get("den_coeffs", [])) == 3:
-            derived = ref["derive"](sol["den_coeffs"])  # lcapy 계수 → 정답 (solver 진실)
-            sol.update(derived)
-            missing = [a["symbol"] for a in template["asks"] if a["symbol"] not in derived]
-            if missing:  # 템플릿/registry 오정합 → 조용한 0 답 금지(사일런트 결함 차단)
-                raise SolverGateError(
-                    f"템플릿/registry 정합 오류: asks 심볼 {missing} 이 references.derive 산출에 없음 (사일런트 0 금지)"
-                )
-            sol["crosscheck_rel_err"] = crosscheck(derived, ref["reference"](vals))  # vs 폐형식(독립)
-        else:
-            sol["crosscheck_rel_err"] = None  # 퇴화 → G1이 거부
-
-        sol["expected_dc_gain"], sol["expected_hf_gain"] = exp_dc, exp_hf
-        sol["answers"] = [
-            {"symbol": a["symbol"], "name": a["name"], "value": sig(sol.get(a["symbol"], 0.0)), "unit": a["unit"]}
-            for a in template["asks"]
-        ]
+        netlist = build_netlist(template, vals)
+        sol = assemble_gate_input(template, ref, netlist, vals)
 
         hard_validate(sol)  # G1·V1(극점+DC이득+HF이득)·G4 — 구조/정확성 실패면 raise(재시도 안 함)
 
@@ -235,21 +263,23 @@ def generate_one(template: dict, ref: dict, seed: int, out_dir: Path) -> dict:
                 "seed": seed,
                 "exam_class": template["exam_class"],
                 "title": template["title"],
-                "netlist": build_netlist(template, vals),
+                "netlist": netlist,
                 "ports": {
-                    "input": list(in_p),
-                    "output": list(out_p),
+                    "input": [template["input_across"]["pos"], template["input_across"]["neg"]],
+                    "output": [template["output_across"]["pos"], template["output_across"]["neg"]],
                     "output_element": template["output_across"]["element"],
                 },
                 "values": {k: {"value": v, "unit": template["variables"][k]["unit"]} for k, v in vals.items()},
                 "transfer_function": sol["H_str"],
                 "steps": ref["steps"](vals, sol, fmt_si),
                 "answers": sol["answers"],
+                "answer_policy": ANSWER_POLICY,  # 채점 계약 — 정확일치 금지, value_raw + 상대 허용오차 (P3)
                 "gate_report": {
+                    # 'PASS' 리터럴 불변식: 직전 hard_validate 가 raise 안 했음 = G1·G4 통과 (P5 게이트 1급화는 승격 태스크)
                     "G1_unique_solution": "PASS",
                     "V1_pole_crosscheck_rel_err": sol["crosscheck_rel_err"],
-                    "V1_dc_gain": {"observed": sig(sol["dc_gain"]), "expected": exp_dc},
-                    "V1_hf_gain": {"observed": sig(sol["hf_gain"]), "expected": exp_hf},
+                    "V1_dc_gain": {"observed": sig(sol["dc_gain"]), "expected": sol["expected_dc_gain"]},
+                    "V1_hf_gain": {"observed": sig(sol["hf_gain"]), "expected": sol["expected_hf_gain"]},
                     "G4_units": "PASS",
                     "G2_difficulty": last_g2,
                 },
