@@ -62,6 +62,7 @@ import {
   type GraphWalkD1,
   type GraphWalkNode,
 } from './graph-walk/index.js';
+import { runKeywordFallback } from './multi-path-fallback/keyword-fallback.js';
 import type { AiBinding } from '../vectorize/upserter.js';
 import { getClientIp, type RateLimiter } from '../auth/rate-limit.js';
 
@@ -119,6 +120,19 @@ const GraphSearchBodySchema = z
      * 응답 계약 additive — 기존 필드 전부 불변.
      */
     debug: z.boolean().default(false),
+    /**
+     * Phase 1-D 비교군 모드 (lexical-fusion-phase1d.plan.md rev3).
+     * 'graph'(default) = 기존 계약 byte-동치. 'lexical' = graph-walk 무접촉,
+     * vector pool(10) 을 lexical 신호로 ε-양자화 재정렬(주입 없음 — M-2).
+     * 측정 전용: mode='lexical' 은 debug=true 필수(superRefine).
+     */
+    mode: z.enum(['graph', 'lexical']).default('graph'),
+    /**
+     * lexical ε-band 폭 (감도 스윕 M-5·동치 테스트 m-4 전용). graph 경로는
+     * eps 미독(무시 — rev3 m-N2). 기본 0.03(provenance: F2 실측 Δ0.02 유래 —
+     * 측정셋 적합·일반화 근거 아님, plan §0-7).
+     */
+    eps: z.number().min(0).max(0.1).default(0.03),
   })
   .superRefine((data, ctx) => {
     // 공개 계약(debug 미사용) = 종전 그대로 500 상한. debug=true 만 측정
@@ -131,6 +145,14 @@ const GraphSearchBodySchema = z
         inclusive: true,
         path: ['query'],
         message: `query length > ${GRAPH_QUERY_PUBLIC_MAX_LENGTH} (public contract; debug flag required)`,
+      });
+    }
+    // mode='lexical' = 측정 전용 명시 게이트 (plan rev3 m-3 — 공개 남용 표면 차단).
+    if (data.mode === 'lexical' && !data.debug) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['mode'],
+        message: `mode='lexical' requires debug=true (measurement-only path)`,
       });
     }
   });
@@ -174,6 +196,19 @@ interface GraphExpansionMeta {
   readonly expandedNodes?: ReadonlyArray<GraphExpansionDebugNode>;
 }
 
+/** Phase 1-D lexical 모드 additive 메타 (plan rev3 §2-3 — 채점 코어 무접촉 필드). */
+interface LexicalFusionMeta {
+  readonly eps: number;
+  readonly poolSize: number;
+  /** pool 중 lexical 신호(lexScore>0)가 붙은 후보 수. */
+  readonly lexMatchedCount: number;
+  /** 재정렬로 top-K 에서 밀려난 원 baseline hit 수 (M-2(iii) — regression 귀속용). */
+  readonly displacedBaselineHits: number;
+  readonly matchedTokens: ReadonlyArray<string>;
+  /** debug 한정 — pool 밖 lexical 히트 id (랭킹 무개입, 관측 전용 — rev3 Anchor 2). */
+  readonly lexicalOnlyObserved?: ReadonlyArray<string>;
+}
+
 interface GraphSearchResponse {
   readonly query: string;
   readonly examId: ExamId;
@@ -183,6 +218,39 @@ interface GraphSearchResponse {
   readonly graphExpansion: GraphExpansionMeta;
   /** baseline + graph 확장 병합 후 Stage 3 단일 진실원 재정렬 top-K. */
   readonly results: ReadonlyArray<UserSearchHit>;
+  /** mode='lexical' 한정 additive (graph 모드 응답 byte-불변 — G-1D-2). */
+  readonly lexicalFusion?: LexicalFusionMeta;
+}
+
+/**
+ * Phase 1-D 재정렬 — ε-양자화 밴드키 **전순서** (plan rev3 §2-2, 리뷰 C-1 수리).
+ *
+ * 정렬키 = (truthWeight DESC, band DESC, lexScore DESC, score DESC),
+ *   band = eps>0 ? floor(score/eps) : score — **전 키가 원소 단독 함수** = 추이성
+ *   구성적 보장(쌍별 ε-band 비교자는 비추이 → sort 미정의 동작 실증·폐기).
+ * 성질: lex 전원 0 → compareByTruthWeightThenScore 완전 동치(동점 포함) /
+ *   ε=0 → 정확 동점에서만 lex 개입(순수 tiebreak 의도 동작). 경계쌍 비대칭
+ *   (0.599/0.601 상이 band) = 양자화의 문서화된 대가.
+ * tie 최후 = 안정 정렬 입력순(ES2019 보장 — 원 비교자와 동일 관례).
+ */
+export function lexicalRerank(
+  pool: ReadonlyArray<UserSearchHit>,
+  lexScores: ReadonlyMap<string, number>,
+  eps: number,
+): ReadonlyArray<UserSearchHit> {
+  const keyed = pool.map((hit) => ({
+    hit,
+    lex: lexScores.get(hit.id) ?? 0,
+    band: eps > 0 ? Math.floor(hit.score / eps) : hit.score,
+  }));
+  const sorted = [...keyed].sort(
+    (a, b) =>
+      b.hit.truthWeight - a.hit.truthWeight ||
+      b.band - a.band ||
+      b.lex - a.lex ||
+      b.hit.score - a.hit.score,
+  );
+  return sorted.map((k) => k.hit);
 }
 
 export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBindings }> {
@@ -204,7 +272,7 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
     if (!parsed.success) {
       return c.json({ error: ErrorCode.VALIDATION_ERROR, details: parsed.error.format() }, 400);
     }
-    const { examId: rawExamId, query, topK, maxDepth, resultCap, debug } = parsed.data;
+    const { examId: rawExamId, query, topK, maxDepth, resultCap, debug, mode, eps } = parsed.data;
 
     let examId: ExamId;
     try {
@@ -281,6 +349,68 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
           results: baseline.results,
         };
         logOk(meta);
+        return c.json(resp);
+      }
+
+      // ── Phase 1-D lexical 모드 (plan rev3 §2 — graph-walk 무접촉·주입 없음) ──
+      //   applied 술어 = graph 의 no_approved_seed 와 동일(위 분기 공유) → 채점
+      //   코어 제외집합이 3열 구성적 동일(M-1). 재정렬 대상 = vector pool 만(M-2).
+      if (mode === 'lexical') {
+        const pool = await searchKnowledgeNodesForUser(deps, examId, query, MAX_RESULT_TOP_K, {
+          precomputedEmbedding: queryEmbedding,
+        });
+        const lex = await runKeywordFallback(c.env.DB as unknown as UserSearchD1, examId, query);
+        const lexScores = new Map(lex.results.map((h) => [h.id, h.score]));
+        const reranked = lexicalRerank(pool.results, lexScores, eps);
+        const results = reranked.slice(0, topK);
+
+        const resultIds = new Set(results.map((h) => h.id));
+        const poolIds = new Set(pool.results.map((h) => h.id));
+        const lexFusion: LexicalFusionMeta = {
+          eps,
+          poolSize: pool.results.length,
+          lexMatchedCount: pool.results.filter((h) => (lexScores.get(h.id) ?? 0) > 0).length,
+          displacedBaselineHits: baseline.results.filter((h) => !resultIds.has(h.id)).length,
+          matchedTokens: lex.matchedTokens,
+          ...(debug
+            ? {
+                lexicalOnlyObserved: lex.results.filter((h) => !poolIds.has(h.id)).map((h) => h.id),
+              }
+            : {}),
+        };
+        // 채점 코어 계약 유지(M-1): graphExpansion {applied,truncated} 필수 소비 —
+        // no-seed 분기 관례값(0/[]/false) 준용(rev3 m-N3). walk 미실행 = expandedNodes 항상 빈 집합.
+        const meta: GraphExpansionMeta = {
+          applied: true,
+          seedWalkCount: 0,
+          expandedNodeCount: 0,
+          truncated: false,
+          maxDepth: 0,
+          resultCap: 0,
+          edgeTypeWhitelist: [],
+          ...(debug ? { expandedNodes: [] as ReadonlyArray<GraphExpansionDebugNode> } : {}),
+        };
+        // lexical 전용 로그 라인 (G-1D-6 — logOk 는 GraphExpansionMeta 형상 전용이라 별도 어댑트).
+        logger.info('lexical_search_ok', {
+          module: 'search/graph',
+          examId,
+          mode,
+          eps,
+          poolSize: lexFusion.poolSize,
+          lexMatchedCount: lexFusion.lexMatchedCount,
+          displacedBaselineHits: lexFusion.displacedBaselineHits,
+          debug,
+          elapsedMs: Date.now() - startedAt,
+        });
+        const resp: GraphSearchResponse = {
+          query,
+          examId,
+          topK: baseline.topK,
+          baseline,
+          graphExpansion: meta,
+          results,
+          lexicalFusion: lexFusion,
+        };
         return c.json(resp);
       }
 

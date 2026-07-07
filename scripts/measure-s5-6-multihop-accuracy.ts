@@ -57,6 +57,10 @@ interface Args {
   maxDepth: number | null;
   /** 디버그 측정 모드 — route debug:true (query ≤2000 우회 + expandedNodes surface). G-WS4 ③④ 배선. */
   debug: boolean;
+  /** Phase 1-D 비교군 — mode='lexical' 시 route 에 mode+debug:true 강제 주입 (plan rev3 §2-4). null = 미주입(graph byte-동치). */
+  mode: 'lexical' | null;
+  /** lexical ε (감도 스윕 M-5). null = 미주입(route 기본 0.03). */
+  eps: number | null;
 }
 
 /**
@@ -75,6 +79,8 @@ function parseArgs(argv: string[]): Args {
   let limit: number | null = null;
   let maxDepth: number | null = null;
   let debug = false;
+  let mode: 'lexical' | null = null;
+  let eps: number | null = null;
   let outDir = join(HERE, '..', 'docs', 'plans', 's5-6-measurements');
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
@@ -105,6 +111,23 @@ function parseArgs(argv: string[]): Args {
         );
       }
       maxDepth = n;
+    } else if (a === '--mode') {
+      const rawMode = (argv[++i] ?? '').trim();
+      if (rawMode !== 'lexical') {
+        throw new Error(
+          `--mode 는 'lexical' 만 허용 (graph = 미지정 기본, 받은 값: ${JSON.stringify(rawMode)})`,
+        );
+      }
+      mode = 'lexical';
+    } else if (a === '--eps') {
+      const rawEps = (argv[++i] ?? '').trim();
+      const n = Number.parseFloat(rawEps);
+      if (!Number.isFinite(n) || n < 0 || n > 0.1) {
+        throw new Error(
+          `--eps 는 0..0.1 실수여야 함 (route 계약, 받은 값: ${JSON.stringify(rawEps)})`,
+        );
+      }
+      eps = n;
     } else if (a === '--local') {
       throw new Error(
         '--local 은 본 CLI 가 제공하지 않는다. LOCAL_SMOKE 는 vitest 소유 — ' +
@@ -112,7 +135,7 @@ function parseArgs(argv: string[]): Args {
       );
     }
   }
-  return { goldenPath, outDir, limit, maxDepth, debug };
+  return { goldenPath, outDir, limit, maxDepth, debug, mode, eps };
 }
 
 /**
@@ -163,6 +186,8 @@ async function runRemote(
   limit: number | null,
   maxDepth: number | null,
   debug: boolean,
+  mode: 'lexical' | null,
+  eps: number | null,
 ): Promise<{ per: PerQuestionResult[]; golden: EvalGoldenItem[]; coverage: string }> {
   // 사전조건 = 순수 코어 단일 진실원 (G-6a-5 — 게이트 정책 drift 0).
   const { apiBase, goldenPath: gp } = assertRemoteMeasurementInputs(
@@ -195,6 +220,8 @@ async function runRemote(
       topK: number;
       maxDepth?: number;
       debug?: boolean;
+      mode?: 'lexical';
+      eps?: number;
     } = {
       examId,
       query: it.content,
@@ -203,6 +230,12 @@ async function runRemote(
     if (maxDepth !== null) requestBody.maxDepth = maxDepth;
     // 디버그 측정(G-WS4 ③④) — 미지정 시 키 자체를 빼서 원 측정과 byte-동치 유지.
     if (debug) requestBody.debug = true;
+    // Phase 1-D lexical 비교군 (plan rev3 §2-4) — route 계약상 debug 필수 동반.
+    if (mode === 'lexical') {
+      requestBody.mode = 'lexical';
+      requestBody.debug = true;
+      if (eps !== null) requestBody.eps = eps;
+    }
     // 간헐적 ADR-008 800ms timeout(504) 흡수 후 fail-loud — 채점 본문 불변.
     const body = await fetchGraphWithRetry(
       `${apiBase.replace(/\/$/, '')}/api/search/graph`,
@@ -219,13 +252,16 @@ async function runRemote(
     // 2026-06-11 결재 #6 부터 1 (~06-10 측정분은 2). 리뷰 S8 m-1: 라벨만으로 동일시 금지.
     coverage:
       (goldenFile.coverageNote ?? `REMOTE: ${itemsRaw.length} questions measured`) +
-      ` | maxDepth=${maxDepth ?? 'engine-default(remote-resolved; code-default 1 since 2026-06-11)'}`,
+      ` | maxDepth=${maxDepth ?? 'engine-default(remote-resolved; code-default 1 since 2026-06-11)'}` +
+      (mode === 'lexical'
+        ? ` | mode=lexical eps=${eps ?? 0.03} — pool-rerank(주입 없음): onlyRecovery 는 pool 내 rank(topK+1..10] 진입 경로(D안 개선 기전·부모 게이트 충족 경로)이며 graph 의 외부-주입 회수와 의미 상이. 실측 0 = 음성 신호(rev3 C-N1)`
+        : ''),
   };
 }
 
 async function main(): Promise<void> {
-  const { goldenPath, outDir, limit, maxDepth, debug } = parseArgs(process.argv);
-  const { per, golden, coverage } = await runRemote(goldenPath, limit, maxDepth, debug);
+  const { goldenPath, outDir, limit, maxDepth, debug, mode, eps } = parseArgs(process.argv);
+  const { per, golden, coverage } = await runRemote(goldenPath, limit, maxDepth, debug, mode, eps);
 
   const report = aggregate(per, golden, coverage);
   const generatedAt = new Date().toISOString();
@@ -233,7 +269,10 @@ async function main(): Promise<void> {
 
   mkdirSync(outDir, { recursive: true });
   const stamp = generatedAt.replace(/[:.]/g, '').replace('T', '-').slice(0, 15);
-  const base = join(outDir, `s5-6-remote-g-s5-${stamp}`);
+  const base = join(
+    outDir,
+    `s5-6-remote-${mode === 'lexical' ? `lexical-eps${(eps ?? 0.03).toString().replace('.', '_')}` : 'g-s5'}-${stamp}`,
+  );
   writeFileSync(`${base}.json`, JSON.stringify({ generatedAt, report }, null, 2));
   writeFileSync(`${base}.md`, md);
   // 성공만 조용히 — 산출물 경로 + 사실(수치 해석/판정은 진산, AI 자기채점 금지).
