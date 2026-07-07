@@ -364,6 +364,9 @@ function buildEmptyResult(
  * `truth_weight → score → name.localeCompare` 3-key 결정적 정렬을 의도적으로
  * 사용한다(폴백 결과 안정 정렬용 name tiebreak — drift 아님, 설계 차이).
  * 정상/graph 경로에 2번째 truth_weight 정책 생성 금지가 본 주석의 계약이다
+ * 승인 예외 2 (2026-07-07, 5-페르소나 P2-M1 등재): graph-search-route.lexicalSortKey/lexicalRerank
+ *   — Phase 1-D 측정 전용(debug 게이트·학습자 비노출), truthWeight 1차 키 동일 + lex-0 완전 동치가
+ *   G-1D-2b 테스트로 기계 고정(테스트 완화 = 계약 위반). 3번째 비교자 신설은 여전히 금지.
  * (graph-walk-s5-integration.plan.md §1 CO-3 / SEARCH_PIPELINE.md §2 /
  * ADR-012 §Decision Stage 3).
  */

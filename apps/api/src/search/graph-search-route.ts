@@ -23,6 +23,11 @@
  * fail-loud: graph-walk / D1 실패는 빈 결과로 삼키지 않고 전파 (CLAUDE.md
  *   빈 catch 금지). 시드 0건(graceful/stage2=0)은 정상 — 확장 미적용 명시.
  *
+ * mode='lexical' (Phase 1-D 비교군 — lexical-fusion-phase1d.plan.md rev3): graph-walk 무접촉,
+ *   vector pool(10) 을 lexical 신호로 ε-양자화 재정렬(주입 없음). 측정 전용(debug 필수)·
+ *   additive 격리 — 5-페르소나 리뷰(2026-07-07) MAJOR 반영: pool 단일 호출 파생(baseline ⊆ pool
+ *   구성적 보장) + 토큰 dedupe·상한 cap(공개 무인증 팬아웃 차단).
+ *
  * debug 플래그 (MASTER_PLAN WS-4 4c, 기본 off — 응답 계약 additive):
  *   (a) `graphExpansion.expandedNodes` 확장 전체집합 surface (랭크미달 vs
  *       미도달 진단, G-WS4 ③)
@@ -62,7 +67,7 @@ import {
   type GraphWalkD1,
   type GraphWalkNode,
 } from './graph-walk/index.js';
-import { runKeywordFallback } from './multi-path-fallback/keyword-fallback.js';
+import { runKeywordFallback, tokenizeQuery } from './multi-path-fallback/keyword-fallback.js';
 import type { AiBinding } from '../vectorize/upserter.js';
 import { getClientIp, type RateLimiter } from '../auth/rate-limit.js';
 
@@ -98,6 +103,17 @@ export const GRAPH_QUERY_PUBLIC_MAX_LENGTH = 500;
  */
 export const GRAPH_QUERY_DEBUG_MAX_LENGTH = 2000;
 
+/** Phase 1-D lexical ε 기본값 — provenance: F2 실측 Δ0.02 유래(측정셋 적합·일반화 근거 아님, plan §0-7). */
+export const LEXICAL_EPS_DEFAULT = 0.03;
+/** ε 상한 — score 유효범위(Stage1 임계 0.60~1.0)의 1/4 초과 band 는 "tiebreak" 의미 상실(정책 교체 변질 차단). */
+export const LEXICAL_EPS_MAX = 0.1;
+/**
+ * lexical 신호용 query 토큰 상한 (5-페르소나 P1/P3 교차 확증 MAJOR — 공개 무인증 라우트에서
+ * debug 2000자 query = 토큰별 병렬 D1 LIKE 풀스캔 최대 ~660개/요청 증폭 차단). 80 = 공개 계약
+ * 500자 한국어 실문장 토큰 수(≤~80) 커버 — 측정 golden(≤500자) 무손실, 초과분 meta surface.
+ */
+export const LEXICAL_MAX_QUERY_TOKENS = 80;
+
 const GraphSearchBodySchema = z
   .object({
     examId: z.string().min(1),
@@ -132,7 +148,14 @@ const GraphSearchBodySchema = z
      * eps 미독(무시 — rev3 m-N2). 기본 0.03(provenance: F2 실측 Δ0.02 유래 —
      * 측정셋 적합·일반화 근거 아님, plan §0-7).
      */
-    eps: z.number().min(0).max(0.1).default(0.03),
+    eps: z
+      .number()
+      .min(0)
+      .max(LEXICAL_EPS_MAX)
+      .default(LEXICAL_EPS_DEFAULT)
+      .refine((e) => e === 0 || e >= 0.001, {
+        message: 'eps must be 0 or >= 0.001 (subnormal → band=Infinity → 전순서 붕괴 차단, P3-m1)',
+      }),
   })
   .superRefine((data, ctx) => {
     // 공개 계약(debug 미사용) = 종전 그대로 500 상한. debug=true 만 측정
@@ -205,6 +228,9 @@ interface LexicalFusionMeta {
   /** 재정렬로 top-K 에서 밀려난 원 baseline hit 수 (M-2(iii) — regression 귀속용). */
   readonly displacedBaselineHits: number;
   readonly matchedTokens: ReadonlyArray<string>;
+  /** dedupe 후 query 토큰 수 + 상한(LEXICAL_MAX_QUERY_TOKENS) 절단 여부 — 측정 무결성 surface (P1-M2). */
+  readonly queryTokenCount: number;
+  readonly tokenCapApplied: boolean;
   /** debug 한정 — pool 밖 lexical 히트 id (랭킹 무개입, 관측 전용 — rev3 Anchor 2). */
   readonly lexicalOnlyObserved?: ReadonlyArray<string>;
 }
@@ -233,22 +259,28 @@ interface GraphSearchResponse {
  *   (0.599/0.601 상이 band) = 양자화의 문서화된 대가.
  * tie 최후 = 안정 정렬 입력순(ES2019 보장 — 원 비교자와 동일 관례).
  */
+/**
+ * 정렬키 단일 진실원 (P5-M2 — route·테스트 3중 표현 드리프트 차단): 테스트의
+ * 인접 불변식·키-시퀀스 검증은 반드시 이 함수를 소비한다(사본 재계산 금지).
+ */
+export function lexicalSortKey(
+  hit: UserSearchHit,
+  lexScores: ReadonlyMap<string, number>,
+  eps: number,
+): readonly [number, number, number, number] {
+  const band = eps > 0 ? Math.floor(hit.score / eps) : hit.score;
+  return [hit.truthWeight, band, lexScores.get(hit.id) ?? 0, hit.score];
+}
+
 export function lexicalRerank(
   pool: ReadonlyArray<UserSearchHit>,
   lexScores: ReadonlyMap<string, number>,
   eps: number,
 ): ReadonlyArray<UserSearchHit> {
-  const keyed = pool.map((hit) => ({
-    hit,
-    lex: lexScores.get(hit.id) ?? 0,
-    band: eps > 0 ? Math.floor(hit.score / eps) : hit.score,
-  }));
+  const keyed = pool.map((hit) => ({ hit, key: lexicalSortKey(hit, lexScores, eps) }));
   const sorted = [...keyed].sort(
     (a, b) =>
-      b.hit.truthWeight - a.hit.truthWeight ||
-      b.band - a.band ||
-      b.lex - a.lex ||
-      b.hit.score - a.hit.score,
+      b.key[0] - a.key[0] || b.key[1] - a.key[1] || b.key[2] - a.key[2] || b.key[3] - a.key[3],
   );
   return sorted.map((k) => k.hit);
 }
@@ -293,6 +325,7 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
       logger.info('graph_search_ok', {
         module: 'search/graph',
         examId,
+        mode, // lexical no-seed 도 이 경로 — 측정/정상 트래픽 로그 분리 (P5-m4)
         applied: meta.applied,
         reason: meta.reason,
         seedWalkCount: meta.seedWalkCount,
@@ -314,10 +347,22 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
 
       // 1. vector-only baseline (기존 함수 재사용 — 정상 경로 불변).
       //    임베딩 1회 계산 → baseline 에 재사용 (Workers AI 호출 절감).
+      //    ★lexical 모드 = pool(10) 1회 호출 후 baseline 파생 (P1-M1: 이중 Vectorize 호출의
+      //    비결정성으로 baseline ⊄ pool 이 되면 displaced 오귀속·유령 regression — 파생 =
+      //    구성적 superset 보장 + Vectorize −1. topK 필드·slice 외 전 필드는 topK-무관 동일).
       const queryEmbedding = await embedQuery(c.env.AI, query);
-      const baseline = await searchKnowledgeNodesForUser(deps, examId, query, topK, {
-        precomputedEmbedding: queryEmbedding,
-      });
+      const lexicalPool =
+        mode === 'lexical'
+          ? await searchKnowledgeNodesForUser(deps, examId, query, MAX_RESULT_TOP_K, {
+              precomputedEmbedding: queryEmbedding,
+            })
+          : null;
+      const baseline =
+        lexicalPool !== null
+          ? { ...lexicalPool, topK, results: lexicalPool.results.slice(0, topK) }
+          : await searchKnowledgeNodesForUser(deps, examId, query, topK, {
+              precomputedEmbedding: queryEmbedding,
+            });
 
       const walkDb = c.env.DB as unknown as GraphWalkD1;
       const baselineIds = new Set(baseline.results.map((h) => h.id));
@@ -355,11 +400,23 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
       // ── Phase 1-D lexical 모드 (plan rev3 §2 — graph-walk 무접촉·주입 없음) ──
       //   applied 술어 = graph 의 no_approved_seed 와 동일(위 분기 공유) → 채점
       //   코어 제외집합이 3열 구성적 동일(M-1). 재정렬 대상 = vector pool 만(M-2).
-      if (mode === 'lexical') {
-        const pool = await searchKnowledgeNodesForUser(deps, examId, query, MAX_RESULT_TOP_K, {
-          precomputedEmbedding: queryEmbedding,
-        });
-        const lex = await runKeywordFallback(c.env.DB as unknown as UserSearchD1, examId, query);
+      if (mode === 'lexical' && lexicalPool !== null) {
+        const pool = lexicalPool; // 단일 호출 파생 — baseline ⊆ pool 구성적 보장 (P1-M1)
+        // 토큰 dedupe + 상한 cap (P1-M2/P3-M1 교차 확증 MAJOR — 공개 무인증 팬아웃 차단).
+        const allTokens = [...new Set(tokenizeQuery(query))];
+        const cappedTokens = allTokens.slice(0, LEXICAL_MAX_QUERY_TOKENS);
+        const lex =
+          cappedTokens.length > 0
+            ? await runKeywordFallback(
+                c.env.DB as unknown as UserSearchD1,
+                examId,
+                cappedTokens.join(' '),
+              )
+            : {
+                source: 'keyword-fallback' as const,
+                matchedTokens: [] as string[],
+                results: [] as UserSearchHit[],
+              };
         const lexScores = new Map(lex.results.map((h) => [h.id, h.score]));
         const reranked = lexicalRerank(pool.results, lexScores, eps);
         const results = reranked.slice(0, topK);
@@ -372,6 +429,8 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
           lexMatchedCount: pool.results.filter((h) => (lexScores.get(h.id) ?? 0) > 0).length,
           displacedBaselineHits: baseline.results.filter((h) => !resultIds.has(h.id)).length,
           matchedTokens: lex.matchedTokens,
+          queryTokenCount: allTokens.length,
+          tokenCapApplied: allTokens.length > LEXICAL_MAX_QUERY_TOKENS,
           ...(debug
             ? {
                 lexicalOnlyObserved: lex.results.filter((h) => !poolIds.has(h.id)).map((h) => h.id),
@@ -399,6 +458,8 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
           poolSize: lexFusion.poolSize,
           lexMatchedCount: lexFusion.lexMatchedCount,
           displacedBaselineHits: lexFusion.displacedBaselineHits,
+          queryTokenCount: lexFusion.queryTokenCount,
+          tokenCapApplied: lexFusion.tokenCapApplied,
           debug,
           elapsedMs: Date.now() - startedAt,
         });
@@ -515,6 +576,7 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
 
       if (err instanceof GraphWalkError) {
         logger.error('graph_search_walk_failed', undefined, {
+          mode, // lexical 분기 실패 오분류 방지 (P1-m2)
           module: 'search/graph',
           phase: err.phase,
           examId,
@@ -532,6 +594,7 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
       }
       if (err instanceof UserSearchError) {
         logger.error('graph_search_baseline_failed', undefined, {
+          mode, // lexical 분기 실패 오분류 방지 (P1-m2)
           module: 'search/graph',
           phase: err.phase,
           examId,
@@ -554,6 +617,7 @@ export function createGraphSearchRoutes(): Hono<{ Bindings: GraphSearchRouteBind
       // rethrow 전 구조화 로그 의무 (S5-5 devops M-1 — on-call 사각 + S5-6
       // 측정 무결성: 무로그 bare 500 = 원인 분기 불가). cause 만 surface.
       logger.error('graph_search_unhandled', undefined, {
+        mode, // lexical 분기 실패 오분류 방지 (P1-m2)
         module: 'search/graph',
         examId,
         causeName: err instanceof Error ? err.name : undefined,

@@ -120,11 +120,17 @@ function parseArgs(argv: string[]): Args {
       }
       mode = 'lexical';
     } else if (a === '--eps') {
+      // silent 흡수 금지 관례(--limit/--maxDepth 동형) — parseFloat 접두 흡수('0.03abc'→0.03) 차단 (P1-m1)
       const rawEps = (argv[++i] ?? '').trim();
-      const n = Number.parseFloat(rawEps);
-      if (!Number.isFinite(n) || n < 0 || n > 0.1) {
+      if (!/^(0|0?\.[0-9]+)$/.test(rawEps)) {
         throw new Error(
-          `--eps 는 0..0.1 실수여야 함 (route 계약, 받은 값: ${JSON.stringify(rawEps)})`,
+          `--eps 는 0..0.1 십진 실수여야 함 (엄격 파싱, 받은 값: ${JSON.stringify(rawEps)})`,
+        );
+      }
+      const n = Number.parseFloat(rawEps);
+      if (n < 0 || n > 0.1) {
+        throw new Error(
+          `--eps 는 0..0.1 이어야 함 (route 계약, 받은 값: ${JSON.stringify(rawEps)})`,
         );
       }
       eps = n;
@@ -134,6 +140,11 @@ function parseArgs(argv: string[]): Args {
           'pnpm --filter @thepick/api test src/eval (G-6a-1/3 결정적 게이트).',
       );
     }
+  }
+  if (mode === 'lexical' && maxDepth !== null) {
+    throw new Error(
+      '--mode lexical 은 --maxDepth 와 동시 지정 불가 — lexical 분기는 walk 미실행(provenance 오각인 차단, P1-m4)',
+    );
   }
   return { goldenPath, outDir, limit, maxDepth, debug, mode, eps };
 }
@@ -150,7 +161,15 @@ function parseArgs(argv: string[]): Args {
 const REMOTE_MAX_ATTEMPTS = 4;
 async function fetchGraphWithRetry(
   url: string,
-  requestBody: { examId: string; query: string; topK: number; maxDepth?: number; debug?: boolean },
+  requestBody: {
+    examId: string;
+    query: string;
+    topK: number;
+    maxDepth?: number;
+    debug?: boolean;
+    mode?: 'lexical';
+    eps?: number;
+  },
   questionId: string,
 ): Promise<GraphSearchResponseShape> {
   let lastStatus = 0;
@@ -188,7 +207,12 @@ async function runRemote(
   debug: boolean,
   mode: 'lexical' | null,
   eps: number | null,
-): Promise<{ per: PerQuestionResult[]; golden: EvalGoldenItem[]; coverage: string }> {
+): Promise<{
+  per: PerQuestionResult[];
+  golden: EvalGoldenItem[];
+  coverage: string;
+  effectiveEps: number | null;
+}> {
   // 사전조건 = 순수 코어 단일 진실원 (G-6a-5 — 게이트 정책 drift 0).
   const { apiBase, goldenPath: gp } = assertRemoteMeasurementInputs(
     process.env.THEPICK_API_BASE,
@@ -200,6 +224,9 @@ async function runRemote(
 
   const per: PerQuestionResult[] = [];
   const golden: EvalGoldenItem[] = [];
+  // eps provenance (P2-M3): 라벨은 가정값(0.03 하드코드) 아닌 **응답 실효값** — route 기본 변경 시
+  // 무음 오라벨 차단. 문항 간 불일치 = 측정 무효 fail-loud.
+  let effectiveEps: number | null = null;
   for (const it of itemsRaw) {
     const parsed = parseRelatedNodes(it.relatedNodesRaw);
     // remote: expected 의 approved 교집합은 golden 추출 SQL 이 이미 적용
@@ -242,6 +269,20 @@ async function runRemote(
       requestBody,
       it.questionId,
     );
+    if (mode === 'lexical') {
+      const respEps = (body as { lexicalFusion?: { eps?: number } }).lexicalFusion?.eps;
+      if (typeof respEps !== 'number') {
+        throw new Error(
+          `[${it.questionId}] lexical 응답에 lexicalFusion.eps 부재 — provenance 확정 불가 (fail-loud)`,
+        );
+      }
+      if (effectiveEps === null) effectiveEps = respEps;
+      else if (effectiveEps !== respEps) {
+        throw new Error(
+          `[${it.questionId}] eps 문항 간 불일치 ${effectiveEps} != ${respEps} — 측정 무효`,
+        );
+      }
+    }
     per.push(scoreQuestion(item, body));
   }
   return {
@@ -252,16 +293,24 @@ async function runRemote(
     // 2026-06-11 결재 #6 부터 1 (~06-10 측정분은 2). 리뷰 S8 m-1: 라벨만으로 동일시 금지.
     coverage:
       (goldenFile.coverageNote ?? `REMOTE: ${itemsRaw.length} questions measured`) +
-      ` | maxDepth=${maxDepth ?? 'engine-default(remote-resolved; code-default 1 since 2026-06-11)'}` +
       (mode === 'lexical'
-        ? ` | mode=lexical eps=${eps ?? 0.03} — pool-rerank(주입 없음): onlyRecovery 는 pool 내 rank(topK+1..10] 진입 경로(D안 개선 기전·부모 게이트 충족 경로)이며 graph 의 외부-주입 회수와 의미 상이. 실측 0 = 음성 신호(rev3 C-N1)`
-        : ''),
+        ? // walk 미실행 — maxDepth 절 생략(P1-m4 provenance 노이즈 제거) + eps = 응답 실효값(P2-M3)
+          ` | mode=lexical eps=${effectiveEps ?? '(no measurable items)'} — pool-rerank(주입 없음): onlyRecovery 는 pool 내 rank(topK+1..10] 진입 경로(D안 개선 기전·부모 게이트 충족 경로)이며 graph 의 외부-주입 회수와 의미 상이. 실측 0 = 음성 신호(rev3 C-N1)`
+        : ` | maxDepth=${maxDepth ?? 'engine-default(remote-resolved; code-default 1 since 2026-06-11)'}`),
+    effectiveEps,
   };
 }
 
 async function main(): Promise<void> {
   const { goldenPath, outDir, limit, maxDepth, debug, mode, eps } = parseArgs(process.argv);
-  const { per, golden, coverage } = await runRemote(goldenPath, limit, maxDepth, debug, mode, eps);
+  const { per, golden, coverage, effectiveEps } = await runRemote(
+    goldenPath,
+    limit,
+    maxDepth,
+    debug,
+    mode,
+    eps,
+  );
 
   const report = aggregate(per, golden, coverage);
   const generatedAt = new Date().toISOString();
@@ -271,7 +320,7 @@ async function main(): Promise<void> {
   const stamp = generatedAt.replace(/[:.]/g, '').replace('T', '-').slice(0, 15);
   const base = join(
     outDir,
-    `s5-6-remote-${mode === 'lexical' ? `lexical-eps${(eps ?? 0.03).toString().replace('.', '_')}` : 'g-s5'}-${stamp}`,
+    `s5-6-remote-${mode === 'lexical' ? `lexical-eps${(effectiveEps ?? eps ?? 0).toString().replace('.', '_')}` : 'g-s5'}-${stamp}`,
   );
   writeFileSync(`${base}.json`, JSON.stringify({ generatedAt, report }, null, 2));
   writeFileSync(`${base}.md`, md);

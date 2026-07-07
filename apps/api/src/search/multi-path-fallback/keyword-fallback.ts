@@ -19,6 +19,10 @@
  *   - docs/plans/phase2a-multi-path-fallback.plan.md §3.1
  *   - docs/architecture/SEARCH_PIPELINE.md §5
  *   - docs/adr/ADR-015-multi-path-fallback-pipeline.md
+ *
+ * ★제2 소비자 (2026-07-07, P2-M2 등재): graph-search-route mode='lexical'(Phase 1-D 측정)이
+ *   본 매처를 신호원으로 read-only 소비 — 토크나이저/랭킹 변경 = 측정 시계열 비교가능성에 영향
+ *   (옵션 B reranking 착지 시 측정 리포트에 매처 세대 각인 의무).
  */
 
 import { TRUTH_WEIGHTS, type ExamId, type NodeType } from '@thepick/shared';

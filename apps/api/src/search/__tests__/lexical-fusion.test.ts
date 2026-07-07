@@ -20,6 +20,8 @@ import { EXAM_IDS } from '@thepick/shared';
 import {
   createGraphSearchRoutes,
   lexicalRerank,
+  lexicalSortKey,
+  LEXICAL_MAX_QUERY_TOKENS,
   type GraphSearchRouteBindings,
 } from '../graph-search-route.js';
 import { compareByTruthWeightThenScore, type UserSearchHit } from '../user-search.js';
@@ -72,9 +74,9 @@ function lcg(seed: number): () => number {
   };
 }
 
+/** 정렬키 = route 의 lexicalSortKey **단일 진실원 소비** (P5-M2 — 테스트 내 산식 사본 = 드리프트 서식지 제거). */
 function sortKeyOf(h: UserSearchHit, lex: ReadonlyMap<string, number>, eps: number): string {
-  const band = eps > 0 ? Math.floor(h.score / eps) : h.score;
-  return `${h.truthWeight}|${band}|${lex.get(h.id) ?? 0}|${h.score}`;
+  return lexicalSortKey(h, lex, eps).join('|');
 }
 
 describe('lexicalRerank — ε-양자화 밴드키 전순서 (G-1D-2b·3′)', () => {
@@ -159,10 +161,8 @@ describe('lexicalRerank — ε-양자화 밴드키 전순서 (G-1D-2b·3′)', (
         const out = lexicalRerank(arr, lex, eps);
         // 인접 불변식: sortKey(out[i]) ≥ sortKey(out[i+1]) (사전식 DESC)
         for (let i = 0; i + 1 < out.length; i++) {
-          const a = out[i]!;
-          const b = out[i + 1]!;
-          const ka = [a.truthWeight, Math.floor(a.score / eps), lex.get(a.id) ?? 0, a.score];
-          const kb = [b.truthWeight, Math.floor(b.score / eps), lex.get(b.id) ?? 0, b.score];
+          const ka = lexicalSortKey(out[i]!, lex, eps); // 단일 진실원 (P5-M2 — eps>0 가드 사본 불일치 해소)
+          const kb = lexicalSortKey(out[i + 1]!, lex, eps);
           const cmp = ka.map((v, k) => v - kb[k]!).find((d) => d !== 0) ?? 0;
           expect(cmp).toBeGreaterThanOrEqual(0);
         }
@@ -296,6 +296,47 @@ describe('/api/search/graph mode=lexical — route 계약 (G-1D-1·2 + M-1)', ()
     // 주입 없음(M-2): results ⊆ pool(=vector 결과) — lexical-only id 가 결과에 등장 금지
     const poolIds = new Set(['N-1', 'N-2']);
     for (const r of body.results) expect(poolIds.has(r.id)).toBe(true);
+  });
+
+  it('토큰 dedupe + 상한 cap — 팬아웃 차단 (P1-M2/P3-M1) + meta surface', async () => {
+    await insertApproved('N-1', 'LAW', 10);
+    env = {
+      DB: backend.db,
+      VECTORIZE: makeMockVectorize([{ id: 'N-1', score: 0.9 }]),
+      AI: makeMockAi(),
+      ENVIRONMENT: 'test',
+    };
+    // 상한 초과 상이 토큰 (81개 × 고유 2자+) — cap 발동 + 요청 성공(거부 아닌 절단 surface)
+    const manyTokens = Array.from(
+      { length: LEXICAL_MAX_QUERY_TOKENS + 1 },
+      (_, i) => `토큰${i}`,
+    ).join(' ');
+    const res = await post({
+      examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+      query: manyTokens,
+      mode: 'lexical',
+      debug: true,
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      lexicalFusion: { queryTokenCount: number; tokenCapApplied: boolean };
+    };
+    expect(body.lexicalFusion.queryTokenCount).toBe(LEXICAL_MAX_QUERY_TOKENS + 1);
+    expect(body.lexicalFusion.tokenCapApplied).toBe(true);
+    // 중복 토큰은 dedupe — cap 미발동
+    const dupTokens = Array.from({ length: 200 }, () => '유과타박률').join(' ');
+    const res2 = await post({
+      examId: EXAM_IDS.SON_HAE_PYEONG_GA_SA,
+      query: dupTokens,
+      mode: 'lexical',
+      debug: true,
+    });
+    expect(res2.status).toBe(200);
+    const body2 = (await res2.json()) as {
+      lexicalFusion: { queryTokenCount: number; tokenCapApplied: boolean };
+    };
+    expect(body2.lexicalFusion.queryTokenCount).toBe(1);
+    expect(body2.lexicalFusion.tokenCapApplied).toBe(false);
   });
 
   it('vector 0건 → graph 와 동일한 no_approved_seed 술어 (제외집합 구성적 동일 — M-1)', async () => {

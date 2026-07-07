@@ -139,6 +139,14 @@ graph 3종 수술 대비 저비용 [추정, 구현 전]. 천장: LIKE 한계(Anc
 B(bge-m3 reranking) 보강 의무 조항 동일 적용(s5-8 plan:128-130). Vectorize +1 query/req 는 측정
 경로(rate-limit 60/min) 한정.
 
+## §6b 승격 선결 원장 (5-페르소나 리뷰 2026-07-07 — D안 학습자 경로 승격 결재 카드 등재 의무)
+
+- **P5-M1**: route 핸들러 3분기 모놀리스 — 승격 전 `buildEmptyExpansionMeta`/`handleLexical`/`handleGraph` 함수 추출.
+- **P5-M3**: lexical 모드 `graphExpansion.applied=true` 의미 과적(walk 미실행인데 true — 채점 계약용 의도) — 승격 전 응답 판별자(최상위 mode 필드 등) 재설계.
+- **P1-m3≡P3-m2**: keyword-fallback 부분 토큰 실패의 무음 열화 — failedTokenCount surface 는 학습자 공유 모듈 접촉이라 이연(G-1D-1 무접촉 게이트 보존). 승격 시 additive 필드로.
+- **P4-m1/m2**: G-1D-4 제외집합 assert·G-1D-5 NAMED 판별의 "기구"(스크립트) 부재 — 표본 확대(0b N≥30) 측정 전 스크립트화.
+- **P4-M1**: G-1D-3 동일-config 2연속 재실행 = production 적용 시 닫기(현재 간접 증거: ε 0.01/0.03 독립 2실행 recall 16자리 동일).
+
 ## §7 결재란
 
 ```
