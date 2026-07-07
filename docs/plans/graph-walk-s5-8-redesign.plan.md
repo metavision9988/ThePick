@@ -210,7 +210,7 @@ Phase 3(BATCH 엣지, 병렬·독립) ──┘            │               no�
 [x] Phase 0a (depth1 기본화)        — ★결재 #6 (진산 2026-06-11 "추천한 것으로") + 집행 완료: 엔진 DEFAULT_MAX_DEPTH 2→1 (plan 문언 "route override" 와 동등·더 보수 — 직접 호출자까지 보호, 리뷰 m-3). 4-Pass C0/M2 해소. G-R0a **완료** (2026-06-11): Worker 재배포(8d2e6ea3) 후 REMOTE 재측정 — hit-rate 83.3/83.3 Δ0.0%·regression 0 (`s5-6-remote-g-s5-2026-06-11-0549.md`). **Phase 0a 완료.**
 [x] Phase 0b (golden N≥20~30 확대)  — ★결재 (진산 2026-07-02 "권고대로") + "진행". **draft 생성 완료 (동일 일자)**: 신규 22문항 라벨(+pilot 12 = N=34) — 선정 순환차단·라벨 증거 인용·독립 적대검증(APPROVE 21/FIX 1 반영). `s5-6-measurements/golden-expansion-draft-20260702.{json,md}` — **진산 검수 대기** → 승인분 병합 동결 → queryBody 파생 → 재측정. 4c 잣대 강화 3종 집행 완료(빌더 일반화+과제거 가드·expandedNodes·debug 측정 배선).
 [ ] Phase 1 (보수 algo: L1·L3·L4)   — Phase 0b 재현 후. PITR 권고 채택/조정: ____________
-[ ] Phase 1-D (D안: graph 동결+lexical fusion) — 비교군 **등재는 결재 #7 ☑(2026-06-11) 집행 완료(2026-06-12)**. 구현 착수 = 본 체크 + 상세 plan 별건(L3 검색 경로). PITR D-A/D-B/D-C 권고 채택/조정: ____________
+[x] Phase 1-D (D안: graph 동결+lexical fusion) — **구현 착수 GO (진산 결재 2026-07-07 "b로 진행" — 3차 실측 사실표 `g-s5-v2-facts-20260707.md` 근거: graphOnlyRecovery 0 3연속·depth1 순손실 전환)**. PITR 권고 채택 = **D-B**(기존 keyword-fallback 매처를 re-rank tiebreak 로 재사용 — 신규 표면 최소). 상세 plan = `lexical-fusion-phase1d.plan.md`(별건 L3 검색 경로, 게이트: 동일 golden v2 로 D안 vs graph 비교 측정 → #8 GO/NO-GO 재상신). graph 재설계(Phase 1)는 착수 안 함 — D안 결과 후 재판단.
 [ ] Phase 2 (ADR 랭킹 분리)         — Phase 1 잔존 시. ADR 선작성 후 별도 결재.
 [ ] Phase 3 (BATCH 엣지 보강)       — 콘텐츠 트랙. 별도 결재(loader·검수·환각 차단).
 [ ] 보류(graph 현 상태 동결)        — 확대 측정 전까지 depth1(0a)만 적용하고 투자 보류. ※ Phase 1-D 와 구별: 본 체크 = lexical 투자(D안)도 보류 → #8 재상신 전제(D안 vs graph 비교 측정) 정지.
