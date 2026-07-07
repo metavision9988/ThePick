@@ -179,6 +179,24 @@ def main() -> int:
     except SolverGateError as e:
         print(f"  ❌ 정상 템플릿이 V1-T 에 걸림: {e}")
         results.append(False)
+    # (d~f) 폐쇄검증(2026-07-07) MINOR 회귀 가드 — 게이트 계약: 거부는 SolverGateError로만(비게이트 예외 사망 금지)
+    badline = json.loads(json.dumps(LOWPASS))
+    badline["netlist_template"] = "V1 1 0 step {V}\nBADLINE\nR1 1 2 {R}\nL1 2 3 {L}\nC1 3 0 {C}"
+    results.append(expect_template_reject("필드 부족 라인(BADLINE)", badline, "필드 부족"))
+    dual = json.loads(json.dumps(LOWPASS))
+    dual["netlist_template"] = "V1 1 0 step {V}\nV2 2 1 step {V}\nR1 2 3 {R}\nL1 3 4 {L}\nC1 4 0 {C}"
+    dual["output_across"] = {"element": "C1", "pos": 4, "neg": 0, "expected_dc_gain": 1, "expected_hf_gain": 0}
+    results.append(expect_template_reject("이중 전압원(렌더러 무음 누락 경로)", dual, "단일 소스"))
+    named = json.loads(json.dumps(LOWPASS))  # lcapy 허용 이름 노드 — int() 사망 아닌 정상 검증 통과해야
+    named["netlist_template"] = "V1 vin 0 step {V}\nR1 vin mid {R}\nL1 mid vout {L}\nC1 vout 0 {C}"
+    named["output_across"] = {"element": "C1", "pos": "vout", "neg": 0, "expected_dc_gain": 1, "expected_hf_gain": 0}
+    try:
+        validate_template_structure(named)
+        print("  ✅ 이름 노드(vin/mid/vout) 직렬 루프 = V1-T 통과 (ValueError 사망 아님 — 문자열 키 처리)")
+        results.append(True)
+    except Exception as e:  # noqa: BLE001 — 계약 위반(비게이트 예외 포함) 전부 FAIL로 표면화
+        print(f"  ❌ 이름 노드 넷리스트에서 {type(e).__name__}: {e}")
+        results.append(False)
 
     print("\n== 이득 기대값 미선언 = LOUD (H(∞) 무음 OFF 차단, 2차 MINOR-5) ==")
     no_hf = _gate_input(LOWPASS, build_netlist(LOWPASS, VALS), VALS)  # 정상 회로 — 이득 선언만 제거
