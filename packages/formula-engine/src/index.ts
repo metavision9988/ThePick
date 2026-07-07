@@ -30,3 +30,6 @@ export { getFormula, getAllFormulas, BATCH1_FORMULAS } from './formulas';
 
 // 상수 제공자 (PoC용)
 export { InMemoryConstantsProvider } from './constants-resolver';
+
+// G-FE-3 C축 — 각도 규약 저작 lint (formula-engine-expansion.plan.md §7 Q3 A+C)
+export { lintAngleConvention } from './angle-lint';

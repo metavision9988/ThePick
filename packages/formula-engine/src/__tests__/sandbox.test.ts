@@ -67,7 +67,10 @@ describe('sandbox', () => {
     });
 
     it('허용되지 않은 임의 함수 차단', () => {
-      const r = safeParse('sin(x)');
+      // 픽스처 주: 종전 'sin(x)' 는 Tier 2 확장(formula-engine-expansion.plan.md §3-2,
+      // 위임 결재 2026-07-07)으로 화이트리스트 편입 — 여전히 미허용인 임의 함수로 교체.
+      // (인접 미허용 함수 sinh/expm1 등은 expansion-golden.test.ts 경계 테스트가 전담.)
+      const r = safeParse('randomfunc(x)');
       expect(r.ok).toBe(false);
     });
 

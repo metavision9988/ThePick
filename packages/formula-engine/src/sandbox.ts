@@ -6,14 +6,19 @@
  * DEFCON L3: 이 파일 변경 시 반드시 보안 리뷰 필수.
  *
  * 보안 + 번들 최적화 전략:
- *   1. `*Dependencies` 선택 임포트로 필요한 17개 함수만 포함 (mathjs custom_bundling).
- *      이전 `create(all)` 패턴은 전체 번들(160KB gz) 포함 → 선택 임포트로 절감.
+ *   1. `*Dependencies` 선택 임포트로 필요한 24개 함수 + 내장 상수 2종(pi·e)만 포함
+ *      (mathjs custom_bundling). 이전 `create(all)` 패턴은 전체 번들(160KB gz) 포함 → 선택 임포트로 절감.
  *   2. parse 참조를 내부에 보관 (internalParse).
  *   3. 위험 함수(evaluate/compile/simplify 등)를 throwing stub으로 덮어씀.
  *   4. safeParse()에서 AST 노드를 화이트리스트로 검증.
  *   5. 외부에는 safeParse + safeEvaluate만 노출.
  *
  * ALLOWED_FUNCTIONS 와 *Dependencies 리스트는 반드시 1:1 동기 유지.
+ * (예외 2종 — formula-engine-expansion.plan.md §3-2:
+ *   - `deg2rad` 는 mathjs 내장이 아닌 커스텀 typed 함수 — Dependencies 없음,
+ *     stub self-override *이전에* math.import 로 등록 (§2-(h) 초기화 순서 제약).
+ *   - `pi`/`e` 는 함수가 아닌 내장 상수 — piDependencies/eDependencies 로 공급,
+ *     BUILTIN_CONSTANT_SYMBOLS 로 변수 추출/scope 주입에서 제외·차단.)
  */
 
 import {
@@ -36,6 +41,17 @@ import {
   logDependencies,
   unaryMinusDependencies,
   unaryPlusDependencies,
+  // Tier 2 확장 (formula-engine-expansion.plan.md §3-2 — 2호 전기기사 삼각·지수)
+  sinDependencies,
+  cosDependencies,
+  tanDependencies,
+  asinDependencies,
+  acosDependencies,
+  atanDependencies,
+  expDependencies,
+  // Tier 1 확장 (plan §3-1 Q1-(a) — π·e 엔진 내장, constants DB 미적재)
+  piDependencies,
+  eDependencies,
   type MathNode,
 } from 'mathjs';
 import { CalculationTimeoutError } from './errors';
@@ -59,7 +75,24 @@ const ALLOWED_FUNCTIONS = new Set([
   'log',
   'unaryMinus',
   'unaryPlus',
+  // Tier 2 확장 — 삼각 6 + exp (plan §3-2. mathjs trig 는 라디안 전용 — 각도 규약 Q3-A안)
+  'sin',
+  'cos',
+  'tan',
+  'asin',
+  'acos',
+  'atan',
+  'exp',
+  // 각도 규약 Q3-A안 — 커스텀 typed 함수 (아래 stub 이전 등록 블록 참조)
+  'deg2rad',
 ]);
+
+// --- 내장 상수 심볼 (Tier 1 — plan §3-1 Q1-(a)) ---
+// pi/e 는 mathjs 인스턴스 내장값이 정본 (constants DB 미적재 — 이중 진실원 방지).
+// 1) safeParse 변수 추출에서 제외 — 미제외 시 모든 π 산식이 "pi 입력 누락" 오류.
+// 2) safeEvaluate scope 키로 차단 — scope 주입이 내장 상수를 *무음 shadow* 하는 것 실측
+//    확인 (scope {pi:3} → 'pi' 평가 = 3). 값 정확성은 G-FE-7 게이트 (Math.PI/Math.E 동치).
+const BUILTIN_CONSTANT_SYMBOLS = new Set(['pi', 'e']);
 
 // --- 안전 심볼 패턴 (화이트리스트) ---
 // 영문 소문자 + 숫자 + 언더스코어만 허용.
@@ -108,10 +141,34 @@ const math = create({
   logDependencies,
   unaryMinusDependencies,
   unaryPlusDependencies,
+  // Tier 2 — 삼각 6 + exp
+  sinDependencies,
+  cosDependencies,
+  tanDependencies,
+  asinDependencies,
+  acosDependencies,
+  atanDependencies,
+  expDependencies,
+  // Tier 1 — 내장 상수 pi·e
+  piDependencies,
+  eDependencies,
 });
 
 // parse 참조를 교체 전에 확보
 const internalParse = math.parse;
+
+// --- deg2rad 커스텀 함수 등록 (각도 규약 Q3-A안 — plan §4) ---
+// ★ 초기화 순서 제약 (plan §2-(h)): 아래 throwing stub 블록이 math.import 자체를
+//   self-override 하므로, 커스텀 함수 등록은 반드시 stub 설치 *이전* 이어야 한다.
+//   (stub 설치 후 math.import 호출 = 'Disabled: import' throw — 테스트로 확증.)
+// mathjs trig 는 라디안 전용 — 도(°) 단위 문항은 `sin(deg2rad(theta_deg))` 형태로
+// 단위 변환이 식 안에서 자기서술된다. typed 함수라 비숫자 인자는 fail-loud throw.
+// Math.PI 사용: mathjs 내장 pi 와 완전 동치 (G-FE-7 게이트가 자릿수 동치 검증).
+math.import({
+  deg2rad: math.typed('deg2rad', {
+    number: (deg: number): number => (deg * Math.PI) / 180,
+  }),
+});
 
 // 위험 함수를 throwing stub으로 교체
 math.import(
@@ -334,12 +391,14 @@ export function safeParse(expression: string): ParseResult | ParseError {
   }
 
   // AST에서 변수명(SymbolNode) 추출
+  // BUILTIN_CONSTANT_SYMBOLS(pi/e) 는 엔진 내장 상수 — 입력 변수로 추출하지 않는다
+  // (미제외 시 registry 교차검증/variable-mapper 가 "pi 입력 누락"으로 전 π 산식 거부).
   const variables: string[] = [];
   const seen = new Set<string>();
   node.filter((n: MathNode) => {
     if (n.type === 'SymbolNode') {
       const name = (n as MathNode & { name: string }).name;
-      if (!seen.has(name) && !ALLOWED_FUNCTIONS.has(name)) {
+      if (!seen.has(name) && !ALLOWED_FUNCTIONS.has(name) && !BUILTIN_CONSTANT_SYMBOLS.has(name)) {
         seen.add(name);
         variables.push(name);
       }
@@ -380,11 +439,17 @@ export function safeEvaluate(
   scope: Record<string, number>,
 ): number {
   // 선언된 변수만 포함하는 깨끗한 scope 생성
-  // 보안: scope 키를 BLOCKED_SYMBOL_NAMES + SAFE_SYMBOL_PATTERN으로 검증
+  // 보안: scope 키를 BLOCKED_SYMBOL_NAMES + SAFE_SYMBOL_PATTERN으로 검증.
+  // 추가로 내장 상수(pi/e)·허용 함수명은 scope 주입 시 mathjs 네임스페이스를
+  // *무음 shadow* 하므로 (실측: {pi:3} → 'pi' 평가 = 3 — 65↔60 동급 무음 오답 클래스)
+  // fail-loud 차단한다. 코드 68식 변수명과 충돌 0건 실측 (G-FE-6) — 회귀 없음.
   const safeScope: Record<string, number> = {};
   for (const [key, value] of Object.entries(scope)) {
     if (BLOCKED_SYMBOL_NAMES.has(key) || !SAFE_SYMBOL_PATTERN.test(key)) {
       throw new Error(`Unsafe scope key: ${key}`);
+    }
+    if (BUILTIN_CONSTANT_SYMBOLS.has(key) || ALLOWED_FUNCTIONS.has(key)) {
+      throw new Error(`Unsafe scope key (shadows builtin constant/function): ${key}`);
     }
     safeScope[key] = value;
   }
