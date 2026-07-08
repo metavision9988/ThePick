@@ -453,6 +453,20 @@ W0~W6·가드레일 15·Fable 검토 게이트) + git worktree 이중 워크스�
 > `docs/plans/s5-6-measurements/g-s5-v2-facts-20260707.md` — **GO/NO-GO(S5-8 §9) = 진산 R5**(위임 범위 밖).
 > (4) OC 라이브: IP 바인딩 3중 프로브 확증 → 진산 IP 등록(218.151.87.244) — 재시험 대기(전파 지연). 잔여 = 익일 재시도.
 
+> ★ **2026-07-08 갱신 (Fable 5, 셧다운 복귀) — 백엔드 중간점검 정본 완성 + 검증 + 산출물 사고 처분 (미커밋)**:
+> 07-07 진산 요청("백엔드 얼마나 됐고 언제까지" 중간점검 문서) 처리 중 셧다운 → 복귀 실측: 문서 본체는 완성돼
+> 있었고 **의무 독립 검증만 미실행**. (1) **정본 = `docs/backend/BACKEND_MIDPOINT_REVIEW_20260707.md`**
+> (요청 11항목 전수: 구조 시각화 Mermaid 7블록·스택·파이프라인 2종·28모듈 완성도 매트릭스·학습콘텐츠·진도관리·
+> 사업관리자 축·프론트 연동·★1차 단독 서비스 체크). (2) **독립 3렌즈 검증 집행**(코드 주장 20건 실코드 대조 /
+> D1 라이브 SELECT 9회 수치 / 커버리지·정합성·Mermaid 실파싱): **CRITICAL 0·환각 0**(라인수 단위 정확 다수) /
+> MAJOR 4·MINOR ~10 → **전건 반영**(★L4 평균 50→47 산술 정정, 28모듈 평균 ≈38→≈37 / 다이어그램↔매트릭스 정렬 /
+> TL;DR 이중 잣대 각주 / RULE#5 표현 수위 2건). 리뷰 정본 `review-20260708-101431-midpoint-backend-doc.md`.
+> (3) ★**산출물 영속 사고 발견·처분**: `docs/audit/{backend-infra-audit,uiux-methodology-review}-20260707.md` 가
+> 보고서 아닌 **크래시 절단 raw JSONL 트랜스크립트**였음(보고문 복구 불가 실측) → `*.transcript.jsonl` 개명 보존 +
+> 원 경로 사고기록·digest 포인터 스텁 재영속. (4) 부수 관측(별건): api `drizzle-kit` devDep ↔ NC-1 문면 긴장.
+> ⚠️ 07-08 산출물 미커밋(진산 커밋 지시 대기). 1차 단독 서비스 판정 자료 = 정본 §10(갭 3 = 보기 추출 BATCH[Claude]·
+> 해설집 조달[진산]·P1/P2 검수 승급[진산]) — 판정은 진산.
+
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),
   Worker 배포, 인증/login_history smoke PASS, ADR-034/035/036 retrofit.
