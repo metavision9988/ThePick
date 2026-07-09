@@ -27,9 +27,11 @@ import { createWebhookRoutes } from './webhooks/payment.js';
  *
  * - dev: localhost:4321 (Astro) + 127.0.0.1:4321
  * - staging: thepick-staging.pages.dev (Cloudflare Pages 기본)
- * - production: thepick.app (도메인 확정 시 업데이트)
+ * - production: thepick-study.pages.dev (홍보 서비스 실배포 Pages — 커스텀 도메인 확보 시 config 주입 교체)
  *
  * 웹훅 경로는 CORS 대상 아님 (PG 서버 → 서버, 브라우저 무관).
+ *
+ * NOTE(2026-07-09, promo-1st P0): 미보유 도메인 `thepick.app` 제거 (타인 보유, G-5).
  */
 const CORS_ALLOWED_ORIGINS: readonly string[] = [
   'http://localhost:4321',
@@ -38,7 +40,6 @@ const CORS_ALLOWED_ORIGINS: readonly string[] = [
   'http://localhost:4322',
   'http://127.0.0.1:4322',
   'https://thepick-staging.pages.dev',
-  'https://thepick.app',
   // Step 19 — admin-web Cloudflare Pages 도메인 (production 배포 후 갱신)
   'https://thepick-admin.pages.dev',
   // Phase 2 Eval MVP Step 5-A — apps/web production Pages (thepick-web 글로벌 점유 충돌 회피, Session 065)
