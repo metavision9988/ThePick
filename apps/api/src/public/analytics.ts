@@ -23,6 +23,8 @@ export interface PublicEventFields {
   readonly subject?: string | null;
   readonly round?: number | null;
   readonly inputType?: string | null;
+  /** 시험 종목 차원 — 호출 측 FIXED_EXAM_TYPE 주입(리터럴 중복 드리프트 방지, m-9). */
+  readonly examType?: string | null;
   /** grade 이벤트만 — 정오. serve/card 는 미전달. */
   readonly isCorrect?: boolean;
 }
@@ -47,8 +49,8 @@ export function recordPublicEvent(
         fields.subject ?? '',
         fields.round === null || fields.round === undefined ? '' : String(fields.round),
         fields.inputType ?? '',
-        // exam_type 은 공개 표면 전량 '1st' 서버 고정 — 차원 고정값.
-        '1st',
+        // exam_type 차원 — 호출 측 주입(공개 표면 = FIXED_EXAM_TYPE '1st').
+        fields.examType ?? '',
       ],
       doubles: [fields.isCorrect === undefined ? -1 : fields.isCorrect ? 1 : 0],
     });

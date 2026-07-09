@@ -22,6 +22,7 @@ import { z } from 'zod';
 import { createLogger, ErrorCode, type Logger, type LoggerEnvironment } from '@thepick/shared';
 import {
   gradeFillBlank,
+  parseMcAnswerLabels,
   parseMcChoices,
   resolveInputType,
   type InputType,
@@ -146,6 +147,30 @@ function cryptoShuffle<T>(items: readonly T[]): T[] {
   return arr;
 }
 
+/** SERVE 후보당 최대 조회 수 — RANDOM 단일 픽이 결함행에 적중해도 유효행 잔존 시 서빙(m-2/m-4). */
+const SERVE_CANDIDATE_LIMIT = 10;
+
+/**
+ * 문항이 **선언된 input_type 대로 정확히 채점 가능한가** = 서빙 자격(4-Pass M-2).
+ *   - MC: parseMcChoices 계약 통과(보기 배열 + 위치라벨 정합).
+ *   - fill_blank: answer 가 위치라벨(MC-in-disguise)이 아닌 진성 텍스트 정답.
+ *     ★ 현 1차 525 = distractors NULL·answer 위치라벨 = BE-1(보기 추출) 전 = 서빙 부적격
+ *       → 정확히 채점 못 할 문항을 서빙/채점하지 않음(정답 100% 불변 fail-safe).
+ *   - essay/calc: 공개 표면 미지원(Formula Engine 미경유 문자열 폴백 오채점 차단).
+ */
+function isServable(row: {
+  readonly input_type: string | null;
+  readonly answer: string | null;
+  readonly distractors: string | null;
+}): boolean {
+  const it = resolveInputType(row.input_type);
+  if (it === 'multiple_choice') return parseMcChoices(row.distractors, row.answer).ok;
+  if (it === 'fill_blank') {
+    return row.answer !== null && row.answer !== '' && parseMcAnswerLabels(row.answer) === null;
+  }
+  return false;
+}
+
 /**
  * 서빙용 MC 보기 build — parseMcChoices(단일 정본) → 보기별 choiceId 발급 → 표시 셔플.
  * 계약 위반(적재 결함) 시 null → 호출 측이 서빙 거부.
@@ -200,9 +225,18 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
     const round = normalizeRoundParam(c.req.query('round'));
     const inputTypeFilter = normalizeInputTypeParam(c.req.query('inputType'));
 
-    // exam_type/status 는 서버 고정 바인딩 — 클라 파라미터 경로 없음(경계 강제).
+    // exam_type/status 는 서버 고정 — 클라 파라미터 경로 없음(경계 강제).
+    // input_type 은 서빙 가능 타입(SERVABLE)으로 SQL 제약(4-Pass m-1/m-8) —
+    // 필터 지정 시 그 타입, 미지정 시 IN(multiple_choice, fill_blank).
     const conditions: string[] = ['status = ?', 'exam_type = ?'];
     const params: (string | number)[] = [FIXED_STATUS, FIXED_EXAM_TYPE];
+    if (inputTypeFilter !== null) {
+      conditions.push('input_type = ?');
+      params.push(inputTypeFilter);
+    } else {
+      conditions.push(`input_type IN (${SERVABLE_INPUT_TYPES.map(() => '?').join(', ')})`);
+      params.push(...SERVABLE_INPUT_TYPES);
+    }
     if (subject !== null) {
       conditions.push('subject = ?');
       params.push(subject);
@@ -211,28 +245,29 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
       conditions.push('round = ?');
       params.push(round);
     }
-    if (inputTypeFilter !== null) {
-      conditions.push('input_type = ?');
-      params.push(inputTypeFilter);
-    }
 
+    // 후보 N개 조회 후 서버측 자격 판정(isServable)으로 첫 유효행 선택 —
+    // RANDOM 단일 픽이 결함행에 적중해도 유효 문항 잔존 시 서빙(m-2/m-4).
     const sql = `SELECT id, year, round, question_number, subject, content, input_type, answer, distractors
                  FROM exam_questions
                  WHERE ${conditions.join(' AND ')}
                  ORDER BY RANDOM()
-                 LIMIT 1`;
+                 LIMIT ${SERVE_CANDIDATE_LIMIT}`;
 
-    let row: ServeRow | null;
+    let candidates: ServeRow[];
     try {
-      row = await c.env.DB.prepare(sql)
+      const result = await c.env.DB.prepare(sql)
         .bind(...params)
-        .first<ServeRow>();
+        .all<ServeRow>();
+      candidates = result.results;
     } catch (err) {
       logger.error('serve query failed', err);
       return c.json({ error: ErrorCode.INTERNAL_ERROR }, 500);
     }
 
+    const row = candidates.find(isServable) ?? null;
     if (row === null) {
+      // 서빙 자격 문항 0 — 현 1차는 BE-1(보기 추출) 승급 전까지 정상 서빙 대상 없음.
       return c.json({ error: 'NO_QUESTION' }, 404);
     }
 
@@ -242,7 +277,10 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
       const secret = c.env.JWT_SECRET ?? '';
       choices = await buildPublicChoices(secret, row, logger);
       if (choices === null) {
-        // MC 행이나 보기 계약 위반(적재 결함) — 서빙 불가. 무음 skip 금지.
+        // isServable 이 parseMcChoices.ok 를 이미 보장 → null 은 비정상(방어).
+        logger.error('MC serve build failed after isServable pass', undefined, {
+          questionId: row.id,
+        });
         return c.json({ error: 'QUESTION_UNAVAILABLE' }, 404);
       }
     }
@@ -263,6 +301,7 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
       subject: row.subject,
       round: row.round,
       inputType,
+      examType: FIXED_EXAM_TYPE,
     });
 
     return c.json(out);
@@ -333,18 +372,37 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
       for (const oi of mc.correctOriginalIndices) {
         correctChoiceIds.push(await issueChoiceId(secret, row.id, oi));
       }
-    } else {
-      // fill_blank(+ essay/calc 방어 폴백) — 텍스트 answer 필수.
+    } else if (inputType === 'fill_blank') {
       if (answer === undefined) {
         return c.json({ error: 'ANSWER_REQUIRED' }, 400);
       }
+      // ★ MC-in-disguise(위치라벨 answer)는 fill_blank 텍스트 채점 불가 — 양방향
+      //   오채점 차단(4-Pass M-2). 현 1차 525(answer=위치라벨·distractors NULL)가 여기.
+      if (parseMcAnswerLabels(row.answer) !== null) {
+        logger.error(
+          'grade fill_blank on position-label answer (MC-in-disguise, BE-1 대기)',
+          undefined,
+          {
+            questionId: row.id,
+          },
+        );
+        return c.json({ error: 'QUESTION_NOT_GRADABLE' }, 422);
+      }
       isCorrect = gradeFillBlank({ expected: row.answer, userAnswer: answer }).isCorrect;
+    } else {
+      // essay/calc — 공개 표면 미지원(Formula Engine 미경유 문자열 폴백 오채점 금지, m-3).
+      logger.error('grade unsupported input_type on public surface', undefined, {
+        questionId: row.id,
+        inputType,
+      });
+      return c.json({ error: 'QUESTION_NOT_GRADABLE' }, 422);
     }
 
     recordPublicEvent(c.env.PUBLIC_ANALYTICS, 'grade', {
       subject: row.subject,
       inputType,
       isCorrect,
+      examType: FIXED_EXAM_TYPE,
     });
 
     // explanation 0/525(F-5) — 없으면 필드 생략(프론트 빈상태 처리). correctChoiceIds = MC 만.

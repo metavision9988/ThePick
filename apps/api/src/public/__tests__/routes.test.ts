@@ -67,11 +67,11 @@ function seedQ(params: {
 
 const app = () => createPublicRoutes();
 
-function get(path: string): Promise<Response> {
+async function get(path: string): Promise<Response> {
   return app().fetch(new Request(`http://test.local${path}`), env());
 }
 
-function post(path: string, body: unknown): Promise<Response> {
+async function post(path: string, body: unknown): Promise<Response> {
   return app().fetch(
     new Request(`http://test.local${path}`, {
       method: 'POST',
@@ -149,6 +149,37 @@ describe('GET /api/public/questions/next — 서빙', () => {
     seedQ({ id: 'q-2nd', examType: '2nd', subject: '2차전용과목' });
     const res = await get('/questions/next?subject=2차전용과목');
     expect(res.status).toBe(404);
+  });
+
+  it('★M-2: fill_blank 인데 answer 가 위치라벨(MC-in-disguise, BE-1 대기) → 서빙 제외', async () => {
+    // 현 1차 525 상태 재현: input_type=fill_blank + answer=위치라벨("2") + distractors NULL.
+    seedQ({ id: 'q-disguise', inputType: 'fill_blank', answer: '2', subject: '위장과목' });
+    const res = await get('/questions/next?subject=위장과목');
+    expect(res.status).toBe(404); // 정확히 채점 불가 → 서빙 안 함(오채점 fail-safe)
+  });
+
+  it('★M-2: 결함 MC 행이 뽑혀도 유효 문항 잔존 시 서빙 (후보 N개 자격 판정)', async () => {
+    // 같은 과목에 결함 MC(distractors NULL) + 유효 MC 공존 → 유효행 서빙(간헐 404 방지).
+    seedQ({
+      id: 'q-broken-mc',
+      inputType: 'multiple_choice',
+      answer: '1',
+      distractors: null,
+      subject: '혼합과목',
+    });
+    seedQ({
+      id: 'q-good-mc',
+      inputType: 'multiple_choice',
+      answer: '2',
+      distractors: FOUR_CHOICES,
+      subject: '혼합과목',
+    });
+    // 여러 번 요청해도 항상 유효행만 서빙(결함행은 isServable 탈락).
+    for (let i = 0; i < 5; i++) {
+      const res = await get('/questions/next?inputType=multiple_choice&subject=혼합과목');
+      expect(res.status).toBe(200);
+      expect(((await res.json()) as { id: string }).id).toBe('q-good-mc');
+    }
   });
 });
 
@@ -261,5 +292,19 @@ describe('POST /api/public/grade — 채점', () => {
   it('Zod 검증 실패(questionId 누락) → 400 VALIDATION_ERROR', async () => {
     const res = await post('/grade', { answer: 'x' });
     expect(res.status).toBe(400);
+  });
+
+  it('★M-2: fill_blank 인데 answer 위치라벨(MC-in-disguise) 채점 → 422 QUESTION_NOT_GRADABLE', async () => {
+    seedQ({ id: 'q-disguise-g', inputType: 'fill_blank', answer: '2' });
+    const res = await post('/grade', { questionId: 'q-disguise-g', answer: '2' });
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as { error: string }).error).toBe('QUESTION_NOT_GRADABLE');
+  });
+
+  it('★m-3: essay/calc 는 공개 표면 채점 미지원 → 422 QUESTION_NOT_GRADABLE (문자열 폴백 금지)', async () => {
+    seedQ({ id: 'q-essay', inputType: 'essay', answer: '서술형 정답' });
+    const res = await post('/grade', { questionId: 'q-essay', answer: '서술형 정답' });
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as { error: string }).error).toBe('QUESTION_NOT_GRADABLE');
   });
 });

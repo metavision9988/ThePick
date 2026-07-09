@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import { PASSWORD_MIN_LENGTH_RELAXED, PASSWORD_MAX_LENGTH } from '@thepick/shared';
+import { resolveSafeNext } from '../lib/safe-redirect';
 
 const API_BASE: string = import.meta.env.PUBLIC_API_BASE_URL ?? 'http://localhost:8787';
 
@@ -105,11 +106,8 @@ function formatRateLimitMessage(retryAfterSeconds: number | null): string {
 
 function resolveNext(): string {
   if (typeof window === 'undefined') return '/study/';
-  const params = new URLSearchParams(window.location.search);
-  const next = params.get('next');
-  if (next === null || next === '') return '/study/';
-  if (!next.startsWith('/') || next.startsWith('//')) return '/study/';
-  return next;
+  // 개방 리다이렉트 차단(4-Pass M-1) — lib/safe-redirect 단일 정본.
+  return resolveSafeNext(window.location.search);
 }
 
 export function AuthForm() {
