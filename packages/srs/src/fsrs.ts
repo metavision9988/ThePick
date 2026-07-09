@@ -10,7 +10,9 @@
  * Reference: docs/plans/phase3-learning-ux-modes.plan.md §13.1
  */
 
-import { Card, FSRS, Grade, Rating, State, createEmptyCard, generatorParameters } from 'ts-fsrs';
+// Card/Grade 는 타입 전용 — verbatimModuleSyntax 소비자(apps/web) 호환 위해 type-only 분리.
+import { FSRS, Rating, State, createEmptyCard, generatorParameters } from 'ts-fsrs';
+import type { Card, Grade } from 'ts-fsrs';
 import type {
   FsrsCardState,
   FsrsRating,

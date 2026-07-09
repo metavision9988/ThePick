@@ -68,7 +68,7 @@ importers:
         version: 19.2.3(@types/react@19.2.14)
       '@vitejs/plugin-react':
         specifier: ^4.3.0
-        version: 4.7.0(vite@6.4.2(@types/node@20.19.39)(jiti@1.21.7)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.7.0(vite@7.3.2(@types/node@20.19.39)(jiti@1.21.7)(tsx@4.21.0)(yaml@2.8.3))
       jsdom:
         specifier: ^26.0.0
         version: 26.1.0
@@ -173,9 +173,15 @@ importers:
       '@astrojs/tailwind':
         specifier: ^6.0.0
         version: 6.0.2(astro@5.18.1(@types/node@20.19.39)(jiti@1.21.7)(rollup@4.60.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3))(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
+      '@thepick/learning-modes':
+        specifier: workspace:^
+        version: link:../../packages/learning-modes
       '@thepick/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@thepick/srs':
+        specifier: workspace:^
+        version: link:../../packages/srs
       astro:
         specifier: ^5.0.0
         version: 5.18.1(@types/node@20.19.39)(jiti@1.21.7)(rollup@4.60.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
@@ -224,13 +230,16 @@ importers:
         version: 8.58.1(eslint@8.57.1)(typescript@5.9.3)
       '@vitejs/plugin-react':
         specifier: ^4.3.0
-        version: 4.7.0(vite@7.3.2(@types/node@20.19.39)(jiti@1.21.7)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.7.0(vite@6.4.2(@types/node@20.19.39)(jiti@1.21.7)(tsx@4.21.0)(yaml@2.8.3))
       eslint:
         specifier: ^8.56.0
         version: 8.57.1
       eslint-config-prettier:
         specifier: ^9.1.0
         version: 9.1.2(eslint@8.57.1)
+      fake-indexeddb:
+        specifier: ^6.2.5
+        version: 6.2.5
       hono:
         specifier: ^4.12.14
         version: 4.12.14
@@ -3061,6 +3070,10 @@ packages:
   extend@3.0.2:
     resolution: {integrity: sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g==}
 
+  fake-indexeddb@6.2.5:
+    resolution: {integrity: sha512-CGnyrvbhPlWYMngksqrSSUT1BAVP49dZocrHuK0SvtR0D5TMs5wP0o3j7jexDJW01KSadjBp1M/71o/KR3nD1w==}
+    engines: {node: '>=18'}
+
   fast-check@3.23.2:
     resolution: {integrity: sha512-h5+1OzzfCC3Ef7VbtKdcv7zsstUQwUDlYpUTvjeUsJAssPgLn7QzbboPtL5ro04Mq0rPOsMzl7q5hIbRs2wD1A==}
     engines: {node: '>=8.0.0'}
@@ -4370,6 +4383,7 @@ packages:
   tsconfck@3.1.6:
     resolution: {integrity: sha512-ks6Vjr/jEw0P1gmOVwutM3B7fWxoWBL2KRDb1JfqGVawBmO5UsvmWOQFGHBPl5yxYz4eERr19E6L7NMv+Fej4w==}
     engines: {node: ^18 || >=20}
+    deprecated: unmaintained
     hasBin: true
     peerDependencies:
       typescript: ^5.0.0
@@ -7108,6 +7122,8 @@ snapshots:
   expect-type@1.3.0: {}
 
   extend@3.0.2: {}
+
+  fake-indexeddb@6.2.5: {}
 
   fast-check@3.23.2:
     dependencies:
