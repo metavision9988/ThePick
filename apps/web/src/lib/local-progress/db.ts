@@ -11,6 +11,11 @@
  *   - streak  : 단일 행(고정 key) 스트릭/일일목표
  *   - meta    : 스키마 버전 등 (export/import 무결성)
  *
+ * ★ 결정 기록(위임, 4-Pass m-7/m-12): 핸드오프 P2 의 "세션" 축은 **영속 제외** —
+ *   세션은 본질 휘발성(탭 수명)이라 P4 화면의 in-memory 상태로 두고, 이력 원천은
+ *   reviews(append-only)가 담당. FE-8 결과 요약이 영속 세션 경계를 요구하면
+ *   v2 스토어 추가(스키마 버전 증가 + validateExport 마이그레이션 분기 예약).
+ *
  * 증발 완화(D-1 정직 한계): `requestPersistentStorage()` + export/import(BE-7 선확보).
  */
 
@@ -71,6 +76,14 @@ export interface LocalMeta {
 export const STREAK_ROW_ID = 'streak';
 export const META_ROW_ID = 'meta';
 export const DEFAULT_DAILY_GOAL = 20;
+
+/**
+ * dailyGoal 유효성 — 스키마 불변식(1~500 정수). store.setDailyGoal 과
+ * export 봉투 검증이 **동일 가드 공유**(이중 잣대 차단, 4-Pass MAJOR-3/m-4).
+ */
+export function isValidDailyGoal(v: unknown): v is number {
+  return typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 500;
+}
 
 /**
  * Dexie DB — 이름은 미러 DB 와 구분되는 고유값.

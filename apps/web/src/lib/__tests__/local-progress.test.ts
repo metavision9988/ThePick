@@ -250,6 +250,82 @@ describe('export ↔ import', () => {
     await expect(importLocalProgress(db, { schema: 'wrong' })).rejects.toThrow('schema mismatch');
     expect(await db.cards.count()).toBe(1); // 검증 단계 거부 = DB 무접촉
   });
+
+  it('★M-3(의미 검증): 오염 봉투 — 무효 날짜/Infinity/음수/dailyGoal 0/중복 cardId 전부 사유 거부', async () => {
+    // 유효 봉투를 기계 생성 후 필드별 오염 (지연 RangeError·due-큐 무음 누락 실측 벡터).
+    await recordReview(db, { cardId: 'q-1', cardType: 'exam', rating: 'good', now: DAY1 });
+    const base = JSON.parse(JSON.stringify(await exportLocalProgress(db, DAY1))) as {
+      cards: Array<Record<string, unknown>>;
+      reviews: Array<Record<string, unknown>>;
+      streak: Record<string, unknown>;
+      [k: string]: unknown;
+    };
+
+    const mutate = (fn: (e: typeof base) => void): unknown => {
+      const clone = JSON.parse(JSON.stringify(base)) as typeof base;
+      fn(clone);
+      return clone;
+    };
+
+    // ① 파싱 불가 lastReview (실측: scheduleReview RangeError 지연 크래시 벡터)
+    expect(() =>
+      validateExport(
+        mutate((e) => {
+          (e.cards[0]!.fsrs as Record<string, unknown>).lastReview = 'garbage';
+        }),
+      ),
+    ).toThrow('invalid cards[0]');
+    // ② 파싱 불가 due (실측: due-큐 무음 영구 누락 벡터)
+    expect(() =>
+      validateExport(
+        mutate((e) => {
+          (e.cards[0]!.fsrs as Record<string, unknown>).due = 'not-a-date';
+        }),
+      ),
+    ).toThrow('invalid cards[0]');
+    // ③ Infinity stability (JSON 1e999 인입 — 스케줄 파괴 실측)
+    expect(() =>
+      validateExport(
+        mutate((e) => {
+          (e.cards[0]!.fsrs as Record<string, unknown>).stability = Number.POSITIVE_INFINITY;
+        }),
+      ),
+    ).toThrow('invalid cards[0]');
+    // ④ 음수 카운터
+    expect(() =>
+      validateExport(
+        mutate((e) => {
+          e.cards[0]!.totalReviews = -5;
+        }),
+      ),
+    ).toThrow('invalid cards[0]');
+    // ⑤ dailyGoal 0 (setDailyGoal 과 동일 가드 공유 — 이중 잣대 차단)
+    expect(() =>
+      validateExport(
+        mutate((e) => {
+          e.streak.dailyGoal = 0;
+        }),
+      ),
+    ).toThrow('invalid streak');
+    // ⑥ 중복 cardId (bulkAdd 불투명 BulkError 대신 사유 throw)
+    expect(() =>
+      validateExport(
+        mutate((e) => {
+          e.cards.push(JSON.parse(JSON.stringify(e.cards[0])) as Record<string, unknown>);
+        }),
+      ),
+    ).toThrow('duplicate cardId');
+  });
+
+  it('★m-5: import 가 기존 meta.createdAt(최초 사용 시각)을 보존', async () => {
+    await recordReview(db, { cardId: 'q-1', cardType: 'exam', rating: 'good', now: DAY1 });
+    const firstCreatedAt = (await db.meta.get('meta'))?.createdAt;
+    expect(firstCreatedAt).toBeDefined();
+
+    const envelope = JSON.parse(JSON.stringify(await exportLocalProgress(db, DAY2))) as unknown;
+    await importLocalProgress(db, envelope, DAY4); // 나중 시각으로 import
+    expect((await db.meta.get('meta'))?.createdAt).toBe(firstCreatedAt); // 리셋 안 됨
+  });
 });
 
 describe('requestPersistentStorage', () => {

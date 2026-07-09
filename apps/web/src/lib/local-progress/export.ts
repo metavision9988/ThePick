@@ -13,6 +13,7 @@ import {
   LOCAL_PROGRESS_SCHEMA_VERSION,
   META_ROW_ID,
   STREAK_ROW_ID,
+  isValidDailyGoal,
   type LocalCard,
   type LocalProgressDb,
   type LocalReview,
@@ -52,18 +53,38 @@ export async function exportLocalProgress(
 
 const FSRS_STATES = ['new', 'learning', 'review', 'relearning'] as const;
 
+// ── 의미 검증 헬퍼 (4-Pass MAJOR-3: typeof 만으로는 오염 봉투가 통과해
+//    지연 RangeError(scheduleReview) 또는 due-큐 무음 누락을 유발 — 실측 확증) ──
+
+/** 파싱 가능한 날짜 문자열 (Invalid Date 차단 — 오염 due = 복습 큐 영구 누락 경로). */
+function isParseableDate(v: unknown): v is string {
+  return typeof v === 'string' && Number.isFinite(Date.parse(v));
+}
+
+/** 유한 수 (JSON `1e999` = Infinity 인입 가능 — 스케줄 파괴 실측). */
+function isFiniteNumber(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v);
+}
+
+/** 음이 아닌 정수 카운터 (reps/lapses/totalReviews/correctCount/streak). */
+function isNonNegativeInt(v: unknown): v is number {
+  return typeof v === 'number' && Number.isInteger(v) && v >= 0;
+}
+
 function isFsrsCardState(v: unknown): v is FsrsCardState {
   if (v === null || typeof v !== 'object') return false;
   const s = v as Record<string, unknown>;
   return (
-    typeof s.due === 'string' &&
-    typeof s.stability === 'number' &&
-    typeof s.difficulty === 'number' &&
-    typeof s.reps === 'number' &&
-    typeof s.lapses === 'number' &&
+    isParseableDate(s.due) &&
+    isFiniteNumber(s.stability) &&
+    s.stability >= 0 &&
+    isFiniteNumber(s.difficulty) &&
+    isNonNegativeInt(s.reps) &&
+    isNonNegativeInt(s.lapses) &&
     FSRS_STATES.includes(s.state as (typeof FSRS_STATES)[number]) &&
-    (s.lastReview === null || typeof s.lastReview === 'string') &&
-    typeof s.scheduledDays === 'number'
+    (s.lastReview === null || isParseableDate(s.lastReview)) &&
+    isFiniteNumber(s.scheduledDays) &&
+    s.scheduledDays >= 0
   );
 }
 
@@ -76,9 +97,9 @@ function isLocalCard(v: unknown): v is LocalCard {
     LOCAL_CARD_TYPES.includes(c.cardType as (typeof LOCAL_CARD_TYPES)[number]) &&
     (c.subject === null || typeof c.subject === 'string') &&
     isFsrsCardState(c.fsrs) &&
-    typeof c.totalReviews === 'number' &&
-    typeof c.correctCount === 'number' &&
-    typeof c.updatedAt === 'string'
+    isNonNegativeInt(c.totalReviews) &&
+    isNonNegativeInt(c.correctCount) &&
+    isParseableDate(c.updatedAt)
   );
 }
 
@@ -90,7 +111,7 @@ function isLocalReview(v: unknown): v is LocalReview {
     LOCAL_CARD_TYPES.includes(r.cardType as (typeof LOCAL_CARD_TYPES)[number]) &&
     FSRS_RATINGS.includes(r.rating as (typeof FSRS_RATINGS)[number]) &&
     (r.isCorrect === null || typeof r.isCorrect === 'boolean') &&
-    typeof r.reviewedAt === 'string'
+    isParseableDate(r.reviewedAt)
   );
 }
 
@@ -99,10 +120,10 @@ function isLocalStreak(v: unknown): v is LocalStreak {
   const s = v as Record<string, unknown>;
   return (
     s.id === STREAK_ROW_ID &&
-    typeof s.currentStreak === 'number' &&
-    typeof s.longestStreak === 'number' &&
+    isNonNegativeInt(s.currentStreak) &&
+    isNonNegativeInt(s.longestStreak) &&
     (s.lastStudyDate === null || typeof s.lastStudyDate === 'string') &&
-    typeof s.dailyGoal === 'number'
+    isValidDailyGoal(s.dailyGoal)
   );
 }
 
@@ -122,11 +143,27 @@ export function validateExport(raw: unknown): LocalProgressExport {
     // 버전 증가 시 여기서 마이그레이션 분기 추가 — v1 은 동일 버전만.
     throw new Error(`import failed: unsupported version ${String(e.version)}`);
   }
-  if (!Array.isArray(e.cards) || !e.cards.every(isLocalCard)) {
-    throw new Error('import failed: invalid cards');
+  if (!Array.isArray(e.cards)) {
+    throw new Error('import failed: cards is not an array');
   }
-  if (!Array.isArray(e.reviews) || !e.reviews.every(isLocalReview)) {
-    throw new Error('import failed: invalid reviews');
+  const badCard = e.cards.findIndex((c) => !isLocalCard(c));
+  if (badCard !== -1) {
+    throw new Error(`import failed: invalid cards[${badCard}]`);
+  }
+  // cardId 유일성 — 중복은 bulkAdd 불투명 BulkError 대신 여기서 사유 throw (4-Pass m-11).
+  const seenIds = new Set<string>();
+  for (const c of e.cards as LocalCard[]) {
+    if (seenIds.has(c.cardId)) {
+      throw new Error(`import failed: duplicate cardId "${c.cardId}"`);
+    }
+    seenIds.add(c.cardId);
+  }
+  if (!Array.isArray(e.reviews)) {
+    throw new Error('import failed: reviews is not an array');
+  }
+  const badReview = e.reviews.findIndex((r) => !isLocalReview(r));
+  if (badReview !== -1) {
+    throw new Error(`import failed: invalid reviews[${badReview}]`);
   }
   if (e.streak !== null && !isLocalStreak(e.streak)) {
     throw new Error('import failed: invalid streak');
@@ -152,6 +189,8 @@ export async function importLocalProgress(
 ): Promise<{ cards: number; reviews: number }> {
   const data = validateExport(raw);
   await db.transaction('rw', [db.cards, db.reviews, db.streak, db.meta], async () => {
+    // 최초 사용 시각(createdAt)은 import 로 리셋하지 않는다 (4-Pass m-5 — 기기 이동 시 보존).
+    const prevMeta = await db.meta.get(META_ROW_ID);
     await Promise.all([db.cards.clear(), db.reviews.clear(), db.streak.clear()]);
     await db.cards.bulkAdd(data.cards as LocalCard[]);
     // id(auto-increment)는 원본 값 보존 대신 재발급 — 봉투 간 충돌 방지.
@@ -160,7 +199,7 @@ export async function importLocalProgress(
     await db.meta.put({
       id: META_ROW_ID,
       schemaVersion: LOCAL_PROGRESS_SCHEMA_VERSION,
-      createdAt: now.toISOString(),
+      createdAt: prevMeta?.createdAt ?? now.toISOString(),
     });
   });
   return { cards: data.cards.length, reviews: data.reviews.length };

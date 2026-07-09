@@ -7,7 +7,9 @@
  *
  * 사용처:
  *   - apps/api study routes weak mode + grade 후 user_progress fsrs_state 갱신
- *   - apps/web 클라이언트는 type만 import (FSRS 계산은 server 전용)
+ *   - apps/web local-progress: FSRS 스케줄 계산을 클라 runtime 소비
+ *     (promo-1st D-1 위임 결재 2026-07-08 — 무인증 로컬 진도. 구 "type만 import" 계약 개정.
+ *     ★ 채점(grade*)·정답 데이터는 여전히 server 전용 — 보안 불변)
  *
  * 의존:
  *   - ts-fsrs (FSRS-4 알고리즘 자체)

@@ -5,7 +5,8 @@
  *
  * 사용처:
  *   - apps/api/src/study/routes.ts: /grade + /next + /mode/start 세션 진척 + streak UPSERT
- *   - apps/web: 클라이언트는 type만 import (계산은 server)
+ *   - apps/web/src/lib/local-progress: computeStreakUpdate/todayDateString/dayBoundsUtc 를
+ *     클라 runtime 소비 (promo-1st D-1 위임 결재 2026-07-08 — 구 "type만 import" 계약 개정)
  *
  * 정합:
  *   - timezone: 본 프로젝트 사용자 100% 한국 → KST 기본 (UTC+9). plan §13 D5 lock.

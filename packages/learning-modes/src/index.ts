@@ -7,8 +7,10 @@
  * plan: docs/plans/phase3-learning-ux-modes.plan.md (Step 3-UX-2)
  *
  * 사용처:
- *   - apps/api: study routes에서 4 input type 채점
- *   - apps/web: 클라이언트는 type만 import, 채점은 server (보안)
+ *   - apps/api: study routes에서 4 input type 채점 + 공개 표면(/api/public) 보기 계약
+ *   - apps/web: local-progress 가 스트릭·일경계(computeStreakUpdate/todayDateString/
+ *     dayBoundsUtc)를 클라 runtime 소비 (promo-1st D-1 위임 결재 2026-07-08 — 구
+ *     "type만 import" 계약 개정. ★ 채점(grade*)·정답 데이터는 여전히 server 전용 — 보안 불변)
  *
  * 의존: @thepick/shared (TYPES + EXAM_IDS)
  *

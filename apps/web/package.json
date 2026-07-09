@@ -18,9 +18,9 @@
   "dependencies": {
     "@astrojs/react": "^4.0.0",
     "@astrojs/tailwind": "^6.0.0",
-    "@thepick/learning-modes": "workspace:^",
+    "@thepick/learning-modes": "workspace:*",
     "@thepick/shared": "workspace:*",
-    "@thepick/srs": "workspace:^",
+    "@thepick/srs": "workspace:*",
     "astro": "^5.0.0",
     "dexie": "^4.0.0",
     "react": "^19.0.0",

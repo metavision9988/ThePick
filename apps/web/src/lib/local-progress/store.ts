@@ -11,12 +11,13 @@
  */
 
 import { createFreshCard, scheduleReview, type FsrsCardState, type FsrsRating } from '@thepick/srs';
-import { computeStreakUpdate, todayDateString } from '@thepick/learning-modes';
+import { computeStreakUpdate, dayBoundsUtc, todayDateString } from '@thepick/learning-modes';
 import {
   DEFAULT_DAILY_GOAL,
   LOCAL_PROGRESS_SCHEMA_VERSION,
   META_ROW_ID,
   STREAK_ROW_ID,
+  isValidDailyGoal,
   type LocalCard,
   type LocalCardType,
   type LocalProgressDb,
@@ -98,7 +99,8 @@ export async function recordReview(
       lastStudyDate: update.lastStudyDate,
       dailyGoal: prevStreak.dailyGoal,
     };
-    if (update.changed || prevStreak.lastStudyDate === null) {
+    // changed=false 는 same-day 재호출뿐(computeStreakUpdate 계약) — 그때는 write 불요.
+    if (update.changed) {
       await db.streak.put(streak);
     }
 
@@ -121,9 +123,9 @@ export async function getStreak(db: LocalProgressDb): Promise<LocalStreak> {
   );
 }
 
-/** 일일 목표 변경 (FE-7). */
+/** 일일 목표 변경 (FE-7). 가드 = db.ts isValidDailyGoal (export 봉투 검증과 공유). */
 export async function setDailyGoal(db: LocalProgressDb, dailyGoal: number): Promise<void> {
-  if (!Number.isInteger(dailyGoal) || dailyGoal < 1 || dailyGoal > 500) {
+  if (!isValidDailyGoal(dailyGoal)) {
     throw new Error(`invalid dailyGoal: ${dailyGoal} (expected 1~500)`);
   }
   const prev = await getStreak(db);
@@ -145,12 +147,9 @@ export async function getDueCards(
 
 /** 오늘(KST) 완료 review 수 — dailyGoal 진척 분모. */
 export async function countReviewsOnKstDate(db: LocalProgressDb, kstDate: string): Promise<number> {
-  // reviewedAt 은 ISO(UTC) — KST 날짜 경계로 환산해 [start, end) 범위 카운트.
-  // KST = UTC+9 고정(서머타임 없음, ADR-041).
-  const startUtc = new Date(`${kstDate}T00:00:00+09:00`).toISOString();
-  const endUtc = new Date(
-    new Date(`${kstDate}T00:00:00+09:00`).getTime() + 86_400_000,
-  ).toISOString();
+  // KST 일 경계 = learning-modes dayBoundsUtc 정본(ADR-041, 서버 study 경로와 동일 함수 —
+  // 4-Pass MAJOR-1: 인라인 재구현 금지·무효 입력 시 사유 throw 무상 획득).
+  const { startUtc, endUtc } = dayBoundsUtc(kstDate);
   return db.reviews.where('reviewedAt').between(startUtc, endUtc, true, false).count();
 }
 
