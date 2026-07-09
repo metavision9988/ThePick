@@ -60,6 +60,15 @@ function applyCachePolicy(c: Context): void {
     return;
   }
 
+  // promo-1st P1 — 무인증 공개 표면(`/api/public/*`)은 no-store(단 Vary 불필요 — 쿠키/인증 0).
+  //   서빙(`/questions/next`)은 요청마다 보기 표시 순서를 암호 난수로 셔플하고, 채점
+  //   (`/grade`)은 정답을 노출한다 → **공유 캐시 금지**. 향후 이 경로를 절대
+  //   PUBLIC_PATH_TTL_SECONDS(공용 캐시)에 넣지 말 것(지뢰 #5).
+  if (path.startsWith('/api/public/')) {
+    c.header('Cache-Control', 'no-store');
+    return;
+  }
+
   const publicMatch = matchPublicPath(path);
   if (publicMatch !== undefined) {
     c.header('Cache-Control', `public, max-age=${publicMatch.ttl}`);

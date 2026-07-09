@@ -8,6 +8,15 @@
 export const INPUT_TYPES = ['multiple_choice', 'fill_blank', 'essay', 'calc'] as const;
 export type InputType = (typeof INPUT_TYPES)[number];
 
+/**
+ * exam_questions.input_type 검증 + 기본값 'fill_blank' (마이그레이션 0032 default 정합).
+ * 인증 study 라우트·공개 표면 공유 단일 정본.
+ */
+export function resolveInputType(value: string | null | undefined): InputType {
+  if (value === null || value === undefined) return 'fill_blank';
+  return INPUT_TYPES.find((t) => t === value) ?? 'fill_blank';
+}
+
 export const LEARNING_MODES = ['category', 'topic', 'confusion', 'weak', 'mixed'] as const;
 export type LearningMode = (typeof LEARNING_MODES)[number];
 

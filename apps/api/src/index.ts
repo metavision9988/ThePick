@@ -20,6 +20,8 @@ import { createVectorizeRoutes, type VectorizeRouteBindings } from './vectorize/
 import { createUserSearchRoutes } from './search/routes.js';
 import { createGraphSearchRoutes } from './search/graph-search-route.js';
 import { createStudyRoutes } from './study/routes.js';
+import { createPublicRoutes } from './public/routes.js';
+import type { AnalyticsEngineDataset } from './public/analytics.js';
 import { createWebhookRoutes } from './webhooks/payment.js';
 
 /**
@@ -55,6 +57,9 @@ type Bindings = {
   // S5-5 Pass3 Minor-2 — /api/search·/api/search/graph public route DoS 방어
   // (wrangler.toml 선언, 런타임 주입). 타입 차원 발견성 확보.
   SEARCH_RATE_LIMITER_IP?: RateLimiter;
+  // promo-1st P1 — 무인증 공개 학습 표면 `/api/public/*` (해시 IP rate limit + 익명 AE).
+  PUBLIC_RATE_LIMITER_IP?: RateLimiter;
+  PUBLIC_ANALYTICS?: AnalyticsEngineDataset;
   WEBHOOK_HMAC_SECRET_MOCK?: string;
   WEBHOOK_HMAC_SECRET_POLAR?: string;
   WEBHOOK_HMAC_SECRET_PORTONE?: string;
@@ -125,6 +130,9 @@ app.use('/api/search', cors(buildCorsOptions()));
 // S5-3 (Session 087) — 독립 graph-augmented 검색 (옵션 C, plan §2). 정상
 // 경로 `/api/search` 와 분리된 exact path → 회귀 표면 0 (Engine-First).
 app.use('/api/search/graph', cors(buildCorsOptions()));
+// promo-1st P1 — 무인증 공개 학습 표면. **credentials 없는 별도 CORS** (쿠키 미전송).
+// 무료 홍보용 공개 데이터라 credentials:false — auth 쿠키 경로와 격리.
+app.use('/api/public/*', cors({ ...buildCorsOptions(), credentials: false }));
 
 // L1 Edge Cache 헤더 자동 주입 (ADR-008 §8) — 4-Pass C-3 반영
 // **첫 번째** 미들웨어로 등록: 어떤 경로에서 어떤 이유로 early-return 되어도
@@ -165,6 +173,7 @@ app.route('/api/admin/vectorize', createVectorizeRoutes());
 app.route('/api/search/graph', createGraphSearchRoutes());
 app.route('/api/search', createUserSearchRoutes());
 app.route('/api/study', createStudyRoutes());
+app.route('/api/public', createPublicRoutes());
 
 app.get('/', (c) => {
   return c.json({

@@ -51,7 +51,11 @@ export function getClientIp(c: Context): string {
  * 이유: 프로덕션 배포 시 wrangler.toml binding 오타·누락이 발견 전 실제 트래픽을
  * 받으면 rate limit 부재로 brute force 가 통과. 2차 재리뷰 M-1 해소.
  */
-function handleMissingBinding(kind: string, env: string | undefined, logger: Logger): boolean {
+export function handleMissingBinding(
+  kind: string,
+  env: string | undefined,
+  logger: Logger,
+): boolean {
   const isProduction = env === 'production' || env === 'staging';
   if (isProduction) {
     logger.error(`${kind} binding not configured — fail-closed`, undefined, {

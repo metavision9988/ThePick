@@ -39,10 +39,10 @@ import {
   gradeCalc,
   gradeEssay,
   gradeFillBlank,
-  answerLabelsFitChoices,
   gradeMultipleChoice,
-  normalizeAnswer,
   parseMcAnswerLabels,
+  parseMcChoices,
+  resolveInputType,
   resolveLearningMode as resolveLearningModeBase,
   resolveSessionPhase as resolveSessionPhaseBase,
   shuffleChoices,
@@ -50,6 +50,7 @@ import {
   type EssaySelfRating,
   type InputType,
   type LearningMode,
+  type McChoicesRejected,
   type NarrowingFallback,
   type SessionPhase,
   type ShuffledChoice,
@@ -407,14 +408,7 @@ type StudyEnv = {
  * 객관식/서술/계산은 별도 type 분기 (gradeMultipleChoice / gradeEssay / gradeCalc).
  */
 
-/**
- * exam_questions.input_type 검증 + 기본값 'fill_blank' (마이그레이션 0032 default 정합).
- */
-function resolveInputType(value: string | null | undefined): InputType {
-  if (value === null || value === undefined) return 'fill_blank';
-  const found = INPUT_TYPES.find((t) => t === value);
-  return found ?? 'fill_blank';
-}
+// resolveInputType 은 packages/learning-modes(types.ts)로 이관 — 공개 표면과 단일 정본 공유.
 
 /**
  * 객관식 보기 셔플 — **결재 #2 위치 라벨형 계약** (mc-answer.ts 정본, 2026-06-11).
@@ -437,67 +431,16 @@ async function buildShuffledChoices(
   question: ExamQuestionRow,
   logger: Logger,
 ): Promise<ShuffledChoice[] | null> {
-  if (question.distractors === null || question.distractors === '') return null;
-  if (question.answer === null || question.answer === '') return null;
-
-  let choices: string[];
-  try {
-    const parsed: unknown = JSON.parse(question.distractors);
-    if (!Array.isArray(parsed)) {
-      logger.warn('distractors JSON not array', { questionId: question.id });
-      return null;
-    }
-    // ★ 리뷰 C-1 (2026-06-11): 무음 filter 금지 — 위치 라벨형 계약에서 원소를 떨구면
-    //   이후 보기 위치가 당겨져 answer↔보기 매핑이 조용히 오염된다(오답이 정답 처리).
-    //   비문자/빈/공백-only 원소 = 적재 결함 → 전수 검증 실패 시 서빙 거부(null).
-    if (!parsed.every((v): v is string => typeof v === 'string' && v.trim().length > 0)) {
-      logger.warn('distractors contains invalid element — refusing MC shuffle', {
-        questionId: question.id,
-      });
-      return null;
-    }
-    choices = parsed;
-  } catch (err) {
-    logger.warn('distractors JSON parse failed', { err: String(err), questionId: question.id });
+  // 보기 배열 + answer 계약 파싱 = 단일 정본 parseMcChoices (공개 표면과 공유 —
+  //   answer 해석 2벌 갈림 = 무음 오채점 재발 차단). 거부 사유별 경고는 여기서.
+  const parsed = parseMcChoices(question.distractors, question.answer);
+  if (!parsed.ok) {
+    logMcChoiceRejection(parsed, question.id, logger);
     return null;
   }
-
-  // 위치 라벨형 계약 검증 — answer 가 위치 집합으로 파싱되고 보기 수와 정합해야 서빙.
-  const answerLabels = parseMcAnswerLabels(question.answer);
-  if (answerLabels === null || !answerLabelsFitChoices(answerLabels, choices.length)) {
-    logger.warn('answer/choices contract violation — refusing MC shuffle', {
-      questionId: question.id,
-      choiceCount: choices.length,
-      answerParsable: answerLabels !== null,
-    });
-    return null;
-  }
-
-  // design-audit WS-0f — 보기 간 동치/중복 가드 (채점 동치 기준 normalizeAnswer).
-  //   같은 텍스트 보기 2개 = 한쪽을 고른 사용자가 위치 불일치로 오답 처리되는 불공정.
-  //   ※ index 쌍만 로깅 (위치 라벨형에선 정답 위치 자체도 비노출 — 정답 누출 차단).
-  const normalizedTexts = choices.map((t) => normalizeAnswer(t));
-  const firstSeenIndex = new Map<string, number>();
-  const collisionPairs: string[] = [];
-  normalizedTexts.forEach((norm, i) => {
-    const prev = firstSeenIndex.get(norm);
-    if (prev === undefined) {
-      firstSeenIndex.set(norm, i);
-      return;
-    }
-    collisionPairs.push(`${prev}=${i}`);
-  });
-  if (collisionPairs.length > 0) {
-    logger.warn('duplicate choice text — refusing MC shuffle (fallback to fill_blank)', {
-      questionId: question.id,
-      collisionIndexPairs: collisionPairs.join(','),
-    });
-    return null;
-  }
-  const originalTexts = choices;
 
   try {
-    return await shuffleChoices(originalTexts, {
+    return await shuffleChoices(parsed.originalTexts, {
       userId,
       questionId: question.id,
       date: todayDateString(),
@@ -505,6 +448,40 @@ async function buildShuffledChoices(
   } catch (err) {
     logger.warn('shuffleChoices failed', { err: String(err), questionId: question.id });
     return null;
+  }
+}
+
+/**
+ * parseMcChoices 거부 사유 → 경고 로깅 (구 buildShuffledChoices inline 경고 계승).
+ * no_distractors/no_answer 는 정상 fill_blank 경로 (무음 — 기존 동작 보존).
+ */
+function logMcChoiceRejection(
+  rejected: McChoicesRejected,
+  questionId: string,
+  logger: Logger,
+): void {
+  switch (rejected.reason) {
+    case 'no_distractors':
+    case 'no_answer':
+      return; // MC 대상 아님 (fill_blank 등) — 기존 무음 동작.
+    case 'distractors_not_array':
+      logger.warn('distractors JSON not array', { questionId });
+      return;
+    case 'distractors_parse_failed':
+      logger.warn('distractors JSON parse failed', { questionId });
+      return;
+    case 'distractors_invalid_element':
+      logger.warn('distractors contains invalid element — refusing MC shuffle', { questionId });
+      return;
+    case 'answer_contract_violation':
+      logger.warn('answer/choices contract violation — refusing MC shuffle', { questionId });
+      return;
+    case 'duplicate_choice_text':
+      logger.warn('duplicate choice text — refusing MC shuffle (fallback to fill_blank)', {
+        questionId,
+        collisionIndexPairs: rejected.collisionIndexPairs ?? '',
+      });
+      return;
   }
 }
 

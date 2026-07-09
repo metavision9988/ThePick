@@ -102,6 +102,20 @@ type = "ratelimit"
 namespace_id = "1004"
 simple = { limit = 60, period = 60 }
 
+# promo-1st P1 — 무인증 공개 학습 표면 `/api/public/*` per-IP(해시) rate limit.
+# 60 req/60s: 정상 학습자 충분, 스크래핑·DoS 1차 저지 (정답 유출 속도 제어는 F-3 하 부가).
+# D1 rate_limits 는 user 키 전제라 부적합 → 전용 unsafe binding(해시 IP 키).
+[[unsafe.bindings]]
+name = "PUBLIC_RATE_LIMITER_IP"
+type = "ratelimit"
+namespace_id = "1005"
+simple = { limit = 60, period = 60 }
+
+# promo-1st P1 — 공개 표면 익명 이벤트(serve/grade/card, PII 0). Cloudflare 단일 벤더.
+[[analytics_engine_datasets]]
+binding = "PUBLIC_ANALYTICS"
+dataset = "thepick_public_events_dev"
+
 # ============================================================
 # Vectorize (ADR-004 v2 / Session 056) — bge-m3 1024d cosine
 # dev: miniflare local emulation (실제 인덱스 미접근). production 인덱스명 일치 (.env.example).
@@ -161,6 +175,18 @@ name = "SEARCH_RATE_LIMITER_IP"
 type = "ratelimit"
 namespace_id = "2004"
 simple = { limit = 60, period = 60 }
+
+# promo-1st P1 — 공개 표면 rate limit (해시 IP)
+[[env.staging.unsafe.bindings]]
+name = "PUBLIC_RATE_LIMITER_IP"
+type = "ratelimit"
+namespace_id = "2005"
+simple = { limit = 60, period = 60 }
+
+# promo-1st P1 — 공개 표면 익명 이벤트 dataset
+[[env.staging.analytics_engine_datasets]]
+binding = "PUBLIC_ANALYTICS"
+dataset = "thepick_public_events_staging"
 
 # Vectorize staging — 격리 인덱스 (DA-C3 정합, staging 자동화 PR 데이터가 production 미오염)
 [[env.staging.vectorize]]
@@ -222,6 +248,18 @@ name = "SEARCH_RATE_LIMITER_IP"
 type = "ratelimit"
 namespace_id = "3004"
 simple = { limit = 60, period = 60 }
+
+# promo-1st P1 — 공개 표면 rate limit (해시 IP)
+[[env.production.unsafe.bindings]]
+name = "PUBLIC_RATE_LIMITER_IP"
+type = "ratelimit"
+namespace_id = "3005"
+simple = { limit = 60, period = 60 }
+
+# promo-1st P1 — 공개 표면 익명 이벤트 dataset
+[[env.production.analytics_engine_datasets]]
+binding = "PUBLIC_ANALYTICS"
+dataset = "thepick_public_events_production"
 
 # Vectorize production — 운영 인덱스 (.env.example VECTORIZE_INDEX 정합)
 [[env.production.vectorize]]

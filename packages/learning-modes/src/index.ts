@@ -49,6 +49,15 @@ export {
   parseMcAnswerLabels,
 } from './input-types/mc-answer.js';
 
+// 보기 배열 + answer 계약 파싱 단일 정본 (인증 buildShuffledChoices · 공개 표면 공유).
+export {
+  parseMcChoices,
+  type McChoiceRejectReason,
+  type McChoicesParsed,
+  type McChoicesRejected,
+  type McChoicesResult,
+} from './input-types/mc-choices.js';
+
 export {
   gradeFillBlank,
   type FillBlankGradeInput,
