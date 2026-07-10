@@ -103,3 +103,10 @@ Binary Gate: `pnpm --filter @thepick/web build`(m-8) + typecheck + lint + web/ap
 - **결과**: CRITICAL 0 / MAJOR 6(실질 4 — 2쌍은 동일 결함 독립 재발견) / MINOR 16.
 - **MAJOR 즉시 수정**: ①③ overview 캐시 carve-out 이 429/500 에도 public 5분 스탬프 → **200 한정 게이트** / ②④ 공개 표면 캐시 경계 단위 테스트 0 → **회귀 3건 신설**(overview 200 공용·비-200 no-store·next/grade/reveal no-store = 지뢰 #5 기계 차단) / ⑤ 비콘 위임 기록 부재 → **P5-D1 등재** / ⑥ RC-5 무언 미이행+overview 계약 3곳 중복 확대 → **정직 기록**: RC-5 정리 카드(공개 계약 타입 shared 단일화)는 미이행 상태이며 overview 로 중복 +1 — **카드 스코프에 overview 포함해 이월**(P5 배포를 막지 않되 은폐 없음).
 - **MINOR 즉시 수정 4**: 스모크 fetch 타임아웃 15s / mock overview total 파생 계산(불변식 고정) / PracticeMap key sentinel / defectReason 정직 라벨(`mc_in_disguise_or_numeric_short_answer` — 진성 숫자 단답 무구분 명시). 잔여 12 = 보고서 기록 보존.
+
+### 8.3 배포 기록 (2026-07-10)
+
+- **api staging** 배포(Version `4c73f7e5`) — ★부수 발견·정비: **staging D1 스키마 선재 드리프트**(0022~0042 등 13 마이그 미적용 → input_type/distractors 부재로 공개 라우트 500). 기결·production 기적용 마이그 13건 staging 동기화(0041/0042 RW 선작성분 포함 — staging 한정, production RW 게이트 불변). 동기화 후 overview 라이브 검증(캐시 헤더 포함). next 404 = staging 데이터 빈곤(서빙 자격 행 희소) — 정직 fail-safe 동작 확인.
+- **api production** 배포(Version `7c08abd6`, 불가역 1줄 고지 후) → **스모크 14/14 PASS** — overview total=**521**(P3 적재분 정확 일치), next/grade/reveal 라운드트립, 정답 비노출, no-store/공용캐시 경계, 미존재 id 404.
+- **web Pages** 배포(`thepick-study.pages.dev`, PUBLIC_API_BASE_URL 게이트 통과. PUBLIC_CF_BEACON_TOKEN 미설정 경고와 함께 — 진산 1줄 행위: 대시보드 Web Analytics 토큰 발급 후 재배포 시 주입). 번들 검증: production API base 인라인·localhost 0건.
+- **라이브 브라우저 스모크 PASS**(모바일 375): 랜딩 H1·라이브 임베드·픽커·기출 지도·실기출 서빙(제5회 문45)·채점 Pill. 스크린샷 확인 — 디자인 정본 정합.
