@@ -99,6 +99,11 @@ const GradeBodySchema = z.object({
   answer: z.string().min(1).max(2000).optional(),
 });
 
+/** reveal(정답 공개) 요청 — 카드플립·힌트 파생용(P4-D1). */
+const RevealBodySchema = z.object({
+  questionId: z.string().min(1).max(128),
+});
+
 function buildLogger(env: PublicRouteBindings, route: string): Logger {
   const known: ReadonlySet<string> = new Set(['development', 'staging', 'production', 'test']);
   const environment: LoggerEnvironment = known.has(env.ENVIRONMENT ?? '')
@@ -407,6 +412,88 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
 
     // explanation 0/525(F-5) — 없으면 필드 생략(프론트 빈상태 처리). correctChoiceIds = MC 만.
     const body: Record<string, unknown> = { isCorrect, correctAnswer };
+    if (row.explanation !== null && row.explanation !== '') {
+      body.explanation = row.explanation;
+    }
+    if (correctChoiceIds !== undefined) {
+      body.correctChoiceIds = correctChoiceIds;
+    }
+    return c.json(body);
+  });
+
+  // POST /api/public/reveal — 정답 공개(카드플립 뒷면·빵꾸노트 힌트 파생용, P4-D1).
+  // `/grade` 가 이미 임의 답 제출로 동일 정보를 노출하므로 신규 유출 표면 0 —
+  // 더미 채점(지표 오염) 대신 명시 경로 + AE 'card' 이벤트(암기 카드 소비 지표).
+  // 근거: docs/plans/promo-1st-p4-frontend-ledger.md §2 P4-D1.
+  app.post('/reveal', async (c) => {
+    const logger = buildLogger(c.env, 'reveal');
+    const raw = await c.req.json().catch(() => null);
+    const parsed = RevealBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      return c.json({ error: ErrorCode.VALIDATION_ERROR, details: parsed.error.format() }, 400);
+    }
+    const { questionId } = parsed.data;
+
+    // 경계 강제 = /grade 와 동일: exam_type='1st' AND status='active' (2차/flagged 거부).
+    let row: GradeRow | null;
+    try {
+      row = await c.env.DB.prepare(
+        `SELECT id, subject, answer, explanation, input_type, distractors
+         FROM exam_questions
+         WHERE id = ? AND exam_type = ? AND status = ?
+         LIMIT 1`,
+      )
+        .bind(questionId, FIXED_EXAM_TYPE, FIXED_STATUS)
+        .first<GradeRow>();
+    } catch (err) {
+      logger.error('reveal query failed', err);
+      return c.json({ error: ErrorCode.INTERNAL_ERROR }, 500);
+    }
+
+    if (row === null) {
+      return c.json({ error: 'QUESTION_NOT_FOUND' }, 404);
+    }
+    if (row.answer === null || row.answer === '') {
+      return c.json({ error: 'QUESTION_HAS_NO_ANSWER' }, 422);
+    }
+
+    const inputType = resolveInputType(row.input_type);
+    let correctChoiceIds: string[] | undefined;
+
+    if (inputType === 'multiple_choice') {
+      const mc = parseMcChoices(row.distractors, row.answer);
+      if (!mc.ok) {
+        logger.error('reveal MC contract violation (data defect)', undefined, {
+          questionId: row.id,
+          reason: mc.reason,
+        });
+        return c.json({ error: 'QUESTION_NOT_GRADABLE' }, 422);
+      }
+      const secret = c.env.JWT_SECRET ?? '';
+      correctChoiceIds = [];
+      for (const oi of mc.correctOriginalIndices) {
+        correctChoiceIds.push(await issueChoiceId(secret, row.id, oi));
+      }
+    } else if (inputType === 'fill_blank') {
+      // MC-in-disguise(위치라벨 answer)는 보기 맥락 없이는 무의미한 정답 — 공개 거부.
+      if (parseMcAnswerLabels(row.answer) !== null) {
+        logger.error('reveal fill_blank on position-label answer (MC-in-disguise)', undefined, {
+          questionId: row.id,
+        });
+        return c.json({ error: 'QUESTION_NOT_GRADABLE' }, 422);
+      }
+    } else {
+      // essay/calc — 공개 표면 미지원(/grade 와 동일 경계).
+      return c.json({ error: 'QUESTION_NOT_GRADABLE' }, 422);
+    }
+
+    recordPublicEvent(c.env.PUBLIC_ANALYTICS, 'card', {
+      subject: row.subject,
+      inputType,
+      examType: FIXED_EXAM_TYPE,
+    });
+
+    const body: Record<string, unknown> = { correctAnswer: row.answer };
     if (row.explanation !== null && row.explanation !== '') {
       body.explanation = row.explanation;
     }

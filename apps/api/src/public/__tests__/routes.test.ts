@@ -308,3 +308,59 @@ describe('POST /api/public/grade — 채점', () => {
     expect(((await res.json()) as { error: string }).error).toBe('QUESTION_NOT_GRADABLE');
   });
 });
+
+describe('POST /api/public/reveal — 정답 공개 (P4-D1)', () => {
+  it('MC reveal: correctAnswer + correctChoiceIds + explanation (isCorrect 필드 없음)', async () => {
+    seedQ({
+      id: 'q-rv1',
+      inputType: 'multiple_choice',
+      answer: '2',
+      explanation: '플립 해설',
+      distractors: FOUR_CHOICES,
+    });
+    const res = await post('/reveal', { questionId: 'q-rv1' });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body.correctAnswer).toBe('2');
+    expect(body.explanation).toBe('플립 해설');
+    expect(body.correctChoiceIds).toEqual([await issueChoiceId(JWT_SECRET, 'q-rv1', 1)]);
+    expect(body).not.toHaveProperty('isCorrect');
+  });
+
+  it('fill_blank reveal: correctAnswer 텍스트, correctChoiceIds/explanation 생략', async () => {
+    seedQ({ id: 'q-rv2', inputType: 'fill_blank', answer: '보험가액' });
+    const res = await post('/reveal', { questionId: 'q-rv2' });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body.correctAnswer).toBe('보험가액');
+    expect(body).not.toHaveProperty('correctChoiceIds');
+    expect(body).not.toHaveProperty('explanation');
+  });
+
+  it('★회귀: 2차/flagged 문항 reveal 거부 → 404 (grade 와 동일 경계 강제)', async () => {
+    seedQ({ id: 'q-rv-2nd', examType: '2nd', inputType: 'fill_blank', answer: '2차정답' });
+    seedQ({ id: 'q-rv-flag', status: 'flagged', inputType: 'fill_blank', answer: '정답' });
+    for (const questionId of ['q-rv-2nd', 'q-rv-flag', 'q-rv-none']) {
+      const res = await post('/reveal', { questionId });
+      expect(res.status).toBe(404);
+      expect(((await res.json()) as { error: string }).error).toBe('QUESTION_NOT_FOUND');
+    }
+  });
+
+  it('MC-in-disguise(위치라벨 answer) reveal → 422 (보기 맥락 없는 위치라벨 공개 거부)', async () => {
+    seedQ({ id: 'q-rv-dis', inputType: 'fill_blank', answer: '2' });
+    const res = await post('/reveal', { questionId: 'q-rv-dis' });
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as { error: string }).error).toBe('QUESTION_NOT_GRADABLE');
+  });
+
+  it('essay reveal → 422 / questionId 누락 → 400 / answer 없음 → 422', async () => {
+    seedQ({ id: 'q-rv-essay', inputType: 'essay', answer: '서술 정답' });
+    seedQ({ id: 'q-rv-noans', inputType: 'fill_blank', answer: null });
+    expect((await post('/reveal', { questionId: 'q-rv-essay' })).status).toBe(422);
+    expect((await post('/reveal', {})).status).toBe(400);
+    const noans = await post('/reveal', { questionId: 'q-rv-noans' });
+    expect(noans.status).toBe(422);
+    expect(((await noans.json()) as { error: string }).error).toBe('QUESTION_HAS_NO_ANSWER');
+  });
+});
