@@ -51,6 +51,14 @@ jobs:
       - name: Lint
         run: pnpm -r lint
 
+      # parser 테스트는 pdfplumber subprocess 필요 — 러너에 venv 부재로 CI 가 장기 red
+      # 였다(2026-07-10 진단: 최근 15+ run 전부 동일 실패). 로컬 개발 절차와 동일 경로.
+      - name: Setup Python venv for parser (pdfplumber)
+        run: |
+          cd packages/parser
+          python3 -m venv .venv
+          .venv/bin/pip install --quiet pdfplumber
+
       # design-audit WS-0a (2026-06-10) — learning-modes(116)·srs(35) 추가.
       # 두 패키지는 test 필터 누락으로 CI 에서 151 테스트 미실행이었다(typecheck/lint 는
       # `pnpm -r` 로 이미 커버). verify-engine-contracts VITEST_PACKAGES 와 동시 등록.

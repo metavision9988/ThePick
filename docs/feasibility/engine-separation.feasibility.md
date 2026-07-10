@@ -71,4 +71,6 @@
 
 > 결재 정본·효력 범위·확정 아키텍처: `docs/plans/decision-card-20260704-engine-separation-r5.md`
 
+- [x] 축소 GO — 2026-07-04 진산 (위 Q1~Q5 결재의 기계판독 기록. A안 Epic plan 허용 / AutoVerify 는 별건 R1~R5 전수 / 잔여 금지 하단 명시. ★본 체크박스 = CI G-1 게이트 형식 정합 2026-07-10 — 신규 결정 아님, 기결 07-04 반영)
+
 **R5 부분 확정에 따른 상태 전환**: A안 Epic의 plan.md 작성 **허용**(M1 L3 plan + 플랫폼 계정 계층 설계서 — 코드는 plan 승인 후). AutoVerify Gate는 **별건 신규 Epic** → `docs/feasibility/self-verification.feasibility.md` R1~R5 전수 후 plan(AI 출력 정확도 = 비즈니스 핵심, G-1 자동 발동). 잔여 금지: Q4 미결 상태에서 2호 종목 온보딩 착수 / KAE 3문서를 아키텍처 정본으로 인용(untracked+자체 결재 6건 미결).
