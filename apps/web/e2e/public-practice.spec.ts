@@ -25,7 +25,9 @@ test('랜딩 — 정적 소개 + 라이브 임베드 1문항 → 채점 → 계�
   ).toBeVisible();
   await expect(page.getByRole('link', { name: '바로 풀어보기' })).toBeVisible();
 
-  // 라이브 임베드 — 실제 mock API 소비 (가짜 UI 아님)
+  // 라이브 임베드 — client:visible (RC-4) 이므로 뷰포트 진입시켜 hydration 트리거
+  await page.getByText('지금 바로 한 문제').scrollIntoViewIfNeeded();
+  // 실제 mock API 소비 (가짜 UI 아님)
   await expect(page.getByText(/public mock question \d+/)).toBeVisible();
   await expect.poll(() => api.counters.publicNext).toBeGreaterThanOrEqual(1);
 

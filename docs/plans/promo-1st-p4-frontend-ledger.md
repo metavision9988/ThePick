@@ -72,3 +72,19 @@ Binary Gate: `pnpm --filter @thepick/web build`(m-8) + typecheck + lint + web/ap
 - **MAJOR 전건 즉시 수정**: ①②③ Pretendard CDN 동일근원 3렌즈 → **P4-D8 자가호스팅 집행**(preload+2단 서브셋, CDN 링크 제거) / ④ FlipDeck 전역 Space 키가 포커스된 '건너뜀' 버튼 표준 활성화 가로채기 → 버튼/링크 포커스 시 비개입 가드(PublicQuestionCard 숫자 키에도 동형 적용).
 - **MINOR 즉시 수정 5**: 복수정답 시 나머지 정답 보기 표식 유지(gradeStateOf) / PracticeSummary 공유 실패 'busy' 고착 → try-catch 'failed' 전이 / fetchNext 세션 세대 가드(in-flight 응답 착지 차단) / StreakPanel 최고칸 KST 경계 +1일 조회 / (키 핸들러 통일 — MAJOR-2 에 포함).
 - **MINOR 잔여 처분**: 보고서 §처분 매트릭스 등재 — 핵심: API_BASE localhost 무음 폴백(선재 5파일 공통 패턴) = **P5 배포 Binary Gate 에 PUBLIC_API_BASE_URL 검증 명기**(일괄 카드) / JWT_SECRET 회전 in-flight 오채점 창(MINOR-12 강등 유지) = 운영 원장 1줄(회전 배포 시 공개 표면 고지) / sw.js syncOfflineActions stub = 기존 RC-3 원장 유지. 나머지 = 보고서 기록 보존(후속 재량).
+
+## 7. 5-페르소나 기술부채 리뷰 처분 (2026-07-10, `phaseN-tech-debt-20260710-105821-INDEX.md`)
+
+결과: **CRITICAL 1(C-1) / MAJOR 19 / MINOR 11**, 진앙 클러스터 RC-1~RC-5.
+
+- **C-1 즉시 처분 완료** (old↔-MC 이중 진실 행 — 오답 36 포함 old 525행이 **인증** 학습 경로에서 무가드 서빙·fill_blank fallback 오채점, 공개 표면 fail-safe 의 인증판 부재 비대칭):
+  - ③ **서빙·채점 가드 이식**: `apps/api/src/study/serving-guard.ts` `isMisgradableRow` — /next 오버샘플(×3) 후 필터 + /grade 422 QUESTION_NOT_GRADABLE. ★**1차 한정**(1차=전 문항 객관식 → fill_blank+위치라벨=확정 MC-in-disguise / 2차는 텍스트·수치 정답이 우연히 숫자일 수 있어 비대상 — 무분별 적용 시 기존 2차 계약 테스트 37건 파손 실측으로 확정).
+  - ① **회귀 테스트 4건**: old 행 /next 제외·유자격 0 시 정직 exhausted·/grade 422·비대상(1차 MC/2차 fill_blank) 불변. api 101/101.
+  - ② old 행 처분 상태머신 마이그 = **L3, 인증 1차 학습 표면 오픈 선결 게이트로 승격 기록**(자율 금지 — 진산 결재. incident-1st-answer-errors-20260710.md 연계). 본 가드가 그 전까지의 fail-safe.
+- **MAJOR 즉시 처분 1**: RC-4 LandingEmbed `client:visible`(below-fold hydration — 랜딩 LCP 보호).
+- **MAJOR 명시 이월 18** (진앙별 지정 트랙):
+  - **RC-1 잔여**(M-5 answer-sync 워터마크·M-9/12/15 통계 이중 계상 등) → old 행 처분 L3 plan 에 동승(위 ② 게이트).
+  - **RC-2**(M-1 public queries examId wrapper·Rule 16/17) → **M1 exams/ 골격 plan 편승**(`m1-exams-scaffold-shared-detox.plan.md`).
+  - **RC-3**(M-14/16~19 알림 1채널·smoke-public-surface·DR runbook·결함 텔레메트리) → **P5 배포 체크리스트 blocking 항목**으로 승격.
+  - **RC-4 잔여**(M-8/10/11 random_key 마이그+인덱스+exclude 파라미터) → L3 마이그 슬롯(old 행 처분 마이그와 동승 검토).
+  - **RC-5**(M-2/3/4/6/7/13 공개 계약 타입 shared 단일화·schema.ts 라벨 동기·/api/public/meta) → P5 전 정리 카드.

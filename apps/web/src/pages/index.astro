@@ -95,7 +95,8 @@ const modes = [
         </ul>
       </section>
 
-      <LandingEmbed client:load />
+      {/* 5-페르소나 RC-4: below-fold 임베드는 뷰포트 진입 시 hydration — 랜딩 LCP 보호 */}
+      <LandingEmbed client:visible />
 
       <footer class="mt-12 border-t border-gray-100 pt-4 text-xs text-gray-400">
         쪽집게 — 손해평가사 자격시험 학습 서비스. 진도 데이터는 브라우저에만 저장된다.

@@ -2162,3 +2162,85 @@ describe('weak user 격리 — /mode weakTop이 다른 user 데이터 누설 X',
     expect(body.weakTop.find((w) => w.cardId === 'eq-iso-2')).toBeUndefined();
   });
 });
+
+describe('★C-1 서빙 가드 — 1차 MC-in-disguise 행(오답 36 클래스) 인증 표면 차단 (5-페르소나 P4)', () => {
+  // old 525행 재현: exam_type='1st' + input_type='fill_blank' + answer=위치라벨 + distractors NULL.
+  function seedOldFirstRow(id: string, answer: string): void {
+    ctx.raw
+      .prepare(
+        `INSERT INTO exam_questions
+           (id, year, round, question_number, subject, content, answer, explanation,
+            related_nodes, status, exam_type, confusion_type, input_type, distractors)
+         VALUES (?, 2023, 9, 1, NULL, '1차 원행(보기 미추출)', ?, NULL, NULL, 'active', '1st',
+                 NULL, 'fill_blank', NULL)`,
+      )
+      .run(id, answer);
+  }
+
+  // -MC 서빙행 재현: input_type='multiple_choice' + distractors 계약 성립.
+  function seedFirstMcRow(id: string): void {
+    ctx.raw
+      .prepare(
+        `INSERT INTO exam_questions
+           (id, year, round, question_number, subject, content, answer, explanation,
+            related_nodes, status, exam_type, confusion_type, input_type, distractors)
+         VALUES (?, 2023, 9, 1, NULL, '1차 MC 서빙행', '2', NULL, NULL, 'active', '1st',
+                 NULL, 'multiple_choice', ?)`,
+      )
+      .run(id, JSON.stringify(['보험가액', '보험금액', '손해액', '자기부담금']));
+  }
+
+  it('/next examType=1st — old 행 제외, -MC 행만 서빙', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedOldFirstRow('eq-old-1', '2'); // 위치라벨 answer (확정 오답 36 과 동일 클래스)
+    seedOldFirstRow('eq-old-2', '①');
+    seedFirstMcRow('eq-mc-1');
+    const res = await fetchAs('u1', '/next?examType=1st&count=5');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as StudyResponseBody;
+    expect(body.questions!.map((q) => q.id)).toEqual(['eq-mc-1']);
+  });
+
+  it('/next examType=1st — 유자격 행 0 이면 정직 exhausted (무음 오채점 서빙 금지)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedOldFirstRow('eq-old-only', '3');
+    const res = await fetchAs('u1', '/next?examType=1st');
+    const body = (await res.json()) as StudyResponseBody;
+    expect(body.exhausted).toBe(true);
+  });
+
+  it('/grade — old 행 채점 요청 → 422 QUESTION_NOT_GRADABLE (fill_blank fallback 오채점 차단)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedOldFirstRow('eq-old-g', '2');
+    const res = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-old-g', userAnswer: '2' }),
+    });
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as StudyResponseBody;
+    expect(body.error).toBe('QUESTION_NOT_GRADABLE');
+  });
+
+  it('/grade — 1차 -MC 행·2차 fill_blank(텍스트 정답) 은 가드 비대상 (기존 계약 불변)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedFirstMcRow('eq-mc-g');
+    seedExamQuestion({ id: 'eq-2nd-fb', examType: '2nd', answer: '보험가액' });
+    // 1차 MC — 셔플 라벨 채점 경로 정상 동작(200)
+    const mcRes = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-mc-g', userAnswer: 'A' }),
+    });
+    expect(mcRes.status).toBe(200);
+    // 2차 fill_blank 텍스트 정답 — 가드 비대상, 정상 채점
+    const fbRes = await fetchAs('u1', '/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: 'eq-2nd-fb', userAnswer: '보험가액' }),
+    });
+    expect(fbRes.status).toBe(200);
+    const fbBody = (await fbRes.json()) as StudyResponseBody;
+    expect(fbBody.isCorrect).toBe(true);
+  });
+});

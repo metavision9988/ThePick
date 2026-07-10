@@ -64,6 +64,7 @@ import {
   type FsrsRating,
 } from '@thepick/srs';
 import { requireAuth, type RequireAuthVariables } from '../auth/middleware/require-auth.js';
+import { isMisgradableRow } from './serving-guard.js';
 import { writeTelemetryEvent } from '../telemetry/write-helper.js';
 import { D1_UNIQUE_CONSTRAINT_PATTERN, withRetry } from '../middleware/retry.js';
 import {
@@ -922,6 +923,16 @@ export function createStudyRoutes(): Hono<StudyEnv> {
         ? [userId, examType, categorySubject, countNum]
         : [userId, examType, countNum];
 
+    // C-1 서빙 가드(serving-guard.ts): MC-in-disguise 행(위치라벨 answer + 보기 계약
+    // 불능 — old 525행, 확정 오답 36 포함)을 서빙에서 제외. SQL 로 표현 불가한 계약
+    // 판정이므로 오버샘플 후 사후 필터(공개 표면 SERVE_CANDIDATE_LIMIT 패턴 동형).
+    // 현 1차 풀 유자격 비율 ≈ 50%(-MC 521 / 전체 1,046) → ×3 이면 count 충족 여유.
+    const OVERSAMPLE = 3;
+    const nextBindsSampled: ReadonlyArray<string | number> = [
+      ...nextBinds.slice(0, -1),
+      countNum * OVERSAMPLE,
+    ];
+
     let questions: ReadonlyArray<ExamQuestionRow>;
     try {
       const result = await c.env.DB.prepare(
@@ -939,9 +950,9 @@ export function createStudyRoutes(): Hono<StudyEnv> {
           ${orderClause}
           LIMIT ?`,
       )
-        .bind(...nextBinds)
+        .bind(...nextBindsSampled)
         .all<ExamQuestionRow>();
-      questions = result.results;
+      questions = result.results.filter((q) => !isMisgradableRow(q)).slice(0, countNum);
     } catch (err) {
       logger.error('next query failed', err, { userId, examType, count: countNum });
       c.header('Retry-After', '5');
@@ -1109,6 +1120,15 @@ export function createStudyRoutes(): Hono<StudyEnv> {
 
     if (question.answer === null || question.answer === '') {
       return c.json({ error: 'QUESTION_HAS_NO_ANSWER', questionId }, 422);
+    }
+
+    // C-1 채점 가드: MC-in-disguise 행은 gradeFillBlank fallback 이 위치라벨을 정답
+    // 기준으로 삼는 구조적 오채점 → 정직 거부(공개 표면 /grade 422 계약 동형).
+    if (isMisgradableRow(question)) {
+      logger.error('grade refused — MC-in-disguise row (C-1 serving guard)', undefined, {
+        questionId,
+      });
+      return c.json({ error: 'QUESTION_NOT_GRADABLE', questionId }, 422);
     }
 
     // === Step A: input_type 분기 채점 (gradeAnswerByType 추출, 5-페르소나 흡수) ===
