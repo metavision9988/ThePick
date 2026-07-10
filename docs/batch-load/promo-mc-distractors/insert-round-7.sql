@@ -1,0 +1,381 @@
+-- promo-1st P3 — 제7회(2021) 1차 4지선다 신규 MC 행 75건 (순수 INSERT, old 행 무접촉)
+-- 소스: docs/batch-load/batch-Q-2021-7-1st/batch-Q-2021-07-1st.json + answer-corrections.json (교정 11·제외 0)
+-- 전략: ADR-046 D-6(a) 정합 — {oldId}-MC 신규 행 + INSERT...SELECT 메타 승계 + answer 가드
+-- 검산 (적용 직후 기계 실행 의무): SELECT COUNT(*) FROM exam_questions WHERE id LIKE '%-MC' AND round=7; -- 기대 75
+-- 부분 실패 복구: SELECT id FROM exam_questions WHERE id LIKE '%-MC' AND round=7; 로 기적재분 확인 후 잔여만 재실행
+PRAGMA foreign_keys = ON;
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '보험계약에 관한 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["보험계약은 유상ㆍ쌍무계약이다.","보험계약은 보험자의 청약에 대하여 보험계약자가 승낙함으로써 성립한다.","보험계약은 보험자의 보험금 지급책임이 우연한 사고의 발생에 달려 있으므로 사행 계약의 성질을 갖는다.","보험계약은 부합계약이다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-001' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '타인을 위한 보험에 관한 설명으로 옳은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["보험계약자는 위임을 받지 아니하면 특정의 타인을 위하여 보험계약을 체결할 수 없다.","타인을 위한 보험계약의 경우에 그 타인은 수익의 의사표시를 하여야 그 계약의 이익을 받을 수 있다.","보험계약자가 불특정의 타인을 위한 보험을 그 타인의 위임 없이 체결할 경우에는 이를 보험자에게 고지할 필요가 없다.","타인을 위한 보험계약의 경우 보험계약자가 보험료의 지급을 지체한 때에는 그 타인이 그 권리를 포기하지 아니하는 한 그 타인도 보험료를 지급할 의무가 있다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-002' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '상법상 보험에 관한 설명으로 옳은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["보험증권의 멸실로 보험계약자가 증권의 재교부를 청구한 경우 증권의 작성비용은 보험자의 부담으로 한다.","보험기간의 시기는 보험계약 이후로만 하여야 한다.","보험계약당시에 보험사고가 이미 발생하였을 경우 당사자 쌍방과 피보험자가 이를 알지 못하였어도 그 계약은 무효이다.","보험계약의 당사자는 보험증권의 교부가 있은 날로부터 일정한 기간내에 한하여 그 증권내용의 정부(正否)에 관한 이의를 할 수 있음을 약정할 수 있다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-003' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '보험대리상 등의 권한에 관한 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["보험대리상은 보험계약자로부터 보험계약에 관한 청약의 의사표시를 수령할 수 있다.","보험자는 보험계약자로부터 보험료를 수령할 수 있는 보험대리상의 권한을 제한할 수 있다.","보험대리상은 보험계약자에게 보험계약에 관한 해지의 의사표시를 할 수 없다.","보험대리상이 아니면서 특정한 보험자를 위하여 계속적으로 보험계약의 체결을 중개 하는 자는 보험계약자로부터 보험계약에 관한 취소의 의사표시를 수령할 수 없다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-004' AND exam_type = '1st' AND status = 'active' AND answer = '3';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '보험계약의 해지에 관한 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["보험계약자가 보험계약을 전부 해지했을 때에는 언제든지 미경과보험료의 반환을 청 구할 수 있다.","타인을 위한 보험의 경우를 제외하고, 보험사고가 발생하기 전에는 보험계약자는 언제든지 보험계약의 전부를 해지할 수 있다.","타인을 위한 보험계약의 경우 보험사고가 발생하기 전에는 그 타인의 동의를 얻으면 그 계약을 해지할 수 있다.","보험금액이 지급된 때에도 보험금액이 감액되지 아니하는 보험의 경우에는 보험계약 자는 그 사고발생후에도 보험계약을 해지할 수 있다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-005' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '보험료의 지급과 지체의 효과에 관한 설명으로 옳은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["보험계약자는 계약체결후 지체없이 보험료의 전부 또는 제1회 보험료를 지급하여야 한다.","계속보험료가 약정한 시기에 지급되지 아니한 때에는 보험자는 상당한 기간을 정하여 보험계약자에게 최고하고 그 기간내에 지급되지 아니한 때에는 그 계약은 해지된 것 으로 본다.","특정한 타인을 위한 보험의 경우에 보험계약자가 보험료의 지급을 지체한 때에는 보험자는 그 계약을 해제 또는 해지할 수 있다.","보험계약자가 최초보험료를 지급하지 아니한 경우에는 다른 약정이 없는 한 계약성립 후 1월이 경과하면 그 계약은 해제된 것으로 본다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-006' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '고지의무에 관한 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["고지의무를 부담하는 자는 보험계약상의 보험계약자 또는 보험수익자이다.","보험계약자가 고의로 중요한 사항을 고지하지 아니한 경우, 보험자는 계약 체결일로 부터 1월이 된 시점에는 계약을 해지할 수 있다.","보험자가 계약당시에 보험계약자의 고지의무위반 사실을 알았을 때에는 계약을 해지 할 수 없다.","보험계약자가 중대한 과실로 중요한 사항을 고지하지 아니한 경우, 보험자는 계약 체결일로부터 5년이 경과한 시점에는 계약을 해지할 수 없다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-007' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '보험약관에 관한 설명으로 옳은 것을 모두 고른 것은? (다툼이 있으면 판례에 따름) ㄱ. 보통보험약관이 계약당사자에 대하여 구속력을 가지는 것은 보험계약 당사자 사이에서 계약내용에 포함시키기로 합의하였기 때문이다. ㄴ. 보험자가 약관의 교부ㆍ설명 의무를 위반한 경우에 보험계약이 성립한 날부터 3개월 이내에는 피보험자 또는 보험수익자도 그 계약을 해지할 수 있다. ㄷ. 약관의 내용이 이미 법령에 의하여 정하여진 것을 되풀이 하는 정도에 불과한 경우, 보험자는 고객에게 이를 따로 설명하지 않아도 된다.', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["ㄱ, ㄴ","ㄱ, ㄷ","ㄴ, ㄷ","ㄱ, ㄴ, ㄷ"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-008' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '위험변경증가의 통지와 계약해지에 관한 설명으로 옳은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["보험기간 중에 피보험자가 사고발생의 위험이 현저하게 변경 또는 증가된 사실을 안 때에는 지체없이 보험자에게 통지하여야 한다.","보험계약체결 직전에 보험계약자가 사고발생의 위험이 변경 또는 증가된 사실을 안 때에는 지체없이 보험자에게 통지하여야 한다.","보험기간 중에 위험변경증가의 통지를 받은 때에는 보험자는 3개월 내에 보험료의 증액을 청구할 수 있다.","보험기간 중에 위험변경증가의 통지를 받은 때에는 보험자는 3개월 내에 계약을 해지 할 수 있다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-009' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '보험계약자 등의 고의나 중과실로 인한 위험증가와 계약해지에 관한 설명으로 옳지 않은 것은? (다툼이 있으면 판례에 따름)', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["보험기간 중에 보험계약자의 중대한 과실로 인하여 사고발생의 위험이 현저하게 증가 된 때에는 보험자는 그 사실을 안 날부터 1월내에 보험료의 증액을 청구할 수 있다.","위험의 현저한 변경이나 증가된 사실과 보험사고 발생과의 사이에 인과관계가 부존재 한다는 점에 관한 주장ㆍ입증책임은 보험자 측에 있다.","보험기간 중에 피보험자의 고의로 인하여 사고발생의 위험이 현저하게 증가된 때에는 보험자는 그 사실을 안 날부터 1월내에 계약을 해지할 수 있다.","사고 발생의 위험이 현저하게 변경 또는 증가된 사실이라 함은 그 변경 또는 증가된 위험이 보험계약의 체결 당시에 존재하고 있었다면 보험자가 보험계약을 체결하지 않 았거나 적어도 그 보험료로는 보험을 인수하지 않았을 것으로 인정되는 정도의 것을 말한다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-010' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '보험자의 계약해지와 보험금청구권에 관한 설명으로 옳은 것을 모두 고른 것은? ㄱ. 보험사고 발생 후라도 보험계약자의 계속보험료 지급지체를 이유로 보험자가 계약을 해지하였을 때에는 보험금을 지급할 책임이 있다. ㄴ. 보험사고 발생 후에 보험계약자가 고지의무를 위반한 사실이 보험사고 발 생에 영향을 미치지 아니하였음이 증명된 경우에는 보험자는 보험금을 지 급할 책임이 있다. ㄷ. 보험수익자의 중과실로 인하여 사고발생의 위험이 현저하게 변경되거나 증 가된 사실이 보험사고 발생에 영향을 미치지 아니하였음이 증명된 경우에는 보험자는 보험금을 지급할 책임이 있다.', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["ㄷ","ㄱ, ㄴ","ㄴ, ㄷ","ㄱ, ㄴ, ㄷ"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-011' AND exam_type = '1st' AND status = 'active' AND answer = '3';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '보험사고발생의 통지의무에 관한 설명으로 옳은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["상법은 보험사고발생의 통지의무위반 시 보험자의 계약해지권을 규정하고 있다.","보험계약자는 보험사고의 발생을 안 때에는 상당한 기간 내에 보험자에게 그 통지를 발송하여야 한다.","피보험자가 보험사고발생의 통지의무를 해태함으로 인하여 손해가 증가된 때에는 보험자는 그 증가된 손해를 보상할 책임이 없다.","보험수익자는 보험사고발생의 통지의무자에 포함되지 않는다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-012' AND exam_type = '1st' AND status = 'active' AND answer = '3';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '손해보험에 관한 설명으로 옳지 않은 것은? (단, 다른 약정이 없음을 전제로 함)', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["보험사고로 인하여 상실된 피보험자가 얻을 보수는 보험자가 보상할 손해액에 산입 하여야 한다.","보험계약은 금전으로 산정할 수 있는 이익에 한하여 보험계약의 목적으로 할 수 있다.","무효와 실권의 사유는 손해보험증권의 기재사항이다.","당사자간에 보험가액을 정하지 아니한 때에는 사고발생시의 가액을 보험가액으로 한다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-013' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '보험금액의 지급에 관한 설명으로 옳지 않은 것은? (다툼이 있으면 판례에 따름)', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["보험금액의 지급에 관하여 약정기간이 있는 경우, 보험자는 그 기간 내에 보험금액을 지급하여야 한다.","보험금액의 지급에 관하여 약정기간이 없는 경우, 보험자는 보험사고발생의 통지를 받은 후 지체없이 지급할 보험금액을 정하여야 한다.","보험금액의 지급에 관하여 약정기간이 없는 경우, 보험금액이 정하여진 날부터 1월내에 보험수익자에게 보험금액을 지급하여야 한다.","보험계약자의 동의없이 보험자와 피보험자 사이에 한 보험금 지급기한 유예의 합의 는 유효하다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-014' AND exam_type = '1st' AND status = 'active' AND answer = '3';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '상법 제662조(소멸시효)에 관한 설명으로 옳은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["보험금청구권은 2년간 행사하지 아니하면 시효의 완성으로 소멸한다.","보험료의 반환청구권은 3년간 행사하지 아니하면 시효의 완성으로 소멸한다.","보험료청구권은 1년간 행사하지 아니하면 시효의 완성으로 소멸한다.","적립금의 반환청구권은 2년간 행사하지 아니하면 시효의 완성으로 소멸한다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-015' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '보험계약자 등의 불이익변경금지에 관한 설명으로 옳지 않은 것은?', '1', explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["상법 보험편의 규정은 당사자간의 특약으로 피보험자의 이익으로 변경하지 못한다.","상법 보험편의 규정은 당사자간의 특약으로 보험수익자의 불이익으로 변경하지 못한다.","해상보험의 경우 보험계약자 등의 불이익변경금지 규정은 적용되지 아니한다.","재보험의 경우 보험계약자 등의 불이익변경금지 규정은 적용되지 아니한다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-016' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '중복보험에 관한 설명으로 옳은 것을 모두 고른 것은? ㄱ. 중복보험의 경우 보험자 1인에 대한 권리의 포기는 다른 보험자의 권리 의무에 영향을 미치지 않는다. ㄴ. 중복보험계약을 체결하는 경우에는 보험계약자는 각 보험자에 대하여 각 보험계약의 내용을 통지하여야 한다. ㄷ. 중복보험에서 보험금액의 총액이 보험가액을 초과한 때에는 보험자는 각자의 보험금액의 한도에서 연대책임을 진다.', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["ㄱ","ㄱ, ㄴ","ㄴ, ㄷ","ㄱ, ㄴ, ㄷ"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-017' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '甲은 보험가액이 2억원인 건물에 대하여 보험금액을 1억원으로 하는 손해보험에 가입하였다. 이에 관한 설명으로 옳지 않은 것은? (단, 다른 약정이 없음을 전제 로 함)', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["일부보험에 해당한다.","전손(全損)인 경우에는 보험자는 1억원을 지급한다.","1억원의 손해가 발생한 경우에는 보험자는 1억원을 지급한다.","8천만원의 손해가 발생한 경우에는 보험자는 4천만원을 지급한다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-018' AND exam_type = '1st' AND status = 'active' AND answer = '3';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '일부보험에 관한 설명으로 옳은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["계약체결의 시점에 의도적으로 보험가액보다 낮게 보험금액을 약정하는 것은 허용되지 않는다.","일부보험에 관한 상법의 규정은 강행규정이다.","일부보험의 경우에는 잔존물 대위가 인정되지 않는다.","일부보험에 있어서 일부손해가 발생하여 비례보상원칙을 적용하면 손해액은 보상액보다 크다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-019' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '손해액 산정에 관한 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["보험사고로 인하여 상실된 피보험자가 얻을 이익은 당사자간에 다른 약정이 없으면 보험자가 보상할 손해액에 산입하지 아니한다.","당사자간에 다른 약정이 있는 때에는 신품가액에 의하여 보험자가 보상할 손해액을 산정할 수 있다.","손해액 산정에 필요한 비용은 보험자와 보험계약자 및 보험수익자가 공동으로 부담한다.","손해보상은 원칙적으로 금전으로 하지만 당사자의 합의로 손해의 전부 또는 일부를 현물로 보상할 수 있다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-020' AND exam_type = '1st' AND status = 'active' AND answer = '3';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '손해보험에 관한 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["보험자가 손해를 보상할 경우에 보험료의 지급을 받지 아니한 잔액이 있으면 그 지급 기일이 도래하지 아니한 때라도 보상할 금액에서 이를 공제할 수 있다.","보험계약자가 손해의 방지와 경감을 위하여 필요 또는 유익하였던 비용과 보상액이 보험금액을 초과한 경우에는 보험자는 보험금액의 한도내에서 이를 부담한다.","보험의 목적에 관하여 보험자가 부담할 손해가 생긴 경우에는 그 후 그 목적이 보험 자가 부담하지 아니하는 보험사고의 발생으로 인하여 멸실된 때에도 보험자는 이미 생긴 손해를 보상할 책임을 면하지 못한다.","보험의 목적의 자연소모로 인한 손해는 보험자가 이를 보상할 책임이 없다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-021' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '보험대위에 관한 설명으로 옳은 것은? (다툼이 있으면 판례에 따름)', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["손해가 제3자의 행위로 인하여 발생한 경우에 보험금을 지급하기 전이라도 보험자는 그 제3자에 대한 보험계약자의 권리를 취득한다.","잔존물대위가 성립하기 위해서는 보험목적의 전부가 멸실하여야 한다.","잔존물에 대한 권리가 보험자에게 이전되는 시점은 보험자가 보험금액을 전부 지급하고, 물권변동 절차를 마무리한 때이다.","재보험에 대하여는 제3자에 대한 보험자대위가 적용되지 않는다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-022' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '화재보험에 관한 설명으로 옳은 것은? (다툼이 있으면 판례에 따름)', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["화재가 발생한 건물을 수리하면서 지출한 철거비와 폐기물처리비는 화재와 상당인과 관계가 있는 건물수리비에는 포함되지 않는다.","피보험자가 화재 진화를 위해 살포한 물로 보험목적이 훼손된 손해는 보상하지 않는다.","불에 탈 수 있는 목조교량은 화재보험의 목적이 될 수 없다.","보험자가 손해를 보상함에 있어서 화재와 손해 간에 상당인과관계가 필요하다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-023' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '건물을 화재보험의 목적으로 한 경우 화재보험증권의 법정기재사항이 아닌 것은?', '4', explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["건물의 소재지, 구조와 용도","보험가액을 정한 때에는 그 가액","보험기간을 정한 때에는 그 시기와 종기","설계감리법인의 주소와 성명 또는 상호"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-024' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '집합보험에 관한 설명으로 옳은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["피보험자의 가족의 물건은 보험의 목적에 포함되지 않는 것으로 한다.","피보험자의 사용인의 물건은 보험의 목적에 포함되지 않는 것으로 한다.","보험의 목적에 속한 물건이 보험기간중에 수시로 교체된 경우에는 보험사고의 발생 시에 현존한 물건이라도 보험의 목적에 포함되지 않는 것으로 한다.","집합보험이란 경제적으로 독립한 여러 물건의 집합물을 보험의 목적으로 한 보험을 말한다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-025' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농어업재해보험법상 용어의 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["“농어업재해보험”은 농어업재해로 발생하는 인명 및 재산 피해에 따른 손해를 보상하기 위한 보험을 말한다.","“어업재해”란 양식수산물 및 어업용 시설물에 발생하는 자연재해ㆍ질병 또는 화재를 말한다.","“농업재해”란 농작물ㆍ임산물ㆍ가축 및 농업용 시설물에 발생하는 자연재해ㆍ병충해 ㆍ조수해(鳥獸害)ㆍ질병 또는 화재를 말한다.","“보험료”란 보험가입자와 보험사업자 간의 약정에 따라 보험가입자가 보험사업자에게 내야 하는 금액을 말한다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-026' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농어업재해보험법상 재해보험사업을 할 수 없는 자는?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["농업협동조합법 에 따른 농업협동조합중앙회","수산업협동조합법 에 따른 수산업협동조합중앙회","보험업법 에 따른 보험회사","산림조합법 에 따른 산림조합중앙회"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-027' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농어업재해보험법상 재해보험에 관한 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["재해보험에 가입할 수 있는 자는 농림업, 축산업, 양식수산업에 종사하는 개인 또는 법인으로 하고, 구체적인 보험가입자의 기준은 대통령령으로 정한다.","산림조합법 의 공제규정에 따른 공제모집인으로서 산림조합중앙회장이나 그 회원조 합장이 인정하는 자는 재해보험을 모집할 수 있다.","재해보험사업자는 사고 예방을 위하여 보험가입자가 납입한 보험료의 일부를 되돌려 줄 수 있다.","수산업협동조합법 에 따른 조합이 그 조합원에게 재해보험의 보험료 일부를 지원하는 경우에는 보험업법 상 해당 보험계약의 체결 또는 모집과 관련한 특별이익의 제공으 로 본다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-028' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농어업재해보험법령상 손해평가에 관한 설명으로 옳은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["재해보험사업자는 보험업법 에 따른 손해평가인에게 손해평가를 담당하게 할 수 있다.","고등교육법 에 따른 전문대학에서 임산물재배 관련 학과를 졸업한 사람은 손해평가인 으로 위촉될 자격이 인정된다.","농림축산식품부장관은 손해평가사가 공정하고 객관적인 손해평가를 수행할 수 있도록 연 1회 이상 정기교육을 실시하여야 한다.","농림축산식품부장관 또는 해양수산부장관은 손해평가 요령을 고시하려면 미리 금융위 원회와 협의하여야 한다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-029' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농어업재해보험법상 손해평가사에 관한 설명으로 옳은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["농림축산식품부장관과 해양수산부장관은 공정하고 객관적인 손해평가를 촉진하기 위하여 손해평가사 제도를 운영한다.","임산물재해보험에 관한 피해사실의 확인은 손해평가사가 수행하는 업무에 해당하지 않는다.","손해평가사 자격이 취소된 사람은 그 처분이 있은 날부터 3년이 지나지 아니한 경우 손해평가사 자격시험에 응시하지 못한다.","손해평가사는 다른 사람에게 그 자격증을 대여해서는 아니 되나, 손해평가사 자격증의 대여를 알선하는 것은 허용된다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-030' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농어업재해보험법상 농림축산식품부장관이 손해평가사 자격을 취소하여야 하는 대상을 모두 고른 것은? ㄱ. 업무정지 기간 중에 손해평가 업무를 수행한 사람 ㄴ. 업무 수행과 관련하여 향응을 제공받은 사람 ㄷ. 손해평가사의 자격을 부정한 방법으로 취득한 사람 ㄹ. 손해평가 요령을 준수하지 않고 손해평가를 한 사람', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["ㄱ, ㄴ","ㄱ, ㄷ","ㄴ, ㄹ","ㄷ, ㄹ"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-031' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농어업재해보험법령상 보험금 수급권에 관한 설명으로 옳은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["재해보험사업자는 보험금을 현금으로 지급하여야 하나, 불가피한 사유가 있을 때에는 수급권자의 신청이 없더라도 수급권자 명의의 계좌로 입금할 수 있다.","재해보험가입자가 재해보험에 가입된 보험목적물을 양도하는 경우 그 양수인은 재해 보험계약에 관한 양도인의 권리 및 의무를 승계한다.","재해보험의 보험목적물이 담보로 제공된 경우에는 보험금을 지급받을 권리를 압류할 수 있다.","농작물의 재생산에 직접적으로 소요되는 비용의 보장을 목적으로 보험금수급전용계좌로 입금된 보험금의 경우 그 2분의 1에 해당하는 액수 이하의 금액에 관하여는 채권을 압 류할 수 있다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-032' AND exam_type = '1st' AND status = 'active' AND answer = '3';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농어업재해보험법령상 재해보험사업자가 재해보험 업무의 일부를 위탁할 수 있는 자가 아닌 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["농업협동조합법 에 따라 설립된 지역축산업협동조합","농업ㆍ농촌 및 식품산업 기본법 에 따라 설립된 농업정책보험금융원","산림조합법 에 따라 설립된 품목별ㆍ업종별산림조합","보험업법 에 따라 손해사정을 업으로 하는 자"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-033' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농어업재해보험법상 재정지원에 관한 설명으로 옳은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["정부는 예산의 범위에서 재해보험가입자가 부담하는 보험료의 전부 또는 일부를 지원 할 수 있다.","지방자치단체는 예산의 범위에서 재해보험사업자의 재해보험의 운영 및 관리에 필요 한 비용의 전부 또는 일부를 지원할 수 있다.","농림축산식품부장관은 정부의 보험료 지원 금액을 재해보험가입자에게 지급하여야 한다.","풍수해보험법 에 따른 풍수해보험에 가입한 자가 동일한 보험목적물을 대상으로 재해보험에 가입할 경우에는 정부가 재정지원을 하지 아니한다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-034' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농어업재해보험법령상 재보험사업 및 농어업재해재보험기금(이하 “기금”이라 함)에 관한 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["기금은 기금의 관리ㆍ운용에 필요한 경비의 지출에 사용할 수 없다.","농림축산식품부장관은 해양수산부장관과 협의하여 기금의 수입과 지출을 명확히 하기 위하여 한국은행에 기금계정을 설치하여야 한다.","재보험금의 회수 자금은 기금 조성의 재원에 포함된다.","정부는 재해보험에 관한 재보험사업을 할 수 있다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-035' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농어업재해보험법상 농어업재해재보험기금(이하 “기금”이라 함)에 관한 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["기금은 농림축산식품부장관이 해양수산부장관과 협의하여 관리ㆍ운용한다.","농림축산식품부장관은 해양수산부장관과 협의를 거쳐 기금의 관리ㆍ운용에 관한 사무의 일부를 농업정책보험금융원에 위탁할 수 있다.","농림축산식품부장관은 해양수산부장관과 협의하여 기금의 수입과 지출에 관한 사무를 수행하게 하기 위하여 소속 공무원 중에서 기금수입징수관 등을 임명한다.","농림축산식품부장관이 농업정책보험금융원의 임원 중에서 임명한 기금지출원인행위 담당임원은 기금지출관의 업무를 수행한다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-036' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농어업재해보험법령상 보험가입촉진계획에 포함되어야 하는 사항을 모두 고른 것은? ㄱ. 전년도의 성과분석 및 해당 연도의 사업계획 ㄴ. 해당 연도의 보험상품 운영계획 ㄷ. 농어업재해보험 교육 및 홍보계획', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["ㄱ, ㄴ","ㄱ, ㄷ","ㄴ, ㄷ","ㄱ, ㄴ, ㄷ"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-037' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농어업재해보험법상 벌칙에 관한 설명이다. ( )에 들어갈 내용은? 보험업법 제98조에 따른 금품 등을 제공(같은 조 제3호의 경우에는 보험금 지급의 약속을 말한다)한 자 또는 이를 요구하여 받은 보험가입자는 ( ㄱ )년 이하의 징역 또는 ( ㄴ )천만원 이하의 벌금에 처한다.', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["ㄱ: 1, ㄴ: 1","ㄱ: 1, ㄴ: 3","ㄱ: 3, ㄴ: 3","ㄱ: 3, ㄴ: 5"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-038' AND exam_type = '1st' AND status = 'active' AND answer = '3';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농업재해보험 손해평가요령상 손해평가인 위촉에 관한 규정이다. ( )에 들어갈 내용은? 재해보험사업자는 피해 발생 시 원활한 손해평가가 이루어지도록 농업재해보험 이 실시되는 ( )별 보험가입자의 수 등을 고려하여 적정 규모의 손해평가인 을 위촉하여야 한다.', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["시ㆍ도","읍ㆍ면ㆍ동","시ㆍ군ㆍ자치구","특별자치도ㆍ특별자치시"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-039' AND exam_type = '1st' AND status = 'active' AND answer = '3';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농업재해보험 손해평가요령상 손해평가인 정기교육의 세부내용에 명시적으로 포함되어 있지 않은 것은?', '2', explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["농어업재해보험법 제정 배경","손해평가 관련 민원사례","피해유형별 보상사례","농업재해보험 상품 주요내용"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-040' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농업재해보험 손해평가요령상 재해보험사업자가 손해평가인에 대하여 위촉을 취소하여야 하는 경우는?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["피한정후견인이 된 때","업무수행과 관련하여 개인정보보호법 등 정보보호와 관련된 법령을 위반한 때","업무수행상 과실로 손해평가의 신뢰성을 약화시킨 경우","현지조사서를 허위로 작성한 경우"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-041' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농업재해보험 손해평가요령상 손해평가사 甲을 손해평가반 구성에서 배제하여야 하는 경우를 모두 고른 것은? ㄱ. 甲의 이해관계자가 가입한 보험계약에 관한 손해평가 ㄴ. 甲의 이해관계자가 모집한 보험계약에 관한 손해평가 ㄷ. 甲의 이해관계자가 실시한 손해평가에 대한 검증조사', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["ㄱ, ㄴ","ㄱ, ㄷ","ㄴ, ㄷ","ㄱ, ㄴ, ㄷ"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-042' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농업재해보험 손해평가요령상 손해평가에 관한 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["손해평가반은 손해평가인, 손해평가사, 손해사정사 중 어느 하나에 해당하는 자를 1인 이상 포함하여 5인 이내로 구성한다.","교차손해평가에 있어서 거대재해 발생 등으로 신속한 손해평가가 불가피하다고 판단 되는 경우에도 손해평가반 구성에 지역손해평가인을 포함하여야 한다.","재해보험사업자는 손해평가반이 실시한 손해평가결과를 기록할 수 있도록 현지조사서를 마련하여야 한다.","손해평가반이 손해평가를 실시할 때에는 재해보험사업자가 해당 보험가입자의 보험 계약사항 중 손해평가와 관련된 사항을 손해평가반에게 통보하여야 한다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-043' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농업재해보험 손해평가요령상 손해평가결과 검증에 관한 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["검증조사결과 현저한 차이가 발생된 경우 해당 손해평가반이 조사한 전체 보험목적물에 대하여 검증조사를 하여야 한다.","보험가입자가 정당한 사유 없이 검증조사를 거부하는 경우 검증조사반은 검증조사가 불가능하여 손해평가 결과를 확인할 수 없다는 사실을 보험가입자에게 통지한 후 검 증조사결과를 작성하여 재해보험사업자에게 제출하여야 한다.","재해보험사업자 및 재해보험사업의 재보험사업자는 손해평가반이 실시한 손해평가 결과를 확인하기 위하여 손해평가를 실시한 보험목적물 중에서 일정수를 임의 추출 하여 검증조사를 할 수 있다.","농림축산식품부장관은 재해보험사업자로 하여금 검증조사를 하게 할 수 있다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-044' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농업재해보험 손해평가요령상 보험목적물별 손해평가 단위이다. ( )에 들어갈 내용은? ○ 농작물: ( ㄱ ) ○ 가축(단, 벌은 제외): ( ㄴ ) ○ 농업시설물: ( ㄷ )', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["ㄱ: 농지별, ㄴ: 축사별, ㄷ: 보험가입 목적물별","ㄱ: 품종별, ㄴ: 축사별, ㄷ: 보험가입자별","ㄱ: 농지별, ㄴ: 개별가축별, ㄷ: 보험가입 목적물별","ㄱ: 품종별, ㄴ: 개별가축별, ㄷ: 보험가입자별"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-045' AND exam_type = '1st' AND status = 'active' AND answer = '3';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농업재해보험 손해평가요령상 종합위험방식 수확감소보장에서 “벼”의 경우, 다음의 조건으로 산정한 보험금은? ○ 보험가입금액: 100만원 ○ 자기부담비율: 20 % ○ 보장수확량: 1,000 kg ○ 수확량: 500 kg ○ 미보상감수량: 50 kg', '3', explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["10만원","20만원","25만원","45만원"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-046' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농업재해보험 손해평가요령에 따른 종합위험방식 상품의 조사내용 중 “재정식 조사”에 해당되는 품목은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["벼","콩","양배추","양파"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-047' AND exam_type = '1st' AND status = 'active' AND answer = '3';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농업재해보험 손해평가요령상 종합위험방식 “마늘”의 재파종 보험금 산정에 관한 내용이다. ( )에 들어갈 내용은? 보험가입금액 × ( ) % × 표준출현피해율 단, 10a당 출현주수가 30,000주보다 작고, 10a당 30,000주 이상으로 재파종한 경우에 한함', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["10","20","25","35"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-048' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농업재해보험 손해평가요령상 농작물의 품목별ㆍ재해별ㆍ시기별 손해수량 조사방법 중 적과전종합위험방식 “떫은감”에 관한 기술이다. ( )에 들어갈 내용은? 생육시기 재해 조사내용 조사시기 조사방법 재해로 인하여 달려있는 과실의 피해과실 수 조사 적과 후∼ - ( ㄱ )는 보험약관에서 정한 과 수확기 가을동상해 ( ㄱ ) ( ㄴ ) 실피해분류기준에 따라 구분하 종료 여 조사 ㆍ조사방법: 표본조사', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["ㄱ: 피해사실 확인 조사, ㄴ: 사고접수 후 지체 없이","ㄱ: 피해사실 확인 조사, ㄴ: 수확 직전","ㄱ: 착과피해조사, ㄴ: 사고접수 후 지체 없이","ㄱ: 착과피해조사, ㄴ: 수확 직전"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-049' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '농업재해보험 손해평가요령상 가축 및 농업시설물의 보험가액 및 손해액 산정에 관한 설명으로 옳은 것은?', '2', explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["가축에 대한 보험가액은 보험사고가 발생한 때와 곳에서 평가한 보험목적물의 수량에 적용가격을 곱한 후 감가상각액을 차감하여 산정한다.","보험가입당시 보험가입자와 재해보험사업자가 가축에 대한 보험가액 및 손해액 산정 방식을 별도로 정한 경우에는 그 방법에 따른다.","농업시설물에 대한 보험가액은 보험사고가 발생한 때와 곳에서 평가한 재조달가액 으로 한다.","농업시설물에 대한 손해액은 보험사고가 발생한 때와 곳에서 산정한 피해목적물 수량에 적용가격을 곱하여 산정한다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-050' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '채소의 식용부위에 따른 분류 중 화채류에 속하는 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["양배추","브로콜리","우엉","고추"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-051' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '작물의 건물량을 생산하는데 필요한 수분량을 말하는 요수량이 가장 작은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["호박","기장","완두","오이"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-052' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '수분과잉 장해에 관한 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["생장이 쇠퇴하며 수량도 감소한다.","건조 후에 수분이 많이 공급되면 열과 등이 나타난다.","뿌리의 활력이 높아진다.","식물이 웃자라게 된다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-053' AND exam_type = '1st' AND status = 'active' AND answer = '3';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '고온 장해에 관한 증상으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["발아 불량","품질 저하","착과 불량","추대 지연"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-054' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '다음에서 설명하는 냉해로 올바르게 짝지어진 것은? ㄱ. 작물생육기간 중 특히 냉온에 대한 저항성이 약한 시기에 저온의 접촉으로 뚜렷한 피해를 받게 되는 냉해 ㄴ. 오랜 기간 동안 냉온이나 일조 부족으로 생육이 늦어지고 등숙이 충분하지 못해 감수를 초래하게 되는 냉해', '3', explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["ㄱ: 지연형 냉해, ㄴ: 장해형 냉해","ㄱ: 접촉형 냉해, ㄴ: 감수형 냉해","ㄱ: 장해형 냉해, ㄴ: 지연형 냉해","ㄱ: 피해형 냉해, ㄴ: 장기형 냉해"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-055' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, 'C4 작물이 아닌 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["보리","사탕수수","수수","옥수수"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-056' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '작물의 일장형에 관한 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["보통 16-18시간의 장일조건에서 개화가 유도, 촉진되는 식물을 장일식물이라고 하며 시금치, 완두, 상추, 양파, 감자 등이 있다.","보통 8-10시간의 단일조건에서 개화가 유도, 촉진되는 식물을 단일식물이라고 하며 가지, 콩, 오이, 호박 등이 있다.","일장의 영향을 받지 않는 식물을 중성식물이라고 하며 토마토, 당근, 강낭콩 등이 있다.","좁은 범위에서만 화성이 유도, 촉진되는 식물을 정일식물 또는 중간식물이라고 한다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-057' AND exam_type = '1st' AND status = 'active' AND answer = '2,3';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '과수원의 바람 피해에 관한 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["강풍은 증산작용을 억제하여 광합성을 촉진한다.","강풍은 매개곤충의 활동을 저하시켜 수분과 수정을 방해한다.","작물의 열을 빼앗아 작물체온을 저하시킨다.","해안지방은 염분 피해를 받을 수 있다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-058' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '식물의 필수 원소 중 엽록소의 구성성분으로 다양한 효소반응에 관여하는 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["아연(Zn)","몰리브덴(Mo)","칼슘(Ca)","마그네슘(Mg)"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-059' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '염류 집적에 대한 대책이 아닌 것은?', '2', explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["흡비작물 재배","무기물 시용","심경과 객토","담수 처리"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-060' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '벼의 수발아에 관한 설명으로 옳지 않은 것은?', '4', explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["결실기에 종실이 이삭에 달린 채로 싹이 트는 것을 말한다.","결실기의 벼가 우기에 도복이 되었을 때 자주 발생한다.","조생종이 만생종보다 수발아가 잘 발생한다.","휴면성이 강한 품종이 약한 것보다 수발아가 잘 발생한다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-061' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '정식기에 가까워지면 묘를 외부환경에 미리 노출시켜 적응시키는 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["춘화","동화","이화","경화"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-062' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '다음이 설명하는 번식 방법으로 올바르게 짝지어진 것은? ㄱ. 식물의 잎, 줄기, 뿌리를 모체로부터 분리하여 상토에 꽂아 번식하는 방법 ㄴ. 뿌리 부근에서 생겨난 포기나 부정아를 나누어 번식하는 방법', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["ㄱ: 삽목, ㄴ: 분주","ㄱ: 취목, ㄴ: 삽목","ㄱ: 삽목, ㄴ: 접목","ㄱ: 접목, ㄴ: 분주"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-063' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '육묘에 관한 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["직파에 비해 종자가 절약된다.","토지이용도가 낮아진다.","직파에 비해 발아가 균일하다.","수확기 및 출하기를 앞당길 수 있다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-064' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '한계일장보다 짧을 때 개화하는 식물끼리 올바르게 짝지어진 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["국화, 포인세티아","장미, 시클라멘","카네이션, 페튜니아","금잔화, 금어초"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-065' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '4℃에 저장 시 저온장해가 발생하는 절화류로 짝지어진 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["장미, 카네이션","백합, 금어초","극락조화, 안스리움","국화, 글라디올러스"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-066' AND exam_type = '1st' AND status = 'active' AND answer = '3';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '채소 작물의 온도 적응성에 따른 분류가 같은 것끼리 짝지어진 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["가지, 무","고추, 마늘","딸기, 상추","오이, 양파"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-067' AND exam_type = '1st' AND status = 'active' AND answer = '3';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '저장성을 향상시키기 위한 저장 전 처리에 관한 설명으로 옳지 않은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["수박은 고온기 수확 시 품온이 높아 바로 수송할 경우 부패하기 쉬우므로 예냉을 실시 한다.","감자는 수확 시 생긴 상처를 빨리 아물게 하기 위해 큐어링을 실시한다.","마늘은 휴면이 끝나면 싹이 자라 상품성이 저하될 수 있으므로 맹아 억제 처리를 한다.","결구배추는 수분 손실을 줄이기 위해 수확한 후 바로 저장고에 넣어 보관한다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-068' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '식물 분류학적으로 같은 과(科)에 속하지 않는 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["배","블루베리","복숭아","복분자"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-069' AND exam_type = '1st' AND status = 'active' AND answer = '2';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '멀칭의 목적으로 옳은 것은?', '3', explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["휴면 촉진","단일 촉진","잡초 발생 억제","단위결과 억제"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-070' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '물리적 병충해 방제방법을 모두 고른 것은? ㄱ. 토양 가열 ㄴ. 천적 곤충 이용 ㄷ. 증기 소독 ㄹ. 윤작 등 작부체계의 변경', '1', explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["ㄱ, ㄷ","ㄱ, ㄹ","ㄴ, ㄷ","ㄴ, ㄹ"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-071' AND exam_type = '1st' AND status = 'active' AND answer = '3';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '과수에서 세균에 의한 병으로만 나열한 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["근두암종병, 화상병, 궤양병","근두암종병, 탄저병, 부란병","화상병, 탄저병, 궤양병","화상병, 근두암종병, 부란병"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-072' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '다음이 설명하는 온실형은? ○ 처마가 높고 폭이 좁은 양지붕형 온실을 연결한 형태이다. ○ 토마토, 파프리카(착색단고추) 등 과채류 재배에 적합하다.', '3', explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["양쪽지붕형","터널형","벤로형","쓰리쿼터형"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-073' AND exam_type = '1st' AND status = 'active' AND answer = '1';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '다음 피복재 중 투과율이 가장 높은 연질 필름은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["염화비닐(PVC) 필름","불소계수지(ETFE) 필름","에틸렌아세트산비닐(EVA) 필름","폴리에틸렌(PE) 필름"]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-074' AND exam_type = '1st' AND status = 'active' AND answer = '4';
+
+INSERT INTO exam_questions (id, year, round, question_number, subject, content, answer, explanation, related_nodes, related_constants, status, exam_type, topic_cluster, memorization_type, confusion_type, input_type, distractors, calc_variables)
+SELECT id || '-MC', year, round, question_number, subject, '담액수경의 특징에 관한 설명으로 옳은 것은?', answer, explanation, related_nodes, related_constants, 'active', exam_type, topic_cluster, memorization_type, confusion_type, 'multiple_choice', '["산소 공급 장치를 설치해야 한다.","베드의 바닥에 일정한 구배를 만들어 양액이 흐르게 해야 한다.","배지로는 펄라이트와 암면 등이 사용된다.","베드를 높이 설치하여 작업효율을 높일 수 있다."]', calc_variables
+FROM exam_questions
+WHERE id = 'Q-2021-07-075' AND exam_type = '1st' AND status = 'active' AND answer = '1';

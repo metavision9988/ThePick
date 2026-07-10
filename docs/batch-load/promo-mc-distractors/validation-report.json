@@ -1,0 +1,304 @@
+{
+  "generatedBy": "scripts/promo-p3/build-mc-inserts.ts",
+  "totalQuestions": 525,
+  "totalPass": 521,
+  "totalExcluded": 4,
+  "totalCorrected": 36,
+  "perRound": {
+    "round-5": {
+      "total": 75,
+      "pass": 74,
+      "excluded": 1,
+      "corrected": 1,
+      "sqlFile": "insert-round-5.sql"
+    },
+    "round-6": {
+      "total": 75,
+      "pass": 75,
+      "excluded": 0,
+      "corrected": 16,
+      "sqlFile": "insert-round-6.sql"
+    },
+    "round-7": {
+      "total": 75,
+      "pass": 75,
+      "excluded": 0,
+      "corrected": 11,
+      "sqlFile": "insert-round-7.sql"
+    },
+    "round-8": {
+      "total": 75,
+      "pass": 75,
+      "excluded": 0,
+      "corrected": 8,
+      "sqlFile": "insert-round-8.sql"
+    },
+    "round-9": {
+      "total": 75,
+      "pass": 75,
+      "excluded": 0,
+      "corrected": 0,
+      "sqlFile": "insert-round-9.sql"
+    },
+    "round-10": {
+      "total": 75,
+      "pass": 74,
+      "excluded": 1,
+      "corrected": 0,
+      "sqlFile": "insert-round-10.sql"
+    },
+    "round-11": {
+      "total": 75,
+      "pass": 73,
+      "excluded": 2,
+      "corrected": 0,
+      "sqlFile": "insert-round-11.sql"
+    }
+  },
+  "overlay": {
+    "corrections": [
+      {
+        "id": "Q-2019-05-046",
+        "original": "4",
+        "corrected": "1",
+        "basis": "제5회 타이브레이커 — 정답지 400dpi 직접판독(A형·B형 46=1, 복수정답 표기 없음) + 손해평가요령 제13조 종합위험방식 풀이 + LAW-179 원문 대조. 3중 발산 2:1 확정"
+      },
+      {
+        "id": "Q-2020-06-016",
+        "original": "4",
+        "corrected": "3",
+        "basis": "제6회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치"
+      },
+      {
+        "id": "Q-2020-06-027",
+        "original": "2",
+        "corrected": "3",
+        "basis": "제6회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치"
+      },
+      {
+        "id": "Q-2020-06-028",
+        "original": "3",
+        "corrected": "2",
+        "basis": "제6회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치"
+      },
+      {
+        "id": "Q-2020-06-034",
+        "original": "4",
+        "corrected": "3",
+        "basis": "제6회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치"
+      },
+      {
+        "id": "Q-2020-06-042",
+        "original": "4",
+        "corrected": "2",
+        "basis": "제6회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치"
+      },
+      {
+        "id": "Q-2020-06-043",
+        "original": "3",
+        "corrected": "4",
+        "basis": "제6회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치"
+      },
+      {
+        "id": "Q-2020-06-046",
+        "original": "4",
+        "corrected": "1",
+        "basis": "제6회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치"
+      },
+      {
+        "id": "Q-2020-06-048",
+        "original": "4",
+        "corrected": "3",
+        "basis": "제6회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치"
+      },
+      {
+        "id": "Q-2020-06-056",
+        "original": "4",
+        "corrected": "1",
+        "basis": "제6회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치"
+      },
+      {
+        "id": "Q-2020-06-058",
+        "original": "2",
+        "corrected": "3",
+        "basis": "제6회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치"
+      },
+      {
+        "id": "Q-2020-06-059",
+        "original": "3",
+        "corrected": "4",
+        "basis": "제6회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치"
+      },
+      {
+        "id": "Q-2020-06-062",
+        "original": "4",
+        "corrected": "2",
+        "basis": "제6회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치"
+      },
+      {
+        "id": "Q-2020-06-068",
+        "original": "2",
+        "corrected": "1",
+        "basis": "제6회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치"
+      },
+      {
+        "id": "Q-2020-06-069",
+        "original": "4",
+        "corrected": "1",
+        "basis": "제6회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치"
+      },
+      {
+        "id": "Q-2020-06-071",
+        "original": "1",
+        "corrected": "4",
+        "basis": "제6회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치"
+      },
+      {
+        "id": "Q-2020-06-073",
+        "original": "1",
+        "corrected": "3",
+        "basis": "제6회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치"
+      },
+      {
+        "id": "Q-2021-07-016",
+        "original": "4",
+        "corrected": "1",
+        "basis": "제7회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(풀이 교차검증)"
+      },
+      {
+        "id": "Q-2021-07-024",
+        "original": "2",
+        "corrected": "4",
+        "basis": "제7회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(풀이 교차검증)"
+      },
+      {
+        "id": "Q-2021-07-040",
+        "original": "4",
+        "corrected": "2",
+        "basis": "제7회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(풀이 교차검증)"
+      },
+      {
+        "id": "Q-2021-07-046",
+        "original": "2",
+        "corrected": "3",
+        "basis": "제7회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(풀이 교차검증)"
+      },
+      {
+        "id": "Q-2021-07-050",
+        "original": "1",
+        "corrected": "2",
+        "basis": "제7회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(풀이 교차검증)"
+      },
+      {
+        "id": "Q-2021-07-055",
+        "original": "1",
+        "corrected": "3",
+        "basis": "제7회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(풀이 교차검증)"
+      },
+      {
+        "id": "Q-2021-07-060",
+        "original": "1",
+        "corrected": "2",
+        "basis": "제7회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(풀이 교차검증)"
+      },
+      {
+        "id": "Q-2021-07-061",
+        "original": "2",
+        "corrected": "4",
+        "basis": "제7회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(풀이 교차검증)"
+      },
+      {
+        "id": "Q-2021-07-070",
+        "original": "1",
+        "corrected": "3",
+        "basis": "제7회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(풀이 교차검증)"
+      },
+      {
+        "id": "Q-2021-07-071",
+        "original": "3",
+        "corrected": "1",
+        "basis": "제7회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(풀이 교차검증)"
+      },
+      {
+        "id": "Q-2021-07-073",
+        "original": "1",
+        "corrected": "3",
+        "basis": "제7회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(풀이 교차검증)"
+      },
+      {
+        "id": "Q-2022-08-019",
+        "original": "1",
+        "corrected": "4",
+        "basis": "제8회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(상법§672 연대책임)"
+      },
+      {
+        "id": "Q-2022-08-024",
+        "original": "2",
+        "corrected": "1",
+        "basis": "제8회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(잔존물대위 상법§681)"
+      },
+      {
+        "id": "Q-2022-08-032",
+        "original": "1",
+        "corrected": "4",
+        "basis": "제8회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(위탁 불가=영리법인, 시행령§13)"
+      },
+      {
+        "id": "Q-2022-08-034",
+        "original": "3",
+        "corrected": "4",
+        "basis": "제8회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(손해평가인 학점요건)"
+      },
+      {
+        "id": "Q-2022-08-057",
+        "original": "2",
+        "corrected": "3",
+        "basis": "제8회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(생육가능·최고한계온도)"
+      },
+      {
+        "id": "Q-2022-08-064",
+        "original": "3",
+        "corrected": "2",
+        "basis": "제8회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(멀칭 효과 아님=로제트발생)"
+      },
+      {
+        "id": "Q-2022-08-069",
+        "original": "1",
+        "corrected": "3",
+        "basis": "제8회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(오이 암꽃=저온단일)"
+      },
+      {
+        "id": "Q-2022-08-074",
+        "original": "1",
+        "corrected": "4",
+        "basis": "제8회 독립 PDF 정답지 판독 + 맹검 2차 재확증 일치(무적필름)"
+      }
+    ],
+    "exclusions": [
+      {
+        "id": "Q-2019-05-021",
+        "reason": "구조 훼손 — 보기 오배치 및 ③④ 보기 누락(원 추출 손상). 정직 제외(무음 skip 금지)"
+      },
+      {
+        "id": "Q-2024-10-048",
+        "reason": "구조 훼손 — 표가 option[0]에 오배치되고 ④(복분자) 누락. 정직 제외"
+      },
+      {
+        "id": "Q-2025-11-047",
+        "reason": "구조 훼손 — [별표1] 표 선형화 과정에서 보기 뒤섞임. 정직 제외"
+      },
+      {
+        "id": "Q-2025-11-048",
+        "reason": "구조 훼손 — [별표2] 표 선형화 과정에서 보기 뒤섞임. 정직 제외"
+      }
+    ]
+  },
+  "violations": [],
+  "gates": {
+    "V1-contract": "parseMcChoices(단일 정본) — 교정 반영 answer 기준",
+    "V2-choices4": "4지 고정 (1차 전 회차 실측)",
+    "V3-integrity": "stem/subject/축/문항번호 전단사",
+    "V4-answer": "repo 원 insert SQL ↔ 원본 JSON answer 자기일관성",
+    "V5-correction": "교정 오버레이 original 정합 + 고아 검출"
+  }
+}
