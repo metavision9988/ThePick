@@ -16,6 +16,11 @@ const {
 const site = Astro.site?.href?.replace(/\/$/, '') ?? '';
 const ogUrl = ogPath !== undefined && site !== '' ? `${site}${ogPath}` : null;
 const ogImage = site !== '' ? `${site}/icons/icon-512.png` : '/icons/icon-512.png';
+
+// P5 BE-6③ — Cloudflare Web Analytics (단일 벤더 정합, PII 0 서버리스 비콘).
+// 토큰 = 빌드 시 env 주입(대시보드 발급 — 미설정이면 비콘 자체 미출력, 무음 폴백 아님:
+// 배포 스크립트가 미설정을 경고 표면화).
+const cfBeaconToken: string | undefined = import.meta.env.PUBLIC_CF_BEACON_TOKEN;
 ---
 
 <!doctype html>
@@ -72,6 +77,19 @@ const ogImage = site !== '' ? `${site}/icons/icon-512.png` : '/icons/icon-512.pn
         });
       }
     </script>
+    {/* SRI 미적용 사유: beacon.min.js 는 Cloudflare 가 수시 갱신(고정 해시 없음 — SRI 시
+        갱신마다 지표 무음 파손). 신뢰 경계 = 호스팅 제공자 자신(Pages/Worker 와 동일 벤더)
+        이라 CDN 변조 위협 모델이 4-Pass MAJOR-3(제3자 jsdelivr)과 다름. */}
+    {
+      cfBeaconToken !== undefined && cfBeaconToken !== '' && (
+        <script
+          is:inline
+          defer
+          src="https://static.cloudflareinsights.com/beacon.min.js"
+          data-cf-beacon={JSON.stringify({ token: cfBeaconToken })}
+        />
+      )
+    }
   </body>
 </html>
 

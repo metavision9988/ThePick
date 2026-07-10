@@ -49,6 +49,17 @@ export interface PublicRevealResult {
   readonly correctChoiceIds?: readonly string[];
 }
 
+/** GET /api/public/questions/overview 응답 — 지형도 집계 (P5 BE-3, 기출 축). */
+export interface PublicOverview {
+  readonly examType: string;
+  readonly total: number;
+  readonly subjects: ReadonlyArray<{
+    readonly subject: string | null;
+    readonly total: number;
+    readonly rounds: ReadonlyArray<{ readonly round: number | null; readonly total: number }>;
+  }>;
+}
+
 /** 한 문항 풀이 기록 — 세션 요약(FE-8) 집계용 (메모리 한정, 서버 전송 0). */
 export interface AttemptRecord {
   readonly questionId: string;

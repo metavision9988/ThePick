@@ -122,6 +122,7 @@ function mapToEndpointKey(method: string, url: string): EndpointKey | null {
   if (/\/api\/study\/session\/[^/]+(?:\?|$)/.test(url)) return 'sessionDetail';
   if (url.includes('/api/study/next')) return 'next';
   if (url.includes('/api/study/grade')) return 'grade';
+  if (url.includes('/api/public/questions/overview')) return 'publicOverview';
   if (url.includes('/api/public/questions/next')) return 'publicNext';
   if (url.includes('/api/public/grade')) return 'publicGrade';
   if (url.includes('/api/public/reveal')) return 'publicReveal';

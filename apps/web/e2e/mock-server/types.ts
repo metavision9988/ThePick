@@ -22,10 +22,11 @@ export interface ApiCallCounters {
   sessionComplete: number;
   next: number;
   grade: number;
-  /** promo-1st P4 — 무인증 공개 표면 /api/public/*. */
+  /** promo-1st P4/P5 — 무인증 공개 표면 /api/public/*. */
   publicNext: number;
   publicGrade: number;
   publicReveal: number;
+  publicOverview: number;
 }
 
 export type EndpointKey = keyof ApiCallCounters;

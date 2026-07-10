@@ -5,7 +5,13 @@
  * 서버 에러 body = {error: string} (apps/api/src/public/routes.ts).
  */
 
-import type { InputType, PublicGradeResult, PublicQuestion, PublicRevealResult } from './types';
+import type {
+  InputType,
+  PublicGradeResult,
+  PublicOverview,
+  PublicQuestion,
+  PublicRevealResult,
+} from './types';
 
 const API_BASE: string = import.meta.env.PUBLIC_API_BASE_URL ?? 'http://localhost:8787';
 
@@ -122,6 +128,10 @@ export async function gradePublic(body: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+}
+
+export async function fetchPublicOverview(): Promise<PublicOverview> {
+  return publicFetch<PublicOverview>('/api/public/questions/overview');
 }
 
 export async function revealPublic(questionId: string): Promise<PublicRevealResult> {

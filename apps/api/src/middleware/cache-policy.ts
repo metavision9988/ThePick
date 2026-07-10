@@ -60,10 +60,20 @@ function applyCachePolicy(c: Context): void {
     return;
   }
 
+  // promo-1st P5 BE-3 — 지형도 집계(`/questions/overview`)만 예외적 공용 캐시:
+  // 응답 = subject×round 문항 **수** 뿐(정답·보기·셔플 무관, 사용자 무관 동일 응답).
+  // 서빙 풀 변동은 콘텐츠 적재 시에만 → 5분 TTL 무해.
+  // ★ 200 한정(4-Pass MAJOR-1/3): rate-limit 429·D1 500 이 5분 공용 캐시에 물리면
+  //   정상 복구 후에도 지도 비노출 고착 — 에러 응답은 아래 no-store 로 강하.
+  if (path === '/api/public/questions/overview' && c.res.status === 200) {
+    c.header('Cache-Control', 'public, max-age=300');
+    return;
+  }
+
   // promo-1st P1 — 무인증 공개 표면(`/api/public/*`)은 no-store(단 Vary 불필요 — 쿠키/인증 0).
   //   서빙(`/questions/next`)은 요청마다 보기 표시 순서를 암호 난수로 셔플하고, 채점
   //   (`/grade`)은 정답을 노출한다 → **공유 캐시 금지**. 향후 이 경로를 절대
-  //   PUBLIC_PATH_TTL_SECONDS(공용 캐시)에 넣지 말 것(지뢰 #5).
+  //   PUBLIC_PATH_TTL_SECONDS(공용 캐시)에 넣지 말 것(지뢰 #5) — overview 예외는 위 단일 경로뿐.
   if (path.startsWith('/api/public/')) {
     c.header('Cache-Control', 'no-store');
     return;

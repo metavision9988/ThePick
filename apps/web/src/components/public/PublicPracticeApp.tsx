@@ -13,6 +13,7 @@ import { fetchPublicNext } from './api';
 import { BlankNote } from './BlankNote';
 import { DEFAULT_SESSION_SIZE, PRACTICE_MODE_META } from './constants';
 import { FlipDeck } from './FlipDeck';
+import { PracticeMap } from './PracticeMap';
 import { PracticePicker, type PracticeFilter } from './PracticePicker';
 import { PublicQuestionCard } from './PublicQuestionCard';
 import { PracticeSummary } from './PracticeSummary';
@@ -221,6 +222,8 @@ export function PublicPracticeApp() {
       {phase === 'picker' && (
         <>
           <PracticePicker onStart={startSession} />
+          {/* FE-6 기출 지도 (MOC 아웃라인) — 회차 탭 = 해당 범위 4지선다 세션 */}
+          <PracticeMap onPick={(subject, round) => startSession('mc', { subject, round })} />
           <StreakPanel refreshKey={progressKey} />
         </>
       )}

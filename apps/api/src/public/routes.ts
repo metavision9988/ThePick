@@ -223,6 +223,62 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
     await next();
   });
 
+  // GET /api/public/questions/overview — 지형도 집계 (P5 BE-3, G-4 기출 축).
+  // subject×round 서빙 가능 문항 수 트리 — 정답·보기 무관 count 만(cache-policy 5분 공용 캐시).
+  // isServable 정확 판정(SQL 근사 아님 — 결함행이 지도 수치에 끼지 않도록 공개 서빙과 동일 잣대).
+  app.get('/questions/overview', async (c) => {
+    const logger = buildLogger(c.env, 'overview');
+
+    interface OverviewRow {
+      readonly subject: string | null;
+      readonly round: number | null;
+      readonly input_type: string | null;
+      readonly answer: string | null;
+      readonly distractors: string | null;
+    }
+
+    let rows: OverviewRow[];
+    try {
+      const result = await c.env.DB.prepare(
+        `SELECT subject, round, input_type, answer, distractors
+           FROM exam_questions
+          WHERE status = ? AND exam_type = ?
+            AND input_type IN (${SERVABLE_INPUT_TYPES.map(() => '?').join(', ')})`,
+      )
+        .bind(FIXED_STATUS, FIXED_EXAM_TYPE, ...SERVABLE_INPUT_TYPES)
+        .all<OverviewRow>();
+      rows = result.results;
+    } catch (err) {
+      logger.error('overview query failed', err);
+      return c.json({ error: ErrorCode.INTERNAL_ERROR }, 500);
+    }
+
+    const servable = rows.filter(isServable);
+    const subjectMap = new Map<string, Map<number | null, number>>();
+    for (const row of servable) {
+      const subjectKey = row.subject ?? '';
+      const rounds = subjectMap.get(subjectKey) ?? new Map<number | null, number>();
+      rounds.set(row.round, (rounds.get(row.round) ?? 0) + 1);
+      subjectMap.set(subjectKey, rounds);
+    }
+
+    const subjects = [...subjectMap.entries()]
+      .map(([subjectKey, rounds]) => ({
+        subject: subjectKey === '' ? null : subjectKey,
+        total: [...rounds.values()].reduce((a, b) => a + b, 0),
+        rounds: [...rounds.entries()]
+          .map(([round, total]) => ({ round, total }))
+          .sort((a, b) => (a.round ?? 0) - (b.round ?? 0)),
+      }))
+      .sort((a, b) => (a.subject ?? '').localeCompare(b.subject ?? '', 'ko'));
+
+    return c.json({
+      examType: FIXED_EXAM_TYPE,
+      total: servable.length,
+      subjects,
+    });
+  });
+
   // GET /api/public/questions/next — 랜덤 서빙(비노출 projection).
   app.get('/questions/next', async (c) => {
     const logger = buildLogger(c.env, 'next');
@@ -285,6 +341,12 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
         // isServable 이 parseMcChoices.ok 를 이미 보장 → null 은 비정상(방어).
         logger.error('MC serve build failed after isServable pass', undefined, {
           questionId: row.id,
+        });
+        recordPublicEvent(c.env.PUBLIC_ANALYTICS, 'defect', {
+          subject: row.subject,
+          inputType,
+          examType: FIXED_EXAM_TYPE,
+          defectReason: 'serve_build_failed',
         });
         return c.json({ error: 'QUESTION_UNAVAILABLE' }, 404);
       }
@@ -362,6 +424,13 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
           questionId: row.id,
           reason: mc.reason,
         });
+        // M-19: 결함 신호를 휘발 로그 외 AE 로도 — 결함율 집계 원천.
+        recordPublicEvent(c.env.PUBLIC_ANALYTICS, 'defect', {
+          subject: row.subject,
+          inputType,
+          examType: FIXED_EXAM_TYPE,
+          defectReason: `grade_mc_contract:${mc.reason}`,
+        });
         return c.json({ error: 'QUESTION_NOT_GRADABLE' }, 422);
       }
       const secret = c.env.JWT_SECRET ?? '';
@@ -391,6 +460,14 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
             questionId: row.id,
           },
         );
+        recordPublicEvent(c.env.PUBLIC_ANALYTICS, 'defect', {
+          subject: row.subject,
+          inputType,
+          examType: FIXED_EXAM_TYPE,
+          // 정직 라벨(4-Pass MINOR): 위치라벨 answer = MC-in-disguise **또는** 진성 숫자
+          // 단답(현 데이터로 무구분) — 결함율 지표가 후자를 결함으로 단정하지 않도록.
+          defectReason: 'mc_in_disguise_or_numeric_short_answer',
+        });
         return c.json({ error: 'QUESTION_NOT_GRADABLE' }, 422);
       }
       isCorrect = gradeFillBlank({ expected: row.answer, userAnswer: answer }).isCorrect;
@@ -466,6 +543,12 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
         logger.error('reveal MC contract violation (data defect)', undefined, {
           questionId: row.id,
           reason: mc.reason,
+        });
+        recordPublicEvent(c.env.PUBLIC_ANALYTICS, 'defect', {
+          subject: row.subject,
+          inputType,
+          examType: FIXED_EXAM_TYPE,
+          defectReason: `reveal_mc_contract:${mc.reason}`,
         });
         return c.json({ error: 'QUESTION_NOT_GRADABLE' }, 422);
       }

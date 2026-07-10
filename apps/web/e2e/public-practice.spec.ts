@@ -106,6 +106,26 @@ test('카드플립 — 정답 확인(reveal) → 4버튼 자평 → 다음 카�
   await expect.poll(() => api.counters.publicNext).toBeGreaterThanOrEqual(2);
 });
 
+test('기출 지도 — MOC 아웃라인 → 회차 탭 = 필터 세션 시작 (FE-6, P5)', async ({ page }) => {
+  const api = await installApiMock(page);
+
+  await page.goto('/practice/');
+  await waitForReactHydration(page, 'button');
+
+  // 지도 로드 — 과목 아웃라인 + 총 문항 수 (픽커 select option 과 텍스트 중복 → 섹션 한정)
+  const map = page.getByLabel('기출 지도');
+  await expect.poll(() => api.counters.publicOverview).toBe(1);
+  await expect(map.getByText('상법 보험편', { exact: true })).toBeVisible();
+
+  // 과목 펼침(aria-expanded 토글 버튼) → 회차 "풀기" 탭 → 세션 진입(문항 서빙)
+  await map.getByRole('button', { name: /상법 보험편/ }).click();
+  const roundButton = map.locator('button').filter({ hasText: /제5회/ }).first();
+  await expect(roundButton).toBeVisible();
+  await roundButton.click();
+  await expect(page.getByText(/public mock question \d+/)).toBeVisible();
+  await expect.poll(() => api.counters.publicNext).toBeGreaterThanOrEqual(1);
+});
+
 test('빈 상태 — NO_QUESTION 시 정직한 빈 패널 + 재시도 (FE-9)', async ({ page }) => {
   const api = await installApiMock(page);
   await api.override({

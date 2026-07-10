@@ -309,6 +309,89 @@ describe('POST /api/public/grade — 채점', () => {
   });
 });
 
+describe('GET /api/public/questions/overview — 지형도 집계 (P5 BE-3)', () => {
+  it('subject×round 서빙 가능 문항 수 트리 — 결함행(MC-in-disguise·distractors 결손) 제외', async () => {
+    // 유자격: MC 2건(상법 r5, 상법 r7) + fill_blank 진성 1건(법령 r5)
+    seedQ({
+      id: 'ov-1',
+      inputType: 'multiple_choice',
+      answer: '2',
+      distractors: FOUR_CHOICES,
+      subject: '상법 보험편',
+      round: 5,
+    });
+    seedQ({
+      id: 'ov-2',
+      inputType: 'multiple_choice',
+      answer: '1',
+      distractors: FOUR_CHOICES,
+      subject: '상법 보험편',
+      round: 7,
+    });
+    seedQ({
+      id: 'ov-3',
+      inputType: 'fill_blank',
+      answer: '보험가액',
+      subject: '농어업재해보험법령',
+      round: 5,
+    });
+    // 부적격: MC-in-disguise(위치라벨+distractors NULL) / 2차 / flagged — 집계 제외
+    seedQ({ id: 'ov-x1', inputType: 'fill_blank', answer: '2', subject: '상법 보험편', round: 5 });
+    seedQ({
+      id: 'ov-x2',
+      examType: '2nd',
+      inputType: 'fill_blank',
+      answer: '텍스트',
+      subject: '2차과목',
+      round: 5,
+    });
+    seedQ({
+      id: 'ov-x3',
+      status: 'flagged',
+      inputType: 'multiple_choice',
+      answer: '1',
+      distractors: FOUR_CHOICES,
+      subject: '상법 보험편',
+      round: 5,
+    });
+
+    const res = await get('/questions/overview');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Cache-Control')).toBeNull(); // cache-policy 는 index.ts 마운트 계층 소관
+    const body = (await res.json()) as {
+      examType: string;
+      total: number;
+      subjects: Array<{
+        subject: string | null;
+        total: number;
+        rounds: Array<{ round: number | null; total: number }>;
+      }>;
+    };
+    expect(body.examType).toBe('1st');
+    expect(body.total).toBe(3);
+    const sangbeop = body.subjects.find((s) => s.subject === '상법 보험편')!;
+    expect(sangbeop.total).toBe(2);
+    expect(sangbeop.rounds).toEqual([
+      { round: 5, total: 1 },
+      { round: 7, total: 1 },
+    ]);
+    const beopnyeong = body.subjects.find((s) => s.subject === '농어업재해보험법령')!;
+    expect(beopnyeong.total).toBe(1);
+    // 정답·보기 텍스트 절대 비노출
+    const raw = JSON.stringify(body);
+    expect(raw).not.toContain('보험가액');
+    expect(raw).not.toContain(FOUR_CHOICES[0]!);
+  });
+
+  it('서빙 가능 문항 0 → total 0 + subjects 빈 배열 (404 아님 — 지도는 빈 상태 표현)', async () => {
+    const res = await get('/questions/overview');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { total: number; subjects: unknown[] };
+    expect(body.total).toBe(0);
+    expect(body.subjects).toEqual([]);
+  });
+});
+
 describe('POST /api/public/reveal — 정답 공개 (P4-D1)', () => {
   it('MC reveal: correctAnswer + correctChoiceIds + explanation (isCorrect 필드 없음)', async () => {
     seedQ({

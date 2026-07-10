@@ -310,6 +310,26 @@ app.get('/api/progress/due', (c) => {
  * 정답 규약: MC = `pub-{index}-cid-2` / fill_blank = PUBLIC_FILL_BLANK_ANSWER.
  * ──────────────────────────────────────────────────────────────────────── */
 
+app.get('/api/public/questions/overview', (c) => {
+  recordCall('publicOverview');
+  // 실서버 불변식(4-Pass MINOR): total = Σ subjects.total = Σ rounds.total — 파생 계산으로 고정.
+  const subjects = [
+    {
+      subject: '농어업재해보험법령',
+      rounds: [5, 6, 7, 8, 9, 10, 11].map((round) => ({ round, total: round === 5 ? 22 : 25 })),
+    },
+    {
+      subject: '상법 보험편',
+      rounds: [5, 6, 7, 8, 9, 10, 11].map((round) => ({ round, total: round === 11 ? 24 : 25 })),
+    },
+  ].map((s) => ({ ...s, total: s.rounds.reduce((a, r) => a + r.total, 0) }));
+  return c.json({
+    examType: '1st',
+    total: subjects.reduce((a, s) => a + s.total, 0),
+    subjects,
+  });
+});
+
 app.get('/api/public/questions/next', (c) => {
   recordCall('publicNext');
   const forced = state.overrides.publicNextResponse;

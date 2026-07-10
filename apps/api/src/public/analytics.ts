@@ -17,7 +17,7 @@ export interface AnalyticsEngineDataset {
   }): void;
 }
 
-export type PublicEventKind = 'serve' | 'grade' | 'card';
+export type PublicEventKind = 'serve' | 'grade' | 'card' | 'defect';
 
 export interface PublicEventFields {
   readonly subject?: string | null;
@@ -27,6 +27,11 @@ export interface PublicEventFields {
   readonly examType?: string | null;
   /** grade 이벤트만 — 정오. serve/card 는 미전달. */
   readonly isCorrect?: boolean;
+  /**
+   * defect 이벤트만 (5-페르소나 M-19) — 데이터 결함으로 서빙·채점이 422 거부된 사유.
+   * 휘발 로그 외 유일 결함율 집계 원천(문항 id 미기록 — PII 0 유지, id 는 로그에서).
+   */
+  readonly defectReason?: string;
 }
 
 /**
@@ -51,6 +56,8 @@ export function recordPublicEvent(
         fields.inputType ?? '',
         // exam_type 차원 — 호출 측 주입(공개 표면 = FIXED_EXAM_TYPE '1st').
         fields.examType ?? '',
+        // blob[5] = defect 사유 (M-19 — defect 이벤트 외 빈 문자열).
+        fields.defectReason ?? '',
       ],
       doubles: [fields.isCorrect === undefined ? -1 : fields.isCorrect ? 1 : 0],
     });
