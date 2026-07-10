@@ -926,17 +926,15 @@ export function createStudyRoutes(): Hono<StudyEnv> {
     // C-1 서빙 가드(serving-guard.ts): MC-in-disguise 행(위치라벨 answer + 보기 계약
     // 불능 — old 525행, 확정 오답 36 포함)을 서빙에서 제외. SQL 로 표현 불가한 계약
     // 판정이므로 오버샘플 후 사후 필터(공개 표면 SERVE_CANDIDATE_LIMIT 패턴 동형).
-    // 현 1차 풀 유자격 비율 ≈ 50%(-MC 521 / 전체 1,046) → ×3 이면 count 충족 여유.
+    //
+    // ★D-02 (5-페르소나 P5 CRITICAL): 미시도 우선 정렬에서 old 행은 영원히 미시도라
+    // 오버샘플 창을 점차 독점 → 유자격 문항이 잔존하는데 조기 거짓 exhausted. 1차
+    // 창이 부족하면 **전 풀 재조회**(2-pass 적응형)로 정확성 보장 — rows_read 비용은
+    // 창 고갈 시에만 발생하는 한시 부채(정본 해소 = old 행 처분 L3 마이그).
     const OVERSAMPLE = 3;
-    const nextBindsSampled: ReadonlyArray<string | number> = [
-      ...nextBinds.slice(0, -1),
-      countNum * OVERSAMPLE,
-    ];
+    const FULL_POOL_FALLBACK_LIMIT = 2000;
 
-    let questions: ReadonlyArray<ExamQuestionRow>;
-    try {
-      const result = await c.env.DB.prepare(
-        `SELECT eq.id, eq.year, eq.round, eq.question_number, eq.subject, eq.content,
+    const nextSql = `SELECT eq.id, eq.year, eq.round, eq.question_number, eq.subject, eq.content,
                 eq.answer, eq.explanation, eq.related_nodes, eq.exam_type, eq.topic_cluster,
                 eq.confusion_type, eq.input_type, eq.distractors, eq.calc_variables
            FROM exam_questions eq
@@ -948,11 +946,32 @@ export function createStudyRoutes(): Hono<StudyEnv> {
             AND eq.exam_type = ?
             ${subjectClause}
           ${orderClause}
-          LIMIT ?`,
-      )
-        .bind(...nextBindsSampled)
+          LIMIT ?`;
+    const bindsForLimit = (limit: number): ReadonlyArray<string | number> => [
+      ...nextBinds.slice(0, -1),
+      limit,
+    ];
+
+    let questions: ReadonlyArray<ExamQuestionRow>;
+    try {
+      const sampleLimit = countNum * OVERSAMPLE;
+      const first = await c.env.DB.prepare(nextSql)
+        .bind(...bindsForLimit(sampleLimit))
         .all<ExamQuestionRow>();
-      questions = result.results.filter((q) => !isMisgradableRow(q)).slice(0, countNum);
+      let servable = first.results.filter((q) => !isMisgradableRow(q));
+      // 창 고갈 + 풀에 더 남음 → 전 풀 재조회 (거짓 exhausted 차단).
+      if (servable.length < countNum && first.results.length === sampleLimit) {
+        logger.warn('next oversample window exhausted by unservable rows — full-pool refetch', {
+          userId,
+          sampleLimit,
+          servableInWindow: servable.length,
+        });
+        const full = await c.env.DB.prepare(nextSql)
+          .bind(...bindsForLimit(FULL_POOL_FALLBACK_LIMIT))
+          .all<ExamQuestionRow>();
+        servable = full.results.filter((q) => !isMisgradableRow(q));
+      }
+      questions = servable.slice(0, countNum);
     } catch (err) {
       logger.error('next query failed', err, { userId, examType, count: countNum });
       c.header('Retry-After', '5');

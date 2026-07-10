@@ -2201,6 +2201,21 @@ describe('★C-1 서빙 가드 — 1차 MC-in-disguise 행(오답 36 클래스) 
     expect(body.questions!.map((q) => q.id)).toEqual(['eq-mc-1']);
   });
 
+  it('★D-02 회귀: 미시도 old 행이 오버샘플 창 점유해도 유자격 행 잔존 시 서빙 (거짓 exhausted 차단)', async () => {
+    // 재현: count=1 → 창 = 3. 미시도 old 행 6개가 id 정렬 선두를 점유(영구 미시도),
+    // 유자격 -MC 행은 창 밖 — 적응형 전 풀 재조회 없으면 questions=[] → 거짓 exhausted.
+    seedUser('u1', 'u1@test.com');
+    for (let i = 1; i <= 6; i++) {
+      seedOldFirstRow(`eq-a-old-${i}`, '2'); // 'eq-a-*' < 'eq-z-*' (id ASC 선두)
+    }
+    seedFirstMcRow('eq-z-mc-1');
+    const res = await fetchAs('u1', '/next?examType=1st&count=1');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as StudyResponseBody;
+    expect(body.exhausted).toBe(false);
+    expect(body.questions!.map((q) => q.id)).toEqual(['eq-z-mc-1']);
+  });
+
   it('/next examType=1st — 유자격 행 0 이면 정직 exhausted (무음 오채점 서빙 금지)', async () => {
     seedUser('u1', 'u1@test.com');
     seedOldFirstRow('eq-old-only', '3');

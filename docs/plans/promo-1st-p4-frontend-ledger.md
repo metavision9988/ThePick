@@ -104,6 +104,16 @@ Binary Gate: `pnpm --filter @thepick/web build`(m-8) + typecheck + lint + web/ap
 - **MAJOR 즉시 수정**: ①③ overview 캐시 carve-out 이 429/500 에도 public 5분 스탬프 → **200 한정 게이트** / ②④ 공개 표면 캐시 경계 단위 테스트 0 → **회귀 3건 신설**(overview 200 공용·비-200 no-store·next/grade/reveal no-store = 지뢰 #5 기계 차단) / ⑤ 비콘 위임 기록 부재 → **P5-D1 등재** / ⑥ RC-5 무언 미이행+overview 계약 3곳 중복 확대 → **정직 기록**: RC-5 정리 카드(공개 계약 타입 shared 단일화)는 미이행 상태이며 overview 로 중복 +1 — **카드 스코프에 overview 포함해 이월**(P5 배포를 막지 않되 은폐 없음).
 - **MINOR 즉시 수정 4**: 스모크 fetch 타임아웃 15s / mock overview total 파생 계산(불변식 고정) / PracticeMap key sentinel / defectReason 정직 라벨(`mc_in_disguise_or_numeric_short_answer` — 진성 숫자 단답 무구분 명시). 잔여 12 = 보고서 기록 보존.
 
+### 8.2b P5 5-페르소나 기술부채 리뷰 처분 (2026-07-10, `phaseN-tech-debt-20260710-143321-INDEX.md`)
+
+결과: **CRITICAL 3 / MAJOR 18 / MINOR 15**, 진앙 RC-1~RC-6.
+
+- **CRITICAL 전건 즉시 처분**:
+  - **D-01** web 유닛 74 가 CI 미배선(WS-0a 151 테스트 사고 동일 클래스 재발) → ci.yml test 필터에 `@thepick/web` 추가.
+  - **D-02** ★실버그(당일 C-1 가드의 파생): 인증 `/next` 미시도-우선 정렬에서 영구 미서빙 old 행이 오버샘플 창을 점차 독점 → 유자격 문항 잔존한데 **조기 거짓 exhausted**(도그푸딩 세션 문항 2~14개 후 재현) → **2-pass 적응형 전 풀 재조회**(창 고갈 시에만 rows_read 비용 — 정본 해소는 old 행 처분 L3 마이그) + 재현 회귀 테스트. api 재배포 필요(아래 8.3b).
+  - **D-03** D1 DR = Time Travel 30일 단일 의존 → **첫 오프사이트 백업 실물**(R2 `thepick-backups/d1/production/20260710T054633Z.sql` 2.8MB) + `scripts/backup-d1-to-r2.sh`(크기 하한 가드) + 런북 §10(복구 경로·RPO/RTO). 주간 자동화 = CLOUDFLARE_API_TOKEN 시크릿(진산 1줄) 후 GH Actions 배선 이월 — 그 전까지 production 쓰기 작업 직전 수동 실행 의무.
+- **MAJOR 18 명시 이월(진앙별)**: RC-1(old 행 파생 부채군)·RC-2(서빙 자격 술어 2종 분산 — isServable↔isMisgradableRow 통합) = **old 행 처분 L3 plan 동승** / RC-3(exam 축·계약 선언 분산) = **RC-5 카드+M1 plan** / RC-4(배포 스모크 CI 미배선) = **GH Actions 배선 시 동승** / RC-5(RANDOM 풀스캔 스케일) = **실측 후 조정**(현 트래픽 무해) / RC-6(alert 0·AE writer-only·배포 SHA 추적) = **인증 런칭 스프린트**. 전 항목 INDEX §처분 매트릭스 보존.
+
 ### 8.3 배포 기록 (2026-07-10)
 
 - **api staging** 배포(Version `4c73f7e5`) — ★부수 발견·정비: **staging D1 스키마 선재 드리프트**(0022~0042 등 13 마이그 미적용 → input_type/distractors 부재로 공개 라우트 500). 기결·production 기적용 마이그 13건 staging 동기화(0041/0042 RW 선작성분 포함 — staging 한정, production RW 게이트 불변). 동기화 후 overview 라이브 검증(캐시 헤더 포함). next 404 = staging 데이터 빈곤(서빙 자격 행 희소) — 정직 fail-safe 동작 확인.

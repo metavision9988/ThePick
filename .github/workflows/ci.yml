@@ -54,6 +54,7 @@ jobs:
       # design-audit WS-0a (2026-06-10) — learning-modes(116)·srs(35) 추가.
       # 두 패키지는 test 필터 누락으로 CI 에서 151 테스트 미실행이었다(typecheck/lint 는
       # `pnpm -r` 로 이미 커버). verify-engine-contracts VITEST_PACKAGES 와 동시 등록.
+      # 5-페르소나 P5(2026-07-10) D-01 — @thepick/web(74 유닛) 동일 클래스 재발 → 배선.
       - name: Test (packages with tests)
         run: |
           pnpm --filter @thepick/shared \
@@ -66,6 +67,7 @@ jobs:
                --filter @thepick/admin-web \
                --filter @thepick/learning-modes \
                --filter @thepick/srs \
+               --filter @thepick/web \
                test
 
       # 5-페르소나 리뷰(2026-07-02) MAJOR-4 — 루트 scripts/ 테스트는 workspace 밖이라

@@ -222,3 +222,10 @@ Phase 2A BATCH-7 별표 1·2·5·6·7 재추출 후:
 - nested_table 셀 ID 패턴 (`TCELL-NNN-NN-NN`) 백업 dump 시 행 카운트 polynomial → 백업 storage 한도 별도 모니터링 의무
 
 차세션 Phase 2A 적재 직후 본 §9 갱신 + ADR 작성 결정 영속.
+
+## 10. D1 DR — 오프사이트 백업 (2026-07-10 신설, 5-페르소나 P5 D-03)
+
+- **문제**: D1 복구 = Time Travel **30일** 단일 의존 — 30일+ 잠복 결함(실전 전력: 정답 오류 36 이 수개월 잠복) 발견 시 user_progress·검수 승급 이력 영구 복구 불가.
+- **오프사이트 스냅샷**: `bash scripts/backup-d1-to-r2.sh` → `r2://thepick-backups/d1/production/<UTC>.sql` (전체 dump, 크기 하한 가드). **첫 백업 = `d1/production/20260710T054633Z.sql` (2.8MB, 2026-07-10)**.
+- **복구 경로**: ① 30일 내 = Time Travel(`wrangler d1 time-travel restore`) ② 30일+ = R2 스냅샷 SQL 을 신규 D1 에 import 후 바인딩 전환. RPO = 백업 실행 주기 / RTO = import 소요(현 3MB ≈ 분 단위).
+- **자동화(이월)**: GitHub Actions `schedule` 주간 실행 — `CLOUDFLARE_API_TOKEN` 시크릿 등록 = **진산 1줄 행위** 후 배선(워크플로 초안은 시크릿 확보 시 작성). 그 전까지 = 콘텐츠 적재·마이그 등 **production 쓰기 작업 직전 수동 실행 의무**(본 런북 §0 에 준함).
