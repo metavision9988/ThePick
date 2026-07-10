@@ -467,6 +467,24 @@ W0~W6·가드레일 15·Fable 검토 게이트) + git worktree 이중 워크스�
 > ⚠️ 07-08 산출물 미커밋(진산 커밋 지시 대기). 1차 단독 서비스 판정 자료 = 정본 §10(갭 3 = 보기 추출 BATCH[Claude]·
 > 해설집 조달[진산]·P1/P2 검수 승급[진산]) — 판정은 진산.
 
+> ★ **2026-07-10 갱신 (Fable 5) — promo-1st P0~P5 전체 완주 = 1차 무료·무인증 서비스 라이브**: (1) **라이브**:
+> `thepick-study.pages.dev`(랜딩 B안+`/practice/` — 4지선다·빵꾸노트 M9 힌트사다리·카드플립 4버튼·기출 지도
+> MOC·스트릭·canvas 공유) + `/api/public/*` 4 라우트(next/grade/reveal/overview) production 개통(Worker
+> `2986c040`). 스모크 14/14(overview total=**521**) + 라이브 브라우저 스모크 PASS. 실행 원장 =
+> `docs/plans/promo-1st-p4-frontend-ledger.md`(위임 P4-D1~D8·P5-D1~D2 + 리뷰 처분 §6~8). (2) **P3 성과 반영**:
+> -MC 서빙 행 521 적재 + **정답 오류 36 적발·교정**(-MC 반영. old 행 잔존 = incident 원장, 처분 마이그 = L3
+> 게이트로 승격). 백엔드 중간점검 정본 §10-B 갭 ① 해소(🔄 개정 블록). (3) **리뷰 4회 CRITICAL 4 전건 즉시
+> 처분**: C-1 인증 표면 MC-in-disguise 서빙·채점 가드(`study/serving-guard.ts`) / D-02 조기 거짓 exhausted
+> (2-pass 적응형 재조회) / D-01 web 74 유닛 CI 배선 / D-03 **D1 오프사이트 백업 신설**(R2 `thepick-backups`
+> 첫 스냅샷 + `scripts/backup-d1-to-r2.sh` + 런북 §10 — production 쓰기 전 수동 실행 의무). MAJOR 이월 원장
+> = promo 원장 §7·§8.2b(RC 진앙별). (4) **CI 장기 red 수리**(07-06 이전부터 전 run 실패): parser venv 결손 +
+> quality tsx devDep + G-1 게이트 R5 체크박스 문면 정합(engine-separation·exam2 — 기결 07-04 반영, 신규 결정
+> 아님). (5) **staging D1 드리프트 정비**: 미적용 마이그 13건(0022~0042) 동기화. (6) 커밋·push 상시화(#14 해소
+> 유지, `4fb5d02`~`17b3c41`). 기준선: api 780/web 74/E2E 26/quality 86. **잔여**: 빵꾸노트 라이브 데이터 0
+> (진성 fill_blank 콘텐츠 트랙) / 진산 1줄 = ①Web Analytics 토큰 ②CLOUDFLARE_API_TOKEN GH 시크릿(백업·스모크
+> 자동화) / old 행 처분 L3(인증 1차 오픈 선결) / RC-5 공개 계약 shared 단일화 카드. 상세
+> [[reference_promo_1st_handoff_20260708]].
+
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),
   Worker 배포, 인증/login_history smoke PASS, ADR-034/035/036 retrofit.
