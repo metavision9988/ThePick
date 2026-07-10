@@ -22,7 +22,7 @@
     "@thepick/learning-modes": "workspace:*",
     "@thepick/shared": "workspace:*",
     "@thepick/srs": "workspace:*",
-    "astro": "^5.0.0",
+    "astro": "^5.18.2",
     "dexie": "^4.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -43,10 +43,10 @@
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "fake-indexeddb": "^6.2.5",
-    "hono": "^4.12.14",
+    "hono": "^4.12.28",
     "jsdom": "^26.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
+    "vitest": "^3.2.7"
   }
 }

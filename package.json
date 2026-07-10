@@ -42,5 +42,19 @@
     "*.{json,md}": [
       "prettier --write"
     ]
+  },
+  "pnpm": {
+    "overrides": {
+      "shell-quote@<1.8.4": ">=1.8.4",
+      "undici@>=7.0.0 <7.28.0": ">=7.28.0",
+      "ws@>=8.0.0 <8.21.0": ">=8.21.0",
+      "vite@<=6.4.2": ">=6.4.3"
+    },
+    "auditConfig": {
+      "ignoreGhsas": [
+        "GHSA-2pvr-wf23-7pc7",
+        "GHSA-8hv8-536x-4wqp"
+      ]
+    }
   }
 }
