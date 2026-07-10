@@ -1,0 +1,24 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { PublicPracticeApp } from '@/components/public/PublicPracticeApp';
+---
+
+<BaseLayout
+  title="기출 풀기 — 쪽집게"
+  description="손해평가사 1차 기출을 가입 없이 바로 푼다. 4지선다·빵꾸노트·카드플립."
+  ogPath="/practice/"
+>
+  <main class="min-h-screen bg-gray-50 px-4 py-6">
+    <div class="mx-auto w-full max-w-[720px]">
+      <header class="mb-5 flex items-center justify-between gap-3">
+        <a href="/" class="tp-tight inline-flex items-center text-lg font-medium text-gray-900">
+          쪽집게
+        </a>
+        <span class="text-xs text-gray-400">손해평가사 1차 · 가입 없음</span>
+      </header>
+      <PublicPracticeApp client:load />
+    </div>
+  </main>
+  <OfflineIndicator client:load />
+</BaseLayout>

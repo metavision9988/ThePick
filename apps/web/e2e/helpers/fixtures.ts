@@ -225,3 +225,54 @@ export function makeCompleteResponse(
     ...overrides,
   };
 }
+
+/* ────────────────────────────────────────────────────────────────────────
+ * promo-1st P4 — 무인증 공개 표면 /api/public/* 픽스처
+ * (공개 계약 = {choiceId,text} — 인증 {label,text} 와 다름, routes.ts 정합)
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export interface PublicQuestionFixture {
+  readonly id: string;
+  readonly year: number;
+  readonly round: number | null;
+  readonly questionNumber: number | null;
+  readonly subject: string | null;
+  readonly content: string;
+  readonly examType: string;
+  readonly inputType: 'multiple_choice' | 'fill_blank';
+  readonly choices: ReadonlyArray<{ choiceId: string; text: string }> | null;
+}
+
+/** 공개 MC 문항 — 정답 = choiceId `pub-{index}-cid-2` (보기 ②). */
+export function makePublicMcQuestion(index: number): PublicQuestionFixture {
+  return {
+    id: `pub-q-${index}`,
+    year: 2023,
+    round: 9,
+    questionNumber: index,
+    subject: '상법 보험편',
+    content: `public mock question ${index} — 옳지 않은 것은?`,
+    examType: '1st',
+    inputType: 'multiple_choice',
+    choices: [1, 2, 3, 4].map((n) => ({
+      choiceId: `pub-${index}-cid-${n}`,
+      text: `공개 보기 ${n}`,
+    })),
+  };
+}
+
+export const PUBLIC_FILL_BLANK_ANSWER = '보험가액';
+
+export function makePublicFillBlankQuestion(index: number): PublicQuestionFixture {
+  return {
+    id: `pub-fb-${index}`,
+    year: 2023,
+    round: 9,
+    questionNumber: index,
+    subject: '농어업재해보험법령',
+    content: `public mock 빈칸 ${index} — 보험 목적물의 평가 기준 금액을 (   )(이)라 한다.`,
+    examType: '1st',
+    inputType: 'fill_blank',
+    choices: null,
+  };
+}

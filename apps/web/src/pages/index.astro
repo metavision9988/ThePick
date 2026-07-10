@@ -1,31 +1,105 @@
 ---
+/**
+ * 랜딩 (FE-1) — B안 채택: 정적 소개 + 라이브 1문항 인라인 체험 (P4-D2, 기각안 근거 =
+ * docs/plans/promo-1st-p4-frontend-ledger.md §4). AESTHETIC 준수: 그라디언트·3열
+ * Feature 카드·과장 카피 금지, 1강조색(indigo), 카드보다 리스트, 720px 본문.
+ */
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { LandingEmbed } from '@/components/public/LandingEmbed';
+
+const stats = [
+  { value: '7회분', label: '기출 제5회~제11회' },
+  { value: '521문항', label: '4지선다 즉시 채점' },
+  { value: '3과목', label: '상법 · 재해보험법령 · 재배학' },
+];
+
+const modes = [
+  {
+    color: '#4f46e5',
+    label: '4지선다',
+    desc: '실제 기출 그대로 풀고 바로 채점한다.',
+  },
+  {
+    color: '#f59e0b',
+    label: '빵꾸노트',
+    desc: '핵심 용어를 직접 꺼내 쓴다. 막히면 초성부터 단계 힌트.',
+  },
+  {
+    color: '#10b981',
+    label: '카드플립',
+    desc: '머릿속으로 답하고 뒤집어 확인한다. 간격 반복으로 복습 시점을 잡아 준다.',
+  },
+];
 ---
 
-<BaseLayout>
-  <main class="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4">
-    <div class="w-full max-w-md text-center">
-      <h1 class="text-4xl font-bold tracking-tight text-gray-900">쪽집게</h1>
-      <p class="mt-3 text-sm text-gray-600">손해평가사 자격시험 AI 학습 서비스</p>
-      <p class="mt-1 text-xs text-gray-400">평가 환경 (MVP) · Phase 2</p>
-
-      <div class="mt-10 flex flex-col gap-3">
-        <a
-          href="/study/"
-          class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-6 py-3 text-sm font-medium text-white transition hover:bg-indigo-500"
-          >학습 시작하기</a
+<BaseLayout
+  title="쪽집게 — 손해평가사 1차 기출, 가입 없이 바로"
+  description="손해평가사 1차 기출 7회분을 가입 없이 무료로 푼다. 4지선다 즉시 채점, 빵꾸노트, 카드플립 간격 반복."
+  ogPath="/"
+>
+  <main class="min-h-screen bg-gray-50 px-4 py-6">
+    <div class="mx-auto w-full max-w-[720px]">
+      <header class="flex items-center justify-between gap-3">
+        <span class="tp-tight text-lg font-medium text-gray-900">쪽집게</span>
+        <a href="/auth/login" class="inline-flex items-center px-2 text-sm text-gray-500 hover:text-gray-900"
+          >로그인</a
         >
-        <a
-          href="/auth/login"
-          class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-6 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-          >로그인 / 회원가입</a
-        >
-      </div>
+      </header>
 
-      <p class="mt-6 text-xs text-gray-400">
-        학습 시작하기 클릭 후 로그인이 필요한 경우 자동으로 로그인 페이지로 이동합니다.
-      </p>
+      <section class="mt-12">
+        <h1 class="tp-tight text-2xl font-medium text-gray-900">
+          손해평가사 1차, 기출로 시작한다
+        </h1>
+        <p class="tp-body mt-3 text-[15px] text-gray-500">
+          기출 7회분을 가입 없이 무료로 푼다. 채점은 즉시, 진도는 이 기기에만 남는다.
+        </p>
+        <div class="mt-6">
+          <a
+            href="/practice/"
+            class="inline-flex w-full items-center justify-center rounded-lg bg-indigo-600 px-6 py-3 text-sm font-medium text-white hover:bg-indigo-700 sm:w-auto"
+            style="min-height: 48px"
+            >바로 풀어보기</a
+          >
+          <p class="mt-2 text-xs text-gray-400">가입 없음 · 무료 · 설치 없음</p>
+        </div>
+      </section>
+
+      <section class="mt-10" aria-label="제공 범위">
+        <ul class="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
+          {
+            stats.map((s) => (
+              <li class="flex items-center justify-between gap-3 px-4 py-3">
+                <span class="text-sm font-medium tabular-nums text-gray-900">{s.value}</span>
+                <span class="text-sm text-gray-500">{s.label}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </section>
+
+      <section class="mt-10" aria-label="학습 모드">
+        <h2 class="text-xs font-medium uppercase tracking-wide text-gray-500">세 가지 학습</h2>
+        <ul class="mt-2 space-y-2.5">
+          {
+            modes.map((m) => (
+              <li
+                class="rounded-lg border border-gray-200 bg-white px-4 py-3"
+                style={`border-left: 2px solid ${m.color}`}
+              >
+                <span class="block text-sm font-medium text-gray-900">{m.label}</span>
+                <span class="tp-body mt-0.5 block text-sm text-gray-500">{m.desc}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </section>
+
+      <LandingEmbed client:load />
+
+      <footer class="mt-12 border-t border-gray-100 pt-4 text-xs text-gray-400">
+        쪽집게 — 손해평가사 자격시험 학습 서비스. 진도 데이터는 브라우저에만 저장된다.
+      </footer>
     </div>
   </main>
   <OfflineIndicator client:load />

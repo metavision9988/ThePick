@@ -21,6 +21,9 @@ export function emptyCounters(): ApiCallCounters {
     sessionComplete: 0,
     next: 0,
     grade: 0,
+    publicNext: 0,
+    publicGrade: 0,
+    publicReveal: 0,
   };
 }
 

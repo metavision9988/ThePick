@@ -41,10 +41,13 @@ import {
   makeDueQueue,
   makeModeStats,
   makeNextQuestion,
+  makePublicFillBlankQuestion,
+  makePublicMcQuestion,
   makeProgress,
   makeSessionDetail,
   makeStartResponse,
   NEXT_EXHAUSTED,
+  PUBLIC_FILL_BLANK_ANSWER,
 } from '../helpers/fixtures';
 
 import { recordCall, resetState, state } from './state';
@@ -295,6 +298,83 @@ app.get('/api/progress/due', (c) => {
   const invalid = ensureExamId(c);
   if (invalid) return invalid;
   return c.json(makeDueQueue());
+});
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Public — promo-1st P4 무인증 공개 표면 (/api/public/*, examId·쿠키 무관)
+ *
+ * 실 서버 apps/api/src/public/routes.ts 계약 정합:
+ *   - next: {choiceId,text} 셔플 서빙 (mock 은 결정적 순서 — 채점 검증 가능)
+ *   - grade: choiceId(MC) / answer(fill_blank) → isCorrect + correctChoiceIds
+ *   - reveal: correctAnswer + correctChoiceIds (P4-D1)
+ * 정답 규약: MC = `pub-{index}-cid-2` / fill_blank = PUBLIC_FILL_BLANK_ANSWER.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+app.get('/api/public/questions/next', (c) => {
+  recordCall('publicNext');
+  const forced = state.overrides.publicNextResponse;
+  if (forced !== undefined) {
+    return c.json(forced.body, forced.status as 200);
+  }
+  const inputType = c.req.query('inputType');
+  const index = state.counters.publicNext;
+  if (inputType === 'fill_blank') {
+    return c.json(makePublicFillBlankQuestion(index));
+  }
+  return c.json(makePublicMcQuestion(index));
+});
+
+/** 공개 MC 채점 규약 — choiceId 접미 `-cid-2` = 정답 보기. */
+function publicMcCorrectChoiceId(questionId: string): string {
+  const index = questionId.replace(/^pub-q-/, '');
+  return `pub-${index}-cid-2`;
+}
+
+app.post('/api/public/grade', async (c) => {
+  recordCall('publicGrade');
+  const body = (await c.req.json().catch(() => null)) as {
+    questionId?: string;
+    choiceId?: string;
+    answer?: string;
+  } | null;
+  if (body === null || typeof body.questionId !== 'string') {
+    return c.json({ error: 'VALIDATION_ERROR' }, 400);
+  }
+  if (body.questionId.startsWith('pub-fb-')) {
+    if (typeof body.answer !== 'string') return c.json({ error: 'ANSWER_REQUIRED' }, 400);
+    return c.json({
+      isCorrect: body.answer.trim() === PUBLIC_FILL_BLANK_ANSWER,
+      correctAnswer: PUBLIC_FILL_BLANK_ANSWER,
+      explanation: 'mock 해설 — 보험가액은 보험 목적물의 평가 기준 금액이다.',
+    });
+  }
+  if (typeof body.choiceId !== 'string') return c.json({ error: 'CHOICE_ID_REQUIRED' }, 400);
+  const correctChoiceId = publicMcCorrectChoiceId(body.questionId);
+  return c.json({
+    isCorrect: body.choiceId === correctChoiceId,
+    correctAnswer: '2',
+    explanation: 'mock 해설 — 보기 ②가 정답이다.',
+    correctChoiceIds: [correctChoiceId],
+  });
+});
+
+app.post('/api/public/reveal', async (c) => {
+  recordCall('publicReveal');
+  const body = (await c.req.json().catch(() => null)) as { questionId?: string } | null;
+  if (body === null || typeof body.questionId !== 'string') {
+    return c.json({ error: 'VALIDATION_ERROR' }, 400);
+  }
+  if (body.questionId.startsWith('pub-fb-')) {
+    return c.json({
+      correctAnswer: PUBLIC_FILL_BLANK_ANSWER,
+      explanation: 'mock 해설 — 보험가액은 보험 목적물의 평가 기준 금액이다.',
+    });
+  }
+  return c.json({
+    correctAnswer: '2',
+    explanation: 'mock 해설 — 보기 ②가 정답이다.',
+    correctChoiceIds: [publicMcCorrectChoiceId(body.questionId)],
+  });
 });
 
 /* unhandled fallback — fail-loud (silent 404 차단). */

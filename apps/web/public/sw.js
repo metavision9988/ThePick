@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const SHELL_CACHE = `thepick-shell-${CACHE_VERSION}`;
 const DATA_CACHE = `thepick-data-${CACHE_VERSION}`;
 
@@ -47,10 +47,13 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Strategy 4: NetworkOnly — AI tutor, payment, admin API, user data (PII)
+  // + /api/public/ (P4-D7): 랜덤 서빙 /next 가 SWR 캐시에 물리면 같은 문항 재서빙 —
+  //   공개 학습 표면은 항상 네트워크 직행.
   if (
     url.pathname.startsWith('/api/ai/') ||
     url.pathname.startsWith('/api/payment/') ||
     url.pathname.startsWith('/api/progress/') ||
+    url.pathname.startsWith('/api/public/') ||
     url.pathname.startsWith('/api/user/')
   ) {
     return;

@@ -22,6 +22,10 @@ export interface ApiCallCounters {
   sessionComplete: number;
   next: number;
   grade: number;
+  /** promo-1st P4 — 무인증 공개 표면 /api/public/*. */
+  publicNext: number;
+  publicGrade: number;
+  publicReveal: number;
 }
 
 export type EndpointKey = keyof ApiCallCounters;
@@ -56,6 +60,14 @@ export interface SerializedOverrides {
   readonly completeResponse?: Record<string, unknown>;
   readonly nextSequence?: ReadonlyArray<Record<string, unknown>>;
   readonly gradeSequence?: ReadonlyArray<GradeResponseEntry>;
+  /**
+   * promo-1st P4 — /api/public/questions/next 강제 응답 (에러 상태 spec 용).
+   * 설정 시 카운터는 증가하되 항상 이 응답 반환.
+   */
+  readonly publicNextResponse?: {
+    readonly status: number;
+    readonly body: Record<string, unknown>;
+  };
 }
 
 /** Admin endpoint /__mock/state 응답 shape — counters + callLog snapshot. */

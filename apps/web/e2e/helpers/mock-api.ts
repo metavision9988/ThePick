@@ -61,6 +61,11 @@ export interface ApiMockOverrides {
   readonly nextSequence?: ReadonlyArray<Readonly<object>>;
   readonly gradeSequence?: ReadonlyArray<GradeResponseEntry>;
   readonly completeResponse?: () => Readonly<object>;
+  /** promo-1st P4 — /api/public/questions/next 강제 응답 (빈 상태·에러 spec). */
+  readonly publicNextResponse?: {
+    readonly status: number;
+    readonly body: Record<string, unknown>;
+  };
 }
 
 export interface ApiMock {
@@ -117,6 +122,9 @@ function mapToEndpointKey(method: string, url: string): EndpointKey | null {
   if (/\/api\/study\/session\/[^/]+(?:\?|$)/.test(url)) return 'sessionDetail';
   if (url.includes('/api/study/next')) return 'next';
   if (url.includes('/api/study/grade')) return 'grade';
+  if (url.includes('/api/public/questions/next')) return 'publicNext';
+  if (url.includes('/api/public/grade')) return 'publicGrade';
+  if (url.includes('/api/public/reveal')) return 'publicReveal';
   return null;
 }
 
@@ -174,6 +182,9 @@ export async function installApiMock(page: Page): Promise<ApiMock> {
         nextSequence: handler.nextSequence as ReadonlyArray<Record<string, unknown>>,
       }),
       ...(handler.gradeSequence !== undefined && { gradeSequence: handler.gradeSequence }),
+      ...(handler.publicNextResponse !== undefined && {
+        publicNextResponse: handler.publicNextResponse,
+      }),
     };
     const overrideResponse = await page.request.post(`${MOCK_SERVER_BASE}/__mock/override`, {
       data: serialized,

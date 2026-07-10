@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /auth/
+Disallow: /study/
+
+Sitemap: https://thepick-study.pages.dev/sitemap.xml
