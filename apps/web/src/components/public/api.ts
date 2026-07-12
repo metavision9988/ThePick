@@ -7,6 +7,7 @@
 
 import type {
   InputType,
+  PublicErrorCode,
   PublicGradeResult,
   PublicOverview,
   PublicQuestion,
@@ -15,8 +16,11 @@ import type {
 
 const API_BASE: string = import.meta.env.PUBLIC_API_BASE_URL ?? 'http://localhost:8787';
 
-/** 서버 에러코드 → 사용자 문구 (기술 에러 비노출 — Pass 3 Graceful 안내). */
-const ERROR_MESSAGES: Readonly<Record<string, string>> = {
+/**
+ * 서버 에러코드 → 사용자 문구 (기술 에러 비노출 — Pass 3 Graceful 안내).
+ * 키 = shared PUBLIC_ERROR_CODES 전수 — 서버가 코드를 추가하면 여기 컴파일 에러로 강제(RC-5).
+ */
+const ERROR_MESSAGES: Readonly<Record<PublicErrorCode, string>> = {
   NO_QUESTION: '조건에 맞는 문제가 아직 없다. 필터를 바꾸거나 다른 학습 모드를 골라 보자.',
   QUESTION_NOT_FOUND: '문제를 찾을 수 없다. 다음 문제로 넘어가자.',
   QUESTION_UNAVAILABLE: '이 문제는 지금 풀 수 없다. 다음 문제로 넘어가자.',
@@ -60,8 +64,10 @@ export class PublicApiError extends Error {
 export function publicErrorMessage(code: string | null, kind: PublicApiErrorKind): string {
   if (kind === 'offline') return OFFLINE_MESSAGE;
   if (kind === 'network') return NETWORK_MESSAGE;
-  if (code !== null && code in ERROR_MESSAGES) return ERROR_MESSAGES[code]!;
-  return ERROR_MESSAGES['INTERNAL_ERROR']!;
+  if (code !== null && Object.hasOwn(ERROR_MESSAGES, code)) {
+    return ERROR_MESSAGES[code as PublicErrorCode];
+  }
+  return ERROR_MESSAGES['INTERNAL_ERROR'];
 }
 
 function classify(status: number, code: string | null): PublicApiErrorKind {

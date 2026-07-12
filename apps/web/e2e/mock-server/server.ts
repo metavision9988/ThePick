@@ -27,6 +27,9 @@ import { cors } from 'hono/cors';
 
 import {
   ACCESS_TOKEN_COOKIE,
+  type PublicGradeResult,
+  type PublicOverview,
+  type PublicRevealResult,
   ACCESS_TOKEN_COOKIE_PATH,
   CORS_ALLOWED_HEADERS_BASE,
   CORS_ALLOWED_METHODS,
@@ -323,11 +326,12 @@ app.get('/api/public/questions/overview', (c) => {
       rounds: [5, 6, 7, 8, 9, 10, 11].map((round) => ({ round, total: round === 11 ? 24 : 25 })),
     },
   ].map((s) => ({ ...s, total: s.rounds.reduce((a, r) => a + r.total, 0) }));
-  return c.json({
+  const body = {
     examType: '1st',
     total: subjects.reduce((a, s) => a + s.total, 0),
     subjects,
-  });
+  } satisfies PublicOverview;
+  return c.json(body);
 });
 
 app.get('/api/public/questions/next', (c) => {
@@ -362,20 +366,22 @@ app.post('/api/public/grade', async (c) => {
   }
   if (body.questionId.startsWith('pub-fb-')) {
     if (typeof body.answer !== 'string') return c.json({ error: 'ANSWER_REQUIRED' }, 400);
-    return c.json({
+    const out = {
       isCorrect: body.answer.trim() === PUBLIC_FILL_BLANK_ANSWER,
       correctAnswer: PUBLIC_FILL_BLANK_ANSWER,
       explanation: 'mock 해설 — 보험가액은 보험 목적물의 평가 기준 금액이다.',
-    });
+    } satisfies PublicGradeResult;
+    return c.json(out);
   }
   if (typeof body.choiceId !== 'string') return c.json({ error: 'CHOICE_ID_REQUIRED' }, 400);
   const correctChoiceId = publicMcCorrectChoiceId(body.questionId);
-  return c.json({
+  const out = {
     isCorrect: body.choiceId === correctChoiceId,
     correctAnswer: '2',
     explanation: 'mock 해설 — 보기 ②가 정답이다.',
     correctChoiceIds: [correctChoiceId],
-  });
+  } satisfies PublicGradeResult;
+  return c.json(out);
 });
 
 app.post('/api/public/reveal', async (c) => {
@@ -385,16 +391,18 @@ app.post('/api/public/reveal', async (c) => {
     return c.json({ error: 'VALIDATION_ERROR' }, 400);
   }
   if (body.questionId.startsWith('pub-fb-')) {
-    return c.json({
+    const out = {
       correctAnswer: PUBLIC_FILL_BLANK_ANSWER,
       explanation: 'mock 해설 — 보험가액은 보험 목적물의 평가 기준 금액이다.',
-    });
+    } satisfies PublicRevealResult;
+    return c.json(out);
   }
-  return c.json({
+  const out = {
     correctAnswer: '2',
     explanation: 'mock 해설 — 보기 ②가 정답이다.',
     correctChoiceIds: [publicMcCorrectChoiceId(body.questionId)],
-  });
+  } satisfies PublicRevealResult;
+  return c.json(out);
 });
 
 /* unhandled fallback — fail-loud (silent 404 차단). */

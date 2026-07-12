@@ -5,7 +5,7 @@
  * Hard Rule 17 정합: examId 리터럴 없음 (테스트 픽스처는 Rule 17 예외 대상이나, EXAM_IDS 경유 유지).
  */
 
-import { EXAM_IDS } from '@thepick/shared';
+import { EXAM_IDS, type PublicNextQuestion } from '@thepick/shared';
 
 import type {
   GradeResponse,
@@ -231,17 +231,8 @@ export function makeCompleteResponse(
  * (공개 계약 = {choiceId,text} — 인증 {label,text} 와 다름, routes.ts 정합)
  * ──────────────────────────────────────────────────────────────────────── */
 
-export interface PublicQuestionFixture {
-  readonly id: string;
-  readonly year: number;
-  readonly round: number | null;
-  readonly questionNumber: number | null;
-  readonly subject: string | null;
-  readonly content: string;
-  readonly examType: string;
-  readonly inputType: 'multiple_choice' | 'fill_blank';
-  readonly choices: ReadonlyArray<{ choiceId: string; text: string }> | null;
-}
+// 와이어 계약 정본 소비 (RC-5 단일화) — 인라인 shape 재선언 금지, 계약 변경 시 컴파일 강제.
+export type PublicQuestionFixture = PublicNextQuestion;
 
 /** 공개 MC 문항 — 정답 = choiceId `pub-{index}-cid-2` (보기 ②). */
 export function makePublicMcQuestion(index: number): PublicQuestionFixture {

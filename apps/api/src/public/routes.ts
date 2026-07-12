@@ -19,7 +19,19 @@
 
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { createLogger, ErrorCode, type Logger, type LoggerEnvironment } from '@thepick/shared';
+import {
+  createLogger,
+  ErrorCode,
+  type Logger,
+  type LoggerEnvironment,
+  PUBLIC_SERVABLE_INPUT_TYPES,
+  type PublicChoice,
+  type PublicGradeResult,
+  type PublicNextQuestion,
+  type PublicOverview,
+  type PublicRevealResult,
+  type PublicServableInputType,
+} from '@thepick/shared';
 import {
   gradeFillBlank,
   parseMcAnswerLabels,
@@ -49,7 +61,8 @@ const FIXED_EXAM_TYPE = '1st';
 const FIXED_STATUS = 'active';
 
 const MAX_SUBJECT_PARAM_LEN = 100;
-const SERVABLE_INPUT_TYPES: readonly InputType[] = ['multiple_choice', 'fill_blank'];
+// 서빙 가능 타입 = shared 계약 상수 직접 소비(4-Pass MAJOR-2 — 리터럴 재선언 제거).
+const SERVABLE_INPUT_TYPES: readonly InputType[] = PUBLIC_SERVABLE_INPUT_TYPES;
 
 /** 서빙 row (answer/distractors 는 내부용 — projection 비노출). */
 interface ServeRow {
@@ -73,23 +86,8 @@ interface GradeRow {
   readonly distractors: string | null;
 }
 
-interface PublicChoiceOut {
-  readonly choiceId: string;
-  readonly text: string;
-}
-
-interface PublicNextQuestionOut {
-  readonly id: string;
-  readonly year: number;
-  readonly round: number | null;
-  readonly questionNumber: number | null;
-  readonly subject: string | null;
-  readonly content: string;
-  readonly examType: string;
-  readonly inputType: InputType;
-  /** 객관식만 — 표시 순서 셔플된 {choiceId, text}. 정답 위치 비노출. */
-  readonly choices: readonly PublicChoiceOut[] | null;
-}
+// 와이어 계약 정본 = @thepick/shared public-learning-contract (RC-5 단일화, 2026-07-12).
+// PublicChoice/PublicNextQuestion/PublicServableInputType 을 그대로 소비 — 인라인 재선언 금지.
 
 const GradeBodySchema = z.object({
   questionId: z.string().min(1).max(128),
@@ -184,7 +182,7 @@ async function buildPublicChoices(
   secret: string,
   row: ServeRow,
   logger: Logger,
-): Promise<PublicChoiceOut[] | null> {
+): Promise<PublicChoice[] | null> {
   const parsed = parseMcChoices(row.distractors, row.answer);
   if (!parsed.ok) {
     logger.warn('MC serve refused — choice contract', {
@@ -193,7 +191,7 @@ async function buildPublicChoices(
     });
     return null;
   }
-  const choices: PublicChoiceOut[] = [];
+  const choices: PublicChoice[] = [];
   for (let originalIndex = 0; originalIndex < parsed.originalTexts.length; originalIndex++) {
     choices.push({
       choiceId: await issueChoiceId(secret, row.id, originalIndex),
@@ -272,11 +270,12 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
       }))
       .sort((a, b) => (a.subject ?? '').localeCompare(b.subject ?? '', 'ko'));
 
-    return c.json({
+    const body = {
       examType: FIXED_EXAM_TYPE,
       total: servable.length,
       subjects,
-    });
+    } satisfies PublicOverview;
+    return c.json(body);
   });
 
   // GET /api/public/questions/next — 랜덤 서빙(비노출 projection).
@@ -332,8 +331,9 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
       return c.json({ error: 'NO_QUESTION' }, 404);
     }
 
-    const inputType = resolveInputType(row.input_type);
-    let choices: PublicChoiceOut[] | null = null;
+    // isServable 통과 행 = mc|fill_blank 보장 → 와이어 계약 유니온으로 축소(계약 정본 소비).
+    const inputType = resolveInputType(row.input_type) as PublicServableInputType;
+    let choices: PublicChoice[] | null = null;
     if (inputType === 'multiple_choice') {
       const secret = c.env.JWT_SECRET ?? '';
       choices = await buildPublicChoices(secret, row, logger);
@@ -352,7 +352,7 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
       }
     }
 
-    const out: PublicNextQuestionOut = {
+    const out: PublicNextQuestion = {
       id: row.id,
       year: row.year,
       round: row.round,
@@ -488,13 +488,14 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
     });
 
     // explanation 0/525(F-5) — 없으면 필드 생략(프론트 빈상태 처리). correctChoiceIds = MC 만.
-    const body: Record<string, unknown> = { isCorrect, correctAnswer };
-    if (row.explanation !== null && row.explanation !== '') {
-      body.explanation = row.explanation;
-    }
-    if (correctChoiceIds !== undefined) {
-      body.correctChoiceIds = correctChoiceIds;
-    }
+    // 계약 컴파일 강제(4-Pass MAJOR-1): 조건부 스프레드 + satisfies — 생략 의미 유지한 채 shape 결합.
+    const hasExplanation = row.explanation !== null && row.explanation !== '';
+    const body = {
+      isCorrect,
+      correctAnswer,
+      ...(hasExplanation ? { explanation: row.explanation as string } : {}),
+      ...(correctChoiceIds !== undefined ? { correctChoiceIds } : {}),
+    } satisfies PublicGradeResult;
     return c.json(body);
   });
 
@@ -576,13 +577,12 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
       examType: FIXED_EXAM_TYPE,
     });
 
-    const body: Record<string, unknown> = { correctAnswer: row.answer };
-    if (row.explanation !== null && row.explanation !== '') {
-      body.explanation = row.explanation;
-    }
-    if (correctChoiceIds !== undefined) {
-      body.correctChoiceIds = correctChoiceIds;
-    }
+    const hasExplanation = row.explanation !== null && row.explanation !== '';
+    const body = {
+      correctAnswer: row.answer,
+      ...(hasExplanation ? { explanation: row.explanation as string } : {}),
+      ...(correctChoiceIds !== undefined ? { correctChoiceIds } : {}),
+    } satisfies PublicRevealResult;
     return c.json(body);
   });
 

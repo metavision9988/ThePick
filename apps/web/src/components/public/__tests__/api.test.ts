@@ -3,6 +3,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { PUBLIC_ERROR_CODES } from '@thepick/shared';
 import { fetchPublicNext, gradePublic, PublicApiError, publicErrorMessage } from '../api';
 
 const realFetch = globalThis.fetch;
@@ -26,20 +27,8 @@ afterEach(() => {
 });
 
 describe('publicErrorMessage — 단일 매핑 정본', () => {
-  it('알려진 코드 전부 한국어 사용자 문구 보유(기술 에러 비노출)', () => {
-    const codes = [
-      'NO_QUESTION',
-      'QUESTION_NOT_FOUND',
-      'QUESTION_UNAVAILABLE',
-      'QUESTION_HAS_NO_ANSWER',
-      'QUESTION_NOT_GRADABLE',
-      'TOO_MANY_REQUESTS',
-      'VALIDATION_ERROR',
-      'CHOICE_ID_REQUIRED',
-      'ANSWER_REQUIRED',
-      'INTERNAL_ERROR',
-    ];
-    for (const code of codes) {
+  it('shared PUBLIC_ERROR_CODES 전수 한국어 사용자 문구 보유(기술 에러 비노출 — RC-5 계약 정본 소비)', () => {
+    for (const code of PUBLIC_ERROR_CODES) {
       const msg = publicErrorMessage(code, 'server');
       expect(msg.length).toBeGreaterThan(5);
       expect(msg).not.toMatch(/[A-Z_]{4,}/); // 코드 원문 노출 금지

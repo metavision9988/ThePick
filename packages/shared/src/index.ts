@@ -9,3 +9,4 @@ export * from './constants/auth.js';
 export * from './constants/cors.js';
 export * from './constants/password-policy.js';
 export * from './constants/claude-pricing.js';
+export * from './public-learning-contract.js';

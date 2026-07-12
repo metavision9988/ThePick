@@ -6,7 +6,7 @@
  * NO_QUESTION 빈 상태로 정직 강하(무음 오동작 없음).
  */
 
-import type { InputType, PracticeMode } from './types';
+import type { PracticeMode, PublicServableInputType } from './types';
 
 export interface PracticeModeMeta {
   readonly id: PracticeMode;
@@ -15,8 +15,8 @@ export interface PracticeModeMeta {
   /** 좌측 2px 보더/dot 전용 색 (카드 틴트 금지 — 디자인 정본). */
   readonly color: string;
   readonly tone: string;
-  /** 서빙 필터 — null 이면 서빙 가능 전 타입. */
-  readonly inputType: InputType | null;
+  /** 서빙 필터 — null 이면 서빙 가능 전 타입 (계약 유니온으로 협소 — essay 오기입 컴파일 차단). */
+  readonly inputType: PublicServableInputType | null;
 }
 
 export const PRACTICE_MODE_META: readonly PracticeModeMeta[] = [
