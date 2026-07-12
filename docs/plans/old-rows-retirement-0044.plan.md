@@ -1,6 +1,6 @@
 # old 525행 처분 상태머신 마이그 (슬롯 0044) — L3 plan
 
-- **작성**: 2026-07-12 (Fable 5). STATUS: **APPROVED — 2026-07-12 진산 "권고대로 진행" (§9 Q1~Q5 전건 권고안 채택)**. production 적용 = §6 시퀀스(불가역 고지 후).
+- **작성**: 2026-07-12 (Fable 5). STATUS: **EXECUTED — 2026-07-12 결재 당일 집행 완결** (staging 리허설 → production 적용 → G-OLD 전 게이트 PASS → 가드 폐기 G-OLD-8). 게이트 리포트 = docs/audit/g-old-gates-20260712.md / 인시던트 종결 기록 동기.
 - **북극성 연결**: 정답 100% Hard Stop — production old 525행 중 **36건이 오답인 채 status='active'** 로 잔존(`docs/audit/incident-1st-answer-errors-20260710.md`). 서빙은 가드로 한시 차단 중이나 데이터 자체가 거짓 상태.
 - **격상 근거**: 5-페르소나 P5 리뷰 **RC-1 최대 진앙**(D-02 CRITICAL 정본 해소 + D-09/D-14/D-18/D-30/D-34 동승) — **인증 1차 학습 오픈 선결 게이트**로 승격 기결(promo 원장 §8.2b).
 - **전제 실측**: 2026-07-12 독립 조사(트리거 계보·CHECK·status 소비 전수·매핑·FK·슬롯) — 본문 인용 전부 file:line 검증됨.

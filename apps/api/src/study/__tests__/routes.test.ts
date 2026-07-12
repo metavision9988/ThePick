@@ -9,7 +9,7 @@
  *   - POST /grade  — 인증/examId/Zod/미존재 question/정답/오답/normalize/출처 surface/UPSERT
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ACCESS_TOKEN_COOKIE, EXAM_IDS } from '@thepick/shared';
 import { createD1FromSqlite, type SqliteBackedD1 } from '../../__tests__/helpers/d1-from-sqlite.js';
 import { signAccessToken } from '../../auth/session.js';
@@ -2163,18 +2163,19 @@ describe('weak user 격리 — /mode weakTop이 다른 user 데이터 누설 X',
   });
 });
 
-describe('★C-1 서빙 가드 — 1차 MC-in-disguise 행(오답 36 클래스) 인증 표면 차단 (5-페르소나 P4)', () => {
-  // old 525행 재현: exam_type='1st' + input_type='fill_blank' + answer=위치라벨 + distractors NULL.
-  function seedOldFirstRow(id: string, answer: string): void {
+describe('★0044 이후 계약 — old 행(deprecated) 데이터 정본 자연 배제 (G-OLD-7·8)', () => {
+  // 0044 전이 후 old 행 상태 재현: deprecated + superseded_by 백링크.
+  function seedDeprecatedOldRow(id: string): void {
     ctx.raw
       .prepare(
         `INSERT INTO exam_questions
            (id, year, round, question_number, subject, content, answer, explanation,
-            related_nodes, status, exam_type, confusion_type, input_type, distractors)
-         VALUES (?, 2023, 9, 1, NULL, '1차 원행(보기 미추출)', ?, NULL, NULL, 'active', '1st',
-                 NULL, 'fill_blank', NULL)`,
+            related_nodes, status, exam_type, confusion_type, input_type, distractors,
+            superseded_by)
+         VALUES (?, 2023, 9, 1, NULL, '전이된 old 행', '2', NULL, NULL, 'deprecated', '1st',
+                 NULL, 'fill_blank', NULL, ?)`,
       )
-      .run(id, answer);
+      .run(id, `${id}-MC`);
   }
 
   // -MC 서빙행 재현: input_type='multiple_choice' + distractors 계약 성립.
@@ -2190,97 +2191,51 @@ describe('★C-1 서빙 가드 — 1차 MC-in-disguise 행(오답 36 클래스) 
       .run(id, JSON.stringify(['보험가액', '보험금액', '손해액', '자기부담금']));
   }
 
-  it('/next examType=1st — old 행 제외, -MC 행만 서빙', async () => {
-    seedUser('u1', 'u1@test.com');
-    seedOldFirstRow('eq-old-1', '2'); // 위치라벨 answer (확정 오답 36 과 동일 클래스)
-    seedOldFirstRow('eq-old-2', '①');
-    seedFirstMcRow('eq-mc-1');
-    const res = await fetchAs('u1', '/next?examType=1st&count=5');
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as StudyResponseBody;
-    expect(body.questions!.map((q) => q.id)).toEqual(['eq-mc-1']);
-  });
-
-  it('★D-02 회귀: 미시도 old 행이 오버샘플 창 점유해도 유자격 행 잔존 시 서빙 (거짓 exhausted 차단)', async () => {
-    // 재현: count=1 → 창 = 3. 미시도 old 행 6개가 id 정렬 선두를 점유(영구 미시도),
-    // 유자격 -MC 행은 창 밖 — 적응형 전 풀 재조회 없으면 questions=[] → 거짓 exhausted.
+  it('★G-OLD-7: /next 는 deprecated old 행을 status 필터로 자연 배제 — 서빙 = 전부 -MC (가드 없이)', async () => {
     seedUser('u1', 'u1@test.com');
     for (let i = 1; i <= 6; i++) {
-      seedOldFirstRow(`eq-a-old-${i}`, '2'); // 'eq-a-*' < 'eq-z-*' (id ASC 선두)
-    }
-    seedFirstMcRow('eq-z-mc-1');
-    const res = await fetchAs('u1', '/next?examType=1st&count=1');
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as StudyResponseBody;
-    expect(body.exhausted).toBe(false);
-    expect(body.questions!.map((q) => q.id)).toEqual(['eq-z-mc-1']);
-  });
-
-  it('★G-OLD-7 기계화: 0044 전이 후 상태(old=deprecated)에서 /next 가 전 풀 재조회 없이 -MC 서빙', async () => {
-    // 0044 적용 후 데이터 상태 재현: old 행 전부 deprecated → SQL status='active' 필터가
-    // 자연 배제 → 오버샘플 창에 old 미진입 → full-pool refetch(D-02 fallback) 발동 0.
-    // 판정 = 로거 warn('full-pool refetch') 미발생 + 서빙 결과 전부 -MC (plan §5 G-OLD-7).
-    seedUser('u1', 'u1@test.com');
-    for (let i = 1; i <= 6; i++) {
-      ctx.raw
-        .prepare(
-          `INSERT INTO exam_questions
-             (id, year, round, question_number, subject, content, answer, explanation,
-              related_nodes, status, exam_type, confusion_type, input_type, distractors,
-              superseded_by)
-           VALUES (?, 2023, 9, 1, NULL, '전이된 old 행', '2', NULL, NULL, 'deprecated', '1st',
-                   NULL, 'fill_blank', NULL, ?)`,
-        )
-        .run(`eq-a-dep-${i}`, `eq-a-dep-${i}-MC`);
+      seedDeprecatedOldRow(`eq-a-dep-${i}`);
       seedFirstMcRow(`eq-a-dep-${i}-MC`);
     }
-    const logSpy = vi.spyOn(console, 'log');
     const res = await fetchAs('u1', '/next?examType=1st&count=2');
     expect(res.status).toBe(200);
     const body = (await res.json()) as StudyResponseBody;
     expect(body.exhausted).toBe(false);
     expect(body.questions!.length).toBe(2);
     for (const q of body.questions!) expect(q.id.endsWith('-MC')).toBe(true);
-    const refetchLogged = logSpy.mock.calls.some((args) =>
-      String(args[0]).includes('full-pool refetch'),
-    );
-    logSpy.mockRestore();
-    expect(refetchLogged).toBe(false); // D-02 fallback 미발동 = G-OLD-7
   });
 
-  it('/next examType=1st — 유자격 행 0 이면 정직 exhausted (무음 오채점 서빙 금지)', async () => {
+  it('/next examType=1st — 유자격(active) 행 0 이면 정직 exhausted', async () => {
     seedUser('u1', 'u1@test.com');
-    seedOldFirstRow('eq-old-only', '3');
+    seedDeprecatedOldRow('eq-dep-only');
     const res = await fetchAs('u1', '/next?examType=1st');
     const body = (await res.json()) as StudyResponseBody;
     expect(body.exhausted).toBe(true);
   });
 
-  it('/grade — old 행 채점 요청 → 422 QUESTION_NOT_GRADABLE (fill_blank fallback 오채점 차단)', async () => {
+  it('/grade — deprecated old 행 채점 요청 → 404 (status=active lookup 자연 차단, 오답 36 채점 불가)', async () => {
     seedUser('u1', 'u1@test.com');
-    seedOldFirstRow('eq-old-g', '2');
+    seedDeprecatedOldRow('eq-dep-g');
     const res = await fetchAs('u1', '/grade', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ questionId: 'eq-old-g', userAnswer: '2' }),
+      body: JSON.stringify({ questionId: 'eq-dep-g', userAnswer: '2' }),
     });
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(404);
     const body = (await res.json()) as StudyResponseBody;
-    expect(body.error).toBe('QUESTION_NOT_GRADABLE');
+    expect(body.error).toBe('QUESTION_NOT_FOUND');
   });
 
-  it('/grade — 1차 -MC 행·2차 fill_blank(텍스트 정답) 은 가드 비대상 (기존 계약 불변)', async () => {
+  it('/grade — 1차 -MC 행·2차 fill_blank(텍스트 정답) 채점 계약 불변', async () => {
     seedUser('u1', 'u1@test.com');
     seedFirstMcRow('eq-mc-g');
     seedExamQuestion({ id: 'eq-2nd-fb', examType: '2nd', answer: '보험가액' });
-    // 1차 MC — 셔플 라벨 채점 경로 정상 동작(200)
     const mcRes = await fetchAs('u1', '/grade', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ questionId: 'eq-mc-g', userAnswer: 'A' }),
     });
     expect(mcRes.status).toBe(200);
-    // 2차 fill_blank 텍스트 정답 — 가드 비대상, 정상 채점
     const fbRes = await fetchAs('u1', '/grade', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

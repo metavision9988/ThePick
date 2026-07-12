@@ -64,7 +64,6 @@ import {
   type FsrsRating,
 } from '@thepick/srs';
 import { requireAuth, type RequireAuthVariables } from '../auth/middleware/require-auth.js';
-import { isMisgradableRow } from './serving-guard.js';
 import { writeTelemetryEvent } from '../telemetry/write-helper.js';
 import { D1_UNIQUE_CONSTRAINT_PATTERN, withRetry } from '../middleware/retry.js';
 import {
@@ -923,18 +922,17 @@ export function createStudyRoutes(): Hono<StudyEnv> {
         ? [userId, examType, categorySubject, countNum]
         : [userId, examType, countNum];
 
-    // C-1 서빙 가드(serving-guard.ts): MC-in-disguise 행(위치라벨 answer + 보기 계약
-    // 불능 — old 525행, 확정 오답 36 포함)을 서빙에서 제외. SQL 로 표현 불가한 계약
-    // 판정이므로 오버샘플 후 사후 필터(공개 표면 SERVE_CANDIDATE_LIMIT 패턴 동형).
-    //
-    // ★D-02 (5-페르소나 P5 CRITICAL): 미시도 우선 정렬에서 old 행은 영원히 미시도라
-    // 오버샘플 창을 점차 독점 → 유자격 문항이 잔존하는데 조기 거짓 exhausted. 1차
-    // 창이 부족하면 **전 풀 재조회**(2-pass 적응형)로 정확성 보장 — rows_read 비용은
-    // 창 고갈 시에만 발생하는 한시 부채(정본 해소 = old 행 처분 L3 마이그).
-    const OVERSAMPLE = 3;
-    const FULL_POOL_FALLBACK_LIMIT = 2000;
-
-    const nextSql = `SELECT eq.id, eq.year, eq.round, eq.question_number, eq.subject, eq.content,
+    // (G-OLD-8, 2026-07-12) C-1 서빙 가드·D-02 오버샘플/전 풀 재조회 폐기 —
+    // old 행(MC-in-disguise·오답 36)은 마이그 0044 로 status='deprecated' 전이되어
+    // 아래 status='active' 필터가 데이터 정본으로 자연 배제한다. 재도입 조건 =
+    // ① 0044 롤백(런북 0044_rollback.sql — G-OLD-8 이후 롤백 금지 분기) 또는
+    // ② 동일 클래스(1st fill_blank 위치라벨 answer) 행의 신규 active 적재 —
+    //    신규 1차 적재는 G-OLD-1류 answer-계약 게이트 의무(공개 표면 isServable 은
+    //    구조 백스톱 존속). 정본 해소 = RC-2 servable 물질화 카드(plan §7 이월).
+    let questions: ReadonlyArray<ExamQuestionRow>;
+    try {
+      const result = await c.env.DB.prepare(
+        `SELECT eq.id, eq.year, eq.round, eq.question_number, eq.subject, eq.content,
                 eq.answer, eq.explanation, eq.related_nodes, eq.exam_type, eq.topic_cluster,
                 eq.confusion_type, eq.input_type, eq.distractors, eq.calc_variables
            FROM exam_questions eq
@@ -946,32 +944,11 @@ export function createStudyRoutes(): Hono<StudyEnv> {
             AND eq.exam_type = ?
             ${subjectClause}
           ${orderClause}
-          LIMIT ?`;
-    const bindsForLimit = (limit: number): ReadonlyArray<string | number> => [
-      ...nextBinds.slice(0, -1),
-      limit,
-    ];
-
-    let questions: ReadonlyArray<ExamQuestionRow>;
-    try {
-      const sampleLimit = countNum * OVERSAMPLE;
-      const first = await c.env.DB.prepare(nextSql)
-        .bind(...bindsForLimit(sampleLimit))
+          LIMIT ?`,
+      )
+        .bind(...nextBinds)
         .all<ExamQuestionRow>();
-      let servable = first.results.filter((q) => !isMisgradableRow(q));
-      // 창 고갈 + 풀에 더 남음 → 전 풀 재조회 (거짓 exhausted 차단).
-      if (servable.length < countNum && first.results.length === sampleLimit) {
-        logger.warn('next oversample window exhausted by unservable rows — full-pool refetch', {
-          userId,
-          sampleLimit,
-          servableInWindow: servable.length,
-        });
-        const full = await c.env.DB.prepare(nextSql)
-          .bind(...bindsForLimit(FULL_POOL_FALLBACK_LIMIT))
-          .all<ExamQuestionRow>();
-        servable = full.results.filter((q) => !isMisgradableRow(q));
-      }
-      questions = servable.slice(0, countNum);
+      questions = result.results;
     } catch (err) {
       logger.error('next query failed', err, { userId, examType, count: countNum });
       c.header('Retry-After', '5');
@@ -1141,14 +1118,8 @@ export function createStudyRoutes(): Hono<StudyEnv> {
       return c.json({ error: 'QUESTION_HAS_NO_ANSWER', questionId }, 422);
     }
 
-    // C-1 채점 가드: MC-in-disguise 행은 gradeFillBlank fallback 이 위치라벨을 정답
-    // 기준으로 삼는 구조적 오채점 → 정직 거부(공개 표면 /grade 422 계약 동형).
-    if (isMisgradableRow(question)) {
-      logger.error('grade refused — MC-in-disguise row (C-1 serving guard)', undefined, {
-        questionId,
-      });
-      return c.json({ error: 'QUESTION_NOT_GRADABLE', questionId }, 422);
-    }
+    // (G-OLD-8) C-1 채점 가드 폐기 — MC-in-disguise 행은 0044 전이로 deprecated,
+    // 위 question lookup 의 status='active' 필터가 404 로 자연 차단한다.
 
     // === Step A: input_type 분기 채점 (gradeAnswerByType 추출, 5-페르소나 흡수) ===
     const inputType: InputType = resolveInputType(requestedInputType ?? question.input_type);

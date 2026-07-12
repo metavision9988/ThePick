@@ -45,3 +45,13 @@ promo-1st P3(4지선다 서빙) 준비 중 "1차 정답 100% 확보" 전제를 *
 - 교정 정본: `docs/batch-load/promo-mc-distractors/answer-corrections.json`
 - P3 리포트: `docs/batch-load/promo-mc-distractors/REPORT.md`
 - 리뷰: `.claude/reviews/review-20260710-091642-4pass-p3-build-rehearse.md`
+
+---
+
+## 종결 기록 (2026-07-12)
+
+**old 525행 처분 완료** — 마이그 0044(진산 §9 Q1~Q5 결재 2026-07-12) production 적용:
+old 525 전부 `status='deprecated'` + `superseded_by` 백링크 521(-MC 짝) / NULL 4(구조훼손,
+재적재 = 콘텐츠 트랙). 오답 36 은 **비정정 유지**(§9 Q4 — 이력 불변, 정본 지시 = superseded_by).
+게이트 리포트 = `docs/audit/g-old-gates-20260712.md` (production post 9/9·staging 8/8·스모크 14/14).
+한시 서빙 가드(C-1)·전 풀 재조회(D-02)는 G-OLD-8 로 폐기(데이터 정본 자연 배제). 본 인시던트 **종결**.
