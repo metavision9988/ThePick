@@ -485,6 +485,18 @@ W0~W6·가드레일 15·Fable 검토 게이트) + git worktree 이중 워크스�
 > 자동화) / old 행 처분 L3(인증 1차 오픈 선결) / RC-5 공개 계약 shared 단일화 카드. 상세
 > [[reference_promo_1st_handoff_20260708]].
 
+> ★ **2026-07-12 갱신 (Fable 5) — 0044 old 행 처분 완결 + 자동화·계약 정본화**: (1) ★**마이그 0044 production
+> 적용 완결**(진산 §9 Q1~Q5 결재 "권고대로 진행"): old 525 전부 deprecated + superseded_by 백링크 521/NULL 4
+> (구조훼손). **인증 1차 학습 오픈 선결 게이트 해소** + pending 일괄 적용으로 **0038(TR-0 #3)·0041·0042(RW
+> Phase 0~1) 동반 production 적용**. 한시 가드(C-1/D-02) G-OLD-8 폐기(데이터 정본 자연 배제). 게이트 리포트 =
+> `docs/audit/g-old-gates-20260712.md`(pre 7/7·staging 8/8·production post 9/9·스모크 14/14) + 인시던트 종결.
+> 4-Pass 2회(선작성 C0/M5·G-OLD-8 C0/M1) 전건 처분. Worker `76d41c09`. (2) **운영 자동화 가동**: 진산
+> Cloudflare API 토큰 인입 → GH 시크릿 + `ops.yml`(주간 D1 백업→R2·일간 라이브 스모크 = 알림 1채널) 첫 실행
+> 검증. Cloudflare 공식 플러그인(skills+MCP 5종) 설치. (3) **RC-5 완결**: 공개 계약 shared 단일 정본
+> (`public-learning-contract.ts`) — 서버 4핸들러 satisfies·웹·mock 3표면 컴파일 강제(4-Pass C0/M3 처분).
+> (4) 잔여: Web Analytics 토글(진산 1분) / 빵꾸노트 콘텐츠 / staging -MC 동기화(선택) / 신규 1차 적재 시
+> 위치라벨-answer 게이트 의무(RC-2 카드). CI 전 워크플로 green 유지.
+
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),
   Worker 배포, 인증/login_history smoke PASS, ADR-034/035/036 retrofit.
