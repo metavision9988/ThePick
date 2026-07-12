@@ -138,3 +138,13 @@ INDEX §8.2b 가 RC-6 을 "인증 런칭 스프린트"로 이월했으나, **D-2
   - ③ branch 하드코딩 오인 → BRANCH='main'=배포 타겟 주석 + 실측 `checkoutBranch` version.json 별도 필드.
 - **검증**: env 게이트 차단(exit 1 clean)/통과(exit 0)·version.json 유효 JSON·wrangler 인자 형상·test:scripts 20(13+7)·web 74·typecheck·lint·build·g1 全 PASS. (실배포는 운영자 행위 — 다음 web 배포 시 자동 스탬프.)
 - **RC-6 잔여**(인증 런칭 스프린트 유지): D-19 alert 채널·D-20 AE reader·D-17 choiceId 회전·D-36 secret 로테이션 runbook.
+
+### 8.5 D-16★ 배포-시점 스모크 게이트 배선 (2026-07-12, RC-4 조기 집행)
+
+D-21 과 같은 "배포 하드닝" 결. `smoke-public-surface.mjs`(14체크, 정답 비노출 assert 포함)가 ops.yml **일간 cron** 에만 걸려 있어 **배포 직후 검증 부재** — 나쁜 배포(404 3주 인시던트 클래스)가 다음 cron 발화까지 무음.
+
+- **처분**: `apps/api` `deploy:production` = `wrangler deploy --env production && node ../../scripts/smoke-public-surface.mjs <prod-url>` — 배포 성공 시에만 스모크, 스모크 실패 시 exit 1 전파(배포는 이미 라이브 = 롤백 판단용 loud 신호. D-16 스펙 정확 일치).
+- **staging 제외(의도)**: staging 공개 표면은 데이터 빈곤(-MC 0·overview total=0)이라 스모크 `total>0` 에서 false-fail → `deploy:staging` 은 미배선(원장 기록). production 만 배선.
+- **검증**: 라이브 production 스모크 **14/14 PASS**(조합 동작 + production 건강 확인) · `../../scripts` 경로 apps/api 해석 확인 · api package.json JSON 유효. (실배포 wrangler 반부는 미실행 = 운영자 행위.)
+- **RC-4 잔여**: GH Actions deploy 워크플로우 자체는 부재(수동 wrangler 관행) — 완전 CD 배선은 인증 런칭 스프린트. 현 배선 = 수동 배포에도 스모크 자동 동반.
+- MINOR(관측): production URL 이중 선언(ops.yml + deploy 스크립트) — package.json script 는 상수 import 불가, ops.yml 하드코딩 패턴과 일관(신규 부채 아님).

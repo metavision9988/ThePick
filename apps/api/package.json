@@ -7,7 +7,7 @@
     "build": "wrangler deploy --dry-run",
     "deploy": "echo 'ERROR: Use deploy:staging or deploy:production (default env deploy is prohibited)' && exit 1",
     "deploy:staging": "wrangler deploy --env staging",
-    "deploy:production": "wrangler deploy --env production",
+    "deploy:production": "wrangler deploy --env production && node ../../scripts/smoke-public-surface.mjs https://thepick-api-production.metavision9988.workers.dev",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src --ext .ts",
