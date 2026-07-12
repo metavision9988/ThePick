@@ -120,3 +120,21 @@ Binary Gate: `pnpm --filter @thepick/web build`(m-8) + typecheck + lint + web/ap
 - **api production** 배포(Version `7c08abd6`, 불가역 1줄 고지 후) → **스모크 14/14 PASS** — overview total=**521**(P3 적재분 정확 일치), next/grade/reveal 라운드트립, 정답 비노출, no-store/공용캐시 경계, 미존재 id 404.
 - **web Pages** 배포(`thepick-study.pages.dev`, PUBLIC_API_BASE_URL 게이트 통과. PUBLIC_CF_BEACON_TOKEN 미설정 경고와 함께 — 진산 1줄 행위: 대시보드 Web Analytics 토큰 발급 후 재배포 시 주입). 번들 검증: production API base 인라인·localhost 0건.
 - **라이브 브라우저 스모크 PASS**(모바일 375): 랜딩 H1·라이브 임베드·픽커·기출 지도·실기출 서빙(제5회 문45)·채점 Pill. 스크린샷 확인 — 디자인 정본 정합.
+
+### 8.4 D-21 배포 SHA 추적성 복원 (2026-07-12, RC-6 조기 집행)
+
+INDEX §8.2b 가 RC-6 을 "인증 런칭 스프린트"로 이월했으나, **D-21(배포물↔git SHA 추적 단절)**은 비-L3·자율·독립 항목이라 선집행. "404 3주 인시던트" = 배포물 정체 불명 동일 클래스의 근본 차단.
+
+- **문제**: 구 `deploy:production` = `... && wrangler pages deploy dist ... --commit-dirty=true` — `--commit-dirty=true` 가 dirty 상태를 무조건 은폐 + git SHA 미스탬프 → CF 대시보드·라이브 산출물 어디에도 "무엇이 배포됐나" 링크 부재.
+- **처분**:
+  - `apps/web/scripts/deploy-lib.mjs` (순수 로직) + `deploy-production.mjs` (오케스트레이터) 신설. 구 인라인 셸 체인 대체.
+  - **git 계보 스탬프**: `wrangler pages deploy` 에 `--commit-hash=<HEAD>` + `--commit-message=<subject>` + `--commit-dirty=<실제 dirty>` (무조건 true 은폐 폐기 — dirty 배포는 차단하지 않되 CF 메타·version.json 에 `dirty:true` 로 표면화).
+  - **런타임 조회원**: 빌드 후 `dist/version.json` 스탬프(sha·shortSha·branch[배포타겟]·checkoutBranch[실측 HEAD]·dirty·commitSubject·builtAt·apiBase) → Pages 정적 서빙으로 `curl https://thepick-study.pages.dev/version.json` = "무엇이 라이브인가" 즉시 확인.
+  - **게이트 배선**: `apps/web/scripts/__tests__/deploy-lib.test.mjs`(node:test 7) + 루트 `test:scripts` 글롭에 `apps/web/scripts/__tests__/*.test.mjs` 추가 → CI ci.yml:84 커버(D-01/D-16 "게이트 미배선" 동일 클래스 예방).
+- **operator-facing 명령 불변**: `PUBLIC_API_BASE_URL=https://... pnpm --filter @thepick/web deploy:production` 그대로. 내부만 추적성 강화.
+- **독립 4-Pass**(`review-20260712-223342-4pass-changes.md`, 7 에이전트): **CRITICAL 0 / MAJOR 0 / MINOR 6** → 판정 "완료 가능". MINOR 6 = 3 실질 이슈 dedup, **전건 처분**:
+  - ① wrangler workspace 미핀(`pnpm exec wrangler` 전역 4.78.0 폴백) → apps/web devDeps `wrangler ^4.83.0` 명시(클린 환경·CI 재현성 + `--commit-*` 지원 버전 고정).
+  - ② cwd 의존 상대경로 → `process.chdir(import.meta.url 기준)` 고정(루트·래퍼 호출 무관) + `run()` 자식 exit code clean 전파(Node 스택 덤프 제거, 구 `&&` 셸 체인 동등 UX).
+  - ③ branch 하드코딩 오인 → BRANCH='main'=배포 타겟 주석 + 실측 `checkoutBranch` version.json 별도 필드.
+- **검증**: env 게이트 차단(exit 1 clean)/통과(exit 0)·version.json 유효 JSON·wrangler 인자 형상·test:scripts 20(13+7)·web 74·typecheck·lint·build·g1 全 PASS. (실배포는 운영자 행위 — 다음 web 배포 시 자동 스탬프.)
+- **RC-6 잔여**(인증 런칭 스프린트 유지): D-19 alert 채널·D-20 AE reader·D-17 choiceId 회전·D-36 secret 로테이션 runbook.

@@ -7,7 +7,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "test": "turbo run test && pnpm test:scripts",
-    "test:scripts": "node --test scripts/__tests__/*.test.mjs",
+    "test:scripts": "node --test scripts/__tests__/*.test.mjs apps/web/scripts/__tests__/*.test.mjs",
     "test:watch": "turbo run test:watch",
     "test:coverage": "turbo run test:coverage",
     "lint": "turbo run lint",
