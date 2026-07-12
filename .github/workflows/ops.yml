@@ -1,0 +1,52 @@
+name: Ops (backup + live smoke)
+
+# 운영 자동화 (5-페르소나 P5 D-03·M-17·M-16 배선, 2026-07-12 — CLOUDFLARE_API_TOKEN 시크릿 인입으로 가동):
+#   - backup: 주간 D1 production 전체 export → R2 오프사이트 (런북 §10 DR — RPO 1주)
+#   - smoke:  일간 공개 표면 라이브 스모크 (실패 시 GH 실패 알림 메일 = 알림 최소선 1채널)
+# Security note: 신뢰할 수 없는 입력(${{ github.event.* }}) 미사용 — 전 run: 하드코딩.
+
+on:
+  schedule:
+    - cron: '0 3 * * 1' # 주간 백업 — 월요일 UTC 03:00 (KST 12:00)
+    - cron: '17 21 * * *' # 일간 스모크 — UTC 21:17 (KST 06:17)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Live smoke (public surface)
+    # schedule 이벤트는 어느 cron 이 발화했는지 구분 불가 → 스모크는 매 발화마다 실행(일간+주간 겸용, 비용 무시 수준)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Smoke production /api/public/*
+        run: node scripts/smoke-public-surface.mjs https://thepick-api-production.metavision9988.workers.dev
+
+  backup:
+    name: D1 offsite backup → R2
+    # 주간 cron 발화 + 수동 dispatch 에서만 실행 (일간 cron 은 스킵)
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 3 * * 1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Export production D1 → upload R2 (thepick-backups)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: bash scripts/backup-d1-to-r2.sh
