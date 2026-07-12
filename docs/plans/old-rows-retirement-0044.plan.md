@@ -1,6 +1,6 @@
 # old 525행 처분 상태머신 마이그 (슬롯 0044) — L3 plan
 
-- **작성**: 2026-07-12 (Fable 5). STATUS: **DRAFT — §9 진산 결재 후 production 적용** (SQL·게이트 스크립트는 선작성 라벨 관례 — TR-0/RW 선례).
+- **작성**: 2026-07-12 (Fable 5). STATUS: **APPROVED — 2026-07-12 진산 "권고대로 진행" (§9 Q1~Q5 전건 권고안 채택)**. production 적용 = §6 시퀀스(불가역 고지 후).
 - **북극성 연결**: 정답 100% Hard Stop — production old 525행 중 **36건이 오답인 채 status='active'** 로 잔존(`docs/audit/incident-1st-answer-errors-20260710.md`). 서빙은 가드로 한시 차단 중이나 데이터 자체가 거짓 상태.
 - **격상 근거**: 5-페르소나 P5 리뷰 **RC-1 최대 진앙**(D-02 CRITICAL 정본 해소 + D-09/D-14/D-18/D-30/D-34 동승) — **인증 1차 학습 오픈 선결 게이트**로 승격 기결(promo 원장 §8.2b).
 - **전제 실측**: 2026-07-12 독립 조사(트리거 계보·CHECK·status 소비 전수·매핑·FK·슬롯) — 본문 인용 전부 file:line 검증됨.
@@ -76,7 +76,7 @@ CREATE TRIGGER prevent_exam_questions_body_update ... (0038:42-64 CREATE TRIGGER
 | G-OLD-4 | post | old 525 전부 deprecated + superseded_by 521 건 전부 -MC 짝 실재(JOIN 검산) + NULL 4건 == 구조훼손 목록(Q-2019-05-021·Q-2024-10-048·Q-2025-11-047·Q-2025-11-048)       |
 | G-OLD-5 | post | `active AND exam_type='1st'` == 521 == 전부 multiple_choice                                                                                                           |
 | G-OLD-6 | post | 공개 표면 스모크 14/14 (`smoke-public-surface.mjs`) + api 로컬 전체 회귀 0                                                                                            |
-| G-OLD-7 | post | 인증 /next 전 풀 재조회 fallback 로그 발동 0 (D-02 소멸 검증 — 로컬 시나리오 테스트로 기계화)                                                                         |
+| G-OLD-7 | post | 인증 /next 전 풀 재조회 fallback 로그 발동 0 (D-02 소멸 검증 — study routes.test.ts ★G-OLD-7 기계화 테스트)                                                           |
 | G-OLD-8 | 후속 | **가드 폐기 커밋**(별도 4-Pass): serving-guard/OVERSAMPLE/full-pool refetch 제거 + D-18 동치 불변식 주석 복원 + 관련 테스트 개정 — 마이그 적용 확인 후에만            |
 
 - 로컬 시나리오 테스트 선작성: `apps/api/src/__tests__/scenarios/migration-0044-old-rows-retirement.test.ts` (0038/0041/0042/0044 순차 적용 위에서 전이·게이트 재현 — 기존 migration-0038 테스트 관례).
@@ -98,12 +98,12 @@ CREATE TRIGGER prevent_exam_questions_body_update ... (0038:42-64 CREATE TRIGGER
 
 ## 9. 결재란 (진산 — RULE #5)
 
-| #   | 질문                                                                                                                       | 선택지             | 결정 |
-| :-- | :------------------------------------------------------------------------------------------------------------------------- | :----------------- | :--- |
-| Q1  | 처분 방식 = **A안**(0044 트리거 브래킷 + deprecated 전이 + superseded_by 백링크)                                           | A / C(임시 재분류) | ☐    |
-| Q2  | 구조훼손 4건 = deprecated + superseded_by NULL (재적재 = 콘텐츠 트랙 이월)                                                 | 채택 / 보류        | ☐    |
-| Q3  | **production 적용**(= pending 0038·0041·0042·0044 일괄, staging 선검증 후) — TR-0 #3·RW 게이트 동시 해소임을 인지하고 승인 | 승인 / 보류        | ☐    |
-| Q4  | old 행 answer 오답 36 = **비정정 유지**(deprecated 후 비서빙 — 정본 지시는 superseded_by, 이력 불변 원칙)                  | 비정정 / 정정      | ☐    |
-| Q5  | status_transitions 'exam' 확장 **비채택**(감사 = plan+마이그+게이트 리포트 영속)                                           | 채택 / 확장        | ☐    |
+| #   | 질문                                                                                                                       | 선택지             | 결정                                        |
+| :-- | :------------------------------------------------------------------------------------------------------------------------- | :----------------- | :------------------------------------------ |
+| Q1  | 처분 방식 = **A안**(0044 트리거 브래킷 + deprecated 전이 + superseded_by 백링크)                                           | A / C(임시 재분류) | ☑ **A안** (2026-07-12 진산 "권고대로 진행") |
+| Q2  | 구조훼손 4건 = deprecated + superseded_by NULL (재적재 = 콘텐츠 트랙 이월)                                                 | 채택 / 보류        | ☑ **채택** (〃)                             |
+| Q3  | **production 적용**(= pending 0038·0041·0042·0044 일괄, staging 선검증 후) — TR-0 #3·RW 게이트 동시 해소임을 인지하고 승인 | 승인 / 보류        | ☑ **승인** (〃)                             |
+| Q4  | old 행 answer 오답 36 = **비정정 유지**(deprecated 후 비서빙 — 정본 지시는 superseded_by, 이력 불변 원칙)                  | 비정정 / 정정      | ☑ **비정정** (〃)                           |
+| Q5  | status_transitions 'exam' 확장 **비채택**(감사 = plan+마이그+게이트 리포트 영속)                                           | 채택 / 확장        | ☑ **비채택** (〃)                           |
 
 **결재 후 실행 순서**: SQL·게이트 스크립트·시나리오 테스트 선작성(라벨) → 독립 4-Pass → staging 적용+G-OLD 전 게이트 → production 적용(불가역 1줄 고지) → G-OLD-4~7 → 가드 폐기 커밋(G-OLD-8, 별도 4-Pass) → incident 원장·CLAUDE.md 동기.

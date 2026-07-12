@@ -9,7 +9,7 @@
  *   - POST /grade  — 인증/examId/Zod/미존재 question/정답/오답/normalize/출처 surface/UPSERT
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ACCESS_TOKEN_COOKIE, EXAM_IDS } from '@thepick/shared';
 import { createD1FromSqlite, type SqliteBackedD1 } from '../../__tests__/helpers/d1-from-sqlite.js';
 import { signAccessToken } from '../../auth/session.js';
@@ -2214,6 +2214,38 @@ describe('★C-1 서빙 가드 — 1차 MC-in-disguise 행(오답 36 클래스) 
     const body = (await res.json()) as StudyResponseBody;
     expect(body.exhausted).toBe(false);
     expect(body.questions!.map((q) => q.id)).toEqual(['eq-z-mc-1']);
+  });
+
+  it('★G-OLD-7 기계화: 0044 전이 후 상태(old=deprecated)에서 /next 가 전 풀 재조회 없이 -MC 서빙', async () => {
+    // 0044 적용 후 데이터 상태 재현: old 행 전부 deprecated → SQL status='active' 필터가
+    // 자연 배제 → 오버샘플 창에 old 미진입 → full-pool refetch(D-02 fallback) 발동 0.
+    // 판정 = 로거 warn('full-pool refetch') 미발생 + 서빙 결과 전부 -MC (plan §5 G-OLD-7).
+    seedUser('u1', 'u1@test.com');
+    for (let i = 1; i <= 6; i++) {
+      ctx.raw
+        .prepare(
+          `INSERT INTO exam_questions
+             (id, year, round, question_number, subject, content, answer, explanation,
+              related_nodes, status, exam_type, confusion_type, input_type, distractors,
+              superseded_by)
+           VALUES (?, 2023, 9, 1, NULL, '전이된 old 행', '2', NULL, NULL, 'deprecated', '1st',
+                   NULL, 'fill_blank', NULL, ?)`,
+        )
+        .run(`eq-a-dep-${i}`, `eq-a-dep-${i}-MC`);
+      seedFirstMcRow(`eq-a-dep-${i}-MC`);
+    }
+    const logSpy = vi.spyOn(console, 'log');
+    const res = await fetchAs('u1', '/next?examType=1st&count=2');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as StudyResponseBody;
+    expect(body.exhausted).toBe(false);
+    expect(body.questions!.length).toBe(2);
+    for (const q of body.questions!) expect(q.id.endsWith('-MC')).toBe(true);
+    const refetchLogged = logSpy.mock.calls.some((args) =>
+      String(args[0]).includes('full-pool refetch'),
+    );
+    logSpy.mockRestore();
+    expect(refetchLogged).toBe(false); // D-02 fallback 미발동 = G-OLD-7
   });
 
   it('/next examType=1st — 유자격 행 0 이면 정직 exhausted (무음 오채점 서빙 금지)', async () => {
