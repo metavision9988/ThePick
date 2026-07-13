@@ -3,7 +3,12 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { CHOICE_ID_HEX_LENGTH, issueChoiceId, resolveChoiceId } from '../choice-id.js';
+import {
+  CHOICE_ID_HEX_LENGTH,
+  issueChoiceId,
+  resolveChoiceId,
+  resolvePublicChoiceSecret,
+} from '../choice-id.js';
 
 const SECRET = 'unit-test-secret-32bytes-plus-abcdefg';
 
@@ -60,5 +65,22 @@ describe('choice-id', () => {
     const c1 = await issueChoiceId(SECRET, 'q5', 1);
     expect(c0).toMatch(/^[0-9a-f]{24}$/);
     expect(c1).toMatch(/^[0-9a-f]{24}$/);
+  });
+
+  describe('resolvePublicChoiceSecret (RC-3 단일 seam, D-22)', () => {
+    it('JWT_SECRET 설정 시 그대로 반환', () => {
+      expect(resolvePublicChoiceSecret({ JWT_SECRET: SECRET })).toBe(SECRET);
+    });
+
+    it('JWT_SECRET 미설정 시 폴백 빈 문자열 (hmacHex 가 FALLBACK_KEY 로 승격)', () => {
+      expect(resolvePublicChoiceSecret({})).toBe('');
+      expect(resolvePublicChoiceSecret({ JWT_SECRET: undefined })).toBe('');
+    });
+
+    it('해석 결과가 issueChoiceId 에 그대로 흐름 — 3개 핸들러 동일 seam', async () => {
+      // 미설정 env → 폴백 '' → issueChoiceId('') 와 동일 choiceId (dev/스모크 결정성 보존).
+      const viaHelper = resolvePublicChoiceSecret({});
+      expect(await issueChoiceId(viaHelper, 'q7', 0)).toBe(await issueChoiceId('', 'q7', 0));
+    });
   });
 });

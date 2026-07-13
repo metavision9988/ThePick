@@ -198,3 +198,11 @@ D-17(탐지 신호)+D-20(--alert 리더)의 **"대응"** 짝 — secret 회전 �
 - **핵심 운영 지식**: 회전 직후 `choice_id_unresolved` 스파이크 = **예상 양성**(악의 위조와 §4 구분표) → on-call 오판·D-20 --alert 오경보 방지. 탐지(D-17/D-20)↔대응(본 runbook) 루프 완성.
 - **권고 이월**: ①CHOICE_ID_SECRET 분리(choiceId 가 auth JWT_SECRET 재사용 = 불필요 결합, RC-5 연동) ②dual-key grace(D-17 4-Pass 제안, ①선행 시 우선순위 하락) ③회전 로그 원장.
 - 문서 전용(코드 0). 모든 주장 실코드 근거(JWT_SECRET 사용처 6곳·refresh SHA-256·TTL 15분/30일·D-16 스모크 체인).
+
+### 8.10 D-22 choiceId secret 단일 seam + RC-3 정리 판정 (2026-07-14)
+
+RC-3(계약·리터럴 중복 드리프트) 잔여 MINOR 4건 실측 후 **의미 있는 것만** 집행 (범위 축소 OK·품질 축소 NOT).
+
+- **D-22 집행**: 공개 표면 choiceId HMAC secret 해석이 3개 핸들러(serve `routes.ts:343`·grade `:441`·reveal `:576`)에 `c.env.JWT_SECRET ?? ''` 로 **분산**돼 있던 것을 `choice-id.ts` 단일 헬퍼 `resolvePublicChoiceSecret(env)` 로 중앙화. **동작 불변**(byte-identical) 순수 리팩터 — 폴백 `''` 유지(hmacHex 가 `CHOICE_ID_FALLBACK_KEY` 로 승격, dev/스모크 결정성 보존). ★목적 = 8.9 runbook §7-1 `CHOICE_ID_SECRET` 분리의 **zero-touch seam** 을 1곳에 확보(분리 시 `env.CHOICE_ID_SECRET ?? env.JWT_SECRET ?? ''` 1줄 변경으로 3개 호출부 자동 전환). 단위 테스트 3 추가(설정/폴백/흐름 동치). api 789 PASS 회귀 0.
+- **D-23 = 비-finding(이미 해소)**: web `ERROR_MESSAGES` 는 `Record<PublicErrorCode, string>` 이고 `PublicErrorCode` 는 web `types.ts:15-22` 가 `@thepick/shared` 에서 **재수출**(RC-5 단일 소스) — 서버 코드 추가 시 web 컴파일 에러로 강제. 이중선언 아님. 조치 불요.
+- **D-24/D-33 = 저가치 이연**: D-24(`sourceTextOf` 가 `PublicQuestionCard.tsx` 에서 export → 형제 2개가 import = 경미한 역의존)·D-33(overview 경로 리터럴 `cache-policy.ts:68`) 는 tree-shaking·단일 사용처로 실해 없음 → util 이관/상수화의 churn 비용이 가치를 상회. 인증 런칭 스프린트 정리 시 동반 처리(비차단).

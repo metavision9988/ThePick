@@ -41,7 +41,12 @@ import {
 } from '@thepick/learning-modes';
 import { getClientIp, type RateLimiter } from '../auth/rate-limit.js';
 import { checkPublicIpRateLimit } from './rate-limit.js';
-import { CHOICE_ID_HEX_LENGTH, issueChoiceId, resolveChoiceId } from './choice-id.js';
+import {
+  CHOICE_ID_HEX_LENGTH,
+  issueChoiceId,
+  resolveChoiceId,
+  resolvePublicChoiceSecret,
+} from './choice-id.js';
 import { recordPublicEvent, type AnalyticsEngineDataset } from './analytics.js';
 
 export interface PublicRouteBindings {
@@ -335,7 +340,7 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
     const inputType = resolveInputType(row.input_type) as PublicServableInputType;
     let choices: PublicChoice[] | null = null;
     if (inputType === 'multiple_choice') {
-      const secret = c.env.JWT_SECRET ?? '';
+      const secret = resolvePublicChoiceSecret(c.env);
       choices = await buildPublicChoices(secret, row, logger);
       if (choices === null) {
         // isServable 이 parseMcChoices.ok 를 이미 보장 → null 은 비정상(방어).
@@ -433,7 +438,7 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
         });
         return c.json({ error: 'QUESTION_NOT_GRADABLE' }, 422);
       }
-      const secret = c.env.JWT_SECRET ?? '';
+      const secret = resolvePublicChoiceSecret(c.env);
       const submittedIndex = await resolveChoiceId(
         secret,
         row.id,
@@ -568,7 +573,7 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
         });
         return c.json({ error: 'QUESTION_NOT_GRADABLE' }, 422);
       }
-      const secret = c.env.JWT_SECRET ?? '';
+      const secret = resolvePublicChoiceSecret(c.env);
       correctChoiceIds = [];
       for (const oi of mc.correctOriginalIndices) {
         correctChoiceIds.push(await issueChoiceId(secret, row.id, oi));

@@ -26,6 +26,23 @@
 export const CHOICE_ID_HEX_LENGTH = 24;
 
 /**
+ * 공개 표면 choiceId HMAC 서명 키 해석 — **단일 진실원**(RC-3, D-22).
+ *
+ * serve/grade/reveal 3개 핸들러가 각자 `c.env.JWT_SECRET ?? ''` 를 반복하던 것을 1곳으로
+ * 모은다. 현재 auth 용 `JWT_SECRET` 을 재사용하나 F-3 하 보안 경계가 아니며, 미설정 시
+ * 폴백 `''`(→ `hmacHex` 가 `CHOICE_ID_FALLBACK_KEY` 로 승격, dev/스모크 결정성 보존).
+ *
+ * ★ 미래 `CHOICE_ID_SECRET` 분리(`docs/runbooks/secret-rotation.md` §7-1)의 **seam**: 해석
+ *   로직이 이 함수 1곳에 모여 있어, 분리 시 본문(`env.CHOICE_ID_SECRET ?? env.JWT_SECRET ?? ''`)
+ *   + 파라미터 타입/`PublicRouteBindings`/wrangler 바인딩에 `CHOICE_ID_SECRET` 필드만 추가하면
+ *   된다. 3개 호출부(serve/grade/reveal)는 `c.env` 만 전달하므로 **zero-touch**(auth secret
+ *   회전이 공개 choiceId 를 안 깨뜨리게 됨).
+ */
+export function resolvePublicChoiceSecret(env: { readonly JWT_SECRET?: string }): string {
+  return env.JWT_SECRET ?? '';
+}
+
+/**
  * secret 미설정(dev/test) 시 도메인 분리 상수 — 빈 키 importKey 거부 회피 + 결정성 보존.
  * 공개 표면 정답이 discoverable(F-3)하므로 이 폴백이 보안을 낮추지 않는다.
  */

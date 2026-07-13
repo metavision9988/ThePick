@@ -17,9 +17,12 @@ D-17(choiceId 미복원 텔레메트리) / D-20(AE reader `--alert`) 탐지 루�
 | `WEBHOOK_HMAC_SECRET_*`       | 결제 webhook(mock/polar/portone/toss) HMAC 검증         | 동 (provider별)                                   | 해당 provider webhook 검증만 — 독립             |
 | `PUBLIC_CF_BEACON_TOKEN`(web) | Web Analytics 비콘 (secret 아님·공개 토큰)              | web env / 대시보드 발급                           | 지표 비콘만 — 학습 흐름 무관                    |
 
-> ★ **설계 관측(권고 §7)**: 공개 표면 `choiceId` 가 **auth 용 `JWT_SECRET` 을 재사용**한다
-> (`apps/api/src/public/routes.ts:338,436,571` — 별도 `CHOICE_ID_SECRET` 부재). 두 무관한 관심사가
-> 한 secret 에 결합돼 있어 auth secret 회전이 공개 choiceId 를 불필요하게 깨뜨린다. 분리 권고 = §7.
+> ★ **설계 관측(권고 §7)**: 공개 표면 `choiceId` 가 **auth 용 `JWT_SECRET` 을 재사용**한다.
+> 두 무관한 관심사가 한 secret 에 결합돼 있어 auth secret 회전이 공개 choiceId 를 불필요하게
+> 깨뜨린다. 분리 권고 = §7. **해석 seam 은 D-22(2026-07-14)로 이미 단일화**됨 —
+> serve/grade/reveal 3개 핸들러(`routes.ts:343,441,576`)가 각자 인라인하던 것을 헬퍼
+> `resolvePublicChoiceSecret(env)`(`apps/api/src/public/choice-id.ts:39`) 1곳으로 모았다.
+> 분리는 이 헬퍼 본문 + 타입/`PublicRouteBindings`/wrangler 바인딩에 `CHOICE_ID_SECRET` 추가로 완료(§7-1).
 
 ---
 
@@ -50,7 +53,7 @@ D-17(choiceId 미복원 텔레메트리) / D-20(AE reader `--alert`) 탐지 루�
   서빙 시 발급, 채점 시 재계산 매칭.
 - 회전 시 **회전 전 서빙된(브라우저에 떠 있는) 문항의 choiceId** 는 신 secret 재계산과 불일치 →
   `resolveChoiceId`=null → **채점 무음 오답화 + `choice_id_unresolved` defect 발행**(D-17,
-  `public/routes.ts:443-455`).
+  `public/routes.ts:454-455` = malformed/unresolved 버킷 분기).
 - ⇒ **영향 = 회전 시점 in-flight 세션 한정**. 사용자가 새 문항을 로드하면 신 secret choiceId 라 정상 =
   **자가 교정**(수분 내 감쇠). 신규 오채점 없음(재조회분).
 
@@ -143,6 +146,10 @@ CLOUDFLARE_API_TOKEN=<Account Analytics Read> \
 1. **CHOICE_ID_SECRET 분리** (RC-5 shared 단일화 연동): 공개 choiceId 를 `JWT_SECRET` 재사용 대신
    전용 `CHOICE_ID_SECRET`(폴백=JWT_SECRET) 으로 분리 → auth secret 회전이 공개 표면을 안 깨뜨림.
    choiceId 는 보안 경계가 아니라 회전 빈도 0 에 가까워져 스파이크 자체가 사라진다.
+   **★ 해석 seam 은 D-22 로 이미 확보**(`resolvePublicChoiceSecret`, `choice-id.ts:39`) — 남은 작업 =
+   (a) 헬퍼 본문 `env.CHOICE_ID_SECRET ?? env.JWT_SECRET ?? ''` (b) 헬퍼 파라미터 타입 + `PublicRouteBindings`
+   (`routes.ts:52-62`) + `index.ts` Bindings 에 `CHOICE_ID_SECRET?` 필드 (c) wrangler secret 바인딩. 3개
+   호출부(343/441/576)는 **zero-touch**(`c.env` 만 전달). = 별건 결재(스코프 밖) 유지.
 2. **dual-key grace** (D-17 4-Pass 제안): `resolveChoiceId(secret, previousSecret?, ...)` 로 회전 유예 창
    동안 구·신 secret 양쪽 매칭 → in-flight 스파이크 제거. 단 auth JWT 는 15분 TTL 로 이미 graceful 이라
    이득은 공개 choiceId 한정 — §7-1(분리)이 선행되면 우선순위 하락.
