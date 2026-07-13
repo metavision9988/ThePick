@@ -189,3 +189,12 @@ D-21 과 같은 "배포 하드닝" 결. `smoke-public-surface.mjs`(14체크, 정
   - ③ INTEGRITY_REASONS writer↔reader 드리프트 → 보안 false-negative(MINOR-5) → analytics.ts 에 **드리프트 트립와이어 주석**(reader 동시개정 의무) + RC-5 shared 단일화 이월.
   - ④~⑥ 이월/기록: blob 레이아웃 교차가드(MINOR-2 → D-25)·account-list 권한(MINOR-4 → cron 배선 시 ACCOUNT_ID 주입)·dataset 이중선언(MINOR-8, fail-loud 무해)·정답률 unresolved 오염(MINOR-9 → 기존 §8.7 이월).
 - **RC-6 잔여**: ops.yml 주간 cron 에 `--alert`(exit 2 감시) 배선은 **GH 시크릿 CLOUDFLARE_API_TOKEN 이 Analytics Read 포함 필요**(현 D1/R2) + **CLOUDFLARE_ACCOUNT_ID 동반 주입**(협소 토큰 시 계정 자동탐색 우회) → 진산 시크릿 갱신 후 배선. D-25 blob 스키마 버전 규약·D-19 Email 채널은 별건.
+
+### 8.9 D-36 secret 로테이션 runbook (2026-07-13, RC-6 대응 절차)
+
+D-17(탐지 신호)+D-20(--alert 리더)의 **"대응"** 짝 — secret 회전 시 blast radius·절차·모니터링·롤백 부재 해소. `docs/runbooks/secret-rotation.md` 신설.
+
+- **★blast radius 실측 정정**: JWT_SECRET 회전은 통념("전 세션 로그아웃")과 달리 **auth = graceful**(access 15분 JWT 만 무효 / refresh = SHA-256 DB 검증 = JWT_SECRET 무관 → 재로그인 없이 ≤15분 투명 회복, `session.ts:192`) + **공개 choiceId = in-flight 한정 스파이크 → 자가 교정**(재조회분 정상). webhook HMAC 독립.
+- **핵심 운영 지식**: 회전 직후 `choice_id_unresolved` 스파이크 = **예상 양성**(악의 위조와 §4 구분표) → on-call 오판·D-20 --alert 오경보 방지. 탐지(D-17/D-20)↔대응(본 runbook) 루프 완성.
+- **권고 이월**: ①CHOICE_ID_SECRET 분리(choiceId 가 auth JWT_SECRET 재사용 = 불필요 결합, RC-5 연동) ②dual-key grace(D-17 4-Pass 제안, ①선행 시 우선순위 하락) ③회전 로그 원장.
+- 문서 전용(코드 0). 모든 주장 실코드 근거(JWT_SECRET 사용처 6곳·refresh SHA-256·TTL 15분/30일·D-16 스모크 체인).
