@@ -111,6 +111,9 @@ CLOUDFLARE_API_TOKEN=<Account Analytics Read> \
 | `choice_id_malformed` 위주 (길이 불일치)                    | ⚠️ 위조 노이즈 | rate-limit 확인. 회전과 무관.                           |
 | `choice_id_unresolved` **지속·미감쇠**(회전 후 수시간+)     | 🔴 이상        | 서빙↔채점 secret 불일치 재조사(배포 누락·env 드리프트). |
 
+- **cron 배선(2026-07-14, DO-1)**: 이 리더는 `.github/workflows/ops.yml` `integrity-alert` 잡으로
+  스케줄 배선됨 — 활성화 = repo variable `ENABLE_AE_ALERT='true'` + `CLOUDFLARE_API_TOKEN` 에 Account
+  Analytics Read 스코프(미설정 시 잡 스킵). 활성화 후 정합성 신호 ≥1 이면 잡 실패 = GH 알림 메일.
 - `--alert` 는 정합성 신호 ≥1 시 **exit 2**(인프라 실패 exit 1 과 구분, D-20). ⚠️ **주의: exit 2 는
   `choice_id_malformed`(위조) + `choice_id_unresolved`(회전) 를 합산**한다 — 회전 양성을 이유로
   cron 경보를 **통째 억제하지 말 것**(겹친 실제 위조 공격을 실명한다, FLAG-1). 억제할 때는 리더 리포트를

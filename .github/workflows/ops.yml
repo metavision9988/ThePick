@@ -1,8 +1,12 @@
 name: Ops (backup + live smoke)
 
 # 운영 자동화 (5-페르소나 P5 D-03·M-17·M-16 배선, 2026-07-12 — CLOUDFLARE_API_TOKEN 시크릿 인입으로 가동):
-#   - backup: 주간 D1 production 전체 export → R2 오프사이트 (런북 §10 DR — RPO 1주)
-#   - smoke:  일간 공개 표면 라이브 스모크 (실패 시 GH 실패 알림 메일 = 알림 최소선 1채널)
+#   - backup:          주간 D1 production 전체 export → R2 오프사이트 (런북 §10 DR — RPO 1주)
+#   - smoke:           일간 공개 표면 라이브 스모크 (실패 시 GH 실패 알림 메일 = 알림 최소선 1채널)
+#   - integrity-alert: 공개 표면 정합성 신호(D-17 무음 오채점/secret 회전) 자동 관측 — D-17→D-20→D-36
+#                      탐지·대응 루프의 **배선**(5-페르소나 DO-1 CRITICAL 해소). 활성화 = repo variable
+#                      ENABLE_AE_ALERT='true' + CLOUDFLARE_API_TOKEN 에 Account Analytics Read 스코프(진산 게이트).
+#                      var 미설정 시 클린 스킵(red run 0) = "미배선" → "배선완료·활성화 게이트" 전이.
 # Security note: 신뢰할 수 없는 입력(${{ github.event.* }}) 미사용 — 전 run: 하드코딩.
 
 on:
@@ -50,3 +54,23 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: bash scripts/backup-d1-to-r2.sh
+
+  integrity-alert:
+    name: Public integrity signals (D-17 mis-grade / secret rotation)
+    # D-17(무음 오채점)→D-20(AE reader)→D-36(회전 runbook) 탐지 루프를 cron 에 배선(5-페르소나 DO-1).
+    # 활성화 게이트(진산): repo variable ENABLE_AE_ALERT='true' + CLOUDFLARE_API_TOKEN 에 Account Analytics
+    # Read 스코프. 미설정 시 잡 스킵(red run 0). read-public-analytics 는 순수 node(pnpm 의존 0).
+    # --alert: 정합성 신호 ≥1 → exit 2 / 인프라·토큰 오류 → exit 1 → 잡 실패 = GH 알림 메일.
+    if: vars.ENABLE_AE_ALERT == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Read public AE integrity signals (--alert)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/read-public-analytics.mjs --env production --days 1 --alert

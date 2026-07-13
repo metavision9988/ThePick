@@ -206,3 +206,18 @@ RC-3(계약·리터럴 중복 드리프트) 잔여 MINOR 4건 실측 후 **의�
 - **D-22 집행**: 공개 표면 choiceId HMAC secret 해석이 3개 핸들러(serve `routes.ts:343`·grade `:441`·reveal `:576`)에 `c.env.JWT_SECRET ?? ''` 로 **분산**돼 있던 것을 `choice-id.ts` 단일 헬퍼 `resolvePublicChoiceSecret(env)` 로 중앙화. **동작 불변**(byte-identical) 순수 리팩터 — 폴백 `''` 유지(hmacHex 가 `CHOICE_ID_FALLBACK_KEY` 로 승격, dev/스모크 결정성 보존). ★목적 = 8.9 runbook §7-1 `CHOICE_ID_SECRET` 분리의 **zero-touch seam** 을 1곳에 확보(분리 시 `env.CHOICE_ID_SECRET ?? env.JWT_SECRET ?? ''` 1줄 변경으로 3개 호출부 자동 전환). 단위 테스트 3 추가(설정/폴백/흐름 동치). api 789 PASS 회귀 0.
 - **D-23 = 비-finding(이미 해소)**: web `ERROR_MESSAGES` 는 `Record<PublicErrorCode, string>` 이고 `PublicErrorCode` 는 web `types.ts:15-22` 가 `@thepick/shared` 에서 **재수출**(RC-5 단일 소스) — 서버 코드 추가 시 web 컴파일 에러로 강제. 이중선언 아님. 조치 불요.
 - **D-24/D-33 = 저가치 이연**: D-24(`sourceTextOf` 가 `PublicQuestionCard.tsx` 에서 export → 형제 2개가 import = 경미한 역의존)·D-33(overview 경로 리터럴 `cache-policy.ts:68`) 는 tree-shaking·단일 사용처로 실해 없음 → util 이관/상수화의 churn 비용이 가치를 상회. 인증 런칭 스프린트 정리 시 동반 처리(비차단).
+
+### 8.11 D-22 5-페르소나 심층 리뷰 — DO-1 CRITICAL 배선 + 선재 부채 backlog (2026-07-14)
+
+D-22(민감 경로 choice-id) 커밋 후 Stop 훅이 5-페르소나 기술부채 리뷰 에스컬레이션 → 실행 (`phaseN-tech-debt-20260714-012918-INDEX.md`). **CRITICAL 1 / MAJOR 14 / MINOR 11 / 6 진앙.**
+
+- **★ D-22 리팩터 자체 = 결함 0**: 모든 발견은 5-페르소나가 프로토콜대로 **전체 표면(promo/study/infra)으로 스코프 확장**한 결과의 **선재 부채** — D-22 추출 리팩터가 도입한 결함은 0(유일 인접 = "CHOICE_ID_SECRET 분리 미이행" MINOR = 내가 seam 을 만들어 **해소 경로가 쉬워진** 알려진 carry-over).
+- **DO-1 CRITICAL 자율 해소(배선 완료)**: `read-public-analytics --alert`(D-17→D-20→D-36 탐지 루프)가 어떤 cron 에도 미배선 = 라이브 무음 오채점 자동 도달 0. → `ops.yml` `integrity-alert` 잡 신설(repo var `ENABLE_AE_ALERT` 게이트, 미설정 시 클린 스킵). **"미배선"(CRITICAL) → "배선완료·활성화 게이트"** 전이. **활성화 = 진산 1스텝**: (a) `CLOUDFLARE_API_TOKEN` 에 Account Analytics Read 스코프 (b) repo variable `ENABLE_AE_ALERT=true`.
+- **MAJOR 14 / MINOR 11 = 선재 부채 backlog(진산 우선순위 결정 대상, 비차단)**. 6 진앙 요약:
+  - **RC-1** 공개 표면 멀티종목 경계 부재 + 경계·채점 복붙(REF-1/4·BE-1) — 2호 확장 시 610행 복제 유혹. Rule 16 신규코드 관점(examId 미주입). **L2~L3 리팩터, exams/ 골격(M1 plan)과 연동.**
+  - **RC-2** 라이브 채점 안전망 = serving-guard 삭제(QA-1) + 알림 미배선(DO-1 ✅해소). QA-1 = 0044 완결 시 인증 경로 오채점 회귀 테스트 소실 — **재검증 필요(진산 검토).**
+  - **RC-3** 인증 grade hot path D1 8~10 직렬 + rate_limits 이중구현/무한성장(PE-1/2·BE-2) — **성능 L2, 10K DAU 전 선결.**
+  - **RC-4** 회귀 게이트 자기무력화(QA-2 CI ×3 slack·QA-3 PRF-01 6/51 동결) — **게이트 신뢰성, 별건.**
+  - **RC-5** 데이터 수명주기 비대칭(append-only GC 부재·exam_questions 마이그전용) — **L3 스키마/retention, 별건 결재.**
+  - **RC-6** 운영 자격증명·DR(CLOUDFLARE_API_TOKEN 회전 runbook 부재·R2 restore 드릴 미검증·GH 60일 트랩·Logpush 부재) — **진산 인프라 성숙도 트랙.**
+- 전건 `INDEX.md` + 5 persona 원장 영속. 적대 교차검증(refute) 통과분만 채택.
