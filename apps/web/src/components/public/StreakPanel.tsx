@@ -6,12 +6,11 @@
  */
 
 import { useEffect, useState } from 'react';
-import { todayDateString } from '@thepick/learning-modes';
 import { getLocalProgressDb, getStreak } from '@/lib/local-progress';
+import { buildStreakStrip, DAY_MS } from './streak-strip';
 import { IconFlame } from './icons';
 
 const STRIP_DAYS = 30;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 interface StreakView {
   readonly currentStreak: number;
@@ -26,21 +25,16 @@ async function loadStreakView(): Promise<StreakView> {
   const db = getLocalProgressDb();
   const streak = await getStreak(db);
   const now = new Date();
-  const today = todayDateString(now);
 
-  // 최근 30일(KST 날짜 단위) 학습일 집합 — reviewedAt(ISO) → KST 날짜 버킷.
+  // 최근 30일(KST 날짜 단위) 학습 스트립 — reviewedAt(ISO) → KST 날짜 버킷.
   // 4-Pass MINOR: 최고(最古) 칸이 KST 일 경계에 걸쳐 부분 누락되지 않도록 +1일 여유 조회.
   const cutoffIso = new Date(now.getTime() - (STRIP_DAYS + 1) * DAY_MS).toISOString();
   const recent = await db.reviews.where('reviewedAt').aboveOrEqual(cutoffIso).toArray();
-  const studiedDates = new Set(recent.map((r) => todayDateString(new Date(r.reviewedAt))));
-
-  const days: boolean[] = [];
-  let todayCount = 0;
-  for (let i = STRIP_DAYS - 1; i >= 0; i--) {
-    const date = todayDateString(new Date(now.getTime() - i * DAY_MS));
-    days.push(studiedDates.has(date));
-  }
-  todayCount = recent.filter((r) => todayDateString(new Date(r.reviewedAt)) === today).length;
+  const { days, todayCount } = buildStreakStrip(
+    recent.map((r) => r.reviewedAt),
+    now,
+    STRIP_DAYS,
+  );
 
   return {
     currentStreak: streak.currentStreak,
@@ -109,7 +103,7 @@ export function StreakPanel({ refreshKey }: StreakPanelProps) {
             className="mt-3 grid gap-[3px]"
             style={{ gridTemplateColumns: `repeat(${STRIP_DAYS}, 1fr)` }}
             role="img"
-            aria-label={`최근 ${STRIP_DAYS}일 학습 기록`}
+            aria-label={`최근 ${STRIP_DAYS}일 중 ${view.days.filter(Boolean).length}일 학습, 오늘 ${view.todayCount}회`}
           >
             {view.days.map((studied, i) => {
               const isToday = i === view.days.length - 1;

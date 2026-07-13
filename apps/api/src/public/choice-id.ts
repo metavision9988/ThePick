@@ -31,6 +31,33 @@ export const CHOICE_ID_HEX_LENGTH = 24;
  */
 const CHOICE_ID_FALLBACK_KEY = 'thepick-public-choice-id-v1';
 
+const encoder = new TextEncoder();
+
+/**
+ * HMAC CryptoKey 캐시 — (resolved) keyMaterial 당 importKey 1회 (5-페르소나 D-27).
+ * 채점 시 resolveChoiceId 가 보기 수만큼 issueChoiceId 를 반복 호출하므로 매 호출
+ * importKey 재수행은 순수 낭비였다. keyMaterial 종류는 극소(운영 secret 1 + dev 폴백 1)
+ * → Map 무한 성장 없음. 파생 키 캐시(재계산 가능)이므로 상태 데이터 저장이 아니다.
+ * importKey rejection 은 캐시 고착 방지 위해 evict(다음 호출 재시도).
+ */
+const hmacKeyCache = new Map<string, Promise<CryptoKey>>();
+
+function getHmacKey(keyMaterial: string): Promise<CryptoKey> {
+  let cached = hmacKeyCache.get(keyMaterial);
+  if (cached === undefined) {
+    cached = crypto.subtle
+      .importKey('raw', encoder.encode(keyMaterial), { name: 'HMAC', hash: 'SHA-256' }, false, [
+        'sign',
+      ])
+      .catch((err: unknown) => {
+        hmacKeyCache.delete(keyMaterial);
+        throw err;
+      });
+    hmacKeyCache.set(keyMaterial, cached);
+  }
+  return cached;
+}
+
 function bytesToHex(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   let hex = '';
@@ -42,14 +69,8 @@ function bytesToHex(buffer: ArrayBuffer): string {
 
 async function hmacHex(secret: string, message: string): Promise<string> {
   const keyMaterial = secret.length > 0 ? secret : CHOICE_ID_FALLBACK_KEY;
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(keyMaterial),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
+  const key = await getHmacKey(keyMaterial);
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(message));
   return bytesToHex(sig).slice(0, CHOICE_ID_HEX_LENGTH);
 }
 

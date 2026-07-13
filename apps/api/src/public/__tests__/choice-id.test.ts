@@ -41,6 +41,19 @@ describe('choice-id', () => {
     expect(await resolveChoiceId('', 'q4', 4, cid)).toBe(2);
   });
 
+  it('D-27 HMAC key 캐시 격리: 다른 secret 은 다른 choiceId (캐시 키 충돌 없음)', async () => {
+    // importKey 캐싱 후에도 secret 별 키가 분리 유지되는지 — 캐시 키 = keyMaterial 검증.
+    const withSecret = await issueChoiceId(SECRET, 'q6', 0);
+    const withOther = await issueChoiceId('another-secret-value-32bytes-xyz', 'q6', 0);
+    const withFallback = await issueChoiceId('', 'q6', 0);
+    expect(withSecret).not.toBe(withOther);
+    expect(withSecret).not.toBe(withFallback);
+    expect(withOther).not.toBe(withFallback);
+    // 캐시 warm 이후 반복 호출도 결정성 유지.
+    expect(await issueChoiceId(SECRET, 'q6', 0)).toBe(withSecret);
+    expect(await issueChoiceId('', 'q6', 0)).toBe(withFallback);
+  });
+
   it('choiceId 는 정답 여부를 노출하지 않음 (위치 식별자일 뿐)', async () => {
     // 같은 문항의 정답/오답 choiceId 는 형태상 구분 불가 (둘 다 24-hex 랜덤).
     const c0 = await issueChoiceId(SECRET, 'q5', 0);

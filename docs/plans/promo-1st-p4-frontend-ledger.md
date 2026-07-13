@@ -148,3 +148,16 @@ D-21 과 같은 "배포 하드닝" 결. `smoke-public-surface.mjs`(14체크, 정
 - **검증**: 라이브 production 스모크 **14/14 PASS**(조합 동작 + production 건강 확인) · `../../scripts` 경로 apps/api 해석 확인 · api package.json JSON 유효. (실배포 wrangler 반부는 미실행 = 운영자 행위.)
 - **RC-4 잔여**: GH Actions deploy 워크플로우 자체는 부재(수동 wrangler 관행) — 완전 CD 배선은 인증 런칭 스프린트. 현 배선 = 수동 배포에도 스모크 자동 동반.
 - MINOR(관측): production URL 이중 선언(ops.yml + deploy 스크립트) — package.json script 는 상수 import 불가, ops.yml 하드코딩 패턴과 일관(신규 부채 아님).
+
+### 8.6 MINOR 하드닝 번들 — D-27·D-29 처분 + D-32 플래그 (2026-07-12)
+
+진산 방향("MINOR 하드닝 번들 계속") 하 자율 처리. 순수 자율·검증가능·비게이트 항목만.
+
+- **D-27**(perf, RC-5) `public/choice-id.ts` — HMAC `importKey` 매 호출 재수행 → keyMaterial 별 `CryptoKey` 캐싱(module Map, per-isolate, rejection evict). 공개 채점 hot-path(`resolveChoiceId` 가 보기 수만큼 `issueChoiceId` 반복 → 채점당 importKey ≤5회 낭비 제거). **출력 불변**(왕복·결정성·폴백·정답비노출 테스트 green) + 캐시 격리 테스트 신규(6/6). 파생 키 캐시(재계산 가능)라 "인메모리 임시 저장" 금지 규칙 무관.
+- **D-29**(perf, single) `StreakPanel.tsx` — `loadStreakView` 의 studiedDates map / todayCount filter **이중 순회+이중 날짜파싱** → 순수 `buildStreakStrip`(`streak-strip.ts` 신설, 컴포넌트 파일 로직 기생 회피=D-24 교훈) 단일 순회 + **테스트 커버리지 0→4**. reviews `.toArray()` 재조회 자체는 최근 31일 유계 = 수용(인메모리 중복만 제거).
+- **★D-32 자율 제외·플래그**(BE, single): `local-progress/db.ts` reviews GC/보존 정책 0. **블라인드 구현 불가** — reviews 는 코드 주석(db.ts:11,54)이 명시한 **"FSRS replay 원천 + export 백본"**이라 GC = replay 완전성·export 훼손 = 데이터모델 Silent Pivot. IndexedDB 는 디스크 기반이라 "무한 성장"도 메모리 크래시가 아닌 **장기 쿼터** 이슈이며 `requestPersistentStorage()`+export 로 완화됨. ⇒ **보존 정책 결정 사항**(보관 기간·replay 정확도 영향 = 진산/설계 판단) 으로 이월. 인증 학습 오픈 시 서버 동기화 설계와 함께 재검토 권고.
+- **독립 4-Pass**(`review-20260713-091049-4pass-changes.md`, 6 에이전트): **CRITICAL 0 / MAJOR 0 / MINOR 6** → 판정 "완료 가능". MINOR 6 = 3 실질 dedup, **전건 처분**:
+  - ① `buildStreakStrip` 손상 reviewedAt(Invalid Date) → `new Date(NaN).toISOString()` RangeError 로 스트립 전체 throw → 패널 전면 은닉 degrade(import 경유 오염 벡터). → 손상 레코드만 스킵 가드 + invalid-iso 테스트(streak-strip 4→5).
+  - ② DAY_MS 이중 선언(streak-strip.ts + StreakPanel.tsx) = 31일 조회창↔30일 버킷 계약 드리프트. → streak-strip 에서 `export const DAY_MS`, StreakPanel import 공유.
+  - ③ 스트립 aria-label 정량 미전달(스크린리더 공백). → `최근 N일 중 M일 학습, 오늘 K회` view 값 주입(a11y).
+- **검증**: api choice-id 6·786 pass 무회귀 / web streak-strip 5·79 pass 무회귀 / typecheck·lint·build·g1 api+web PASS.
