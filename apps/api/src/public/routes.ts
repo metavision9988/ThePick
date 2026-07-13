@@ -41,7 +41,7 @@ import {
 } from '@thepick/learning-modes';
 import { getClientIp, type RateLimiter } from '../auth/rate-limit.js';
 import { checkPublicIpRateLimit } from './rate-limit.js';
-import { issueChoiceId, resolveChoiceId } from './choice-id.js';
+import { CHOICE_ID_HEX_LENGTH, issueChoiceId, resolveChoiceId } from './choice-id.js';
 import { recordPublicEvent, type AnalyticsEngineDataset } from './analytics.js';
 
 export interface PublicRouteBindings {
@@ -440,6 +440,21 @@ export function createPublicRoutes(): Hono<{ Bindings: PublicRouteBindings }> {
         mc.originalTexts.length,
         choiceId,
       );
+      if (submittedIndex === null) {
+        // choiceId 가 어떤 보기 위치로도 복원 불가 = 정합성 신호(D-17). 텔레메트리 0 이면
+        // 무음 오채점 진단 불능이므로 발행하되, 두 원인을 분리 버킷팅(4-Pass: 회전 신호 희석 방지):
+        //   - malformed = 길이 불일치 = 명백 위조·쓰레기 클라(회전 무관 노이즈)
+        //   - unresolved = 정상 길이이나 미매칭 = secret 회전·stale choiceId (진짜 인시던트 후보)
+        // 콘텐츠 결함(422)과도 분리: defectReason 네임스페이스.
+        const defectReason =
+          choiceId.length !== CHOICE_ID_HEX_LENGTH ? 'choice_id_malformed' : 'choice_id_unresolved';
+        recordPublicEvent(c.env.PUBLIC_ANALYTICS, 'defect', {
+          subject: row.subject,
+          inputType,
+          examType: FIXED_EXAM_TYPE,
+          defectReason,
+        });
+      }
       isCorrect = submittedIndex !== null && mc.correctOriginalIndices.has(submittedIndex);
       // 정답 보기 하이라이트용 — 정답 위치들의 choiceId 재발급.
       correctChoiceIds = [];

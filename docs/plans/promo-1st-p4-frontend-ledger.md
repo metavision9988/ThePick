@@ -161,3 +161,16 @@ D-21 과 같은 "배포 하드닝" 결. `smoke-public-surface.mjs`(14체크, 정
   - ② DAY_MS 이중 선언(streak-strip.ts + StreakPanel.tsx) = 31일 조회창↔30일 버킷 계약 드리프트. → streak-strip 에서 `export const DAY_MS`, StreakPanel import 공유.
   - ③ 스트립 aria-label 정량 미전달(스크린리더 공백). → `최근 N일 중 M일 학습, 오늘 K회` view 값 주입(a11y).
 - **검증**: api choice-id 6·786 pass 무회귀 / web streak-strip 5·79 pass 무회귀 / typecheck·lint·build·g1 api+web PASS.
+
+### 8.7 D-17 choiceId 미복원 관측 신호 (2026-07-13, RC-6 조기 집행)
+
+공개 채점 MC 경로에서 `resolveChoiceId` 가 null(secret 회전·choiceId 위조·손상) 반환 시 **텔레메트리 0 = 무음 오채점 진단 불능**(secret 회전 시 전 채점이 resolve-null→전부 오답이 돼도 'grade' 이벤트는 isCorrect 만 기록, 구분 불가).
+
+- **처분**: `routes.ts` grade 핸들러 `submittedIndex===null` 분기에서 `recordPublicEvent('defect', defectReason:'choice_id_unresolved')` 발행. **채점 로직 불변**(null → 여전히 isCorrect=false), AE fire-and-forget(바인딩 없으면 no-op). `analytics.ts` defectReason 문서에 정합성 신호(422 콘텐츠 결함과 분리 버킷) 명시.
+- **콘텐츠 결함율 오염 차단**: `choice_id_unresolved` 는 200 응답(422 거부 아님)이라 콘텐츠 결함이 아님 → 결함율 소비자(D-20 reader, 미구현)는 defectReason 별 버킷팅으로 분리 집계(문서 명문화).
+- **독립 4-Pass**(`review-20260713-104323-4pass-changes.md`, 7 에이전트): **CRITICAL 0 / MAJOR 0 / MINOR 6** → 판정 "완료 가능". 처분:
+  - ① ★신호 희석 해소 — `resolveChoiceId` null 이 (a)길이불일치 쓰레기·(b)정상길이 미매칭 둘을 병합 → **`choice_id_malformed`(위조 노이즈) vs `choice_id_unresolved`(회전·stale 인시던트 후보) 분리 버킷**(routes.ts length 선판별). D-17 핵심 가치(회전 감지) 정제.
+  - ② 테스트 갭 — 거짓양성 테스트가 정답-유효만 커버 → **오답이지만 유효(index 0) 경로도 미발행 고정**(발행 조건 = null 복원, isCorrect 무관) + malformed 테스트 추가.
+  - ③~⑤ 이월/기록(스코프 밖): subject 귀속 스키마(JSDoc 계약+reason 분리로 완화)·secret 회전 사용자 복구(별건 dual-key 기능)·grade double-emission 정답률 오염(리뷰도 "기록" 처분, D-20 reader 버킷팅 사안). RC-6 잔여에 편입.
+- **검증**: 캡처 AE mock 테스트(null 발행·malformed 분리·정답/오답 유효 미발행) — api public routes 28→31, 49 파일 789 PASS, typecheck·lint·g1 PASS.
+- **RC-6 잔여**: D-19 alert 채널(Email Routing = 외부 채널 설정)·D-20 AE reader(CF Analytics 토큰 — defectReason 별 버킷팅 + grade unresolved 제외 소비자 설계)·D-36 secret 로테이션 runbook(dual-key 유예 포함 검토).

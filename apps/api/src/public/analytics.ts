@@ -30,6 +30,11 @@ export interface PublicEventFields {
   /**
    * defect 이벤트만 (5-페르소나 M-19) — 데이터 결함으로 서빙·채점이 422 거부된 사유.
    * 휘발 로그 외 유일 결함율 집계 원천(문항 id 미기록 — PII 0 유지, id 는 로그에서).
+   *
+   * ★ 정합성 신호(D-17) 포함 — 채점이 200 인 채 choiceId 미복원(무음 오답화)은 콘텐츠
+   *   결함(422)이 아니다. 두 원인 분리 버킷: `choice_id_malformed`(길이 불일치 = 위조·쓰레기
+   *   노이즈) / `choice_id_unresolved`(정상 길이 미매칭 = secret 회전·stale = 인시던트 후보).
+   *   결함율 소비자는 defectReason 별 버킷팅으로 콘텐츠 결함과 정합성 신호를 분리 집계할 것.
    */
   readonly defectReason?: string;
 }

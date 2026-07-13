@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createD1FromSqlite, type SqliteBackedD1 } from '../../__tests__/helpers/d1-from-sqlite.js';
 import { createPublicRoutes, type PublicRouteBindings } from '../routes.js';
 import { issueChoiceId } from '../choice-id.js';
+import type { AnalyticsEngineDataset } from '../analytics.js';
 
 const JWT_SECRET = 'public-test-jwt-secret-32bytes-plus-v1';
 
@@ -79,6 +80,29 @@ async function post(path: string, body: unknown): Promise<Response> {
       body: JSON.stringify(body),
     }),
     env(),
+  );
+}
+
+interface CapturedEvent {
+  readonly indexes?: readonly string[];
+  readonly blobs?: readonly string[];
+  readonly doubles?: readonly number[];
+}
+
+/** AE 캡처 mock — recordPublicEvent 발행을 검증(테스트 env 는 기본 PUBLIC_ANALYTICS 미주입 = no-op). */
+function captureAE(): { ae: AnalyticsEngineDataset; events: CapturedEvent[] } {
+  const events: CapturedEvent[] = [];
+  return { ae: { writeDataPoint: (e) => events.push(e) }, events };
+}
+
+async function postAE(path: string, body: unknown, ae: AnalyticsEngineDataset): Promise<Response> {
+  return app().fetch(
+    new Request(`http://test.local${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+    { ...env(), PUBLIC_ANALYTICS: ae },
   );
 }
 
@@ -239,6 +263,56 @@ describe('POST /api/public/grade — 채점', () => {
     });
     expect(res.status).toBe(200);
     expect(((await res.json()) as { isCorrect: boolean }).isCorrect).toBe(false);
+  });
+
+  it('D-17 미복원 choiceId(secret 회전·위조) → defect choice_id_unresolved 발행 (무음 오채점 관측)', async () => {
+    seedQ({ id: 'q-unres', inputType: 'multiple_choice', answer: '2', distractors: FOUR_CHOICES });
+    const { ae, events } = captureAE();
+    const res = await postAE(
+      '/grade',
+      { questionId: 'q-unres', choiceId: 'deadbeefdeadbeefdeadbeef' },
+      ae,
+    );
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { isCorrect: boolean }).isCorrect).toBe(false);
+    // blob 레이아웃 [kind, subject, round, inputType, examType, defectReason].
+    const signals = events.filter(
+      (e) => e.blobs?.[0] === 'defect' && e.blobs?.[5] === 'choice_id_unresolved',
+    );
+    expect(signals).toHaveLength(1);
+  });
+
+  it('D-17 길이 불일치 choiceId → choice_id_malformed (위조 노이즈, 회전 신호와 분리 버킷)', async () => {
+    seedQ({ id: 'q-malf', inputType: 'multiple_choice', answer: '2', distractors: FOUR_CHOICES });
+    const { ae, events } = captureAE();
+    const res = await postAE('/grade', { questionId: 'q-malf', choiceId: 'short' }, ae);
+    expect(res.status).toBe(200);
+    const malformed = events.filter((e) => e.blobs?.[5] === 'choice_id_malformed');
+    expect(malformed).toHaveLength(1);
+    // 회전 신호 버킷(unresolved)은 오염되지 않음.
+    expect(events.some((e) => e.blobs?.[5] === 'choice_id_unresolved')).toBe(false);
+  });
+
+  it('D-17 정상 복원(정답·오답 모두) → choice_id_* 미발행 (발행 조건 = null 복원, isCorrect 무관)', async () => {
+    seedQ({ id: 'q-res-ok', inputType: 'multiple_choice', answer: '2', distractors: FOUR_CHOICES });
+    // 정답(index 1) — 복원 성공.
+    const okCorrect = captureAE();
+    await postAE(
+      '/grade',
+      { questionId: 'q-res-ok', choiceId: await issueChoiceId(JWT_SECRET, 'q-res-ok', 1) },
+      okCorrect.ae,
+    );
+    // 오답이지만 유효(index 0) — 복원 성공(non-null) → 정합성 신호 발행 금지.
+    const okWrong = captureAE();
+    await postAE(
+      '/grade',
+      { questionId: 'q-res-ok', choiceId: await issueChoiceId(JWT_SECRET, 'q-res-ok', 0) },
+      okWrong.ae,
+    );
+    for (const { events } of [okCorrect, okWrong]) {
+      expect(events.some((e) => String(e.blobs?.[5] ?? '').startsWith('choice_id_'))).toBe(false);
+      expect(events.some((e) => e.blobs?.[0] === 'grade')).toBe(true);
+    }
   });
 
   it('MC 인데 choiceId 누락 → 400 CHOICE_ID_REQUIRED', async () => {
