@@ -35,6 +35,9 @@ export interface PublicEventFields {
    *   결함(422)이 아니다. 두 원인 분리 버킷: `choice_id_malformed`(길이 불일치 = 위조·쓰레기
    *   노이즈) / `choice_id_unresolved`(정상 길이 미매칭 = secret 회전·stale = 인시던트 후보).
    *   결함율 소비자는 defectReason 별 버킷팅으로 콘텐츠 결함과 정합성 신호를 분리 집계할 것.
+   *   ⚠️ **드리프트 트립와이어**: 위 두 문자열은 D-20 reader(`scripts/lib/public-analytics-reader.mjs`
+   *   `INTEGRITY_REASONS`)가 정확 일치로 보안 알림을 분류한다 — 문자열 변경 시 reader 동시 개정
+   *   필수(미개정 시 --alert false-negative = 회전 스파이크 무음. RC-5 shared 단일화 대기).
    */
   readonly defectReason?: string;
 }

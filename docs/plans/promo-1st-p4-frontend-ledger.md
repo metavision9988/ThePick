@@ -173,4 +173,19 @@ D-21 과 같은 "배포 하드닝" 결. `smoke-public-surface.mjs`(14체크, 정
   - ② 테스트 갭 — 거짓양성 테스트가 정답-유효만 커버 → **오답이지만 유효(index 0) 경로도 미발행 고정**(발행 조건 = null 복원, isCorrect 무관) + malformed 테스트 추가.
   - ③~⑤ 이월/기록(스코프 밖): subject 귀속 스키마(JSDoc 계약+reason 분리로 완화)·secret 회전 사용자 복구(별건 dual-key 기능)·grade double-emission 정답률 오염(리뷰도 "기록" 처분, D-20 reader 버킷팅 사안). RC-6 잔여에 편입.
 - **검증**: 캡처 AE mock 테스트(null 발행·malformed 분리·정답/오답 유효 미발행) — api public routes 28→31, 49 파일 789 PASS, typecheck·lint·g1 PASS.
-- **RC-6 잔여**: D-19 alert 채널(Email Routing = 외부 채널 설정)·D-20 AE reader(CF Analytics 토큰 — defectReason 별 버킷팅 + grade unresolved 제외 소비자 설계)·D-36 secret 로테이션 runbook(dual-key 유예 포함 검토).
+- **RC-6 잔여**: D-19 alert 채널(Email Routing = 외부 채널 설정)·D-36 secret 로테이션 runbook(dual-key 유예 포함 검토).
+
+### 8.8 D-20 AE reader — 조회 소비자 신설 (2026-07-13, RC-6 조기 집행)
+
+`analytics.ts` 는 writer-only(지표·결함율 유일 원천인데 읽는 자 0) + AE ~90일 롤오프 → 라이브 지표를 아무도 안 봄. Cloudflare Analytics Engine SQL API 로 production dataset 을 조회하는 소비자 신설.
+
+- **산출**: `scripts/lib/public-analytics-reader.mjs`(순수 — 쿼리 구성·응답 파싱·요약, 테스트 6) + `scripts/read-public-analytics.mjs`(오케스트레이터 — 토큰·계정·fetch·포맷). 루트 `test:scripts` 글롭 자동 배선(CI ci.yml:84).
+- **지표 3종**: 이벤트 종류별(serve/grade/card), 과목별 정답률(grade), 결함/정합성(defect). ★**D-17 정합성 신호(choice_id_malformed·choice_id_unresolved)를 콘텐츠 결함과 분리 버킷**(4-Pass 지적 반영 — 결함율·정답률 오염 방지). 샘플 보정 `sum(_sample_interval)`.
+- **실 production end-to-end 검증**: serve 16/grade 12/card 11, 과목 정답률(상법 20%·법령 25%·재배학 0%), 정합성 0. `--json`/`--alert`(정합성 신호 ≥1 → exit 1, cron 경보용)/fail-closed(토큰·env 미설정 exit 1) 확인.
+- **실행**: `CLOUDFLARE_API_TOKEN=<Account Analytics Read> node scripts/read-public-analytics.mjs [--env production] [--days 7] [--json] [--alert]`. 계정 ID = env 주입 또는 단일계정 자동 확인.
+- **독립 4-Pass**(`review-20260713-154806-4pass-changes.md`, 6 에이전트): **CRITICAL 0 / MAJOR 0 / MINOR 9** → 판정 "완료 가능". 처분:
+  - ① kinds[].n 문자열 유출(--json 타입 비일관, MINOR-1/3/7) → `summarizeKinds` 순수 fn 으로 number 정규화(두 경로 통일) + 테스트.
+  - ② `--alert` exit code 혼동(보안 스파이크 vs 인프라 실패, MINOR-6) → **정합성 신호 exit 2 / 인프라·사용 오류 exit 1** 분리(cron 경보 피로 방지).
+  - ③ INTEGRITY_REASONS writer↔reader 드리프트 → 보안 false-negative(MINOR-5) → analytics.ts 에 **드리프트 트립와이어 주석**(reader 동시개정 의무) + RC-5 shared 단일화 이월.
+  - ④~⑥ 이월/기록: blob 레이아웃 교차가드(MINOR-2 → D-25)·account-list 권한(MINOR-4 → cron 배선 시 ACCOUNT_ID 주입)·dataset 이중선언(MINOR-8, fail-loud 무해)·정답률 unresolved 오염(MINOR-9 → 기존 §8.7 이월).
+- **RC-6 잔여**: ops.yml 주간 cron 에 `--alert`(exit 2 감시) 배선은 **GH 시크릿 CLOUDFLARE_API_TOKEN 이 Analytics Read 포함 필요**(현 D1/R2) + **CLOUDFLARE_ACCOUNT_ID 동반 주입**(협소 토큰 시 계정 자동탐색 우회) → 진산 시크릿 갱신 후 배선. D-25 blob 스키마 버전 규약·D-19 Email 채널은 별건.
