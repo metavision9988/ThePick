@@ -8,9 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > 코드를 쓰기 전에 G-1을 통과해야 한다. G-1은 ACAP Stage -1(Deep Dive)보다도 앞에 온다.
 > **현 적용 상태 (2026-05-30 소급 형식화, 프롬프트 C):** 상태 **C**(가장 성숙). 판정서
 > `docs/feasibility/thepick.feasibility.md` + `ceiling.md`. **🟢 아키텍처(콘텐츠+산식+Vector RAG+FSRS)
-> = 축소 GO·production 배포 완료 / 🔻 graph-walk 정답률 = R3 **측정완료**(2026-06-01 1차 + 06-05 2차 queryBody depth1·2).
-> graph 순기여 0(graphOnlyRecovery 0 both·depth2 순손실 −20%·depth1 무익 0%) / **R5 GO/NO-GO 진산 대기**(단 "알고리즘 사망"은 시기상조: 재설계 미시도·N극소).
-> 🔴 조각 0.** graph-walk 전체 GO는 G-S5 실측 후 진산 R5 결재.
+> = 축소 GO·production 배포 완료 / 🔻 graph-walk 정답률 = R3 측정완료(1차 06-01·2차 06-05·3차 07-07 N=19,
+> graphOnlyRecovery 0 3연속·depth1 순손실 전환) → **R5 결재 완료(진산 2026-07-14): 통합 NO-GO·현 설계 동결 +
+> D안(lexical fusion) 경로** — 재상신 = D안 비교 측정(#8). 🔴 조각 0.** 기록 = feasibility R5 + S5-8 §9.
 
 ### AI(너)가 반드시 지킬 것
 
@@ -496,6 +496,24 @@ W0~W6·가드레일 15·Fable 검토 게이트) + git worktree 이중 워크스�
 > (`public-learning-contract.ts`) — 서버 4핸들러 satisfies·웹·mock 3표면 컴파일 강제(4-Pass C0/M3 처분).
 > (4) 잔여: Web Analytics 토글(진산 1분) / 빵꾸노트 콘텐츠 / staging -MC 동기화(선택) / 신규 1차 적재 시
 > 위치라벨-answer 게이트 의무(RC-2 카드). CI 전 워크플로 green 유지.
+
+> ★ **2026-07-14 갱신 2 (Fable 5) — 결재 병목 해소 체제 확립 + Q1~Q4 일괄 집행 (진산 "전부 권고대로 진행")**:
+> 발단 = 진산 "검증·결재 처리가 힘들어 진도 지연 — 자체 검증 모듈 등 분석 검토" → 분석 정본
+> `docs/plans/approval-bottleneck-analysis-20260714.md`(§6 Q1~Q4 전건 결재) 작성·집행. (1) ★**Q1 = E0-8
+> P1~P3 63노드 위임 일괄 승격 production 완료**: AI 재검증 라운드 wf_66b57d39(9에이전트, 원문 PDF 재추출·
+> 검수표 미참조 적대 대조) **63/63 PASS·HardStop 0** + 결정론 게이트(참조 43 활성·중복 0·SUPERSEDES 0) →
+> `status_transitions` INSERT 63(Hard Limit 정합, UPDATE 0) = **실 approved 488→551**. ESCALATE 12항 위임
+> 처분 + **진산 표본 감사 8행** = `docs/batch-load/gap-promotion-20260714/promotion-report.md`(사후 거부권).
+> **P4~P6 게이트 개방**. (2) ★**Track B 고아 수리 동시 집행**: 증거 CONFIRM 27엣지만 INSERT(`EDGE-E02-TB-*`,
+> HOLD 9·REJECT 1 미시행 — REJECT = 부록 [추정]이 교재 원문과 모순 적발) = **고아 24→2**(LAW-043·128 정직
+> 잔여). 러너 post: 끊김0·순환0·비활성참조0(`integrity-2026-07-14T08-34-32.md`). D군 신규 후보 3(LAW-031
+> description 불일치 의심·LAW-195/202 메타주석). (3) **Q4 = G-S5 R5 본결재**: graph-walk 학습자 경로 통합
+> **NO-GO(현 설계 동결)** + D안(lexical fusion) 경로 — S5-8 §9·feasibility R5·ceiling 3처 기록. (4) **Q2 =
+> `autoverify-package.plan.md`**(L3, 위임 결재 — 게이트 6종+Class A/B/C 라우터+held-out 캘리브레이션+fail-closed.
+> 구현 착수 가능, production 자동 승격 가동은 §8 별도 게이트). (5) ★**Q3 = 결재 단일 채널**:
+> `docs/plans/APPROVAL_DASHBOARD.md` 신설 — 이후 모든 결재는 이 1페이지로만(권고 기본값+예/아니오,
+> §B 사후 거부권 열람·§C AI 자율 진행). 기존 산재 카드 큐 대체. **진산 잔존 = 대시보드 §A 5행**(표본 8행
+> 훑기·계정 1스텝 3건·0039/0040 일괄 적용·고아 2 처분·유료 오픈 시점). 상세 [[feedback_approval_dashboard_single_channel]].
 
 > ★ **2026-07-14 갱신 (Opus 4.8) — 인프라 하드닝 스프린트 완결 + 핸드오프(타 프로젝트 인프라 재사용 대비)**:
 > (1) **하드닝 backlog 자율 집행 완료** (`phaseN-tech-debt-20260710-143321-INDEX.md`): D-21(web 배포물↔SHA
