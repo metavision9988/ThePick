@@ -497,6 +497,23 @@ W0~W6·가드레일 15·Fable 검토 게이트) + git worktree 이중 워크스�
 > (4) 잔여: Web Analytics 토글(진산 1분) / 빵꾸노트 콘텐츠 / staging -MC 동기화(선택) / 신규 1차 적재 시
 > 위치라벨-answer 게이트 의무(RC-2 카드). CI 전 워크플로 green 유지.
 
+> ★ **2026-07-14 갱신 (Opus 4.8) — 인프라 하드닝 스프린트 완결 + 핸드오프(타 프로젝트 인프라 재사용 대비)**:
+> (1) **하드닝 backlog 자율 집행 완료** (`phaseN-tech-debt-20260710-143321-INDEX.md`): D-21(web 배포물↔SHA
+> 추적성)·D-16(배포 스모크 게이트)·D-27/D-29(HMAC 캐싱·StreakPanel 헬퍼)·D-17(choiceId 정합성 텔레메트리)·
+> D-20(AE reader)·D-36(secret 로테이션 runbook)·**D-22(choiceId secret 단일 seam)**·**DO-1(정합성 알림
+> cron 배선)**. 순증 커밋 `84540b7`~`f32f79d` push 완료. RC-3 MINOR 소진(D-23 비-finding·D-24/D-33 저가치
+> 이연). 원장 `promo-1st-p4-frontend-ledger.md` §8.4~8.11. (2) **D-22 5-페르소나 심층 리뷰**(민감 경로 훅
+> 에스컬레이션, `phaseN-tech-debt-20260714-012918-INDEX.md`): **CRITICAL 1/MAJOR 14/MINOR 11/6 진앙** —
+> ★전건 **선재 부채**(D-22 추출 리팩터 도입 결함 0, 5-페르소나가 전체 표면 스코프 확장). **DO-1 CRITICAL
+> 자율 해소**(read-public-analytics --alert 미배선 → ops.yml integrity-alert 잡, repo var ENABLE_AE_ALERT
+> 게이트·미설정 시 클린 스킵. "미배선"→"배선완료·활성화 게이트" 전이. 활성화=진산 1스텝: 토큰 AE Read
+> 스코프+var=true). MAJOR 14/MINOR 11 = 선재 부채 backlog(RC-1~6, 진산 우선순위 결정 대상·비차단).
+> (3) ★**전제 정정(실측)**: 인증 1차 학습 = **이미 기술적 라이브**(`/study/`·`/auth/login/` HTTP 200) —
+> 테스트 자동로그인 차단선은 2026-07-09 전면 제거로 해소(메모리 [[project_test_autologin_launch_blocker]]
+> 정정). 오픈 잔여 = legal bundle + 제품 결정(진산). (4) **핸드오프 영속** `.jjokjipge/handoff-20260714.md`
+> — PART A(타 프로젝트가 재사용할 인프라 지도 = FRAMEWORK.md T1~T6 + 횡단 표준 + 상속 부채 RC-1~6) +
+> PART B(복귀용 현황·재개 큐). 미커밋 0·origin 동기(`f32f79d`). 상세 [[project_infra_hardening_sprint_20260714]] + [[reference_framework_reuse_map]].
+
 - **인프라 축**: Phase 3 launch chain — production 배포 완료. production D1
   마이그레이션 0001~0037 적용(`.claude/reports/production-migration-status.md`),
   Worker 배포, 인증/login_history smoke PASS, ADR-034/035/036 retrofit.
