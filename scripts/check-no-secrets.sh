@@ -66,10 +66,17 @@ VIOLATIONS=0
 # tabs, or newlines safely. --diff-filter=ACMR includes Renamed (M-4 fix).
 while IFS= read -r -d '' FILE; do
   [ -f "$FILE" ] || continue
+  # Buffer added lines ONCE per file (fail-open fix, 2026-07-14 5-persona review):
+  # the previous per-pattern pipeline `git diff | grep '^+' | grep -Eq` let grep -Eq
+  # exit early on first match -> upstream SIGPIPE(141) -> under `set -o pipefail`
+  # the whole pipeline reads as failure -> secret in a large (>pipe-buffer) file
+  # was SILENTLY PASSED (reproduced 10/10 with 200k-line staged file).
+  # Buffering also cuts N_patterns x `git diff` re-runs to one per file.
+  ADDED=$(git diff --cached -- "$FILE" | grep -E '^\+' || true)
+  [ -z "$ADDED" ] && continue
   for PATTERN in "${PATTERNS[@]}"; do
-    # `--` separator protects against filenames starting with `-`.
-    # First grep filters added lines, second grep matches the secret pattern.
-    if git diff --cached -- "$FILE" | grep -E '^\+' | grep -Eq -- "$PATTERN"; then
+    # `--` separator protects against patterns/filenames starting with `-`.
+    if grep -Eq -- "$PATTERN" <<<"$ADDED"; then
       printf '[BLOCKED] Secret pattern in: %s\n' "$FILE" >&2
       printf '          Pattern: %s\n' "$PATTERN" >&2
       VIOLATIONS=$((VIOLATIONS + 1))
