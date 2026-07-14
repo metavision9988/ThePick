@@ -231,3 +231,13 @@
 - G-1 판정서: `docs/feasibility/engine-separation.feasibility.md`
 - 워크플로우 원시 산출물(감사 4/전략 3/심판 3/검증 20/비평 1): 세션 스크래치패드 `wf-*.json` (휘발 — 본 보고서가 정본 요약)
 - 입력 3문서: `docs/학습자료저장및도출/{KAE_EXTERNAL_REVIEW_ANALYSIS, KNOWLEDGE_ACTIVATION_ENGINE_ARCHITECTURE, RAG_TECH_COMPARISON}.md` (⚠️ git untracked — 정본화 여부는 KAE 문서 자체 결재 #5와 연동)
+
+---
+
+## 🔄 Amendment (2026-07-14) — AutoVerify Gate 승격 정책 개정
+
+본 리뷰의 AutoVerify Gate 결론("draft 차단 필터 / 승격=인간")은 2026-07-14 진산 지시로 개정 —
+**GT 계층별 조건부 자동 승격**(Class A 기출·산식=결정론 대조 / B 원문 대조=골든 캘리브레이션 후 /
+C 생성물=인간 유지), 인간=표본 감사자. 원문 보존, 정본 =
+`docs/plans/decision-card-20260714-autoverify-conditional-promotion.md`. 그 외 결론(A안·오염 3진앙·
+파이프라인 실측) 불변.

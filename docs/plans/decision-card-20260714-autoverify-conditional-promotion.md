@@ -91,7 +91,6 @@ Westlaw 33% — `docs/feasibility/saas-platform.ceiling.md` §R1-6) → **무인
 
 - [x] 방향 확정 — 진산 발화 2026-07-14 ("catchall 정책을 ThePick·타 종목에도 동일 적용",
       "검증셋 사전 구축 + 적재 후 시험 + 인간 검수 모듈") — 본 카드는 그 발화의 기록·구조화. 사후 거부권 유효.
-- [ ] 07-04 엔진분리 R5 AutoVerify 조항 amend 의 문면 반영 — `ENGINE_SEPARATION_REVIEW_20260704`
-      정본 + `decision-card-20260704-engine-separation-r5.md` 에 🔄 개정 주석 (W1 문면정합 D-6 패턴). _(문서 작업 — 다음 세션 집행 가능)_
+- [x] 07-04 amend 문면 반영 완료 (2026-07-14 동일 세션) — `ENGINE_SEPARATION_REVIEW_20260704` 정본 + `decision-card-20260704-engine-separation-r5.md` + `FRAMEWORK.md` T6 에 🔄 개정 주석 (원문 보존)
 - [ ] `packages/autoverify` 구현 plan (L3, G-1 약식 포함) — 착수 시점 별도 결재
 - [ ] Class C 경계의 세부 (예: 해설은 B 인가 C 인가 — 공식 해설집 확보 시 B 승격) — autoverify plan 에서
