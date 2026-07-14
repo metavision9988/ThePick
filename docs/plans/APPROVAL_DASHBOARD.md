@@ -33,6 +33,7 @@
 - **D군 콘텐츠 수리 백로그** (LAW-031 description 불일치 의심 + LAW-195/202 메타주석 — SUPERSEDES 경로)
 - **lexical fusion D안 구현·비교 측정** (Phase 1-D 기결 07-07) → 결과로 #8 재상신 시 §A 등재
 - **formula-sync variant 24 교재 대조** (드리프트 55 후속)
+- **신규 approved 63노드 Vectorize 업서트** (현재 D1 graph 경로만 노출·벡터 검색 미노출 — 라이브 스모크 확인. 업서트 시 exam_id 메타 필수·ADR-004)
 
 ## 이력
 
