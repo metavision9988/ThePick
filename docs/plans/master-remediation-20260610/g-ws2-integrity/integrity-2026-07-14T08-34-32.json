@@ -1,0 +1,978 @@
+{
+  "integrity": {
+    "valid": false,
+    "violations": [
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-043",
+        "message": "Orphan node: LAW-043 (법 제17조 (분쟁조정)) has no active edges"
+      },
+      {
+        "type": "ORPHAN_NODE",
+        "entityId": "LAW-128",
+        "message": "Orphan node: LAW-128 (상법 제675조 (사고발생 후의 목적멸실과 보상책임)) has no active edges"
+      }
+    ],
+    "stats": {
+      "totalNodes": 857,
+      "totalEdges": 1374,
+      "activeNodes": 857,
+      "activeEdges": 1361,
+      "orphanNodes": 2,
+      "brokenEdges": 0,
+      "supersedeCycles": 0
+    }
+  },
+  "staleEdgeRefs": [],
+  "walkUnreachable": [
+    {
+      "nodeId": "INV-008",
+      "name": "표본주 선정",
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "nodeId": "INV-009",
+      "name": "침수피해 조사",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "INV-014",
+      "name": "예찰조사",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-009",
+      "name": "기준착과수",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-011",
+      "name": "인정피해율",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "TERM-004",
+      "name": "적과",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "INS-10",
+      "name": "수확량감소 추가보장 특약",
+      "inDegree": 0,
+      "outDegree": 5
+    },
+    {
+      "nodeId": "INS-12",
+      "name": "종합위험 비가림시설 손해보장방식",
+      "inDegree": 0,
+      "outDegree": 8
+    },
+    {
+      "nodeId": "INV-022",
+      "name": "낙과수 전수조사",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-030",
+      "name": "재조달가액",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-031",
+      "name": "조사대상주수",
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "nodeId": "CONCEPT-046",
+      "name": "식물체 피해율 (복분자)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "TERM-019",
+      "name": "결과지",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "TERM-020",
+      "name": "결과모지",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "TERM-022",
+      "name": "청피 (호두)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "TERM-023",
+      "name": "소과 (밤 30mm 미만)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "INS-16",
+      "name": "이앙·직파불능 보장 (벼)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "INS-17",
+      "name": "재이앙·재직파 보장 (벼)",
+      "inDegree": 0,
+      "outDegree": 3
+    },
+    {
+      "nodeId": "INS-20",
+      "name": "무화과 나무손해보장 특별약관",
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "nodeId": "CONCEPT-052",
+      "name": "식물체 피해율 (논작물)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-054",
+      "name": "제현율",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-059",
+      "name": "수확감소환산 고사결과모지수",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-063",
+      "name": "결과지피해율 (무화과)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-064",
+      "name": "수량요소조사 점수 합계",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-068",
+      "name": "단위면적당 조사수확량",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-069",
+      "name": "통상적 영농활동 (벼)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "TERM-027",
+      "name": "분질미",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "TERM-028",
+      "name": "조곡",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "TERM-032",
+      "name": "점파 / 산파",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "F-43",
+      "name": "수확감소환산계수",
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "nodeId": "INS-23",
+      "name": "작물특정 인삼손해보장",
+      "inDegree": 0,
+      "outDegree": 13
+    },
+    {
+      "nodeId": "INS-24",
+      "name": "시설(해가림시설) 종합위험 손해보장",
+      "inDegree": 0,
+      "outDegree": 11
+    },
+    {
+      "nodeId": "CONCEPT-073",
+      "name": "면적피해율 (밭작물)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "TERM-034",
+      "name": "표본이랑",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "TERM-035",
+      "name": "표본구간 (밭작물) — 이랑 길이 × 이랑 폭",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "TERM-037",
+      "name": "비대 종료 / 결구 형성 완료",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "INS-28",
+      "name": "종합위험 버섯재배사·버섯작물 손해보장",
+      "inDegree": 0,
+      "outDegree": 21
+    },
+    {
+      "nodeId": "INS-29",
+      "name": "농업수입감소보장 (일반)",
+      "inDegree": 0,
+      "outDegree": 10
+    },
+    {
+      "nodeId": "INS-31",
+      "name": "농업수입감소보장 — 밭작물 10종",
+      "inDegree": 0,
+      "outDegree": 16
+    },
+    {
+      "nodeId": "INS-32",
+      "name": "농업수입감소보장 — 벼",
+      "inDegree": 0,
+      "outDegree": 7
+    },
+    {
+      "nodeId": "INS-39",
+      "name": "소(牛) 도체결함보장 특약",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "INS-40",
+      "name": "돼지 질병위험보장 특약 (종빈돈)",
+      "inDegree": 0,
+      "outDegree": 4
+    },
+    {
+      "nodeId": "INS-42",
+      "name": "전기적장치 위험보장 특약",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "INS-43",
+      "name": "폭염재해보장 특약",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "LAW-023",
+      "name": "법 제2조의4 (재해보험 등의 심의)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-031",
+      "name": "법 제10조의2 (사고예방의무 등)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-040",
+      "name": "법 제13조 (보험목적물의 양도에 따른 권리 및 의무의 승계)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "LAW-042",
+      "name": "법 제15조 (회계 구분)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-043",
+      "name": "법 제17조 (분쟁조정)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "LAW-052",
+      "name": "법 제25조의2 (농어업재해보험사업의 관리)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "LAW-056",
+      "name": "법 제28조 (보험가입의 촉진 등)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-058",
+      "name": "법 제29조 (보고 등)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-060",
+      "name": "법 제30조 (벌칙)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "LAW-063",
+      "name": "시행령 제1조 (목적)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-064",
+      "name": "시행령 제2조의3 (기본계획 및 시행계획의 수립ㆍ시행)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-065",
+      "name": "시행령 제3조 (심의회 회의)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-068",
+      "name": "시행령 제10조 (재해보험사업의 약정체결)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-071",
+      "name": "시행령 제12조의3 (손해평가사 자격시험의 방법)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-076",
+      "name": "시행령 제12조의8 (손해평가 등의 교육)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-077",
+      "name": "시행령 제12조의9 (손해평가사 자격 취소 처분의 세부기준)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-078",
+      "name": "시행령 제12조의10 (손해평가사 업무 정지 처분의 세부기준)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-079",
+      "name": "시행령 제12조의11 (보험금수급전용계좌의 신청 방법ㆍ절차 등)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-081",
+      "name": "시행령 제13조 (업무 위탁)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-083",
+      "name": "시행령 제16조 (재보험 약정서)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-084",
+      "name": "시행령 제19조 (기금의 결산)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-085",
+      "name": "시행령 제22조 (시범사업 실시)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-086",
+      "name": "시행령 제22조의2 (보험가입촉진계획의 제출 등)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-130",
+      "name": "재해보험의 종류 (4종)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-131",
+      "name": "농어업재해의 정의 (5+1종)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-132",
+      "name": "손해평가사 제도",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-133",
+      "name": "손해평가사 시험 과목 (1차/2차)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-134",
+      "name": "손해평가사 시험 합격기준",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-135",
+      "name": "손해평가사 자격 면제 (1차)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-136",
+      "name": "손해평가사 자격취소 사유 (5종)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-138",
+      "name": "농어업재해재보험기금",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-139",
+      "name": "보험금수급전용계좌",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-140",
+      "name": "이의신청 절차 (손해평가)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-141",
+      "name": "재정지원 (보험료 지원)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "INV-085",
+      "name": "손해평가사 자격시험 응시 절차",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "INV-086",
+      "name": "보험가입 절차 (재해보험)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "LAW-091",
+      "name": "상법 제639조 (타인을 위한 보험)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-093",
+      "name": "상법 제641조 (증권에 관한 이의약관의 효력)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-094",
+      "name": "상법 제643조 (소급보험)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-097",
+      "name": "상법 제646조의2 (보험대리상 등의 권한)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-098",
+      "name": "상법 제647조 (특별위험의 소멸로 인한 보험료의 감액청구)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-099",
+      "name": "상법 제648조 (보험계약의 무효로 인한 보험료반환청구)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "LAW-121",
+      "name": "상법 제668조 (보험계약의 목적)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-128",
+      "name": "상법 제675조 (사고발생 후의 목적멸실과 보상책임)",
+      "inDegree": 0,
+      "outDegree": 0
+    },
+    {
+      "nodeId": "CONCEPT-142",
+      "name": "보험계약 당사자 (보험자/보험계약자/피보험자/보험수익자)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-143",
+      "name": "고지의무",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-144",
+      "name": "위험변경증가 통지의무 + 해지",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-145",
+      "name": "보험가액 / 보험금액 / 초과보험 / 일부보험 / 중복보험",
+      "inDegree": 0,
+      "outDegree": 6
+    },
+    {
+      "nodeId": "CONCEPT-146",
+      "name": "보험자 면책사유 (3종)",
+      "inDegree": 0,
+      "outDegree": 3
+    },
+    {
+      "nodeId": "CONCEPT-147",
+      "name": "보험대위 2종",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-148",
+      "name": "손해방지의무 (상법)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-149",
+      "name": "보험사고 통지의무",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "CONCEPT-150",
+      "name": "보험금청구권 소멸시효 (3년)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-151",
+      "name": "보험약관 교부·설명 의무 (3개월 취소권)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-152",
+      "name": "보험계약자 등의 불이익변경금지 원칙",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "CONCEPT-153",
+      "name": "보험계약 부활 (제650조의2)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "INV-088",
+      "name": "보험계약 체결 절차 (상법)",
+      "inDegree": 0,
+      "outDegree": 5
+    },
+    {
+      "nodeId": "INV-089",
+      "name": "보험사고 발생 시 절차 (상법)",
+      "inDegree": 0,
+      "outDegree": 3
+    },
+    {
+      "nodeId": "INV-090",
+      "name": "보험계약 해지 사유 종합 (상법)",
+      "inDegree": 0,
+      "outDegree": 7
+    },
+    {
+      "nodeId": "CONCEPT-218",
+      "name": "[BATCH-Q-META] 손해평가사 기출 7회분 카탈로그 + 본격 적재 차세션 이월 메타",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-144",
+      "name": "법 제8조 (보험사업자)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "LAW-146",
+      "name": "시행령 제2조 (위원장의 직무)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-147",
+      "name": "시행령 제3조의2 (위원의 해촉)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-148",
+      "name": "시행령 제4조 (분과위원회)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-149",
+      "name": "시행령 제5조 (수당 등)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-150",
+      "name": "시행령 제6조 (운영세칙)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-151",
+      "name": "시행령 제11조 (변경사항의 공고)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-152",
+      "name": "시행령 제17조 (기금계정의 설치)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-153",
+      "name": "시행령 제18조 (기금의 관리ㆍ운용에 관한 사무의 위탁)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-154",
+      "name": "시행령 제20조 (여유자금의 운용)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-155",
+      "name": "시행령 제21조 (통계의 수집ㆍ관리 등에 관한 업무의 위탁)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-156",
+      "name": "시행령 제22조의3 (고유식별정보의 처리)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-157",
+      "name": "시행령 제22조의4 (규제의 재검토)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-158",
+      "name": "상법 제642조 (증권의 재교부청구)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-159",
+      "name": "상법 제721조 (영업책임보험의 목적)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-160",
+      "name": "상법 제722조 (피보험자의 배상청구 사실 통지의무)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "LAW-161",
+      "name": "상법 제723조 (피보험자의 변제 등의 통지와 보험금액의 지급)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-162",
+      "name": "상법 제724조 (보험자와 제3자와의 관계)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-163",
+      "name": "상법 제725조 (보관자의 책임보험)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-164",
+      "name": "상법 제725조의2 (수개의 책임보험)",
+      "inDegree": 0,
+      "outDegree": 3
+    },
+    {
+      "nodeId": "LAW-167",
+      "name": "요령 제2조 (용어의 정의)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-168",
+      "name": "요령 제3조 (손해평가 업무)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-169",
+      "name": "요령 제4조 (손해평가인 위촉)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-170",
+      "name": "요령 제5조 (손해평가인 실무교육)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-171",
+      "name": "요령 제5조의2 (손해평가인 정기교육)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-172",
+      "name": "요령 제6조 (손해평가인 위촉의 취소 및 해지 등)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-173",
+      "name": "요령 제8조 (손해평가반 구성 등)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-174",
+      "name": "요령 제8조의2 (교차손해평가)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "LAW-175",
+      "name": "요령 제9조 (피해사실 확인)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-176",
+      "name": "요령 제10조 (손해평가준비 및 평가결과 제출)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-177",
+      "name": "요령 제11조 (손해평가결과 검증)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "LAW-178",
+      "name": "요령 제12조 (손해평가 단위)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "LAW-179",
+      "name": "요령 제13조 (농작물의 보험가액 및 보험금 산정)",
+      "inDegree": 0,
+      "outDegree": 2
+    },
+    {
+      "nodeId": "LAW-180",
+      "name": "요령 제14조 (가축의 보험가액 및 손해액 산정)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-181",
+      "name": "요령 제15조 (농업시설물의 보험가액 및 손해액 산정)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-182",
+      "name": "요령 제16조 (손해평가업무방법서)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-183",
+      "name": "요령 제17조 (재검토기한)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-185",
+      "name": "운영규정 제2조 (용어의 정의)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-186",
+      "name": "운영규정 제3조 (적용범위)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-187",
+      "name": "운영규정 제5조 (위탁업무의 처리)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-188",
+      "name": "운영규정 제6조 (약정의 체결)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-189",
+      "name": "운영규정 제7조 (재보험 사업관리)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-190",
+      "name": "운영규정 제8조 (재해보험 사업의 관리)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-191",
+      "name": "운영규정 제9조 (상품 연구 및 보급)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-192",
+      "name": "운영규정 제10조 (재해 관련 통계 생산 및 데이터베이스 구축·분석)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-193",
+      "name": "운영규정 제11조 (통계작업방법서 작성)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-194",
+      "name": "운영규정 제12조 (손해평가기법의 연구·개발 및 보급)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-196",
+      "name": "운영규정 제13조의2 (손해평가사 자격시험 면제신청서류)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-197",
+      "name": "운영규정 제14조 (손해평가사 자격증의 발급 등)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-198",
+      "name": "운영규정 제15조 (손해평가사 교육 및 자격시험 등)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-199",
+      "name": "운영규정 제16조 (수탁기관의 지도·감독 등)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-200",
+      "name": "운영규정 제17조 (기타 세부사항)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-201",
+      "name": "운영규정 제18조 (재검토기한)",
+      "inDegree": 0,
+      "outDegree": 1
+    },
+    {
+      "nodeId": "LAW-202",
+      "name": "목적물고시 (농업재해보험에서 보상하는 보험목적물의 범위)",
+      "inDegree": 0,
+      "outDegree": 1
+    }
+  ],
+  "gatePass": false
+}

@@ -97,11 +97,15 @@ BATCH-R1 적재(EDGE-BATCH-R1-0024~0034, SUPERSEDES 11건)가 "개정 사항 메
 ```
 [x] Track A-1 채택 — 진산 2026-06-11 "권고대로 진행" + cfut_ 쓰기 토큰 발급. 집행 완료 (§8)
 [ ] Track A 의 개정노트 CROSS_REF 재연결 (선택)
-[ ] Track B-1 (확정 2건) 승인
-[ ] Track B-2 (~14건) 검수 후 승인        — 후보표 검수 (문항당 수초)
-[ ] Track B-3 (~8건) 처분: 검수 / 보류
+[x] Track B-1 (확정 2건) 승인 — ★진산 2026-07-14 "전부 권고대로 진행" (위임 일괄, approval-bottleneck-analysis-20260714 §6 Q1)
+[x] Track B-2 (12건) + C (1건 = CROSS_REF 채택) 승인 — 동상. AI 증거검증 wf_66b57d39 15/15 CONFIRM(앵커 4 live 확증) 후 집행
+[x] Track B-3 (9건) 처분: AI 교재 대조 — CONFIRM 12엣지만 시행(7노드 해소), 원문 근거 부재 HOLD 9·REJECT 1 미시행
+    → 고아 24→2 잔여(LAW-043·LAW-128, fabricate 금지 정직 표기 = G-RP-2 정합). REJECT 1 = 부록 [추정]이 교재와 모순(CONCEPT-027→069)
 [x] Track C 적재 경로: (b) 직접 SQL — 채택·사용 (§8)
 [x] 진성 중복 2쌍 정리 — 집행 완료 (§8)
+[x] ★Track B SQL 집행 완료 (2026-07-14): `e0-2-repair-track-b.sql` 27엣지 + RD-E02-TB-20260714.
+    러너 post = 끊김0·순환0·비활성참조0·고아2(잔여 명시) `g-ws2-integrity/integrity-2026-07-14T08-34-32.md`.
+    집행 보고 = `docs/batch-load/gap-promotion-20260714/promotion-report.md`
 ```
 
 - SQL 실행 = 추가로 진산 Cloudflare 인증 필요 (#11 과 동일 채널 — 묶음 처리 가능).
