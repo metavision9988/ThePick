@@ -65,6 +65,7 @@
 - [x] 축소 GO (🟢만) — 기록: 🟢 아키텍처(콘텐츠+산식+Vector RAG+FSRS)는 **이미 GO·production 배포 완료**(Phase 3 launch chain, CLAUDE.md 현재상태). 결정 증거 = 라이브 배포·488 approved. ※ 본 [x]는 AI 판정이 아니라 _기 발생한 진산 배포 결정의 기록_ — 동의하지 않으시면 해제 요청.
 - [ ] GO (전체, graph-walk 통합 포함) — 2차 실측(06-05)까지 완료: graph 현 파라미터 순기여 0 확정(depth1 무익·depth2 순손실). _AI가 결정하지 않음._
 - [x] **조건부 보류 (진산 2026-06-11, 결재 #8):** depth1 기본화(#6 집행 완료) + lexical fusion D안 비교군(#7) — **D안 vs graph 재설계 비교 측정 결과로 R5 재상신**. N≥30 골든 확대(E0-4)와 동시 처리. "알고리즘 사망" 단정도 GO 도 아닌, 측정 기반 재결재 경로.
+- [x] **★graph-walk 통합 = NO-GO — 현 설계·파라미터 동결 (진산 2026-07-14, "전부 권고대로 진행" = 결재 카드 `approval-bottleneck-analysis-20260714.md` §6 Q4):** 근거 = 3차 실측(2026-07-07, golden v2 N=19·진성 multi 8) graphOnlyRecovery **0 = 3차 연속** + depth1 마저 순손실 전환(Δ−5.3%)·depth2 Δ−15.8%(사실 정본 `g-s5-v2-facts-20260707.md`). 경로 = D안(lexical fusion, Phase 1-D 기결 07-07) 유지. **재상신 조건** = D안 비교 측정 결과(#8) 또는 graph 재설계 스파이크의 문제 해소 실증. STOP 아님(🟢 Vector RAG 바닥 위 서비스 성립 — 이미 라이브).
 - [ ] STOP — 해당 없음 (🔴 조각 0). graph-walk 는 "재측정 대기"이지 기각도 STOP 도 아님 — 🟢 Vector RAG 바닥 위 출시 성립.
 
 - **가치 판단 근거 (진산 기록란):** **\_\_\_** (감사 §4 결재 큐 7항 + §7.3 GO/NO-GO. 1차 측정 = baseline 미달이나 "시기상조"로 교정됨, 결정은 진산.)

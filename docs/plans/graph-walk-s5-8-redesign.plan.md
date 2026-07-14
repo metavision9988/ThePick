@@ -218,3 +218,7 @@ Phase 3(BATCH 엣지, 병렬·독립) ──┘            │               no�
 
 - **코드 착수 = 위 체크 + 진산 "진행" 후**(L3, 자율 금지). depth1(0a)·golden(0b)은 저위험 → 우선 권고.
 - 각 Phase 완료 = 해당 Binary Gate + 4-Pass(코드정합) + 재측정. "완료" 선언은 출력물(재측정 리포트) 확인 후.
+- ★ **G-S5 GO/NO-GO 본결재 (진산 2026-07-14, "전부 권고대로 진행" — `approval-bottleneck-analysis-20260714.md` §6 Q4):
+  graph-walk 학습자 경로 통합 = NO-GO(현 설계·파라미터 동결).** Phase 1(보수 algo) 착수 안 함 — D안(1-D, 기결)만
+  진행. 재상신 = D안 비교 측정 결과(#8) 시. 근거 = 3차 실측 graphOnlyRecovery 0 3연속 + depth1 순손실 전환
+  (`g-s5-v2-facts-20260707.md`). feasibility R5 동기 기록 완료.
