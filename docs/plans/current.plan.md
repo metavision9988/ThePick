@@ -1,273 +1,170 @@
 ---
-phase: 1
-step: 1-5 (가-1) — BATCH 1 실적재
-approved_by: TBD
+phase: 3
+step: 역이식 STAGE 0+1 (안전장치 수리 + 데이터 보호 가드)
+approved_by: 진산 (2026-08-06, "0·1단계 진행") — 근거 = docs/plans/catchall-역이식-체크리스트.md STAGE 0·1
 risk_level: L3
-gates_yaml: tasks/step-1-5-ga-1.gates.yaml
 scope:
-  # 산출 (실측 결과)
-  - docs/measurements/claude-api-smoke-{YYYYMMDD}.md (A-1)
-  - docs/measurements/pdfplumber-smoke-{YYYYMMDD}.md (A-2)
-  - docs/measurements/vision-ocr-smoke-{YYYYMMDD}.md (A-3)
-  # Simulation Harness
-  - sim/pipeline-adversarial.ts (B-1)
-  - sim/__tests__/pipeline-adversarial.invariants.test.ts (B-2)
-  # Tech-Debt 코드 패치 (Group C)
-  - apps/batch/src/loader/draft-loader.ts (TD-042 examId 시그니처 + TD-044 lost-update race)
-  - apps/batch/src/loader/state-machine.ts (TD-042)
-  - apps/api/src/progress/rate-limit.ts (TD-042)
-  - apps/batch/src/batch-processor.ts (TD-043 withRetry non-retryable)
-  - migrations/0013_supersedes_edges.sql (TD-045 — 신규 D1 마이그레이션, 0011 충돌 회피)
-  - apps/api/src/scheduled/* (TD-037 외부 알림 경로)
-  # 리뷰 산출
-  - .claude/reviews/review-{YYYYMMDD-HHMMSS}-step1-5-ga-1-level3.md (D-2)
-  - .claude/reviews/review-{YYYYMMDD-HHMMSS}-step1-5-ga-1-4pass.md (D-3)
+  # --- STAGE 0: 안전장치 배선 수리 (L3 아님 — 훅/설정) ---
+  - .claude/hooks/protect-l3.sh
+  - .claude/hooks/quality-gate.sh
+  - .claude/hooks/enforce-review.sh
+  - .claude/settings.json
+  - scripts/protect-l3.test.sh
+  # --- STAGE 0-4: 시행일 창 필터 (L3 아님 — SELECT 경로) ---
+  - apps/api/src/search/approved-nodes-sql.ts
+  - apps/api/src/search/user-search.ts
+  - apps/api/src/search/__tests__/approved-nodes-sql.test.ts
+  - apps/api/src/search/graph-walk/__tests__/graph-walk.golden.test.ts
+  - apps/api/src/study/routes.ts
+  - apps/api/src/study/__tests__/routes.test.ts
+  # --- 테스트 하네스 현행화 + 드리프트 가드 (독립 리뷰 수리) ---
+  - apps/api/src/__tests__/helpers/d1-from-sqlite.ts
+  - apps/api/src/__tests__/scenario-migrations-drift.test.ts
+  # --- STAGE 1: L3 — DB 스키마 가드 ---
+  - migrations/0039_knowledge_edges_guard_and_node_reactivation.sql
+  - apps/api/src/__tests__/scenarios/migration-0039-edges-guard.test.ts
+  - apps/api/src/db/schema.ts
+  - docs/plans/ws-2b-knowledge-edges-guard.plan.md
+  # --- 진행 추적·문서 (동커밋 갱신 의무) ---
+  - docs/plans/catchall-역이식-체크리스트.md
+  - docs/plans/catchall-역이식-분석-20260806.md
+  - docs/plans/catchall-역이식-쉬운말-20260806.md
+  - docs/plans/APPROVAL_DASHBOARD.md
+  - docs/plans/current.plan.md
+  - docs/plans/current.plan.20260425-step1-5-ga-1-stale.md
 ---
+
+> ★ scope 정합 이력: 초판 scope 는 실제 변경셋과 어긋났다(유령 1건 `enrich-related-nodes.test.ts` ·
+> 미선언 4건). 스스로 켠 scope 대조 게이트의 신뢰 근거가 자기 자신부터 흔들린 셈이라,
+> 독립 리뷰 지적(MINOR)을 받아 **실제 `git status` 와 1:1로 맞췄다**(2026-08-06).
 
 ## 목적
 
-가-0 (스켈레톤 + fixture) ✅ 완료 → 가-1 은 **BATCH-1 (적과전 종합위험, 교재 p.403~434, 32 pages) 실적재**.
+catchall(이음길) 역이식 분석(`catchall-역이식-분석-20260806.md`)이 실측으로 확정한 **현재 결함 3건**을
+수리하고, 데이터 보호 가드를 마저 채운다. **새 기능 0 · 자동 승격 관련 코드 0.**
 
-핵심 전환:
+정본 3종:
 
-- fixture/mock → **실 Claude API + 실 pdfplumber + 실 Vision OCR + 실 D1 INSERT**
-- "상상 adversarial" → **실측 기반 adversarial** (3차 리뷰 결론)
+- 기술 근거 = `catchall-역이식-분석-20260806.md` §3
+- 쉬운 말 = `catchall-역이식-쉬운말-20260806.md`
+- **진행 체크 단일 정본 = `catchall-역이식-체크리스트.md`** (작업 단위마다 **같은 커밋에서** 갱신 의무)
 
-본 plan 은 `tasks/step-1-5-ga-1.gates.yaml` 의 5개 Gate Group(A→B→C→D→E) 진입 절차를 정의한다. CRITICAL RULE #7 에 따라 모든 gate id 가 "pass" 로 명시 기록되기 전 "완료" 선언 금지.
+## 결재 근거
 
-## 기술 선택 근거 (PITR 간단판)
+- 진산 2026-08-06 **"0·1단계 진행"** — 체크리스트 STAGE 0(결재 불요·수리) + STAGE 1(SQL 작성 착수)
+- ★**승인 범위 = SQL 작성·로컬/staging 검증까지.** `wrangler --remote` production 적용은 **별도 게이트**
+  (TR-0/0038 선례 절차 준수. 결재 대시보드 §A 로 재상신)
 
-**선정: Group A 실호출 우선 → B Mock 설계 → C TD 해소 → D 품질 → E 승인 (역순 금지).**
+## 대상 변경
 
-비교:
+### STAGE 0-1·0-2·0-3 — 안전장치 배선 수리 (L3 아님)
 
-- (A) **A→B→C→D→E 순차** ← 선정. 실측 없는 Mock 무가치 (3차 리뷰).
-- (B) C(TD) 먼저 + A/B 병렬 — TD-042 examId 시그니처 변경이 batch-processor 호출부에 영향 → A 실호출 코드와 충돌 가능. 순차가 안전.
-- (C) Group D(품질) 먼저 — typecheck/lint 는 코드 작성 후라야 의미. 부적합.
+| 항목 | 변경                                                                                                                                                                  | 근거                                                                                                                     |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 0-1  | `protect-l3.sh` — ① argv 부재 시 **stdin JSON 폴백** ② `realpath -m` 경로 정규화(`..` 우회 차단) ③ **scope 대조** 신설                                                | 분석 §3-A. 라이브 프로브로 현 상태 `exit 0`(무차단) 확정                                                                 |
+| 0-1b | `quality-gate.sh` — **동일 배선 결함 추가 발견** (`FILE_PATH="${1:-}"` 후 `[[ -z ]] && exit 0`). 같은 stdin JSON 폴백 적용 + Write/Edit/MultiEdit 3서식에서 본문 추출 | 분석 §3-A 와 동근. 즉 **안전장치 2개가 동시에 죽어 있었다** (분석 문서 v1 은 protect-l3 만 지목 — 본 집행에서 확대 확인) |
+| 0-2  | `enforce-review.sh` — **`.review-blocked` 3상태화** (리뷰 완료·인간 결재 대기 = 정지 허용)                                                                            | ★0-1과 동시 필수. 안 하면 "CRITICAL 0이어야 완료" ↔ "완료해야 rm" 정지 루프                                              |
+| 0-3  | `settings.json` — 절대경로 → `$CLAUDE_PROJECT_DIR`, 비표준 `$CLAUDE_FILE_PATH` argv 제거                                                                              | worktree `../ThePick-jeongi` 가 메인 트리 훅을 실행 중                                                                   |
 
-A 선정 이유:
+★ **ThePick 고유 개조 (catchall 판 그대로 쓰면 안 되는 지점)**: catchall 의 scope 파서는 `scope:` **단일행**
+인라인 목록만 읽는다. ThePick 의 plan 서식은 **YAML 블록 리스트**(`scope:` 다음 줄부터 `  - path`)라
+catchall 판을 그대로 이식하면 SCOPE_PATHS 가 0개 → fail-closed 로 **전 L3 경로가 차단**된다.
+→ **두 서식을 모두 읽는 파서로 개조**한다. (분석 문서가 ADAPT 로 분류한 이유)
 
-- A-1 실측이 B-1 MockClaudeClient 의 latency/에러 분포 파라미터 소스 (가-1 gates §B-1 `adversarial_params_source: "Gate Group A 실측값 기반 (추측 금지)"` 명시)
-- C 가 A/B 보다 먼저 들어가면 TD-042 시그니처 변경이 A 호출 코드에 미반영 → 재작성 비용
-- D/E 는 정의상 마지막
+### STAGE 0-4 — 시행일 창 필터 (L3 아님, SELECT 경로)
 
-## 대상 변경 상세
+> ★★ **집행 중 실측 정정 (2026-08-06, production SELECT)** — 분석 문서 §3-B 의 긴급성 주장을 하향한다.
+>
+> | 확인                                                      | 실측값                                                                                                  |
+> | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+> | `knowledge_nodes` 총계 / `valid_from` 채워진 행           | **857 / 0** (`valid_until` 도 0)                                                                        |
+> | 0041 이 지목한 미시행 4노드(LAW-022·023·053·INV-087) 상태 | **전부 `draft`** = 학습자 경로에 이미 미노출                                                            |
+> | `2026.8.15` 언급 + `approved` 노드                        | **LAW-145 단 1건**, 그런데 개정을 _"(시행 2026.8.15 개정: …)"_ 괄호로 **병기** — 현행으로 위장하지 않음 |
+> | `related_nodes` 참조 노드(10문항)의 상태                  | **전부 approved** — draft 누출 0건                                                                      |
+>
+> ⇒ **현재 학습자 오노출은 없다.** 분석 §3-B 의 "학습자가 9일 뒤 시행 내용을 현행으로 배우고 있다"는
+> **과장이었고 본 집행에서 철회**한다(존재 주장을 데이터로 확인하지 않은 채 단정 — 정확히 catchall
+> 실수 로그 2026-08-04 클래스). 남는 것은 **잠재 결함(구조적 공백)** 이며, 그래서 수리는 그대로 하되
+> **production 백필은 하지 않는다**(불필요·불급 + 진산 인증 게이트).
+>
+> ★ 그리고 실측 중 **더 넓은 공백**을 찾았다: RW plan §3-A-2 가 이미 "필터점은 단일이 아님"으로
+> 확증해 둔 (ii) `study/routes.ts` **`enrichRelatedNodes` 는 `is_current_active=1` 만 본다** —
+> 시행일뿐 아니라 **approved 상태조차 확인하지 않는다**. 현재 데이터가 우연히 전부 approved 라
+> 사고가 안 났을 뿐, 학습자 노출 경로에서 draft 가 새는 구조다. **본 단계에서 함께 봉합**한다.
+> (필터점 (iii) vectorize 임베딩 = 정책 결정 필요 → 범위 밖·이월)
 
-### Group A — 외부 계약 실측 smoke (코드 변경 ~50 LoC, 산출물 측정 결과)
+- `APPROVED_NODES_STATUS_CORE` 에 `valid_from`/`valid_until` 창 조건 추가.
+  이 문자열이 **status 도출 단일 진실원**이라 4 호출 측(graph-walk·user-search·keyword·study)에 자동 전파.
+- `user-search.ts:492-499` 의 stale 주석 정정 (0041 이후 "컬럼이 exam_questions 에만 존재"는 사실 아님).
+- **부수 의무**: MATERIALIZED CTE hot path(195→67ms 실측) 앞단 조건 추가 → **속도 재측정**.
+- 시각 기준: KST 고정(`date('now','+9 hours')`) — 시험 도메인은 한국 시행일 기준.
 
-**A-1. Claude API 실 smoke (5~10회)**
+### STAGE 1 — L3: knowledge_edges 가드 + 노드 부활 차단
 
-- 입력: BATCH-1 1페이지 단위 (p.403, p.412, p.420, p.430 등 4종 샘플 + 변형 6회 = 10회)
-- 코드: `apps/batch/src/__manual__/claude-smoke.ts` (수동 실행 스크립트, 반복 사용 자산)
-- 산출: `docs/measurements/claude-api-smoke-{YYYYMMDD}.md` — 응답 shape 표 / stop_reason 분포 / 토큰 실측 / p50·p99 latency / 응답 잘림 케이스 1건 이상 확보
-- 환경: 진산님 ANTHROPIC_API_KEY 주입 (`.dev.vars` 또는 wrangler secret) — **실 비용 발생**
+마이그 **0039** 한 장에 3종 합본 (WS-2b plan 예약 슬롯 재사용, 실측 = 파일 부재 확인):
 
-**A-2. pdfplumber subprocess 실 smoke**
-
-- 입력: `docs/manual/2026년도 이론서_수정본(26.3.31.).pdf` p.403~405
-- 코드: `apps/batch/src/__manual__/pdfplumber-smoke.ts` (이미 `extractPdf` 구현 있을 시 호출만)
-- 산출: `docs/measurements/pdfplumber-smoke-{YYYYMMDD}.md` — 추출 text/table shape / stderr 로그 / 실행 시간
-
-**A-3. Vision OCR 실 smoke (1회)**
-
-- 입력: 적과전 §의 도표 페이지 1장 (VisionTrigger 선별 결과 상위 1건)
-- 코드: 기존 `vision-client` 의 `enableRealCalls=true` 안전 경로
-- 산출: `docs/measurements/vision-ocr-smoke-{YYYYMMDD}.md` — 응답 shape / 토큰 비용 / latency / 추출 정확도(≥80% 검증)
-
-### Group B — Simulation Harness (1000 시드 adversarial)
-
-**B-1. `sim/pipeline-adversarial.ts` 설계**
-
-- MockClaudeClient: A-1 실측 p50/p99 기반 latency 분포, malformed JSON(코드펜스 중복/잘림), timeout, 429, retry-exhaustion
-- MockPDF: 가변 페이지(1~500), 빈 페이지, 표 포함/비포함
-- MockVisionClient: 성공/실패 확률, 잘못된 페이지 응답
-- VirtualClock: token-cost-logger 시간 흐름 통제
-
-**B-2. 1000 시드 반복 + Invariant 6종**
-
-- contract schema-validator 통과 OR 명확한 fail-fast
-- maxRetries 초과 0건
-- node heap < 500MB
-- token-cost-logger 누락 0건 (성공/실패 모두)
-- state-machine 불법 전이 0건
-- qg2-validator Golden 정확성 1000 시드 100% 유지 (float drift 0)
-
-### Group C — Tech-Debt 5건 해소 (코드 변경 ~300 LoC)
-
-| ID     | 핵심 변경                                                                                                                                                                                                                                                                                    | 예상 LoC |
-| :----- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------- |
-| TD-042 | loadDraft/transitionStatus/checkAndIncrementRateLimit 래퍼 1번째 인자 `examId: ExamId` 추가 (Rule 16)                                                                                                                                                                                        | ~80      |
-| TD-043 | withRetry 에서 `AnthropicNonRetryableError` (400/401/403/404/422) 즉시 throw — 토큰 비용 3배 + 14초 낭비 차단                                                                                                                                                                                | ~40      |
-| TD-044 | **scope 확장** (3차 5-페르소나 M-8): (a) draft-loader SELECT→INSERT race → `meta.changes` 기반 실삽입 수 측정, (b) `apps/api/src/progress/routes.ts` `/review` UPSERT atomic counter (`UPDATE ... SET total_reviews = total_reviews + 1`) — Year 1 배포 즉시 영향, draft-loader 와 동일 패턴 | ~90      |
-| TD-045 | migrations/0013 — CONST-900→901 SUPERSEDES 엣지 (Temporal Graph 무결성, 0011 충돌 회피)                                                                                                                                                                                                      | ~30 SQL  |
-| TD-037 | Scheduled 외부 알림 (Cloudflare Email Routing 또는 webhook) — GC 연속 N회 실패 시 운영자 페이저                                                                                                                                                                                              | ~80      |
-
-### Group D — 품질 검증
-
-**D-1**: `pnpm typecheck && pnpm lint && pnpm -r test` 14 워크스페이스 green / 350+ tests PASS
-**D-2**: Guide Level 3 전면 점검 (`Guide/3단계리뷰.md` 1~4단계) → CRITICAL 0 / MAJOR ≤ 3 (TD 이월 명시)
-**D-3**: 4-Pass 독립 에이전트 리뷰 (Surgeon/Architect/Advocate/Contract) — 가-1 전체 변경 대상, 증거 3개+ 반론 1개+
-
-### Group E — 인간 승인 (L3 Final Gate)
-
-E-1 체크리스트:
-
-- Gate A/B/C/D 전부 pass 증거 제시
-- 실 Claude 호출 예상 비용 (BATCH-1 전체 적재 견적)
-- 롤백 전략 (적재 실패 시 status_transitions 기반 복구)
-- 본 plan 의 "## 승인 기록" 섹션 갱신 + 대화 인용
-
-## 비용 견적 (실 Claude 호출)
-
-**Group A smoke 비용 (가-1 진입 직후):**
-
-- A-1: Haiku 10회 × ~3500토큰/회 (입력 ~1500 + 출력 ~2000) = 35K 토큰
-  - 입력 15K × $0.25/1M + 출력 20K × $1.25/1M = **$0.029**
-- A-3: Vision Sonnet 1회 × 이미지 1500 + 출력 1000 토큰
-  - $3/1M × 1.5K + $15/1M × 1K = **$0.020**
-- **소계: ~$0.05** (50원 미만)
-
-**BATCH-1 전체 실적재 (가-1 통과 후 본 적재 시):**
-
-- 32 pages × 페이지당 ~3500 토큰 = 112K 토큰 (Haiku)
-- Vision 추가 도표 1~3장 (Sonnet)
-- **총 견적: ~$0.20~0.50** (300~700원)
-
-⚠️ A-1 실측 후 페이지당 토큰 정확값 기반으로 재계산하여 E-1 체크리스트에 갱신.
+1. `prevent_knowledge_edges_delete` — 전면 ABORT (본체 3테이블은 이미 보유, 엣지만 공백)
+2. `prevent_knowledge_edges_update` — 컬럼 화이트리스트 (`is_active` flip 만 허용 — 0042 동반 은퇴 경로 보존)
+3. **신규** `prevent_knowledge_nodes_reactivation` — `is_current_active` **0→1 차단**
+   (0041 트리거 WHEN 절에 이 컬럼이 미열거 = 현재 양방향 자유. 0013:58-60 이 자인한 "application 레이어 강제"를 기계강제로 승격)
 
 ## 위험 분석
 
-| 위험                                                            | 완화                                                                                                                                                                                                 |
-| :-------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A-1 실호출 비용 폭주 (의도하지 않은 루프)                       | maxRetries 강제 + token-cost-logger 실시간 감시 + smoke 스크립트 호출 횟수 상수 (`SMOKE_CALLS = 10`) 하드코딩 + 진산님 사전 승인 비용 한도 합의                                                      |
-| Group C TD-042 examId 시그니처 변경이 가-0 산출물 회귀 유발     | 시그니처 변경 후 즉시 typecheck → 호출부 전수 갱신. 가-0 시나리오 테스트 350+ 재실행 의무                                                                                                            |
-| TD-045 마이그레이션 0013 — 기존 D1 데이터 손상                  | local-db.ts idempotent 처리 (가-0 에서 확장) + dry-run 먼저. UPDATE 금지 패턴 준수 (INSERT + SUPERSEDES 엣지만). 번호 0013 은 기존 0011_revision_2026_constants_seed / 0012_rate_limits 와 충돌 회피 |
-| B-1 Mock 파라미터를 A 실측 없이 추측 → /simulate 가치 0         | gates.yaml `B-1.adversarial_params_source: "Gate Group A 실측값 기반 (추측 금지)"` 강제. A 미통과 시 B 진입 차단                                                                                     |
-| Vision OCR 추출률 < 80% — A-3 실패                              | 가-1 전체 중단. 도표 처리 전략 재검토 (Phase 2 이월 또는 수동 입력 fallback) → 별도 ADR                                                                                                              |
-| Scheduled 알림(TD-037) Cloudflare Email Routing API 변경 가능성 | Context7 또는 공식 문서로 실제 API 시그니처 확인 후 코드 작성. 추측 금지                                                                                                                             |
-| 4-Pass 자가 리뷰 편향 재발                                      | 독립 에이전트 4~5개 병렬 호출 의무 (`auto-review-protocol.md` 규칙 0). 메인 컨텍스트 직접 4-Pass 실행 = 무효                                                                                         |
+| 위험                                                                | 완화                                                                                                     |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **0-1 적용 즉시 지금까지 통과하던 편집이 차단** → 세션 정지         | 0-2 `.review-blocked` 동시 적용 + 본 plan scope 에 전 대상 파일 선등록 (이 문서가 그 이행)               |
+| catchall scope 파서 그대로 이식 시 **전 L3 차단**                   | 상기 ★ 개조. 음성 실측(`scripts/protect-l3.test.sh`)으로 블록 리스트·인라인 양 서식 통과 확인            |
+| 0-4 가 검색 hot path 회귀                                           | 조건 2개는 인덱스 무관 필터 — 적용 전후 속도 실측 후 기록. 회귀 시 즉시 revert(SELECT 문자열 1곳)        |
+| 0039 부활 차단이 **실수 롤백 경로를 막음**                          | 복구 절차를 "신규 INSERT + 승격"으로만 문서화 (Temporal Graph 원칙 정합). plan·마이그 헤더 양쪽 명시     |
+| 0039 가 기존 운영 경로 파손                                         | Track B 고아 수리는 INSERT-only(ws-2b plan §7 분석) · 0042 정상 flip 통과 확인 · api 780 무회귀 의무     |
+| L3 "진행" 지시를 SQL 작성 승인으로 과잉 해석 (2026-05-29 실수 재발) | ws-2b plan `approved_by` 를 **먼저** 명시 전환 후 SQL 작성. production 적용은 본 plan 범위 밖으로 명문화 |
 
-## 검증 계획
+## 검증 계획 (Binary)
 
-각 Group 종료 시점:
+- [x] **G-S0-1** stdin JSON 만 준 L3 경로 → `exit 2` / argv 형·`..` 우회형·절대경로형 전부 `exit 2`
+      — `scripts/protect-l3.test.sh` §1·5·8
+- [x] **G-S0-2** scope 밖 L3 파일 → `exit 2` (approved_by 채워져 있어도) / scope 안 → `exit 0` — §2
+- [x] **G-S0-3** scope 가 **YAML 블록 리스트**일 때 정상 파싱 — §2 (ThePick 서식 회귀 가드)
+- [x] **G-S0-4** `.review-blocked` 선언 후 정지 허용 / 무효화 — §10·§11(h). ★리뷰 수리로
+      "파일 수" 판정 → **목록 해시** 판정으로 강화(같은 파일 재수정도 재리뷰 요구)
+- [x] **G-S0-5** 미래 `valid_from` → 미노출 / 과거 `valid_until` → 미노출 / **datetime 포맷도 동일 판정** /
+      기존 approved **551 반환 수 무변동 (production 실측 551 = 현 approved 수 일치)**
+- [x] **G-S1-1** `DELETE FROM knowledge_edges` → ABORT — `migration-0039-edges-guard.test.ts`
+- [x] **G-S1-2** 엣지 본문 7컬럼 UPDATE → ABORT / `is_active` flip → 통과
+- [x] **G-S1-3** `is_current_active` 0→1 → ABORT / 1→0 → 통과 / 0041 백필 무회귀
+- [x] **G-S1-4** 전 워크스페이스 무회귀 — api **808**(기준선 780) · batch 332 · quality 86 · web 79 ·
+      formula-engine 359 · parser 179 · learning-modes 135 · shared 66 · srs 35 · admin-web 21 ·
+      ai-adapter 13 · scripts 27 · **E2E 26/26** · 훅 회귀 **38/38** · typecheck·lint·G-1 green
+- [x] **G-REVIEW** 독립 에이전트 리뷰 (`wf_02ed73c4-f29`, 44 에이전트·5.0M tok, 5 렌즈 + 발견별 적대 반증)
+      → 제기 39 · **반증 기각 12** · 생존 27(하향 후 MAJOR 9 / MINOR 18) → **전건 처분**.
+      **CRITICAL 0**(유일 CRITICAL 제기건은 반증에서 MAJOR 로 하향 — 현 데이터 미도달·복구 가능).
 
-- [ ] **Group A 종료**: 3개 measurement 산출물 작성 / 응답 잘림 1건 이상 확보 / Vision 추출 ≥ 80%
-- [ ] **Group B 종료**: 1000 시드 Invariant 0건 위반 / 결정론적 재현 확인 (실패 시드 N → 동일 실패)
-- [ ] **Group C 종료**: TD-042/043/044/045/037 모두 코드 + 테스트 + tech-debt.md 체크박스 ✅
-- [ ] **Group D 종료**: typecheck/lint/test 14 워크스페이스 green / Guide L3 CRITICAL 0 / 4-Pass CRITICAL 0 + 증거 3개+ + 반론 1개+
-- [ ] **Group E 종료**: 진산님 승인 메시지 본 plan 에 인용 기록
+### 성능 재측정 (plan 부수 의무 이행 — production 실측 2026-08-06)
+
+| 경로                          | 변경 전                 | 변경 후             | 비고                                       |
+| ----------------------------- | ----------------------- | ------------------- | ------------------------------------------ |
+| `enrichRelatedNodes` (id 7건) | 0.84 ms / rows_read 857 | **2.35 ms / 4,178** | +1.5 ms · 결과 집합 동일(7/7)              |
+| approved 전량 도출            | —                       | **2.80 ms / 5,571** | 반환 **551** = 현 approved 수 일치(무회귀) |
+| `status_transitions` 규모     | —                       | 551행(전부 node)    | 윈도우 대상                                |
+
+판정: 절대 비용 1.5 ms 증가는 hot path 예산 내로 수용. **부채 기록** — 코어가 후보 한정 전에
+`status_transitions` 전량을 윈도우 처리하므로, 전이 이력이 수천 행대로 커지면 후보 id 를 서브쿼리에
+밀어넣는 형태로 재설계가 필요하다(현재는 단일 진실원 유지를 우선).
 
 ## 롤백 전략
 
-- **Group A**: smoke 스크립트는 `__manual__/` 격리. 단순 삭제 또는 보존 (자산화 가능). DB 영향 0
-- **Group B**: `sim/` 디렉토리 신규 — 단순 삭제
-- **Group C**:
-  - TD-042: examId 시그니처 revert (호출부 전수). 영향 큰 변경이므로 Group 내 단위 커밋 필수
-  - TD-043: withRetry 분기 revert (단일 함수)
-  - TD-044: meta.changes 사용 revert
-  - TD-045: D1 migrations idempotent 설계로 재실행 안전. 롤백 시 `DELETE FROM knowledge_edges WHERE relation = 'SUPERSEDES' AND created_at >= '{deploy_time}'` (시간 기반)
-  - TD-037: Scheduled 핸들러 분기 revert
-- **BATCH-1 적재 실패 시 (가-1 본 적재 단계, E-1 통과 후)**: status_transitions 테이블의 draft 상태 노드 전수 삭제 후 재실행. SUPERSEDES 엣지는 보존(과거 운영 데이터 무관)
+- 0-1~0-3: 훅/설정 파일 revert (DB 영향 0)
+- 0-4: `APPROVED_NODES_STATUS_CORE` 문자열 1곳 revert
+- 0039: **production 미적용 상태**이므로 파일 삭제로 롤백. 적용 후라면 `DROP TRIGGER` 3종
 
-## 범위 외 (가-2 또는 Phase 2 이월)
+## 범위 외 (명시 이월)
 
-- BATCH-2~7 적재 (가-2~가-7 별도 plan)
-- Phase 2 FSRS v4.5 알고리즘 본격 도입
-- Phase 2 출처 추적성 `citations` 구조 본격 설계 (수험자 "근거 보기" UX)
-- Phase 2 문제 자동 생성기 + 근거 역방향 검증
-- SLM/LoRA 도입 (2027-04 재검토 — 동결)
-
-## 검토 흡수 — 3차 5-페르소나 Critical 5건 (2026-04-25)
-
-선행 산출물: `.claude/reviews/review-20260425-204720-step1-5-ga-1-mid-level3.md`
-
-옵션 A 4건 즉시 수정 + 옵션 B 5건 plan 보강 (코드 변경 0). 옵션 A 후속 검증: `review-20260425-211626-step1-5-ga-1-option-a-fix.md`.
-
-### B-1. C-3 IndexedDB → D1 sync 코드 0건 (BE C-1) — Phase 2 명시 이월
-
-- 본질: `apps/web/src/lib/db.ts` 헤더 "9 stores mirroring D1 tables for offline-first PWA" 가 양방향 mirroring 으로 보이나 실제로는 단방향 read. `offlineActions` 큐는 schema 만 정의 / enqueue/replay 0건.
-- 처리: `apps/web/src/lib/db.ts:1-12` 헤더 정정 (단방향 read 명시 + Phase 2 sync-engine 모듈 신설 예고).
-- 학습자 진도 무결성 보장 시점: Phase 2 진입 직전 별도 plan. 현 가-1~가-7 본 적재 동안 학습자 화면 자체가 Phase 2 책임이라 본 단계 영향 없음.
-
-### B-2. C-4 admin status 전이 API endpoint 부재 (BE C-2) — 가-1 Group B 책임 명시
-
-- 본질: `apps/admin-web/src/components/ContentQueue.tsx` 의 `onStatusChange` prop 정의됨 / `apps/admin-web/src/pages/index.astro:38-42` caller 비어 있음. `apps/api/src` 에 `POST /api/admin/transitions` 라우트 0건. BATCH-1 적재 후 검수 차단.
-- 처리: 가-1 **Group B (Simulation Harness)** 의 부산물로 admin transition API endpoint 작성 책임 명시. Group B 완료 정의에 추가:
-  - **B-3 (신규)**: `POST /api/admin/transitions` 라우트 + admin-web fetch 호출자 — BATCH-1 적재 직후 검수 가능 상태 보장. (LoC ~60)
-- 또는 별도 step 분리 — 진산님 결정 영역. 본 plan 은 "Group B 책임" 으로 우선 기록. 분리 시 plan 갱신.
-
-### B-3. C-5 운영 회로 부재 (DO OP-C-1 + OP-C-2) — Group D 진입 plan 보강
-
-- 본질: Workers Logs 알림 도달 경로 0 + GD 케이스 KV 폴백 0. `apps/api/wrangler.toml:49-51` `[observability]` 만 enable / `apps/api/src/middleware/retry.ts:11-14` "KV 폴백" 주석만. 단일 벤더 원칙 (메모리 등록) 준수 필요.
-- 처리: Group D **D-4 (신규)** 추가:
-  - D-4-1: `apps/api/wrangler.toml` 에 `analytics_engine_datasets` binding + scheduled 핸들러 `env.TELEMETRY.writeDataPoint(...)` 1줄 추가 (GC 실패 카운터 + deletedCount). (LoC ~10)
-  - D-4-2: Tail Worker 별도 작성 — error level 만 선별 → Email Routing 발송 (TD-037 Discord webhook 권장에서 **Email Routing 으로 재선택** — 단일 벤더 원칙). 별도 Worker 1개 (LoC ~50)
-  - D-4-3: read-only 핵심 테이블 (`knowledge_nodes`, `formulas`, `constants`) KV 폴백 활성화 — `retry.ts` 주석 코드화. TTL 24h, key=`{table}:{id}`. (LoC ~80)
-  - 통과 기준: 503 상황 시뮬 시 KV 폴백 응답 정상 + 임의 GC 실패 시 Email 도달 검증
-
-### B-4. M-8 progress lost-update race — TD-044 scope 확장
-
-- 본 plan §Group C 표 TD-044 행에 직접 반영 (위 §Group C 표 갱신 — `apps/api/src/progress/routes.ts` `/review` UPSERT atomic counter 추가 명시).
-
-### B-5. BE C-4 Year 2 백필 SQL 부재 — 명시 이월
-
-- 본질: ADR-007 §"Year 2 마이그레이션 0005" 가 docs 안에만 존재. 실제 SQL backfill 템플릿 0건. `prevent_X_update` 트리거가 `ALTER TABLE ADD COLUMN NOT NULL` 차단 — Year 2 진입 시 발견 위험.
-- 처리: `migrations/_year2_simulation/` 디렉토리 신설 (가-1 Group C 종결 시점) — 시뮬 fixtures (1년차 100행) + backfill SQL 스켈레톤 + golden test 1건. **Phase 2 종료 전 작성 의무**. 가-1 본 작업 외, Phase 1 후반전 별도 plan.
-
-## 검토 흡수 — BATCH 적재 워크플로우 재정의 (2026-04-25 진산님 결정)
-
-진산님 결정: **BATCH 적재 = Claude Code (Opus 4.7) 직접 처리** (본 프로젝트 Claude API 호출이 아닌 대화 세션 내 처리). 별도 메모리 등록 + 로드맵 작성:
-
-- `project_batch_load_workflow.md` (메모리) — 진산님 트리거 키워드 + Claude 자동 진행 절차
-- `docs/plans/batch-loadmap.md` (체크리스트 로드맵) — 14 BATCH × 6 Layer
-
-### 가-1 plan 영향 (BATCH-1 시범 적재 후 정밀 plan 재구성)
-
-| 가-1 항목                                     | 변경                                                                             |
-| :-------------------------------------------- | :------------------------------------------------------------------------------- |
-| Group A-1 (Claude API smoke)                  | **운영 RAG 모델 검증으로 좁힘** — 학습자 트래픽용 Haiku + Prompt caching         |
-| Group A-3 (Vision OCR smoke)                  | **제거 검토** — 도표 페이지 Claude Code 직접 처리 (1M 컨텍스트 이미지 입력)      |
-| Group B (1000 시드 simulation)                | **운영 RAG 용으로 좁힘** (BATCH adversarial mock 제거)                           |
-| `apps/batch/src/adapters/anthropic-client.ts` | **운영 RAG 용으로 이동** (apps/api 또는 별도)                                    |
-| `apps/batch/src/__manual__/cost-cap.ts`       | **운영 cost-cap 으로 승격**                                                      |
-| `packages/parser/src/batch-processor.ts`      | **대폭 단순화** — Claude SDK 호출 제거, "Claude Code 가 출력한 JSON 받는 loader" |
-
-**가-1 plan 재구성 PR 은 BATCH-1 시범 적재 후 별도 step**.
-
-## 검토 흡수 — 운영 RAG 트래픽 모니터링 도구 (진산님 명시 신규 요구, 2026-04-25)
-
-진산님 명시: "예상치 못한 트래픽 과다 발생 가능성 → 모니터링 도구 별도 개발 필요".
-
-D-4 (운영 회로) 가 **장애 알림** 위주라면, 본 항목은 **트래픽 / 비용 / 이상 패턴** 가시화. 가-1 Group D D-5 (신규) 또는 별도 step 검토 필요:
-
-### D-5 (신규) — 트래픽 / 비용 모니터링 도구
-
-| 서브 게이트 | 내용                                                                                                                                                                  | 단일 벤더 (메모리 정합)                                         |
-| :---------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------- |
-| D-5-1       | **일별 LLM 호출 횟수 + 누적 비용 대시보드** — 학습자별 / 시간별 분포                                                                                                  | Cloudflare Analytics Engine writeDataPoint + 자체 SQL 쿼리 UI   |
-| D-5-2       | **임계값 알림** — 시간당 호출 수 / 일별 비용이 임계값 초과 시 진산님 즉시 알림                                                                                        | Cloudflare Email Routing (D-4-2 와 통합)                        |
-| D-5-3       | **이상 패턴 감지** — 단일 학습자 / IP 가 분당 10+ 호출 또는 같은 query 반복 시 일시 차단                                                                              | Workers KV 카운터 + rate-limit 로직 (apps/api 기존 자산 재사용) |
-| D-5-4       | **운영 cost-cap 승격** — `apps/batch/src/__manual__/cost-cap.ts` 를 `apps/api/src/middleware/operating-cost-cap.ts` 로 이동 + 일별 cap (예: $50/일) 도달 시 일시 차단 | 본 프로젝트 자체 코드 (Cloudflare 외부 의존 0)                  |
-| D-5-5       | **사용자 노출 — Graceful Degradation** — 트래픽 차단 시 "오늘 학습 분량을 다 사용하셨습니다" 같은 친절한 안내 (ADR-008 정합)                                          | 코드 차원                                                       |
-
-### 진입 시점
-
-- 학습자 화면 자체가 Phase 3 영역이라 운영 RAG 호출도 Phase 3 진입 시 발생
-- 따라서 D-5 는 **Phase 3 진입 직전** plan 필수 항목으로 명시 이월
-- 가-1 Group D D-4 (운영 회로 알림 인프라) 적재 시 D-5 의 D-5-1/D-5-2 일부 선반영 가능 (Analytics Engine + Email Routing 공유)
-- 본 plan §위험 분석 기존 행 외에 신규 행 추가 — 트래픽 폭증 시나리오 (DDoS / 학습자 burst / 무한 루프 client)
-
-## 진행 권장 단계 (Group A 진입 시점부터)
-
-1. 본 plan 에 진산님 승인 기록 (E 진입 전 사전 승인이 아닌 **plan 자체 승인** — Group A 진입 허가)
-2. **Group A 진입**: A-1 → A-2 → A-3 순차 (의존 없음, 병렬 가능하나 비용 모니터링 위해 순차 권장)
-3. A 종료 후 measurement 산출물 진산님 검토 → B 진입 허가
-4. **Group B 진입**: B-1 (Mock 설계) → B-2 (1000 시드 실행)
-5. B 종료 후 **Group C 진입**: TD-042 → TD-043 → TD-044 → TD-045 → TD-037 (의존 순서)
-6. C 종료 후 **Group D 진입**: D-1 → D-2 → D-3
-7. D 종료 후 **Group E 진입**: 본 plan E-1 체크리스트 모두 충족 → 진산님 최종 승인 (BATCH-1 본 적재 착수 허가)
+- STAGE 2 `source_quote` 축 — 진산 별도 1줄 (대시보드 §A #7)
+- STAGE 3 검증 엔진 이식 · STAGE 4 정답지·자동화 준비
+- 0040 (WS-6c mock) — 별건. 체크리스트 1-3 에서 처리 여부만 결정
+- `constants` L3 패턴의 과잉 매칭(무앵커 substring) — 관측만. 패턴 변경 = 정책 변경이라 수리 범위 밖
 
 ## 승인 기록
 
-- TBD — 본 plan 에 대한 진산님 승인 메시지 인용 (Group A 진입 허가)
-- TBD — Group D 종료 후 E-1 체크리스트 충족 시 BATCH-1 본 적재 착수 허가
+- 2026-08-06 진산 **"0·1단계 진행"** — STAGE 0 착수 + STAGE 1 SQL 작성 착수 승인
+- (대기) 0039 production 적용 = 별도 결재

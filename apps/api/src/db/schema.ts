@@ -202,6 +202,21 @@ export const knowledgeNodes = sqliteTable(
      * (approved-nodes-sql.ts raw SQL 소비). NC-1 드리프트 동기 (design-audit RC-5, 2026-06-11).
      */
     isCurrentActive: integer('is_current_active').notNull().default(1),
+    /**
+     * 시행시점 축 (migrations/0041, production 적용 2026-07-12) — **NC-1 드리프트 동기 2026-08-06**.
+     *
+     * 0041 이 컬럼을 추가했으나 본 파일 동기가 누락돼 있었고, 2026-08-06 에 이 두 컬럼이
+     * `approved-nodes-sql.ts` 의 **학습자 노출 핵심 필터**가 되면서 드리프트 영향이 커졌다.
+     *
+     * 값 규약 = 반개구간 `[valid_from, valid_until)` · NULL = 무제한 ·
+     * 비교는 `date()` 정규화(포맷 혼입 내성) — 정본 = `buildEffectivityWindowSql`.
+     * 쓰기 규약 = 0041 가드가 **NULL→값 1회 백필만** 허용(값→값·값→NULL 차단).
+     */
+    validFrom: text('valid_from'),
+    validUntil: text('valid_until'),
+    /** law.go.kr DRF 출처 앵커 (migrations/0041) — NULL→값 1회 백필만 허용. */
+    sourceUrl: text('source_url'),
+    sourceArticleCode: text('source_article_code'),
     truthWeight: integer('truth_weight').notNull().default(5),
     /**
      * @deprecated 현재 상태 조회에 **사용하지 말 것** (ADR-010).
@@ -240,6 +255,19 @@ export const knowledgeNodes = sqliteTable(
 // 2. Knowledge Edges
 // ---------------------------------------------------------------------------
 
+/**
+ * knowledge_edges — 보호/허용 컬럼 구분 (migrations/0039, 2026-08-06 · shape 무변경 주석 동기).
+ *
+ * ⚠️ **0039 는 아직 production 미적용이다** (SQL 작성 승인만 받은 선작성본).
+ *   아래 "차단" 서술은 **파일 기준 계약**이지 현 라이브 상태가 아니다 — 오늘 production 에서는
+ *   엣지 DELETE/UPDATE 가 여전히 통과한다. 적용 = ws-2b plan §8 마지막 행 결재 후.
+ *
+ * - **허용**: `isActive` 플립만 (E0-2 류 그래프 수리·stale 엣지 비활성화의 정당 경로).
+ * - **차단**: 그 외 7컬럼 UPDATE 전부 + DELETE 전면 (`prevent_knowledge_edges_update` /
+ *   `prevent_knowledge_edges_delete`). 변경이 필요하면 **새 엣지 INSERT**.
+ * - ★ **신규 컬럼 추가 시 0039 의 WHEN 절에 반드시 등재**한다. 미등재 컬럼은 무음 통과한다
+ *   (0041 이 겪은 것과 동일 함정 — 열거식 화이트리스트의 구조적 대가).
+ */
 export const knowledgeEdges = sqliteTable('knowledge_edges', {
   id: text('id').primaryKey(),
   fromNode: text('from_node')

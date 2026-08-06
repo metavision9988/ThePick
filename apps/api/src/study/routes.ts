@@ -63,6 +63,7 @@ import {
   type FsrsCardState,
   type FsrsRating,
 } from '@thepick/srs';
+import { buildApprovedNodesQuery } from '../search/approved-nodes-sql.js';
 import { requireAuth, type RequireAuthVariables } from '../auth/middleware/require-auth.js';
 import { writeTelemetryEvent } from '../telemetry/write-helper.js';
 import { D1_UNIQUE_CONSTRAINT_PATTERN, withRetry } from '../middleware/retry.js';
@@ -526,6 +527,15 @@ function parseCalcVariables(
  *   동반 갱신하라 (측정 정답률이 production surface 파싱과 어긋나면 G-S5
  *   해석이 왜곡). 단 `RELATED_NODES_MAX` 절단은 study 런타임 surface 상한
  *   으로, 측정 측은 분모 인위 축소 방지 위해 의도적 미적용(비동치 1건).
+ *
+ * ★ **노출 계약 봉합 (2026-08-06, 역이식 STAGE 0-4)**: 본 조회는 그전까지 `is_current_active = 1`
+ *   **하나만** 걸고 있었다 — 즉 **approved 여부도, 시행시점도 확인하지 않았다.** 학습자가 보는
+ *   sourceCitation 경로(GET /next · POST /grade)에 draft·미시행 노드가 노출될 수 있는 구조였다.
+ *   (실측 2026-08-06: production 의 related_nodes 참조 10문항이 *우연히* 전부 approved 라 실사고는
+ *   0건이었으나, 승격 전 노드를 참조하는 문항이 하나만 생겨도 즉시 현실화된다.)
+ *   → `approved-nodes-sql.ts` **단일 진실원**(status + is_current_active + 시행시점 창)으로 교체.
+ *   근거 = revision-watch.plan.md §3-A-2 "필터점은 단일이 아님"(필터점 ii) + G-RW-1.
+ *   ※ 필터점 (iii) `vectorize/routes.ts` 임베딩은 미시행 배제 정책 결정이 선행 = 본 범위 밖·이월.
  */
 async function enrichRelatedNodes(
   db: D1Database,
@@ -553,13 +563,26 @@ async function enrichRelatedNodes(
   try {
     const result = await db
       .prepare(
-        `SELECT id, name, type, page_ref, book_page
-           FROM knowledge_nodes
-          WHERE id IN (${placeholders})
-            AND is_current_active = 1`,
+        buildApprovedNodesQuery({
+          projection: 'kn.id, kn.name, kn.type, kn.page_ref, kn.book_page',
+          candidateFilter: `kn.id IN (${placeholders})`,
+        }),
       )
       .bind(...limited)
       .all<KnowledgeNodeRow>();
+    // ★독립 리뷰 수리 (2026-08-06): 요청 N개 중 M개만 돌아오는 것은 **정상 경로가 아니다**.
+    //   승인 전·미시행·은퇴 노드를 참조하는 문항이 있다는 뜻이고, 학습자는 출처가 조용히
+    //   빠진 화면을 본다. 무음 실패 금지(fail-loud) 규율에 따라 관측 가능하게 남긴다.
+    //   차단이 아니라 로깅인 이유: 남은 출처라도 보여주는 편이 학습자에게 낫고, 처분은
+    //   콘텐츠 트랙(참조 교정 또는 승격)의 몫이다.
+    if (result.results.length !== limited.length) {
+      const returned = new Set(result.results.map((r) => r.id));
+      logger.warn('relatedNodes 일부가 서빙 자격 미달로 제외됨', {
+        requested: limited.length,
+        served: result.results.length,
+        excluded: limited.filter((id) => !returned.has(id)),
+      });
+    }
     return result.results.map((row) => ({
       id: row.id,
       name: row.name,

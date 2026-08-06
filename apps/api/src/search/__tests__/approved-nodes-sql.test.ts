@@ -12,8 +12,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   APPROVED_NODES_STATUS_CORE,
+  TODAY_KST_SQL,
   buildApprovedNodesQuery,
   buildApprovedNodesMaterializedCte,
+  buildEffectivityWindowSql,
 } from '../approved-nodes-sql';
 import {
   createD1FromAllMigrations,
@@ -72,12 +74,36 @@ describe('approved-nodes-sql — CO-4 단일 진실원', () => {
   });
 
   it('candidateFilter 미지정/공백 → 코어에서 정확히 종료 (graph-walk anchor = 전체 approved)', () => {
-    // 후보 한정 미부착 = SQL 이 status 코어 끝(approved 술어)에서 정확히 종료.
+    // 후보 한정 미부착 = SQL 이 status 코어 끝에서 정확히 종료.
+    // ★ 2026-08-06 (STAGE 0-4): 코어 말미가 approved 술어 → **시행시점 창**으로 바뀌었다.
+    //   계약이 의도적으로 확장된 것이라 기대값도 함께 옮긴다.
     const noFilter = buildApprovedNodesQuery({ projection: 'kn.id' });
     const blankFilter = buildApprovedNodesQuery({ projection: 'kn.id', candidateFilter: '   ' });
-    expect(noFilter.endsWith("COALESCE(latest.to_status, 'draft') = 'approved'")).toBe(true);
-    expect(blankFilter.endsWith("COALESCE(latest.to_status, 'draft') = 'approved'")).toBe(true);
+    const coreTail = `(kn.valid_until IS NULL OR date(kn.valid_until) > ${TODAY_KST_SQL})`;
+    expect(noFilter.endsWith(coreTail)).toBe(true);
+    expect(blankFilter.endsWith(coreTail)).toBe(true);
     expect(noFilter).toBe(blankFilter);
+    // approved 술어는 그대로 살아 있어야 한다 (확장이지 대체가 아님)
+    expect(noFilter).toContain("COALESCE(latest.to_status, 'draft') = 'approved'");
+  });
+
+  it('★시행시점 창 — valid_from 포함·valid_until 미포함 반개구간 + NULL 무제한 (STAGE 0-4)', () => {
+    const sql = buildApprovedNodesQuery({ projection: 'kn.id' });
+    // valid_from 포함 (<=), valid_until 미포함 (>) — [from, until) 반개구간
+    // ★date() 정규화: 포맷이 date/datetime 혼입돼도 경계가 하루 어긋나지 않는다(독립 리뷰 수리)
+    expect(sql).toContain(`date(kn.valid_from) <= ${TODAY_KST_SQL}`);
+    expect(sql).toContain(`date(kn.valid_until) > ${TODAY_KST_SQL}`);
+    // NULL = 무제한 (현 production 857/857 NULL → 오늘자 효과 0 = 무회귀)
+    expect(sql).toContain('kn.valid_from IS NULL');
+    expect(sql).toContain('kn.valid_until IS NULL');
+    // KST 보정 — UTC 로 판정하면 시행 당일 9시간을 미시행으로 오판한다
+    expect(TODAY_KST_SQL).toBe(`date('now','+9 hours')`);
+  });
+
+  it('시행시점 창 fragment 는 별칭을 주입받는다 (study 경로 재사용 계약)', () => {
+    expect(buildEffectivityWindowSql('kn')).toContain('kn.valid_from');
+    expect(buildEffectivityWindowSql('n')).toContain('n.valid_until');
+    expect(buildEffectivityWindowSql('n')).not.toContain('kn.');
   });
 
   it('MATERIALIZED CTE 는 D-2 `AS MATERIALIZED` 강제 + 코어 포함', () => {

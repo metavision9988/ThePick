@@ -5,22 +5,22 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Edit|Write",
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "bash /home/soo/ClaudePro/ThePick/.claude/hooks/protect-l3.sh \"$CLAUDE_FILE_PATH\""
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-l3.sh\""
           },
           {
             "type": "command",
-            "command": "bash /home/soo/ClaudePro/ThePick/.claude/hooks/quality-gate.sh \"$CLAUDE_FILE_PATH\""
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/quality-gate.sh\""
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "Write|Edit",
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
         "hooks": [
           {
             "type": "command",

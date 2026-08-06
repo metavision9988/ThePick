@@ -2,9 +2,9 @@
 phase: master-remediation WS-2 (RC-1)
 step: WS-2b — knowledge_edges UPDATE/DELETE 가드 트리거 신설
 risk_level: L3 (DB 스키마/트리거 마이그레이션)
-approved_by: TBD — 결재 완료 범위 = "plan 작성 착수"만 (결재 #3 (a), 진산 2026-07-02). plan 승인·SQL 작성·집행 승인 = §8 결재란 별도
+approved_by: 진산 (2026-08-06, "0·1단계 진행") — **SQL 작성 착수까지** 승인. production 집행 승인은 §8 마지막 행 = 여전히 대기. (선행 = 결재 #3 (a) plan 작성 착수, 진산 2026-07-02)
 scope:
-  - migrations/0039_knowledge_edges_update_delete_guard.sql (슬롯 예약 — ★SQL 미작성, §8 결재 후)
+  - migrations/0039_knowledge_edges_guard_and_node_reactivation.sql (★2026-08-06 파일명 변경 — 아래 Amendment 참조)
   - apps/api/src/__tests__/scenarios/migration-0039-edges-guard.test.ts (SQL 과 동시 작성 — 0038 테스트 선례 위치)
   - apps/api/src/db/schema.ts (knowledgeEdges 주석 동기만 — shape 무변경, NC-1 영향 0)
 related:
@@ -21,6 +21,28 @@ related:
 > `MASTER_PLAN.md:132`). RULE #5: 본 문서는 사실 + 선택지 + 권고 — 채택 = 진산.
 
 > ★ 슬롯 상호 참조 (2026-07-02 리뷰 MAJOR-6): 본 plan = **0039** / `ws-6c-mock-exam-questions.plan.md` = **0040** 재번호. SQL 작성 시점 migrations/ 재실측 의무.
+
+## Amendment (2026-08-06) — SQL 작성 착수 + 노드 부활 차단 합본
+
+> 원문은 보존한다. 아래는 진산 **"0·1단계 진행"**(2026-08-06) 결재에 따른 개정 주석이다.
+
+1. **슬롯 재실측 이행** (§ 상호참조 의무): `ls migrations/` 실측 = `0038` 다음이 `0041`.
+   **0039·0040 은 파일 부재**(예약만) — 슬롯 충돌 없음 확인. 아울러 결재 대시보드 §A #3 이
+   이 두 건을 _"선작성·독립검증 완료분"_ 으로 표기하고 있었으나 **사실이 아니었고**, 같은 날
+   "SQL 작성 착수 승인"으로 정정했다.
+
+2. **범위 확대 — 노드 부활(0→1) 차단 합본**. 파일명 `0039_knowledge_edges_guard_and_node_reactivation.sql`.
+   - 사유: `0041` 이 재구축한 `prevent_knowledge_nodes_update` WHEN 절에 **`is_current_active` 가
+     열거돼 있지 않다** → `1→0`(은퇴)뿐 아니라 **`0→1`(부활)도 자유 통과**한다. 즉 개정으로 은퇴시킨
+     구본이 UPDATE 한 줄로 되살아난다. `0013:58-60` 이 _"방어: application 레이어 강제"_ 라고
+     자인해 둔 지점을 기계강제로 승격하는 것이다.
+   - 같은 파일에 합본하는 근거: 동일 클래스(Temporal Graph 보호 가드) · 동일 결재 단위 ·
+     0039 가 어차피 신규 파일이라 추가 슬롯 소모가 없음. 근거 문서 =
+     `docs/plans/catchall-역이식-분석-20260806.md` §3-C + `catchall-역이식-체크리스트.md` 1-2.
+   - **복구 절차 제약(신설)**: 부활 차단은 "실수 롤백" 경로를 막는다. 은퇴를 되돌리려면
+     **신규 INSERT + 승격**으로만 한다(Temporal Graph 원칙 정합). 0039 헤더에도 명시.
+
+3. **§8 결재란 갱신** — SQL 작성까지 승인, production 집행은 미승인 유지(아래 §8 참조).
 
 ## 1. 목적 (1~2 문장)
 
@@ -161,12 +183,16 @@ default-deny (`prevent_exam_questions_body_update`, production 적용 ☑ 2026-0
 ## 8. 결재란 (RULE #5 — SQL 승인은 plan 승인과 별도)
 
 ```
-[ ] plan 승인 (본 문서 §1~§7 + D-1/D-2 채택안 확정)
-[ ] D-1: 트리거 설계 = A안 (권고) / B안
-[ ] D-2: condition/priority = (a) ABORT (권고) / (b) 허용
-[ ] SQL 작성 승인 (migrations/0039 + 테스트 — 작성 후 4-Pass·preview 검증까지)
-[ ] production 집행 승인 (§7 시퀀스 — Track B 묶음 여부 포함, 진산 Cloudflare 인증)
+[x] plan 승인 (본 문서 §1~§7 + D-1/D-2 채택안 확정)          — 진산 2026-08-06 "0·1단계 진행"
+[x] D-1: 트리거 설계 = A안 (권고) ← 채택                      — 컬럼별 IS NOT 화이트리스트
+[x] D-2: condition/priority = (a) ABORT (권고) ← 채택
+[x] SQL 작성 승인 (migrations/0039 + 테스트)                  — 진산 2026-08-06, 위 Amendment 범위 포함
+[ ] production 집행 승인 (§7 시퀀스 — Track B 묶음 여부 포함, 진산 Cloudflare 인증)  ← ★여전히 대기
 ```
+
+> ★ **범위 경계 명시**: 2026-08-06 승인은 **SQL 작성·로컬 검증까지**다.
+> `wrangler d1 migrations apply --remote` 는 **미승인** — 별도 상신(결재 대시보드 §A).
+> (2026-05-29 실수 로그 재발 방지: 모호한 "진행" 지시를 집행 승인으로 확대해석하지 않는다.)
 
 ## 9. 위험 분석 / 롤백
 

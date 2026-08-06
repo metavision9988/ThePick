@@ -3,7 +3,9 @@
  *
  * 근거: docs/plans/graph-walk-poc.plan.md §3 (Binary Gates), §4 S1+S3.
  * 검증 환경: 실 node:sqlite (createD1FromSqlite) — mocked 아님. 적용 migration
- *   = SCENARIO_MIGRATIONS (0001~0019 + 0028~0037, 비연속 — d1-from-sqlite.ts:44).
+ *   = SCENARIO_MIGRATIONS (d1-from-sqlite.ts — ★목록을 여기 복제하지 않는다. 2026-08-06 에
+ *     0021~0027·0038·0039·0041·0042·0044 가 편입되면서 구 서술 '0001~0019 + 0028~0037' 이 stale
+ *     이 됐다. 현행 목록은 그 배열이 정본이고, 드리프트는 scenario-migrations-drift.test.ts 가 잡는다).
  *   graph-walk 의존 트리거(status_transitions 0010 / is_current_active 0013 /
  *   temporal·SUPERSEDES 0014 / draft-only 0018 / page_ref 0019) 전부 포함 →
  *   진짜 SQL 순회 검증 (4-Pass Pass1 M-3 흡수: 헤더 사실 정정).

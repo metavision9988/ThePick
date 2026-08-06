@@ -105,6 +105,23 @@ function seedNode(id: string, name = '테스트 노드', type = 'CONCEPT', bookP
     .run(id, type, name, String(bookPage), bookPage, bookPage);
 }
 
+/**
+ * 노드를 approved 로 승격 (status_transitions INSERT — Hard Limit 준수: 본문 UPDATE 아님).
+ *
+ * ★ 2026-08-06 (역이식 STAGE 0-4): 그전까지 enrichRelatedNodes 가 `is_current_active=1` 만 봐서
+ *   **draft 노드도 학습자 출처 표면에 그대로 나왔고**, 그래서 이 헬퍼 없이 테스트가 통과했다.
+ *   이제 approved 도출(단일 진실원)을 타므로 승격이 명시적으로 필요하다 —
+ *   즉 이 헬퍼의 존재 자체가 "학습자에게는 승인된 것만 보인다"는 계약의 표현이다.
+ */
+function approveNode(id: string): void {
+  ctx.raw
+    .prepare(
+      `INSERT INTO status_transitions (id, target_type, target_id, from_status, to_status, reviewer_id)
+       VALUES (?, 'node', ?, 'draft', 'approved', 'test-approver')`,
+    )
+    .run(`st-${id}`, id);
+}
+
 function seedExamQuestion(params: {
   id: string;
   year?: number;
@@ -409,6 +426,8 @@ describe('GET /api/study/next', () => {
     seedUser('u1', 'u1@test.com');
     seedNode('CONCEPT-001', '보험가액', 'CONCEPT', 100);
     seedNode('LAW-007', '농어업재해보험법 제11조', 'LAW', 50);
+    approveNode('CONCEPT-001');
+    approveNode('LAW-007');
     seedExamQuestion({
       id: 'eq-with-refs',
       examType: '2nd',
@@ -428,6 +447,98 @@ describe('GET /api/study/next', () => {
     });
     expect(q.sourceCitations.manualPages).toEqual([50, 100]);
     expect(q.sourceCitations.lawArticles).toContain('50');
+  });
+
+  // ── ★ 노출 계약 음성 실측 (2026-08-06, 역이식 STAGE 0-4) ────────────────────
+  // 수리 전 enrichRelatedNodes 는 `is_current_active=1` 만 봤다. 즉 미승인(draft)·미시행 노드가
+  // 학습자 출처 표면(GET /next · POST /grade sourceCitation)에 그대로 나갈 수 있었다.
+  // production 데이터가 *우연히* 전부 approved 라 사고가 안 났을 뿐이므로, 그 우연에 기대지 않도록
+  // 부정 케이스를 상주시킨다. 규율: 가드는 만든 즉시 고의로 깨서 red 를 확인한다.
+  it('★draft 노드는 학습자 출처에 노출되지 않는다 (승인 전 유출 차단)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedNode('CONCEPT-001', '승인된 개념', 'CONCEPT', 100);
+    approveNode('CONCEPT-001');
+    seedNode('CONCEPT-999', '미승인 개념', 'CONCEPT', 777); // 승격 없음 = draft
+    seedExamQuestion({
+      id: 'eq-draft-leak',
+      examType: '2nd',
+      relatedNodes: ['CONCEPT-001', 'CONCEPT-999'],
+    });
+    const res = await fetchAs('u1', '/next?examType=2nd');
+    const body = (await res.json()) as StudyResponseBody;
+    const q = body.questions![0];
+    expect(q.relatedNodes.map((n) => n.id)).toEqual(['CONCEPT-001']);
+    expect(q.sourceCitations.manualPages).toEqual([100]); // 777 = draft 페이지, 새면 안 된다
+  });
+
+  it('★시행 전(valid_from 미래) 노드는 학습자 출처에 노출되지 않는다', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedNode('CONCEPT-001', '현행 개념', 'CONCEPT', 100);
+    approveNode('CONCEPT-001');
+    seedNode('CONCEPT-888', '미시행 개정 개념', 'CONCEPT', 888);
+    approveNode('CONCEPT-888');
+    // 0041 백필 경로(NULL→값 1회)로 시행일을 미래로 스탬프
+    ctx.raw
+      .prepare(`UPDATE knowledge_nodes SET valid_from = '2999-01-01' WHERE id = ?`)
+      .run('CONCEPT-888');
+    seedExamQuestion({
+      id: 'eq-future-node',
+      examType: '2nd',
+      relatedNodes: ['CONCEPT-001', 'CONCEPT-888'],
+    });
+    const res = await fetchAs('u1', '/next?examType=2nd');
+    const body = (await res.json()) as StudyResponseBody;
+    const q = body.questions![0];
+    expect(q.relatedNodes.map((n) => n.id)).toEqual(['CONCEPT-001']);
+    expect(q.sourceCitations.manualPages).toEqual([100]);
+  });
+
+  it('★포맷 내성 — valid_from 이 datetime 이어도 시행 당일 하루를 잃지 않는다', async () => {
+    // 독립 리뷰 수리: 초판은 TEXT 사전순 비교라 '2026-08-15T00:00:00Z' <= '2026-08-15' 가 거짓 →
+    // 시행 당일 통째 누락. 0044 가 실제로 datetime 을 찍는 선례가 있어 혼입은 가정이 아니라 예상 경로다.
+    seedUser('u1', 'u1@test.com');
+    seedNode('CONCEPT-001', '오늘부터 시행(날짜형)', 'CONCEPT', 100);
+    approveNode('CONCEPT-001');
+    seedNode('CONCEPT-002', '오늘부터 시행(datetime형)', 'CONCEPT', 200);
+    approveNode('CONCEPT-002');
+    const todayKst = ctx.raw.prepare(`SELECT date('now','+9 hours') AS d`).get() as { d: string };
+    ctx.raw
+      .prepare(`UPDATE knowledge_nodes SET valid_from = ? WHERE id = 'CONCEPT-001'`)
+      .run(todayKst.d);
+    ctx.raw
+      .prepare(`UPDATE knowledge_nodes SET valid_from = ? WHERE id = 'CONCEPT-002'`)
+      .run(`${todayKst.d}T00:00:00Z`);
+    seedExamQuestion({
+      id: 'eq-fmt',
+      examType: '2nd',
+      relatedNodes: ['CONCEPT-001', 'CONCEPT-002'],
+    });
+    const res = await fetchAs('u1', '/next?examType=2nd');
+    const body = (await res.json()) as StudyResponseBody;
+    const q = body.questions![0];
+    // 두 포맷 다 "오늘부터 시행" 이므로 둘 다 보여야 한다
+    expect(q.relatedNodes.map((n) => n.id).sort()).toEqual(['CONCEPT-001', 'CONCEPT-002']);
+  });
+
+  it('★만료(valid_until 과거) 노드도 노출되지 않는다 — 반개구간 [from, until)', async () => {
+    seedUser('u1', 'u1@test.com');
+    seedNode('CONCEPT-001', '현행 개념', 'CONCEPT', 100);
+    approveNode('CONCEPT-001');
+    seedNode('CONCEPT-777', '실효된 구본', 'CONCEPT', 555);
+    approveNode('CONCEPT-777');
+    ctx.raw
+      .prepare(`UPDATE knowledge_nodes SET valid_until = '2020-01-01' WHERE id = ?`)
+      .run('CONCEPT-777');
+    seedExamQuestion({
+      id: 'eq-expired-node',
+      examType: '2nd',
+      relatedNodes: ['CONCEPT-001', 'CONCEPT-777'],
+    });
+    const res = await fetchAs('u1', '/next?examType=2nd');
+    const body = (await res.json()) as StudyResponseBody;
+    const q = body.questions![0];
+    expect(q.relatedNodes.map((n) => n.id)).toEqual(['CONCEPT-001']);
+    expect(q.sourceCitations.manualPages).toEqual([100]);
   });
 
   // design-audit WS-0e (2026-06-10) — enrichRelatedNodes(study route)를 parseRelatedNodes
@@ -668,6 +779,8 @@ describe('POST /api/study/grade', () => {
     seedUser('u1', 'u1@test.com');
     seedNode('CONCEPT-001', '보험가액', 'CONCEPT', 100);
     seedNode('LAW-007', '농어업재해보험법 제11조', 'LAW', 50);
+    approveNode('CONCEPT-001');
+    approveNode('LAW-007');
     seedExamQuestion({
       id: 'eq-refs',
       answer: '1',

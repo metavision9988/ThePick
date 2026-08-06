@@ -41,7 +41,7 @@ const MIGRATIONS_DIR = join(__dirname, '..', '..', '..', '..', '..', 'migrations
  *   향후 마이그레이션 추가 시 본 배열 갱신 망각하면 동일 dual-schema dormancy 회귀 위험.
  *   Sprint 2 초기 자동 readdir 통합 의무 (handoff §주의사항 + WBS §5 ledger).
  */
-const SCENARIO_MIGRATIONS = [
+export const SCENARIO_MIGRATIONS = [
   '0001_initial_schema.sql',
   '0002_1st_exam_extension.sql',
   '0003_temporal_guard_not_null.sql',
@@ -61,6 +61,16 @@ const SCENARIO_MIGRATIONS = [
   '0017_engine_telemetry.sql',
   '0018_enforce_draft_only_insert.sql',
   '0019_knowledge_nodes_page_chapter_meta.sql',
+  // ★ 2026-08-06 편입 — 드리프트 가드가 적발한 추가 누락분.
+  //   전부 production 적용분(0001~0037)인데 큐레이션에서 빠져 있었다. 즉 배열은
+  //   0037 에서 멈춘 것뿐 아니라 **중간도 비어 있었다**(table-KG 6종 + review_queue).
+  '0021_table_as_micro_kg.sql',
+  '0022_table_structures_update_guard.sql',
+  '0023_table_cells_pattern_h.sql',
+  '0024_table_structures_pattern_h.sql',
+  '0025_table_cells_partial_index.sql',
+  '0026_table_subordinate_update_guards.sql',
+  '0027_review_queue.sql',
   // ★ ADR-035: PBKDF2 iterations Workers 호환 100k (0007 trigger >= 600000 → >= 100000 갱신).
   // 본 마이그레이션이 0007 이후 적용되어야 인증 시나리오 통과 (Session 065).
   '0028_pbkdf2_iterations_workers_compat.sql',
@@ -81,6 +91,23 @@ const SCENARIO_MIGRATIONS = [
   '0036_study_reviews_session_index.sql',
   // Step 3-UX-6e 5-페르소나 performance C-P3 흡수 — exam_questions(exam_type,status,subject) partial index
   '0037_exam_questions_active_subject_index.sql',
+  // ─────────────────────────────────────────────────────────────────────────
+  // ★ 2026-08-06 현행화 (역이식 STAGE 0-4) — TD-API-001 부채가 실제로 터진 지점.
+  //   본 배열은 0037 에서 멈춰 있었는데 production 은 0038·0041·0042·0044 까지 적용돼 있었다
+  //   (CLAUDE.md 07-12 "0044 pending 일괄 적용으로 0038·0041·0042 동반 production 적용").
+  //   그 결과 시행시점 축(valid_from/valid_until)을 SELECT 에 배선하자 테스트 19건이
+  //   `no such column: kn.valid_from` 로 red — **테스트 스키마가 production 보다 낡아서**였다.
+  //   위 헤더가 예고한 dual-schema dormancy 가 그대로 현실화된 사례다.
+  //   ★배열을 현행화하는 것만으로는 **재발을 못 막는다**(다음에 또 잊으면 똑같아진다).
+  //     그래서 망각을 기계가 잡도록 드리프트 가드를 신설했다:
+  //     `apps/api/src/__tests__/scenario-migrations-drift.test.ts`
+  //     — migrations/ 의 .sql 중 이 배열에 없는 파일이 하나라도 있으면 red.
+  '0038_exam_questions_metadata_update_allow.sql',
+  // WS-2b + 부활 차단 (2026-08-06, SQL 작성 승인 — production 적용은 별도 게이트)
+  '0039_knowledge_edges_guard_and_node_reactivation.sql',
+  '0041_revision_watch_phase0_effective_date.sql',
+  '0042_revision_watch_phase1_supersedes_gate.sql',
+  '0044_exam_questions_old_rows_retirement.sql',
 ];
 
 export interface SqliteBackedD1 {

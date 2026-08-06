@@ -489,15 +489,15 @@ async function runWithRetry<T>(
  *     flagged→복귀 ABORT). 본 필터는 'approved' 만 통과 → review/draft/**flagged
  *     (결함 격리)** 전부 의도적 배제. status 코어 = approved-nodes-sql.ts 단일 진실원.
  *
- * **valid_from 4번째 조건 carry-over** (Pass 4 CONTRACT C1 재평가, Session 058):
- *   - SEARCH_PIPELINE.md §4 line 62 + ADR-012 §Decision Stage 2 가 명시한 "valid_from" 필터는
- *     `knowledge_nodes.valid_from` 컬럼 존재를 가정. 그러나 현 schema (migrations 0001~0026) 에는
- *     `valid_from` 컬럼이 `exam_questions` / `revision_changes` 테이블에만 존재.
- *   - 본 step은 `is_current_active=1` (Materialized Active View) 가 활성-버전 semantic 을 캡슐화 —
- *     SUPERSEDES 트리거가 구 노드 자동 비활성화. 시간-기반 발효일 (revision_changes JOIN)은
- *     Year 2 별도 step carry-over.
- *   - 영속: docs/plans/phase2a-user-search-route.plan.md §2.2 "valid_from time-based effectivity"
- *     항목 + handoff-067 §3 carry-over 명시.
+ * **valid_from 시행시점 필터 — 2026-08-06 배선 완료** (구 carry-over 해소):
+ *   - ~~현 schema (migrations 0001~0026) 에는 `valid_from` 컬럼이 `exam_questions` /
+ *     `revision_changes` 테이블에만 존재~~ → **stale**. migrations/0041(production 적용 2026-07-12)이
+ *     `knowledge_nodes`/`formulas`/`constants` 에 `valid_from`/`valid_until` 을 추가했다.
+ *   - 그 후속인 "학습자 경로 필터 배선"이 0041 헤더에서 별건으로 이월돼 미착수였고,
+ *     2026-08-06 에 `approved-nodes-sql.ts` 의 status 코어에 시행시점 창을 넣어 배선했다
+ *     (본 함수는 그 코어를 공유하므로 자동 적용 — 별도 조건 추가 불요).
+ *   - 남은 축: `revision_changes` JOIN 기반 개정 이력 표면 = 여전히 Year 2 carry-over.
+ *   - 근거: docs/plans/revision-watch.plan.md §3-A-2(필터점 3곳) + catchall-역이식-분석-20260806.md §3-B.
  *
  * SEARCH_PIPELINE.md §4 + ADR-012 §Decision + ADR-013 Materialized Active View Rule 16 정합.
  */
