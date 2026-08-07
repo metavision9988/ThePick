@@ -122,6 +122,33 @@ function approveNode(id: string): void {
     .run(`st-${id}`, id);
 }
 
+/**
+ * 시행시점 백필 게이트(마이그 0045 [B])를 이 테스트 한정으로 내린다.
+ *
+ * ★ 배경 (2026-08-07, 결정 #9 (C)): "승인됨 + 미시행" 상태는 이제 **DB 가 1차로 막는다** —
+ *   승격 게이트(status_transitions)와 백필 게이트(valid_* UPDATE) 양쪽. 그래서 서빙 창 필터의
+ *   회귀 테스트는 **만들 수 없는 상태**를 요구하게 됐다.
+ *   그러나 그 상태를 감추는 것은 여전히 서빙의 책임이다 — 카드 §2-(C) 가 "0041/시행시점 창은
+ *   **2차 방어선**으로 남아 제 역할을 한다"고 명시했고, 0045 미적용 시점의 데이터·수기 수정·
+ *   타 경로 유입이 실재 가능하다. 즉 아래 테스트들은 **2차 방어선 단독 회귀**다.
+ *   1차를 내려야 그 층을 격리 검증할 수 있고, DB 는 테스트마다 새로 만들어지므로(beforeEach)
+ *   영향은 해당 테스트에 갇힌다.
+ * ★ drop 이 무음 no-op 이 되지 않도록 **존재를 먼저 확인**한다 (마이그 누락이 "통과"로 위장하는 경로 차단).
+ */
+function dropEffectivityBackfillGuard(): void {
+  const row = ctx.raw
+    .prepare(
+      `SELECT name FROM sqlite_master WHERE type='trigger' AND name='enforce_effectivity_backfill_keeps_serving_nodes'`,
+    )
+    .get() as { name?: string } | undefined;
+  if (row?.name === undefined) {
+    throw new Error(
+      '0045 백필 게이트 트리거가 하네스에 없다 — 마이그 누락 의심 (drop 이 no-op 이 되면 본 테스트가 2차 방어선을 검증한다는 전제가 깨진다).',
+    );
+  }
+  ctx.raw.exec('DROP TRIGGER enforce_effectivity_backfill_keeps_serving_nodes');
+}
+
 function seedExamQuestion(params: {
   id: string;
   year?: number;
@@ -471,12 +498,14 @@ describe('GET /api/study/next', () => {
     expect(q.sourceCitations.manualPages).toEqual([100]); // 777 = draft 페이지, 새면 안 된다
   });
 
-  it('★시행 전(valid_from 미래) 노드는 학습자 출처에 노출되지 않는다', async () => {
+  it('★시행 전(valid_from 미래) 노드는 학습자 출처에 노출되지 않는다 — 2차 방어선 단독', async () => {
     seedUser('u1', 'u1@test.com');
     seedNode('CONCEPT-001', '현행 개념', 'CONCEPT', 100);
     approveNode('CONCEPT-001');
     seedNode('CONCEPT-888', '미시행 개정 개념', 'CONCEPT', 888);
     approveNode('CONCEPT-888');
+    // 0045 [B] 가 1차로 막는 상태를 격리 검증하기 위해 그 층만 내린다 (헬퍼 주석 참조)
+    dropEffectivityBackfillGuard();
     // 0041 백필 경로(NULL→값 1회)로 시행일을 미래로 스탬프
     ctx.raw
       .prepare(`UPDATE knowledge_nodes SET valid_from = '2999-01-01' WHERE id = ?`)
@@ -520,12 +549,15 @@ describe('GET /api/study/next', () => {
     expect(q.relatedNodes.map((n) => n.id).sort()).toEqual(['CONCEPT-001', 'CONCEPT-002']);
   });
 
-  it('★만료(valid_until 과거) 노드도 노출되지 않는다 — 반개구간 [from, until)', async () => {
+  it('★만료(valid_until 과거) 노드도 노출되지 않는다 — 반개구간 [from, until) · 2차 방어선 단독', async () => {
     seedUser('u1', 'u1@test.com');
     seedNode('CONCEPT-001', '현행 개념', 'CONCEPT', 100);
     approveNode('CONCEPT-001');
     seedNode('CONCEPT-777', '실효된 구본', 'CONCEPT', 555);
     approveNode('CONCEPT-777');
+    // ★ 이 상태는 **시각 경과로도 도달한다** (오늘 유효한 valid_until 이 내일이면 과거가 된다).
+    //   즉 0045 로도 못 막는 부류라 서빙 필터가 진짜 최종 방어선이다. 여기서는 즉시 재현을 위해 백필.
+    dropEffectivityBackfillGuard();
     ctx.raw
       .prepare(`UPDATE knowledge_nodes SET valid_until = '2020-01-01' WHERE id = ?`)
       .run('CONCEPT-777');

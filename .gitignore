@@ -70,6 +70,8 @@ docs/measurements/raw/
 # 코드 변경 시 생성, 리뷰 완료 후 rm 으로 정리되는 휘발성 런타임 상태 — 커밋 금지.
 .claude/.review-pending
 .claude/.review-files
+# 리뷰 훅의 "정지 허용" 선언 마커 — 런타임 상태이지 산출물이 아니다 (2026-08-07 리뷰 MINOR 처분)
+.claude/.review-blocked
 
 # 다른 프로젝트(이음길/다이음) 기획 자료 — ThePick repo 추적 제외 (진산 로컬 참조용)
 docs/이음길/

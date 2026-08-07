@@ -108,6 +108,10 @@ export const SCENARIO_MIGRATIONS = [
   '0041_revision_watch_phase0_effective_date.sql',
   '0042_revision_watch_phase1_supersedes_gate.sql',
   '0044_exam_questions_old_rows_retirement.sql',
+  // 시행시점 정합 승격 게이트 (2026-08-07, 결정 #9 (C) — SQL 작성 승인·production 적용은 별도 게이트)
+  '0045_block_premature_promotion.sql',
+  // 세 번째 문 봉쇄 (2026-08-07, 5-페르소나 독립 리뷰 CRITICAL 처분 — 0039·0045 와 묶음 적용)
+  '0046_close_third_promotion_door.sql',
 ];
 
 export interface SqliteBackedD1 {

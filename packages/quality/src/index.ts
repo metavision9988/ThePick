@@ -25,8 +25,10 @@ export type {
 export {
   auditProductionGraph,
   findActiveEdgesToInactiveNodes,
+  findLineageAnomalies,
   findWalkUnreachableNodes,
   fromD1Rows,
+  lineageAnomalySubject,
 } from './production-audit';
 
 export type {
@@ -34,6 +36,12 @@ export type {
   D1EdgeRow,
   StaleEdgeRef,
   UnreachableNode,
+  LineageAnomaly,
+  LineageAnomalyType,
+  LineageEdgeAnomaly,
+  LineageNodeAnomaly,
+  LineageAudit,
+  ProductionAuditOptions,
   ProductionAuditReport,
 } from './production-audit';
 

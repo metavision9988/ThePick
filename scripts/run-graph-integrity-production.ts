@@ -13,10 +13,19 @@
  * 사용 (덤프 생성 → 러너):
  *   cd apps/api
  *   npx wrangler d1 execute thepick-db-production --remote --json \
- *     --command "SELECT id, type, name, is_current_active FROM knowledge_nodes" > /tmp/kn.json
+ *     --command "SELECT kn.id, kn.type, kn.name, kn.is_current_active, kn.valid_from, kn.valid_until, \
+ *                  COALESCE((SELECT st.to_status FROM status_transitions st \
+ *                             WHERE st.target_type='node' AND st.target_id=kn.id \
+ *                             ORDER BY st.transitioned_at DESC, st.rowid DESC LIMIT 1),'draft') AS effective_status \
+ *                FROM knowledge_nodes kn" > /tmp/kn.json
  *   npx wrangler d1 execute thepick-db-production --remote --json \
  *     --command "SELECT id, from_node, to_node, edge_type, is_active FROM knowledge_edges" > /tmp/ke.json
  *   pnpm tsx scripts/run-graph-integrity-production.ts --nodes /tmp/kn.json --edges /tmp/ke.json
+ *
+ * ★ 노드 덤프의 effective_status/valid_from/valid_until 은 **필수**다 (2026-08-07, 결정 #9 (C) §3-4).
+ *   계보 불변식(구·신 동시 서빙 / 계보 공백)은 실 status·시행일 없이 판정 불가이며,
+ *   판정 불가를 PASS 로 바꾸지 않는다 — 컬럼이 없으면 parseDump 가 입력 단계에서 멈춘다.
+ *   effective_status 는 status_transitions 최신 전이(무이력='draft') = 서빙 단일 진실원 미러.
  *
  * fabricate 차단 (eval harness assertRemote 패턴 준용): 덤프 파일 미지정/부재/
  * 빈 결과 시 가짜 PASS 없이 명시 에러로 비측정 종료 (CLAUDE.md RULE #4/#5).
@@ -28,6 +37,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   auditProductionGraph,
+  lineageAnomalySubject,
   type D1EdgeRow,
   type D1NodeRow,
   type ProductionAuditReport,
@@ -91,6 +101,10 @@ function main(): void {
     'type',
     'name',
     'is_current_active',
+    // 계보 불변식 입력 (2026-08-07) — 없으면 판정 불가이므로 여기서 fail-loud
+    'effective_status',
+    'valid_from',
+    'valid_until',
   ]);
   const edgeRows = parseDump<D1EdgeRow>(edgesPath, 'knowledge_edges', [
     'id',
@@ -100,17 +114,24 @@ function main(): void {
     'is_active',
   ]);
 
+  // 계보 판정 기준일 = KST 오늘 (서빙 코어 TODAY_KST_SQL 미러). 코어는 순수 유지 → 여기서 주입.
+  const todayKst = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
   const report: ProductionAuditReport = auditProductionGraph(
     nodeRows,
     edgeRows,
     DEFAULT_EDGE_TYPE_WHITELIST,
+    { todayKst },
   );
 
   const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const outDir = argValue('--out') ?? DEFAULT_OUT_DIR;
   mkdirSync(outDir, { recursive: true });
 
-  const { integrity, staleEdgeRefs, walkUnreachable, gatePass } = report;
+  const { integrity, staleEdgeRefs, walkUnreachable, lineage, gatePass } = report;
+  const lineageCell = lineage.measured
+    ? String(lineage.anomalies.length)
+    : `⚠️ 미측정 (${lineage.reason})`;
   const md = [
     `# Production 그래프 무결성 감사 — ${stamp}`,
     '',
@@ -132,17 +153,24 @@ function main(): void {
     `| 끊긴 엣지 (부재 노드) | ${integrity.stats.brokenEdges} |`,
     `| SUPERSEDES 순환 | ${integrity.stats.supersedeCycles} |`,
     `| 활성 엣지 → 비활성 노드 (신규 검사) | ${staleEdgeRefs.length} |`,
+    `| 계보 이상 (동시 서빙 / 계보 공백 / 시행창 이탈) — 기준일 ${todayKst} KST | ${lineageCell} |`,
     `| walk 도달 불가 활성 노드 (정보 지표 — 게이트 불산입) | ${walkUnreachable.length} |`,
     '',
     '## 위반 상세',
     '',
-    integrity.violations.length === 0 && staleEdgeRefs.length === 0
+    integrity.violations.length === 0 &&
+    staleEdgeRefs.length === 0 &&
+    lineage.measured &&
+    lineage.anomalies.length === 0
       ? '(위반 0건)'
       : [
           ...integrity.violations.map((v) => `- [${v.type}] ${v.entityId}: ${v.message}`),
           ...staleEdgeRefs.map(
             (r) => `- [STALE_EDGE_REF] ${r.edgeId}: ${r.side} → 비활성 노드 ${r.nodeId}`,
           ),
+          ...(lineage.measured
+            ? lineage.anomalies.map((a) => `- [${a.type}] ${lineageAnomalySubject(a)}: ${a.detail}`)
+            : [`- [LINEAGE_UNMEASURED] ${lineage.reason}`]),
         ].join('\n'),
     '',
     '## walk 도달 불가 노드 (in-degree 0, CONCEPT-023 클래스 — BATCH 엣지 보강 후보)',
