@@ -98,13 +98,34 @@ def normalize(text: str) -> str:
     return text.strip()
 
 
-def extract(node: dict, cache: dict[str, pdfplumber.PDF]) -> tuple[str | None, str]:
+def source_chunk(node: dict, cache: dict[str, pdfplumber.PDF]) -> str | None:
+    """3-1/3-3 검사용 **출처 청크** — 인용과 **독립적으로** PDF 에서 뽑은 페이지 텍스트.
+
+    ★왜 인용 자신을 쓰면 안 되나: 인용을 출처로 대조하면 커버리지가 항상 1.0 이 되어
+      "인용이 원문에 실재하는가"라는 질문 자체가 사라진다(자기 대조).
+    ★왜 전문이 아닌 페이지인가: 전문(1.2MB)을 넣으면 바이그램 풀이 포화해 임계 0.95 의
+      변별력이 죽는다(catchall W1 실증). 페이지(~2천자)는 청크 규모다.
+    """
+    pdf_path = PDF_BY_CHAPTER.get(node["chapter"])
+    if pdf_path is None or not pdf_path.exists():
+        return None
+    key = str(pdf_path)
+    if key not in cache:
+        cache[key] = pdfplumber.open(pdf_path)
+    pdf = cache[key]
+    # 조문이 페이지를 넘길 수 있으므로 기록 페이지 ±1 을 이어 붙인다(창은 유지, 전문은 아님).
+    pages = [page_text(pdf, node["pdf_page"] + off) for off in (-1, 0, 1)]
+    joined = normalize("\n".join(p for p in pages if p))
+    return joined if joined else None
+
+
+def extract(node: dict, cache: dict[str, pdfplumber.PDF]) -> tuple[str | None, str, str | None]:
     chapter = node["chapter"]
     pdf_path = PDF_BY_CHAPTER.get(chapter)
     if pdf_path is None:
-        return None, f"chapter 미매핑: {chapter}"
+        return None, f"chapter 미매핑: {chapter}", None
     if not pdf_path.exists():
-        return None, f"PDF 부재: {pdf_path}"
+        return None, f"PDF 부재: {pdf_path}", None
     key = str(pdf_path)
     if key not in cache:
         cache[key] = pdfplumber.open(pdf_path)
@@ -115,8 +136,8 @@ def extract(node: dict, cache: dict[str, pdfplumber.PDF]) -> tuple[str | None, s
         # 목적물고시처럼 조 번호가 없는 단일 문서 — 페이지 전문을 청크로 쓴다
         raw = page_text(pdf, node["pdf_page"])
         if not raw.strip():
-            return None, "조 번호 없음 + 페이지 텍스트 비어 있음"
-        return normalize(raw), f"조 번호 없음 → 페이지 {node['pdf_page']} 전문"
+            return None, "조 번호 없음 + 페이지 텍스트 비어 있음", None
+        return normalize(raw), f"조 번호 없음 → 페이지 {node['pdf_page']} 전문", normalize(raw)
 
     num, sub = m.group(1), m.group(2)
     head = article_head_re(num, sub)
@@ -153,9 +174,9 @@ def extract(node: dict, cache: dict[str, pdfplumber.PDF]) -> tuple[str | None, s
         joined = "\n".join(page_text(pdf, base + i) for i in range(PAGE_WINDOW + 1))
         for cand in candidates(joined):
             if best is None or cand[0] > best[0]:
-                best = cand
+                best = (cand[0], cand[1], joined)
     if best is not None and best[0] >= 60:
-        return best[1], f"pdf_page {start_page}±1 (+{PAGE_WINDOW}) · 조번호+제목 매칭 · 최장 본문"
+        return best[1], f"pdf_page {start_page}±1 (+{PAGE_WINDOW}) · 조번호+제목 매칭 · 최장 본문", best[2]
 
     # 2차 폴백 — 전 문서 스캔.
     # ★왜 필요한가(실측): P1 헤더가 자백했듯 **상법 노드의 pdf_page 는 실 PDF 축이 아니라
@@ -167,10 +188,19 @@ def extract(node: dict, cache: dict[str, pdfplumber.PDF]) -> tuple[str | None, s
     if cands:
         top = max(cands, key=lambda c: c[0])
         if top[0] >= 60:
-            return top[1], f"전 문서 스캔 · 후보 {len(cands)}건 중 최장 본문 (기록 pdf_page {start_page} 미적중)"
+            # ★청크는 **인용을 실제로 찾은 위치**에서 뽑아야 한다(파일럿이 잡은 결함, 2026-08-08).
+            #   기록 pdf_page 를 그대로 쓰면 상법처럼 페이지축이 틀린 노드에서 인용이 없는 페이지가
+            #   청크로 나가 3-1 커버리지가 0.42 로 떨어졌다 — 카드가 아니라 검사 입력이 틀린 것이었다.
+            idx = full.find(top[1][:40])
+            region = full[max(0, idx - 1500) : idx + 3000] if idx >= 0 else full[:4000]
+            return (
+                top[1],
+                f"전 문서 스캔 · 후보 {len(cands)}건 중 최장 본문 (기록 pdf_page {start_page} 미적중)",
+                region,
+            )
     if best is not None:
-        return best[1], f"⚠️ 본문 60자 미만 — 검수 필요 (pdf_page {start_page})"
-    return None, f"조문 head+제목 미발견 (제{num}조{'의' + sub if sub else ''} '{title}' @ pdf_page {start_page})"
+        return best[1], f"⚠️ 본문 60자 미만 — 검수 필요 (pdf_page {start_page})", best[2]
+    return None, f"조문 head+제목 미발견 (제{num}조{'의' + sub if sub else ''} '{title}' @ pdf_page {start_page})", None
 
 
 def main() -> int:
@@ -178,21 +208,28 @@ def main() -> int:
     cache: dict[str, pdfplumber.PDF] = {}
     quotes, unmatched = [], []
     excluded = []
+    regions: dict[str, str] = {}
     for node in nodes:
         if node["id"] in EXCLUSIONS:
             excluded.append({**node, "reason": EXCLUSIONS[node["id"]]})
             continue
-        quote, how = extract(node, cache)
+        quote, how, region = extract(node, cache)
         if quote is None:
             unmatched.append({**node, "reason": how})
         else:
             quotes.append({"id": node["id"], "name": node["name"], "quote": quote, "how": how})
+            if region:
+                regions[node["id"]] = region
     for pdf in cache.values():
         pdf.close()
 
     (OUT / "source-quotes.json").write_text(json.dumps(quotes, ensure_ascii=False, indent=1))
     (OUT / "unmatched.json").write_text(json.dumps(unmatched, ensure_ascii=False, indent=1))
     (OUT / "excluded.json").write_text(json.dumps(excluded, ensure_ascii=False, indent=1))
+    # 3-1/3-3 검사용 출처 청크 — **인용을 실제로 찾은 텍스트 영역**(인용과 독립 추출).
+    chunks = regions
+    (OUT / "source-chunks.json").write_text(json.dumps(chunks, ensure_ascii=False, indent=1))
+    print(f"출처 청크 {len(chunks)}/{len(nodes) - len(excluded)} (3-1·3-3 검사 입력)")
     print(f"추출 {len(quotes)}/{len(nodes)} · 미매칭 {len(unmatched)} · 의도적 제외 {len(excluded)}")
     for e in excluded:
         print(f"  ⊘ {e['id']} {e['name'][:40]} — {e['reason'][:60]}…")
