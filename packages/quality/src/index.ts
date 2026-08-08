@@ -28,6 +28,7 @@ export {
   findLineageAnomalies,
   findWalkUnreachableNodes,
   fromD1Rows,
+  computeSourceQuoteCoverage,
   lineageAnomalySubject,
 } from './production-audit';
 
@@ -41,6 +42,7 @@ export type {
   LineageEdgeAnomaly,
   LineageNodeAnomaly,
   LineageAudit,
+  SourceQuoteCoverage,
   ProductionAuditOptions,
   ProductionAuditReport,
 } from './production-audit';

@@ -46,6 +46,12 @@ export interface D1NodeRow {
   /** migrations/0041 시행시점 축. 부재/NULL = 무제한. */
   readonly valid_from?: string | null;
   readonly valid_until?: string | null;
+  /**
+   * migrations/0047 근거 원문 축자. **덤프에 없으면 커버리지 미측정**(게이트 판정에는 불산입).
+   * 계보 불변식과 달리 필수로 올리지 않는 이유: 이 값은 "위반"이 아니라 **검사 가능 범위**의 지표이고,
+   * 0047 미적용 DB(2호 초기·staging·백업 복원본)에서도 러너는 계속 돌아야 하기 때문이다.
+   */
+  readonly source_quote?: string | null;
 }
 
 /** knowledge_edges SELECT row. */
@@ -485,6 +491,60 @@ export function findLineageAnomalies(
   return { measured: true, anomalies };
 }
 
+// --- 추가 관측 ④ source_quote 커버리지 (역이식 STAGE 2 · 2-5) ---
+
+/**
+ * "지금 기계가 검사할 수 있는 카드가 몇 장인가" — 원문 인용 보유율.
+ *
+ * ★왜 위반이 아니라 **지표**인가 (체크리스트 2-5 / 이음길 교훈):
+ *   STAGE 3 검사기는 `source_quote` 가 있는 카드만 검사할 수 있다. 그런데 리포트가
+ *   "검사 통과 N건"만 보여주면 **일부만 검사하고 전부 검사한 것처럼 읽힌다** — 이 프로젝트가
+ *   E0-8(무음 skip)·catchall(L0-A 공허 PASS)에서 같은 클래스로 두 번 다친 상태다.
+ *   그래서 분모(서빙 중 전체)와 분자(검사 가능)를 **항상 함께** 노출하고, 미보유분은
+ *   "통과"가 아니라 **"측정 대상 아님"** 으로 분리 표기한다.
+ *
+ * 분모 = 오늘 서빙되는 노드(approved + active + 시행창 안) — 학습자에게 실제 보이는 것만 센다.
+ * 공백만 채운 값은 보유로 세지 않는다.
+ * ★단 "0047 INSERT 게이트와 **같은** 판정"이라고 쓰지 않는다(독립 리뷰 MINOR 정정):
+ *   JS `String.trim()` 과 SQL `trim(x, <집합>)` 의 공백 정의는 완전히 같지 않다
+ *   (JS 는 유니코드 공백 전반을 지우고, SQL 은 명시 집합만 지운다 — 0047 이 집합을 확장했지만 여전히 열거식).
+ *   방향은 둘 다 "보이지 않는 문자 = 미보유"로 일치하며, 어긋나도 **관측기가 더 엄격한 쪽**이라 안전하다.
+ */
+export type SourceQuoteCoverage =
+  | { readonly measured: false; readonly reason: string }
+  | {
+      readonly measured: true;
+      /** 오늘 서빙되는 노드 수 (분모). */
+      readonly servedTotal: number;
+      /** 그중 비어 있지 않은 source_quote 보유 (분자 = STAGE 3 검사 가능 범위). */
+      readonly withQuote: number;
+      /** 미보유 = 검사 대상 밖. "통과"가 아니다. */
+      readonly withoutQuote: number;
+    };
+
+export function computeSourceQuoteCoverage(
+  nodeRows: readonly D1NodeRow[],
+  todayKst: string,
+): SourceQuoteCoverage {
+  if (nodeRows.some((r) => r.source_quote === undefined)) {
+    return {
+      measured: false,
+      reason:
+        'knowledge_nodes 덤프에 source_quote 컬럼이 없습니다 — 검사 가능 범위를 산출할 수 없습니다. ' +
+        '(0047 미적용 DB 이거나 덤프 SELECT 에 컬럼이 빠진 경우. 게이트 판정에는 불산입.)',
+    };
+  }
+  let servedTotal = 0;
+  let withQuote = 0;
+  for (const row of nodeRows) {
+    if (!isServedToday(row, todayKst)) continue;
+    servedTotal += 1;
+    const q = row.source_quote;
+    if (typeof q === 'string' && q.trim() !== '') withQuote += 1;
+  }
+  return { measured: true, servedTotal, withQuote, withoutQuote: servedTotal - withQuote };
+}
+
 // --- 종합 ---
 
 export interface ProductionAuditReport {
@@ -494,6 +554,11 @@ export interface ProductionAuditReport {
   readonly walkUnreachable: readonly UnreachableNode[];
   /** 활성 SUPERSEDES 계보의 서빙 상태 이상 (2026-08-07 결정 #9 (C) §3-4). */
   readonly lineage: LineageAudit;
+  /**
+   * 원문 인용 보유율 (2026-08-08 STAGE 2 · 2-5) — **게이트 불산입 지표**.
+   * "검사 통과 = 전수 검증" 착시를 막기 위해 분모·분자를 항상 함께 노출한다.
+   */
+  readonly sourceQuoteCoverage: SourceQuoteCoverage;
   /**
    * 게이트 판정 — integrity.valid AND staleEdgeRefs 0 AND 계보 이상 0(**측정된 상태로**).
    * walkUnreachable 은 게이트 불산입: 도달 불가 = 엣지 밀도(데이터 천장) 신호로
@@ -530,11 +595,19 @@ export function auditProductionGraph(
           anomalies: [],
         } as const)
       : findLineageAnomalies(nodeRows, edgeRows, options.todayKst);
+  const sourceQuoteCoverage =
+    options.todayKst === undefined
+      ? ({
+          measured: false,
+          reason: 'todayKst 미주입 — 서빙 분모를 산출할 수 없습니다.',
+        } as const)
+      : computeSourceQuoteCoverage(nodeRows, options.todayKst);
   return {
     integrity,
     staleEdgeRefs,
     walkUnreachable,
     lineage,
+    sourceQuoteCoverage,
     gatePass:
       integrity.valid &&
       staleEdgeRefs.length === 0 &&

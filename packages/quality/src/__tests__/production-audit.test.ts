@@ -12,6 +12,7 @@ import {
   findActiveEdgesToInactiveNodes,
   findLineageAnomalies,
   findWalkUnreachableNodes,
+  computeSourceQuoteCoverage,
   fromD1Rows,
   type D1EdgeRow,
   type D1NodeRow,
@@ -546,5 +547,62 @@ describe('findLineageAnomalies — 2R 처분: 성분 단위 판정', () => {
       TODAY,
     );
     expect(r.anomalies).toEqual([]);
+  });
+});
+
+/**
+ * STAGE 2 · 2-5 — 원문 인용 커버리지 (게이트 불산입 지표).
+ * ★"일부만 검사하고 전부 검사한 것처럼 보이는 상태"가 이 프로젝트가 두 번 다친 클래스다.
+ */
+describe('computeSourceQuoteCoverage — 검사 가능 범위 표기', () => {
+  it('서빙 중인 노드만 분모 — draft·은퇴·창밖은 제외', () => {
+    const r = computeSourceQuoteCoverage(
+      [
+        { ...servedRow('A'), source_quote: '원문 A' },
+        { ...servedRow('B'), source_quote: null },
+        { ...nodeRow('DRAFT'), source_quote: null }, // draft = 분모 밖
+        { ...servedRow('RETIRED', { is_current_active: 0 }), source_quote: null }, // 은퇴 = 분모 밖
+        { ...servedRow('FUTURE', { valid_from: '2026-09-01' }), source_quote: null }, // 창밖 = 분모 밖
+      ],
+      TODAY,
+    );
+    expect(r).toEqual({ measured: true, servedTotal: 2, withQuote: 1, withoutQuote: 1 });
+  });
+
+  it('★공백만 채운 값은 보유로 세지 않는다 (0047 INSERT 게이트와 같은 판정)', () => {
+    const r = computeSourceQuoteCoverage(
+      [
+        { ...servedRow('A'), source_quote: '' },
+        { ...servedRow('B'), source_quote: '   ' },
+        { ...servedRow('C'), source_quote: '\n\t' },
+        { ...servedRow('D'), source_quote: '진짜 원문' },
+      ],
+      TODAY,
+    );
+    expect(r).toEqual({ measured: true, servedTotal: 4, withQuote: 1, withoutQuote: 3 });
+  });
+
+  it('★컬럼 부재 = measured:false (0047 미적용 DB 에서도 러너는 돌아야 한다)', () => {
+    const r = computeSourceQuoteCoverage([servedRow('A')], TODAY);
+    expect(r.measured).toBe(false);
+  });
+
+  it('커버리지는 게이트 판정에 불산입 — 0% 여도 gatePass 는 다른 조건만 본다', () => {
+    const report = auditProductionGraph(
+      [
+        { ...servedRow('A'), source_quote: null },
+        { ...servedRow('B'), source_quote: null },
+      ],
+      [edgeRow('E-1', 'A', 'B')],
+      WHITELIST,
+      { todayKst: TODAY },
+    );
+    expect(report.sourceQuoteCoverage).toEqual({
+      measured: true,
+      servedTotal: 2,
+      withQuote: 0,
+      withoutQuote: 2,
+    });
+    expect(report.gatePass).toBe(true); // 커버리지 0% 는 위반이 아니다 — 검사 범위 지표일 뿐
   });
 });

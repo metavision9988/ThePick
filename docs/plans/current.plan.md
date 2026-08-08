@@ -1,192 +1,173 @@
 ---
 phase: 3
-step: 결정 #9 (C) 집행 — 시행시점 정합 승격 게이트 (마이그 0045·0046) + 계보 불변식 + 독립 리뷰 처분
-approved_by: 진산 (2026-08-07, "c 진행") — 근거 = docs/plans/decision-card-20260807-supersedes-effectivity.md §5
+step: 역이식 STAGE 2 — source_quote 축 신설 + 백필 (AutoVerify 관문)
+approved_by: 진산 (2026-08-08, "stage 2 진행") — 근거 = 결재 대시보드 §A #7 (권고 (a) 백필 포함)
 risk_level: L3
 scope:
-  # --- L3: DB 트리거 (승격 게이트 + 백필 게이트) ---
-  - migrations/0045_block_premature_promotion.sql
-  - migrations/0039_knowledge_edges_guard_and_node_reactivation.sql # 헤더 경고 갱신만 (SQL 본문 불변)
-  - apps/api/src/__tests__/scenarios/migration-0045-premature-promotion.test.ts
+  # --- L3: DB 스키마 + 가드 트리거 ---
+  - migrations/0047_source_quote_axis.sql
+  - apps/api/src/db/schema.ts # 타입 파생 (NC-1: Drizzle = 타입 전용)
+  - apps/api/src/__tests__/scenarios/migration-0047-source-quote.test.ts
   - apps/api/src/__tests__/helpers/d1-from-sqlite.ts # SCENARIO_MIGRATIONS 등재 (드리프트 가드)
-  # --- L3 추가 (2026-08-07 독립 리뷰 CRITICAL 처분 — §리뷰 처분 참조) ---
-  - migrations/0046_close_third_promotion_door.sql # 세 번째 문 봉쇄 (0042[1] 재생성 + INSERT 게이트)
-  - apps/api/src/__tests__/scenarios/migration-0046-third-door.test.ts
-  - apps/api/src/study/__tests__/routes.test.ts # ★리뷰 MAJOR: 원 scope 누락분 정직 등재
-  - apps/api/src/search/approved-nodes-sql.ts # 미러 재생성 경고를 의존 상류에 배치 (주석만)
-  # --- 무결성 러너 계보 불변식 (L3 아님 — read-only 감사 코어) ---
+  # --- 미검증 표기 (감사 코어 — L3 아님, read-only) ---
   - packages/quality/src/production-audit.ts
   - packages/quality/src/index.ts
   - packages/quality/src/__tests__/production-audit.test.ts
   - scripts/run-graph-integrity-production.ts
-  - scripts/__tests__/effectivity-mirror-differential.test.mjs # ★3R: 미러 차등 테스트(SQLite 실행 대조)
+  # --- 적재 계약 (2-3 의 실체 — 독립 리뷰 MAJOR: 원 scope 누락분 정직 등재) ---
+  - apps/batch/src/loader/draft-loader.ts # INSERT 에 source_quote 컬럼
+  - apps/batch/src/__tests__/loader.test.ts # 픽스처에 원문(노드 한정)
+  - packages/parser/src/schema-validator.ts # 계약 타입에 source_quote (optional)
+  # --- 백필 산출물 (production 미적용 — 별도 인증 게이트) ---
+  - docs/batch-load/stage2-source-quote/ # 추출 스크립트 + 백필 SQL + 검수 시트
   # --- 진행 추적·문서 (동커밋 갱신 의무) ---
   - docs/plans/catchall-역이식-체크리스트.md
-  - docs/plans/decision-card-20260807-supersedes-effectivity.md
   - docs/plans/APPROVAL_DASHBOARD.md
   - docs/plans/current.plan.md
-  - docs/plans/current.plan.20260806-backport-stage01-stale.md
+  - docs/plans/current.plan.20260807-decision9-effectivity.md
   - .jjokjipge/handoff-20260807-backport.md
-  - migrations-v2/README.md # 프레임워크 정본 원장 (2호 상속 누락 방지)
-  - .gitignore # 훅 런타임 마커 제외
-  - .claude/reviews/review-20260807-5persona-0045.md # 독립 리뷰 보고서 영속
+  - .claude/reviews/review-20260808-stage2-source-quote.md # 독립 리뷰 2렌즈 보고서
 ---
 
-> 직전 plan(역이식 STAGE 0+1)은 `docs/plans/current.plan.20260806-backport-stage01-stale.md` 로 보존 이관.
-> 본 plan 은 그 후속 = 결재 대시보드 §A #9 의 (C) 채택 집행.
+> 직전 plan(결정 #9 (C) 집행 = 마이그 0045·0046)은
+> `docs/plans/current.plan.20260807-decision9-effectivity.md` 로 보존 이관.
 
 ## 목적
 
-**"승인됨 + 아직 미시행" 구간을 데이터에서 구조적으로 제거한다.**
+**카드가 "무엇을 근거로 그렇게 말하는지"를 데이터로 들고 있게 한다.**
 
-결정 카드 §1 이 못박은 문제: 하나의 "현행" 개념을 두 장치가 다르게 관리한다 —
-`is_current_active`(승인 **이벤트**로 갱신) vs `valid_from`/`valid_until`(**시각 경과**, 이벤트 없음).
-둘이 어긋나는 유일한 구간이 "승인됐는데 아직 시행 전"이고, 그 구간에서
-0042 승계 트리거가 구본을 은퇴시키면 **주제 자체가 학습자 화면에서 사라진다**(blackout).
+지금 노드는 출처를 **포인터**(`page_ref`·`book_page`·`source_url`)로만 가진다. 그래서 검수는
+"사람이 PDF 를 열어서 대조하는 것"이 유일한 경로이고, 그것이 이 프로젝트의 결재 병목 원인이다
+(분석 §2 — catchall 이 같은 문제를 `source_quote` 로 풀었다).
 
-(C) = 그 구간에 **들어가지 못하게** 한다. 시각 이벤트를 공급하는 (A)나 서빙 구조를 바꾸는 (B) 대신,
-승격 시점에 "오늘 유효한 판본만 승인"을 기계로 강제한다. 현 관행(개정 노드 전부 draft)과 이미 일치.
+`source_quote` = 그 카드의 근거가 된 **원문 문장 그 자체**. 이게 있어야 STAGE 3 의 검사기
+(인용 진위·앵커 충분성·값 정합)가 **대조할 대상**을 갖는다. 없으면 STAGE 3 는 검사할 게 없다.
+
+⚠️ **이 plan 은 "칸을 만들고 규율을 걸고 법령 59장을 채울 준비까지"** 다.
+production 쓰기(ALTER·백필)는 **전부 별도 인증 게이트** — 여기서는 SQL 작성·로컬 검증까지.
 
 ## 대상 변경
 
-### 1) 마이그 0045 — 승격 게이트(A) + 백필 게이트(B)
+### 2-1 원문 칸 (마이그 0047)
 
-| 반  | 무엇                                                                                                                                          | 왜                                       |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| A   | `status_transitions` BEFORE INSERT — `to_status='approved'` 인데 대상이 **오늘 무효**면 ABORT                                                 | 카드 §3-1. 미시행 승격 = blackout 진입로 |
-| B   | `knowledge_nodes`/`formulas`/`constants` BEFORE UPDATE — **이미 서빙 중인 행**을 오늘 무효로 만드는 `valid_from`/`valid_until` 백필이면 ABORT | ★카드 문면 밖 **보강**. 아래 근거        |
+`knowledge_nodes` / `formulas` / `constants` 3종에 `source_quote TEXT` 추가.
+선례 = 0041 의 `ALTER TABLE … ADD COLUMN`(0019/0016 과 동일 패턴).
 
-★ **B 를 넣는 근거 (카드 §3 문면에는 없다 — 명시 확대)**: 카드가 정의한 위험 구간은
-"승인 + 미시행"이고, 거기 도달하는 문은 **둘**이다. ①미시행 행을 승격(=A 가 막음)
-②이미 승인된 행에 미래 `valid_from` 을 백필(=A 가 못 막음). 0041 은 `valid_from` 을
-NULL→값 1회 백필로 열어 뒀고, ~~**STAGE 2 가 바로 그 백필을 시작한다.**~~ A 만 넣으면
-그 문이 그대로 열려 있다.
+### 2-2 백필 허용 규칙 편입 (같은 마이그)
 
-> ⚠️ **정정 2건 (2026-08-07 독립 리뷰)**
->
-> 1. **"문은 둘"이 틀렸다 — 셋이다.** ③승인 기록을 행보다 **먼저** 넣으면(전이 선행) A 의 EXISTS 가
->    대상 부재로 거짓이 되어 통과하고, 뒤이어 들어온 미시행 행이 SUPERSEDES 엣지 하나로 구본을
->    은퇴시킨다(0042[1]). 3개 렌즈 독립 수렴 + 메인 재현. **봉쇄 = 마이그 0046**(아래 §4).
-> 2. **"STAGE 2 가 그 백필을 시작한다"는 사실이 아니다.** 역이식 STAGE 2 = `source_quote` 축이고,
->    `valid_from` 백필은 **Revision Watch Phase 2**(0041 헤더의 미시행 4노드)다. 두 로드맵의 "2"를
->    혼동했다. **B 의 정확한 근거** = "임의 시점의 `valid_*` 백필로부터 **서빙 중인 행**을 보호한다".
+현 `prevent_{knowledge_nodes,formulas,constants}_update` 가드는 **새 컬럼을 아예 모른다** —
+즉 지금 그대로 두면 `source_quote` 는 값→값 UPDATE 가 **무음 통과**한다(0041 이 겪은 것과 같은 구멍).
+0041 패턴 그대로 화이트리스트에 편입한다:
 
-★ **valid_until 대칭 포함 (카드 문면은 `valid_from > today` 만 언급)**: 만료된 판본을 승격하면
-승인 즉시 창 밖 = 무음 미노출이다. 같은 불변식의 반대쪽이라 함께 잠근다.
-⇒ 0045 의 불변식 1문장 = **"오늘 유효하지 않은 판본은 승인 상태로 서빙 자격을 얻을 수 없다."**
+```
+OR (OLD.source_quote IS NOT NULL AND NEW.source_quote IS NOT OLD.source_quote)
+```
 
-★ **판정식은 서빙 코어의 미러**여야 한다 — `buildEffectivityWindowSql`(반개구간 `[from, until)`,
-KST `date('now','+9 hours')`, `date()` 정규화, 해석불가 = fail-closed).
-트리거가 서빙과 다른 "오늘"을 쓰면 그 자체가 새 drift 다. 테스트가 미러를 SQL 문자열로 핀 고정.
+⇒ **NULL→값 1회만 허용**, 값→값·값→NULL 은 ABORT. 백필의 합법 경로이자 사후 위조 차단.
 
-### 2) 0039 헤더 갱신 (SQL 본문 불변)
+### 2-3 신규 적재 원문 필수 — ★적용 범위 결정 (설계 결정 ①)
 
-0039 의 ★★ 경고("적용 전 반드시 읽을 것 — blackout")를 **"(C) + 0045 로 해소"** 로 갱신.
-0039 production 적용을 이 결정 뒤로 묶는다는 카드 §5 세 번째 체크의 이행.
+체크리스트 완료 판정은 _"원문 없이 넣으려 하면 거부 / **공백만 넣어도 거부**"_ = **INSERT 시점 게이트**다.
+문제는 범위다 — 무조건 걸면 `INSERT INTO knowledge_nodes` 표면 **21곳**(테스트 픽스처 다수)이 전부 깨진다.
 
-### 4) 마이그 0046 — 세 번째 문 봉쇄 (★리뷰 처분으로 추가)
+**채택: `batch_id IS NOT NULL` 인 행에만 강제.**
 
-| 반  | 무엇                                                                                                                       | 왜                                        |
-| --- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| C-1 | 0042[1] 재생성 — 승계자가 **approved + 오늘 유효**일 때만 구본 은퇴                                                        | 미발효 승계자가 은퇴를 일으키는 경로 차단 |
-| C-2 | `knowledge_nodes`/`formulas`/`constants` BEFORE INSERT — 이미 approved 전이가 있는 id 를 **오늘 무효**로 INSERT 하면 ABORT | "승인 + 미시행" 상태의 성립 자체를 차단   |
+- 근거: 체크리스트 문면이 **"새로 적재하는 _서식_"** 이라고 범위를 이미 한정하고 있다.
+  `batch_id` 는 "이 행은 배치 적재분"이라는 **행 스스로의 선언**이며, 실측상
+  적재 경로(`draft-loader.ts:317`, `gap-P*-insert.sql` = `'BATCH-GAP-P1'`)는 **항상** 채우고
+  테스트 픽스처는 **한 곳도** 쓰지 않는다(전수 grep). 즉 의미와 실측이 같은 선을 그린다.
+- **공백 거부**: `trim(NEW.source_quote) = ''` 도 ABORT. 빈 문자열은 "채웠다"의 가장 흔한 위조다.
+- ⚠️ **막지 않는 것(정직 기록)**: batch_id 없는 수기 INSERT·테스트·마이그레이션은 게이트 밖이다.
+  이건 구멍이 아니라 **의도된 경계**다 — 적재 서식 강제이지 전역 NOT NULL 이 아니며,
+  전역화하려면 기존 857 행 백필 완료가 선행이다(그게 2-4, 그리고 그 뒤가 STAGE 3).
+- **formulas/constants 는 INSERT 게이트 제외**: 두 테이블에는 `batch_id` 류 적재 선언 컬럼이
+  **없다**(schema 실측). 칸(2-1)과 백필 규율(2-2)은 걸되 적재 의무화는 별건으로 이월한다
+  (분석 §T1-1 도 이 축을 "WS-3c variant 24 교재 대조 큐"로 별도 지목).
 
-★ **(a)안 재도입이 아니다**: 카드가 (a)를 기각한 이유는 "시행일이 와도 은퇴를 발화시킬 이벤트가 없다"
-였는데, 0045 [A] 적용 후에는 **approved ⟹ 승격 시점에 유효**가 보장되고 승격 시점 flip 은 0042[2]가
-이미 담당한다. 따라서 C-1 의 조건이 거짓인 경우는 **정상 경로에 존재하지 않으며**, 남는 것은 우회 시퀀스뿐이다.
+### 2-4 법령 59장 백필 (LAW-144~202)
 
-### 3) 무결성 러너 계보 불변식 (사후 관측)
+- **왜 여기부터**: 조문은 **본문이 곧 내용**이라 원문 부착이 기계적이고, 숫자가 많아 STAGE 3 효과 측정이 선명하다.
+- **★현 description 은 원문이 아니다**(실측): `LAW-144` 는 _"① … 2의2. 「산림조합법」에 따른 …"_ 처럼
+  조문을 **요약·재구성**했고 편집 주석(_"(법령 원문 기준 — … CROSS_REF.)"_)까지 붙어 있다.
+  ⇒ `source_quote` 는 description 복사가 **아니라** 법령 PDF 에서 **축자 추출**해야 한다.
+- 경로: `docs/batch-load/gap-P1/extract_law.py`(pdfplumber) 재사용 → 조문 단위 절단 →
+  **결정론 추출**(LLM 생성 금지) → 노드별 매핑 → 백필 SQL(`UPDATE … SET source_quote = ?`).
+- 산출: `docs/batch-load/stage2-source-quote/` (추출 스크립트·매핑 JSON·백필 SQL·검수 시트).
+- ⚠️ **production 적용은 별도 인증 게이트** — 여기서는 SQL 생성 + 로컬 하네스 검증까지.
 
-카드 §3-4 가 지정한 `LINEAGE_DUAL_ACTIVE`(구·신 동시 서빙) + 카드 §2-(D) 가 최소 의무로 지목한
-`LINEAGE_GAP`(계보 전체가 서빙에서 사라짐) 2종 → **처분 후 3종**(`LINEAGE_LAPSE` 신설). **트리거가 원리상 못 잡는 것**을 잡는 그물이다 —
-SQLite 에 시간 기반 트리거가 없으므로 `valid_until` 도래 같은 **시각 경과 실패는 관측만이 방어선**.
+### 2-5 미검증 표기 (감사 코어)
 
-- 판정에 status·시행일이 필요 → `D1NodeRow` 에 `effective_status`/`valid_from`/`valid_until` 추가(옵션)
-- **덤프에 없으면 `measured:false`** — 가짜 PASS 금지(러너 기존 fabricate 차단 철학 정합).
-  러너는 `parseDump` 필수 컬럼으로 승격해 **입력 단계에서 fail-loud**.
+무결성 러너 리포트에 **`source_quote` 커버리지**를 명시한다 —
+`approved+active 노드 N 중 원문 보유 M (M/N)`. 그리고 STAGE 3 검사기가 붙었을 때
+_"게이트 PASS = 전수 검증"_ 으로 읽히지 않도록 **미보유분을 `측정 대상 아님`으로 분리 표기**.
 
-> ⚠️ **판정축 교정 (2026-08-07 리뷰 CRITICAL)**: 초판 `LINEAGE_GAP` 은 `oldNode.is_current_active !== 1`
-> 을 조건으로 삼았는데, **시각 경과형에서는 구본을 은퇴시킬 이벤트가 없어 그 값이 계속 1** 이다 —
-> 위 문단이 "관측만이 방어선"이라 지목한 부류가 정작 조건에서 빠져 있었다(과소보고). 동시에 판정이
-> 엣지 국소라 다중홉 체인에서 오탐했다(과대보고 → 두 번째 개정이 생기면 게이트 영구 FAIL).
-> ⇒ 판정축을 **"오늘 서빙되는가"** 로 옮기고, 터미널 승계자에서만 GAP 을 보고하며,
-> 엣지와 무관한 **`LINEAGE_LAPSE`**(노드 전수 스캔)를 신설했다.
+★이음길 교훈(분석 §3): 일부만 검사하고 전부 검사한 것처럼 보이는 상태가 가장 위험하다.
+
+## 설계 결정 (RULE #1 — 기획과 다른 판단은 여기 명시)
+
+| #   | 갈림길                 | 채택                                           | 근거                                                                                                  |
+| --- | ---------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| ①   | 2-3 INSERT 게이트 범위 | **batch_id 선언분만**                          | 체크리스트 문면("적재 서식")과 실측(적재=항상 / 픽스처=전무)이 일치. 전역 강제는 857 백필 후에나 가능 |
+| ②   | `source_quote` 출처    | **법령 PDF 축자 추출** (description 복사 금지) | 실측상 description 은 요약·편집본. 복사하면 "원문 대조"가 자기 자신 대조가 되어 STAGE 3 가 공허해진다 |
+| ③   | 백필 실행 시점         | **SQL 생성까지 / 적용은 별도 게이트**          | production 쓰기 = 진산 인증 관행(0038·0044·0045 선례). 2-4 는 "채울 준비 완료"로 닫는다               |
 
 ## 위험 분석
 
-| 위험                                                           | 완화                                                                                                                                |
-| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| 0045 가 **정상 승격을 막는다**(회귀)                           | 실측: production `valid_from`/`valid_until` = **0/857 노드 · 0 formulas · 0 constants**. 오늘자 효과 0 = 무회귀. api 전량 회귀 의무 |
-| 트리거 "오늘" ↔ 서빙 "오늘" 불일치 = 새 drift                  | 동일 식(`date('now','+9 hours')`·반개구간·`date()` 정규화) 사용 + 테스트가 SQL 문자열 핀 고정                                       |
-| 해석 불가 날짜에서 **fail-open**(WHEN 이 NULL → 미발화)        | `COALESCE(<비교>, 0) = 0` 로 3값 논리 명시 붕괴 → 해석 불가 = 차단. 전용 테스트                                                     |
-| B 가 **정당한 백필을 막는다** (미시행 4노드 valid_from 채우기) | B 는 "서빙 중(approved+active)" 행에만 발화. 대상 4노드는 draft → 통과. 전용 테스트                                                 |
-| 러너 신규 불변식이 **선재 데이터로 즉시 red**                  | 실측: production 활성 SUPERSEDES 엣지 **0** (전체 11 전부 `is_active=0`) → 두 불변식 공허참. 게이트 판정 불변                       |
-| 카드 문면 밖 확대(B·valid_until)를 **Silent Pivot** 으로 오인  | 본 plan §대상변경 + 카드 §7 + 체크리스트에 **명시 확대**로 기록. 결정 자체는 (C) 불변                                               |
-| production 적용을 승인으로 오해 (2026-05-29 실수 재발)         | 승인 범위 = SQL 작성·로컬 검증. 마이그 헤더 STATUS 라벨 + 본 plan 명문화 + 대시보드 재상신                                          |
+| 위험                                                                                                                                                                                                                                                                                                               | 완화                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 새 컬럼이 **가드 밖**이라 값→값 UPDATE 무음 통과 (0041 이 겪은 구멍의 재발)                                                                                                                                                                                                                                        | 2-2 를 **같은 마이그에** 넣는다. 칸만 만들고 가드를 미루면 그 사이가 무방비                                                                                                                                                                                                      |
+| 2-3 게이트가 **정당한 적재를 막는다**                                                                                                                                                                                                                                                                              | 범위 = batch_id 선언분. 기존 표면 21곳 중 적재 경로만 대상 — 전수 회귀로 확인                                                                                                                                                                                                    |
+| `source_quote` 를 description 복사로 채워 **검증이 자기 대조**가 됨                                                                                                                                                                                                                                                | 설계 결정 ② + 백필 스크립트에 동일성 검사(quote == description 이면 fail-loud)                                                                                                                                                                                                   |
+| 백필 원문이 **LLM 생성/환각**                                                                                                                                                                                                                                                                                      | 결정론 추출만(pdfplumber). 스크립트에 "생성 금지" 명문 + 추출 원문 ↔ PDF 재현 가능                                                                                                                                                                                               |
+| 1.2MB **전문 대조**로 청크 없이 가면 STAGE 3 가 공허 PASS (catchall W1 실증)                                                                                                                                                                                                                                       | 본 plan 범위 밖이나, `source_quote` 를 **조문 단위**로 끊어 저장해 STAGE 3 청크 대조의 전제를 미리 만든다                                                                                                                                                                        |
+| ★**백필 대상 59 = 캘리브레이션 burned 코퍼스** — LAW-144~202 는 2026-07-14 위임 일괄 승격 63(P1 22+P2 37+P3 4)의 부분집합이고, 대시보드 §A #8 이 "이미 승격된 행이라 자기 채점"으로 지목한 바로 그 집합이다. STAGE 3 는 "원문 보유 카드"만 검사할 수 있으므로 **첫 측정 표본 = burned 표본이 구조적으로 강제**된다 | ⚠️ **미완화 — 명시 이월**. STAGE 3 착수 전에 held-out(원문 보유 · 승격 이력 없음) 집합을 별도 확보해야 한다(§A #8 연동). 이 plan 범위에서는 해소하지 않으며, 해소 없이 STAGE 3 수치를 인용하면 06-02 다각 감사가 차단막으로 지정한 순환편향이 기계화된 형태로 되돌아온다         |
+| ★**오추출을 나중에 못 고친다** — 0047 이 `source_quote` 를 NULL→값 1회로 고정하므로 적용 후 정정은 값→값 = ABORT                                                                                                                                                                                                   | **적용 전 검수가 유일한 창**이다. 순서를 못박는다: `review-sheet.md` 검수 → 정정 → 추출·게이트·SQL **재생성** → 그 다음 적용. 잔여 리스크 실측: 상법 8건은 기록 페이지축이 틀려 전 문서 폴백 + "최장 본문" 휴리스틱으로 선택됐고, LAW-202(고시)는 조 번호가 없어 페이지 전문이다 |
+| 마이그 순서 (0046 뒤)                                                                                                                                                                                                                                                                                              | 0047 슬롯. 0046 과 객체 참조 0 — 단 `prevent_*_update` 재생성이므로 **0041 이후** 적용 필수(파일명 순 = 도구 보장)                                                                                                                                                               |
 
 ## 검증 계획 (Binary)
 
-- [x] **G-0045-1** 미래 `valid_from` 노드 → `approved` 전이 INSERT = ABORT / 오늘·과거 = 통과
-- [x] **G-0045-2** 과거 `valid_until` 노드 → 승격 ABORT / 미래 `valid_until` = 통과
-      (★리뷰 처분: 2b 에 **서빙 결과 집합 대조** 추가 — 상한 방향 drift 가 침묵하던 구멍)
-- [x] **G-0045-3** `valid_from`/`valid_until` NULL(현 production 전량) = **무회귀 통과**
-- [x] **G-0045-4** 해석 불가 날짜('언젠가') = ABORT (fail-closed, 서빙 창과 동일 방향)
-- [x] **G-0045-5** `review`/`flagged` 전이는 무접촉 (승격만 게이트) / formula·constant 대칭 동작
-- [x] **G-0045-6** B: approved+active 행에 미래 `valid_from` 백필 = ABORT / draft 행은 통과 /
-      과거 `valid_from` 백필은 통과 / 0041 의 NULL→값 1회 규약 무회귀
-- [x] **G-0045-7** ★end-to-end: OLD(approved) ← NEW(미래 valid_from) 계보에서
-      **승격 차단 → 서빙 = OLD 단독**(blackout 0·이중 노출 0), 시행일 이후 승격 → **서빙 = NEW 단독**
-- [x] **G-0045-8** 트리거 실재 + 미러 구성요소(`+9 hours`·`date(`·`COALESCE`) SQL 핀 (fail-open 차단)
-- [x] **G-INT-1** 계보 불변식: 구·신 동시 서빙 검출 / 계보 공백 검출 / status 부재 시 `measured:false`
-- [x] **G-REG** 전 워크스페이스 무회귀 (api 843 · quality 115 · scripts 28 · **E2E 26/26** · turbo typecheck 17/17·lint 17/17 · 훅 회귀 38/38)
+- [x] **G-S2-1** 3종 테이블에 `source_quote` 실재 + 기존 행 전부 NULL (무회귀)
+- [x] **G-S2-2** NULL→값 백필 통과 / 값→값 ABORT / 값→NULL ABORT (3종 대칭)
+- [x] **G-S2-3** batch_id 있는 INSERT: `source_quote` NULL = ABORT / 공백·whitespace = ABORT / 값 = 통과
+- [x] **G-S2-4** batch_id 없는 INSERT = 무게이트 통과 (테스트 픽스처·수기 경로 무회귀)
+- [x] **G-S2-5** 0041 기존 화이트리스트(valid\_\*·source_url·batch_run_id·source_id) 무회귀
+- [x] **G-S2-6** 러너 리포트에 커버리지 `M/N` 표기 + 미보유분 **"미검증 — 검사 대상 밖"** 분리
+- [x] **G-S2-7** 백필 SQL: 생성물 ↔ PDF 추출 원문 일치 · description 동일성 0건 ·
+      **58/59 매핑 + 의도적 제외 1**(LAW-202 = 실체인 표가 미적재 → 사유 영속)
+- [x] **G-S2-7f** ★꼬리 오염 0 (부칙·별표·페이지 푸터·다음 문서 머리) — 독립 리뷰 CRITICAL 처분으로 신설
+- [x] **G-S2-7g** ★description 대비 과대 배수 0 (절단 실패 탐지) — 동상
+- [x] **G-REG** 전 워크스페이스 무회귀 (api·quality·scripts·E2E·typecheck·lint·G-1·훅)
+- [x] **G-MUT** 변이 검증 — 가드를 하나씩 제거하면 대응 테스트가 red
 - [x] **G-REVIEW** 독립 에이전트 리뷰 CRITICAL 0
-      — 5-페르소나 병렬 실행 → raw CRITICAL 3 → **전건 처분 후 0**.
-      보고서 `.claude/reviews/review-20260807-5persona-0045.md`
-
-### 리뷰 처분으로 추가된 게이트 (0046)
-
-- [x] **G-0046-1** approved 전이가 선행한 id 로 오늘 무효인 행 INSERT = ABORT (미래/만료/해석불가 3종)
-- [x] **G-0046-2** ★무회귀: 전이 이력이 없으면 미시행 노드 INSERT 자유 (개정본 사전 준비 경로 보존)
-- [x] **G-0046-3** approved 아닌 전이(review/flagged)는 무발화
-- [x] **G-0046-4** formula·constant 대칭 (차단 + 정상 경로 통과)
-- [x] **G-0046-5** ★e2e: 전이 선행 우회 시도 → 서빙 = 구본 단독 유지 (blackout 0)
-- [x] **G-0046-6** ★선재 상태(0045 이전 DB)에서도 미발효 승계자는 은퇴를 못 일으킨다
-- [x] **G-0046-7** ★무회귀: 오늘 유효한 승계자는 종전대로 구본 은퇴 → 서빙 = 신본 단독 (동시 노출 0)
-- [x] **G-0046-8** 트리거 4종 실재 + 0042[1] 재생성본이 승계자 유효성 EXISTS 를 담고 있음
-- [x] **G-0046-M** 변이 3/3 red (EXISTS 제거 / INSERT 게이트 삭제 / COALESCE 붕괴 제거) · 복원 sha256 동일
-- [x] **G-LAPSE** `LINEAGE_LAPSE` — 엣지 없는 만료 검출 / 다중홉 오탐 0 / 빈 문자열·해석불가 단독 보고
-- [x] **G-COMP** (2R) 계보 판정 = 성분 단위 — 위임 증발 0 / 분기 오탐 0 / 병합·순환 1건 수렴 /
-      union-find ↔ 독립 BFS **400 케이스 불일치 0**
-- [x] **G-MIRROR** (3R) ★미러 차등 테스트 — 실제 SQLite 서빙 SQL ↔ TS 미러 **54조합 대조, fail-open 0**.
-      변이 7(2R 개방형 정규식 회귀) 즉시 red 로 검출력 실증
-- [x] **G-0046-9/10/11** (2R·3R) 엣지 선행 순서 blackout 0 / 비활성 승계자 blackout 0 /
-      다중홉 순서 역전 시 stale 노출 **현재 동작 고정**(헤더 ⑦ 등재 = 알고 택한 대가)
+      — 2렌즈 실행 → raw CRITICAL 2 · MAJOR 8 → **전건 처분**.
+      ★처분 목록: typecheck red 상태 체크(재발 클래스) / STAGE 3 진입조건 오표기 / 대시보드 미갱신(정본 이원화) /
+      plan scope 누락 3파일 / 존재하지 않는 검증 문구 / burned 코퍼스 미기록 / 오추출 정정 경로 부재 /
+      "막게 되는 것" 미기록 / 2-5 어휘 완화 / 857→59 축소 미기록
 
 ## 롤백 전략
 
-- 0045/0046: **production 미적용** 상태이므로 파일 삭제로 롤백. 적용 후라면 말미 down 주석
-  (0045 = DROP 6 / 0046 = DROP 3 + 0042 [1] 블록 재실행). ★**반쪽 롤백 금지** — 0039 가 켜진 채
-  0045/0046 만 내리면 "발생은 못 막고 복구만 막힌" 최악 조합이다.
-- 러너 불변식: 순수 코어 함수 + 옵션 필드라 revert 시 기존 동작 그대로.
+- 0047: production 미적용 상태이므로 파일 삭제로 롤백. 적용 후에는 `ALTER … DROP COLUMN` 대신
+  **가드 트리거만 0041 판본으로 되돌린다**(D1 DROP COLUMN 은 재작성 비용·위험이 크다 — 컬럼은 NULL 로 남겨도 무해).
+- 러너 커버리지 표기: 순수 코어 + 리포트 문자열이라 revert 시 기존 동작 그대로.
+
+## 0047 적용이 **막게 되는 것** (독립 리뷰 MAJOR — 정직 기록)
+
+"막지 않는 것"만 적으면 절반이다. 이 마이그는 **기존 산출물의 재실행을 막는다**:
+
+- `docs/batch-load/**` 의 `knowledge_nodes` INSERT 보유 SQL **16개 전부**가 `batch_id` 를 선언하고
+  `source_quote` 를 갖지 않는다 → 0047 적용 후 **멱등 재실행이 ABORT**(실측 재현: gap-P1 첫 INSERT 에서 ABORT).
+  이 파일들은 "재실행 시 0행"을 설계 속성으로 갖던 산출물이므로, 재실행이 필요하면 **원문 열 추가가 선행**이다.
+- 신규 적재분(E0-8 P4~P6 등)은 **`source_quote` 열이 필수**가 된다 — 대시보드 §C 자율 큐에 반영 필요.
 
 ## 범위 외 (명시 이월)
 
-- **(B) 서빙 계보 해석**(카드 §2-B) — ADR-013 개정 + hot path 비용. 필요해질 때 별도 결재.
-- **(A) 발효 스윕**(카드 §2-A) — (C) 로 승격/백필 문을 닫았으므로 불요. `valid_until` 도래형 실패는
-  러너 `LINEAGE_LAPSE`(엣지 무관 노드 전수) **관측**으로 커버 — 후속본이 없으면 엣지가 없어
-  `LINEAGE_GAP`(성분 단위)은 그 부류를 보지 못한다(2R 리뷰 지적 반영) — 자동 복구가 아니고, ★**자동 실행도 아니다**:
-  `scripts/run-graph-integrity-production.ts` 는 어느 워크플로에도 배선돼 있지 않다
-  (`.github/workflows/{ops,ci,d1-schema-drift,g1-gate}.yml` 전수 확인 2026-08-07). 즉 이 잔여 위험은
-  **"덤프를 떠서 러너를 돌리면 보인다"** 수준이다. 러너 cron 배선 = 별건 후보(비차단).
-- **batch state-machine 의 ABORT 타입화** — `apps/batch/src/loader/state-machine.ts:103` 의
-  status_transitions INSERT 는 typed error(`TargetNotFoundError`/`InvalidTransitionError`) 계열과 달리
-  0045 ABORT 를 raw D1 에러로 전파한다. 메시지 자체가 자기설명적이고, 술어를 코드에 복제하면
-  단일 진실원이 깨지므로 **이번 범위에서 제외**(관측 기록). 필요해지면 메시지 기반 매핑이 아니라
-  "승격 전 유효성 조회" 헬퍼로 별건 처리.
-- 0043(formulas/constants 승계 지뢰) · 0040(WS-6c) — 별건 슬롯.
-- STAGE 2 `source_quote` 축 = 대시보드 §A #7 별도 1줄.
+- **STAGE 3 검사기**(인용 진위·앵커 충분성·값 정합) — 2-1~2-4 완료가 진입 조건.
+- **교재 카드 백필**(법령 외) — STAGE 3 파일럿 결과로 범위 결정(체크리스트 2-4 문면).
+- **formulas/constants 적재 의무화** — 적재 선언 컬럼 부재. WS-3c variant 24 큐와 함께 별건.
+- **`exam_questions` 정답↔해설 인용**(분석 §T1-1 적용 표면 ③) — 스키마·출처가 다른 축, 별건.
+- 러너 CI 배선 (직전 plan 원장 L-4) · 0043(formulas/constants 은퇴) · 0040(WS-6c).
 
 ## 승인 기록
 
-- 2026-08-07 진산 **"c 진행"** — 카드 §5 (C) 채택 + 마이그 0045 작성·검증 착수
-- (대기) 0045·0039 production 적용 = 별도 결재 (묶어서 상신)
+- 2026-08-08 진산 **"stage 2 진행"** — 대시보드 §A #7 (권고 (a) 백필 포함) 채택
+- (대기) 0047 production 적용 + 59장 백필 실행 = 별도 인증 게이트 (묶어서 상신)

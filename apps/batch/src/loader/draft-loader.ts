@@ -314,8 +314,8 @@ function buildNodeInserts(
     INSERT OR IGNORE INTO knowledge_nodes
       (id, type, name, description, lv1_insurance, lv2_crop, lv3_investigation,
        page_ref, book_page, pdf_page, chapter, section,
-       batch_id, batch_run_id, source_id, version_year, truth_weight, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')
+       batch_id, batch_run_id, source_id, version_year, truth_weight, source_quote, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')
   `;
   for (const node of contract.nodes) {
     if (existing.has(node.id)) {
@@ -324,27 +324,29 @@ function buildNodeInserts(
     }
     const pageRef = pageRefString(node.source_page);
     stmts.push(
-      db
-        .prepare(sql)
-        .bind(
-          node.id,
-          node.type,
-          node.title,
-          node.content,
-          node.lv1_insurance ?? null,
-          node.lv2_crop ?? null,
-          node.lv3_investigation ?? null,
-          pageRef,
-          node.book_page,
-          node.pdf_page,
-          node.chapter ?? null,
-          node.section ?? null,
-          ctx.batchId,
-          ctx.batchRunId,
-          buildSourceId(pageRef, node.id),
-          ctx.versionYear,
-          node.truth_weight,
-        ),
+      db.prepare(sql).bind(
+        node.id,
+        node.type,
+        node.title,
+        node.content,
+        node.lv1_insurance ?? null,
+        node.lv2_crop ?? null,
+        node.lv3_investigation ?? null,
+        pageRef,
+        node.book_page,
+        node.pdf_page,
+        node.chapter ?? null,
+        node.section ?? null,
+        ctx.batchId,
+        ctx.batchRunId,
+        buildSourceId(pageRef, node.id),
+        ctx.versionYear,
+        node.truth_weight,
+        // migrations/0047 (STAGE 2 · 2-3): 배치 적재분은 근거 원문이 필수다.
+        // 계약에 없으면 여기서 NULL 이 들어가고 DB 트리거가 ABORT 시킨다 —
+        // **조용히 빈 채로 적재되는 경로를 만들지 않는다**(단일 진실원 = DB 게이트).
+        node.source_quote ?? null,
+      ),
     );
   }
   return stmts;

@@ -13,7 +13,7 @@
  * 사용 (덤프 생성 → 러너):
  *   cd apps/api
  *   npx wrangler d1 execute thepick-db-production --remote --json \
- *     --command "SELECT kn.id, kn.type, kn.name, kn.is_current_active, kn.valid_from, kn.valid_until, \
+ *     --command "SELECT kn.id, kn.type, kn.name, kn.is_current_active, kn.valid_from, kn.valid_until, kn.source_quote, \
  *                  COALESCE((SELECT st.to_status FROM status_transitions st \
  *                             WHERE st.target_type='node' AND st.target_id=kn.id \
  *                             ORDER BY st.transitioned_at DESC, st.rowid DESC LIMIT 1),'draft') AS effective_status \
@@ -128,7 +128,13 @@ function main(): void {
   const outDir = argValue('--out') ?? DEFAULT_OUT_DIR;
   mkdirSync(outDir, { recursive: true });
 
-  const { integrity, staleEdgeRefs, walkUnreachable, lineage, gatePass } = report;
+  const { integrity, staleEdgeRefs, walkUnreachable, lineage, sourceQuoteCoverage, gatePass } =
+    report;
+  // STAGE 2 · 2-5 — "검사 통과 = 전수 검증" 착시 차단: 분모·분자를 항상 함께 노출한다.
+  const coverageCell = sourceQuoteCoverage.measured
+    ? `${sourceQuoteCoverage.withQuote} / ${sourceQuoteCoverage.servedTotal}` +
+      ` (미보유 ${sourceQuoteCoverage.withoutQuote} = **미검증 — 검사 대상 밖**)`
+    : `⚠️ 미측정 (${sourceQuoteCoverage.reason})`;
   const lineageCell = lineage.measured
     ? String(lineage.anomalies.length)
     : `⚠️ 미측정 (${lineage.reason})`;
@@ -155,6 +161,7 @@ function main(): void {
     `| 활성 엣지 → 비활성 노드 (신규 검사) | ${staleEdgeRefs.length} |`,
     `| 계보 이상 (동시 서빙 / 계보 공백 / 시행창 이탈) — 기준일 ${todayKst} KST | ${lineageCell} |`,
     `| walk 도달 불가 활성 노드 (정보 지표 — 게이트 불산입) | ${walkUnreachable.length} |`,
+    `| **원문 인용 보유** (STAGE 3 검사 가능 범위 — 게이트 불산입) | ${coverageCell} |`,
     '',
     '## 위반 상세',
     '',
@@ -172,6 +179,14 @@ function main(): void {
             ? lineage.anomalies.map((a) => `- [${a.type}] ${lineageAnomalySubject(a)}: ${a.detail}`)
             : [`- [LINEAGE_UNMEASURED] ${lineage.reason}`]),
         ].join('\n'),
+    '',
+    '## 원문 인용 커버리지 (STAGE 2 · 2-5)',
+    '',
+    sourceQuoteCoverage.measured
+      ? `오늘 서빙되는 노드 **${sourceQuoteCoverage.servedTotal}** 중 근거 원문(\`source_quote\`) 보유 ` +
+        `**${sourceQuoteCoverage.withQuote}**. 나머지 **${sourceQuoteCoverage.withoutQuote}** 는 ` +
+        `STAGE 3 검사기가 **검사할 수 없는 범위** = **미검증**이다 — "위반 0건"이 "전수 검증"을 뜻하지 않는다.`
+      : `⚠️ 미측정 — ${sourceQuoteCoverage.reason}`,
     '',
     '## walk 도달 불가 노드 (in-degree 0, CONCEPT-023 클래스 — BATCH 엣지 보강 후보)',
     '',

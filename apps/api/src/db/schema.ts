@@ -217,6 +217,20 @@ export const knowledgeNodes = sqliteTable(
     /** law.go.kr DRF 출처 앵커 (migrations/0041) — NULL→값 1회 백필만 허용. */
     sourceUrl: text('source_url'),
     sourceArticleCode: text('source_article_code'),
+    /**
+     * 이 카드의 근거가 된 **원문 문장 그 자체** (migrations/0047, 역이식 STAGE 2).
+     *
+     * 왜 필요한가: 기존 출처 축은 전부 **포인터**(page_ref·book_page·source_url)라
+     * "이 카드가 맞나"를 확인하려면 사람이 PDF 를 열어야 했고, 그것이 결재 병목의 원인이었다.
+     * 원문을 데이터로 들고 있어야 STAGE 3 검사기(인용 진위·앵커 충분성·값 정합)가 **대조할 대상**을 갖는다.
+     *
+     * 값 규약: **원문 축자**(verbatim). `description` 복사 금지 — description 은 요약·편집본이라
+     * 복사하면 검증이 자기 자신 대조가 된다. **조문/문단 단위로 끊어서** 저장(전문 투입 시
+     * 바이그램 포화로 접합 인용이 통과한다 — catchall W1 실증). LLM 생성 금지, 결정론 추출만.
+     * 쓰기 규약: 0047 가드가 **NULL→값 1회 백필만** 허용(값→값·값→NULL 차단 = 사후 위조 차단).
+     * 적재 규약: `batch_id` 를 선언한 행은 **비어 있지 않은 원문 필수**(0047 INSERT 게이트).
+     */
+    sourceQuote: text('source_quote'),
     truthWeight: integer('truth_weight').notNull().default(5),
     /**
      * @deprecated 현재 상태 조회에 **사용하지 말 것** (ADR-010).
@@ -303,6 +317,8 @@ export const formulas = sqliteTable('formulas', {
   nodeId: text('node_id').references(() => knowledgeNodes.id),
   versionYear: integer('version_year').notNull(),
   supersededBy: text('superseded_by'),
+  /** 근거 원문 축자 (migrations/0047) — 규약은 knowledge_nodes.sourceQuote 주석 참조. */
+  sourceQuote: text('source_quote'),
   /** Materialized Active View (migrations/0013) — NC-1 동기 (RC-5, 2026-06-11). */
   isCurrentActive: integer('is_current_active').notNull().default(1),
   createdAt: text('created_at')
@@ -333,6 +349,8 @@ export const constants = sqliteTable('constants', {
   examScope: text('exam_scope', { enum: EXAM_SCOPES }).default('2nd'),
   /** 개정 supersession 체인 (migrations/0014:134) — NC-1 동기 (RC-5, 2026-06-11). */
   supersededBy: text('superseded_by'),
+  /** 근거 원문 축자 (migrations/0047) — 규약은 knowledge_nodes.sourceQuote 주석 참조. */
+  sourceQuote: text('source_quote'),
   /** Materialized Active View (migrations/0013) — NC-1 동기 (RC-5, 2026-06-11). */
   isCurrentActive: integer('is_current_active').notNull().default(1),
   createdAt: text('created_at')

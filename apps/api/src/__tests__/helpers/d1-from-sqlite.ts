@@ -112,6 +112,8 @@ export const SCENARIO_MIGRATIONS = [
   '0045_block_premature_promotion.sql',
   // 세 번째 문 봉쇄 (2026-08-07, 5-페르소나 독립 리뷰 CRITICAL 처분 — 0039·0045 와 묶음 적용)
   '0046_close_third_promotion_door.sql',
+  // source_quote 축 (2026-08-08, 역이식 STAGE 2 — SQL 작성 승인·production 적용은 별도 게이트)
+  '0047_source_quote_axis.sql',
 ];
 
 export interface SqliteBackedD1 {

@@ -41,6 +41,19 @@ export interface KnowledgeContractNode {
    */
   source_page: number;
   /**
+   * 근거 원문 축자 (migrations/0047, 역이식 STAGE 2 · 2-3).
+   *
+   * **배치 적재분은 필수다** — DB 트리거 `require_source_quote_on_batch_load` 가
+   * `batch_id` 선언 행에 대해 NULL·공백을 ABORT 한다(단일 진실원 = DB).
+   * 여기서 optional 인 이유: 과거 계약(BATCH-1~7)과 비-배치 경로가 이 필드를 갖지 않으며,
+   * 타입을 required 로 올리면 그 이력 전체가 컴파일 불가가 되기 때문이다.
+   * ⚠️ **본 계약 층에는 공백 검증이 없다**(구현 0 — 독립 리뷰 MAJOR 지적으로 문면 정정).
+   * 유일한 강제 지점은 **DB 트리거**이며, 계약 층 선검증은 별건 이월이다.
+   *
+   * 값 규약: 원문 축자. `content` 요약 복사 금지 — 복사하면 STAGE 3 검증이 자기 대조가 된다.
+   */
+  source_quote?: string;
+  /**
    * 사용자(수험자) 노출용 본문 페이지 (ADR-030). 교재 footer 페이지 번호 기준.
    * 마이그레이션 0019 트리거 enforce_book_page_on_insert 가 NULL INSERT 차단.
    * 본문/PDF 페이지 단위가 동일한 자료(법령 PDF 등)는 pdf_page 와 동일 값.

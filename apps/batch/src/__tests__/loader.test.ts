@@ -27,6 +27,9 @@ function minimalContract(): KnowledgeContract {
         pdf_page: 403,
         chapter: '제1장 농업재해보험 손해평가 개관',
         section: '제3절 현지조사 내용',
+        // migrations/0047 (STAGE 2 · 2-3): batch_id 를 선언하는 적재분은 근거 원문이 필수다.
+        source_quote:
+          '제3절 현지조사 내용 — 적과 전까지는 종합위험 방식을 적용한다. (검증용 픽스처 · 축자 예시)',
       },
       {
         id: 'F-99',
@@ -39,6 +42,9 @@ function minimalContract(): KnowledgeContract {
         pdf_page: 414,
         chapter: '제2장 농작물재해보험 손해평가',
         section: '제2절 과수작물 손해평가 및 보험금 산정',
+        // migrations/0047 (STAGE 2 · 2-3): batch_id 를 선언하는 적재분은 근거 원문이 필수다.
+        source_quote:
+          '제2절 과수작물 손해평가 및 보험금 산정 — 유과타박률은 피해 유과수를 전체 유과수로 나눈 값으로 한다. (검증용 픽스처 · 축자 예시)',
       },
     ],
     edges: [

@@ -1,0 +1,533 @@
+[
+  {
+    "id": "LAW-144",
+    "name": "법 제8조 (보험사업자)",
+    "pack": "P1",
+    "book_page": 7,
+    "pdf_page": 7,
+    "chapter": "농어업재해보험법",
+    "section": "법"
+  },
+  {
+    "id": "LAW-145",
+    "name": "법 제11조 (손해평가 등)",
+    "pack": "P1",
+    "book_page": 9,
+    "pdf_page": 9,
+    "chapter": "농어업재해보험법",
+    "section": "법"
+  },
+  {
+    "id": "LAW-146",
+    "name": "시행령 제2조 (위원장의 직무)",
+    "pack": "P1",
+    "book_page": 2,
+    "pdf_page": 2,
+    "chapter": "농어업재해보험법 시행령",
+    "section": "시행령"
+  },
+  {
+    "id": "LAW-147",
+    "name": "시행령 제3조의2 (위원의 해촉)",
+    "pack": "P1",
+    "book_page": 2,
+    "pdf_page": 2,
+    "chapter": "농어업재해보험법 시행령",
+    "section": "시행령"
+  },
+  {
+    "id": "LAW-148",
+    "name": "시행령 제4조 (분과위원회)",
+    "pack": "P1",
+    "book_page": 2,
+    "pdf_page": 2,
+    "chapter": "농어업재해보험법 시행령",
+    "section": "시행령"
+  },
+  {
+    "id": "LAW-149",
+    "name": "시행령 제5조 (수당 등)",
+    "pack": "P1",
+    "book_page": 3,
+    "pdf_page": 3,
+    "chapter": "농어업재해보험법 시행령",
+    "section": "시행령"
+  },
+  {
+    "id": "LAW-150",
+    "name": "시행령 제6조 (운영세칙)",
+    "pack": "P1",
+    "book_page": 3,
+    "pdf_page": 3,
+    "chapter": "농어업재해보험법 시행령",
+    "section": "시행령"
+  },
+  {
+    "id": "LAW-151",
+    "name": "시행령 제11조 (변경사항의 공고)",
+    "pack": "P1",
+    "book_page": 3,
+    "pdf_page": 3,
+    "chapter": "농어업재해보험법 시행령",
+    "section": "시행령"
+  },
+  {
+    "id": "LAW-152",
+    "name": "시행령 제17조 (기금계정의 설치)",
+    "pack": "P1",
+    "book_page": 7,
+    "pdf_page": 7,
+    "chapter": "농어업재해보험법 시행령",
+    "section": "시행령"
+  },
+  {
+    "id": "LAW-153",
+    "name": "시행령 제18조 (기금의 관리ㆍ운용에 관한 사무의 위탁)",
+    "pack": "P1",
+    "book_page": 7,
+    "pdf_page": 7,
+    "chapter": "농어업재해보험법 시행령",
+    "section": "시행령"
+  },
+  {
+    "id": "LAW-154",
+    "name": "시행령 제20조 (여유자금의 운용)",
+    "pack": "P1",
+    "book_page": 7,
+    "pdf_page": 7,
+    "chapter": "농어업재해보험법 시행령",
+    "section": "시행령"
+  },
+  {
+    "id": "LAW-155",
+    "name": "시행령 제21조 (통계의 수집ㆍ관리 등에 관한 업무의 위탁)",
+    "pack": "P1",
+    "book_page": 8,
+    "pdf_page": 8,
+    "chapter": "농어업재해보험법 시행령",
+    "section": "시행령"
+  },
+  {
+    "id": "LAW-156",
+    "name": "시행령 제22조의3 (고유식별정보의 처리)",
+    "pack": "P1",
+    "book_page": 8,
+    "pdf_page": 8,
+    "chapter": "농어업재해보험법 시행령",
+    "section": "시행령"
+  },
+  {
+    "id": "LAW-157",
+    "name": "시행령 제22조의4 (규제의 재검토)",
+    "pack": "P1",
+    "book_page": 9,
+    "pdf_page": 9,
+    "chapter": "농어업재해보험법 시행령",
+    "section": "시행령"
+  },
+  {
+    "id": "LAW-158",
+    "name": "상법 제642조 (증권의 재교부청구)",
+    "pack": "P1",
+    "book_page": 22,
+    "pdf_page": 22,
+    "chapter": "상법 제4편 보험",
+    "section": "제1장 통칙"
+  },
+  {
+    "id": "LAW-159",
+    "name": "상법 제721조 (영업책임보험의 목적)",
+    "pack": "P1",
+    "book_page": 24,
+    "pdf_page": 24,
+    "chapter": "상법 제4편 보험",
+    "section": "제2장 제5절 책임보험"
+  },
+  {
+    "id": "LAW-160",
+    "name": "상법 제722조 (피보험자의 배상청구 사실 통지의무)",
+    "pack": "P1",
+    "book_page": 24,
+    "pdf_page": 24,
+    "chapter": "상법 제4편 보험",
+    "section": "제2장 제5절 책임보험"
+  },
+  {
+    "id": "LAW-161",
+    "name": "상법 제723조 (피보험자의 변제 등의 통지와 보험금액의 지급)",
+    "pack": "P1",
+    "book_page": 24,
+    "pdf_page": 24,
+    "chapter": "상법 제4편 보험",
+    "section": "제2장 제5절 책임보험"
+  },
+  {
+    "id": "LAW-162",
+    "name": "상법 제724조 (보험자와 제3자와의 관계)",
+    "pack": "P1",
+    "book_page": 24,
+    "pdf_page": 24,
+    "chapter": "상법 제4편 보험",
+    "section": "제2장 제5절 책임보험"
+  },
+  {
+    "id": "LAW-163",
+    "name": "상법 제725조 (보관자의 책임보험)",
+    "pack": "P1",
+    "book_page": 24,
+    "pdf_page": 24,
+    "chapter": "상법 제4편 보험",
+    "section": "제2장 제5절 책임보험"
+  },
+  {
+    "id": "LAW-164",
+    "name": "상법 제725조의2 (수개의 책임보험)",
+    "pack": "P1",
+    "book_page": 24,
+    "pdf_page": 24,
+    "chapter": "상법 제4편 보험",
+    "section": "제2장 제5절 책임보험"
+  },
+  {
+    "id": "LAW-165",
+    "name": "상법 제726조 (재보험에의 준용)",
+    "pack": "P1",
+    "book_page": 24,
+    "pdf_page": 24,
+    "chapter": "상법 제4편 보험",
+    "section": "제2장 제5절 책임보험"
+  },
+  {
+    "id": "LAW-166",
+    "name": "요령 제1조 (목적)",
+    "pack": "P2",
+    "book_page": 807,
+    "pdf_page": 814,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-167",
+    "name": "요령 제2조 (용어의 정의)",
+    "pack": "P2",
+    "book_page": 807,
+    "pdf_page": 814,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-168",
+    "name": "요령 제3조 (손해평가 업무)",
+    "pack": "P2",
+    "book_page": 807,
+    "pdf_page": 814,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-169",
+    "name": "요령 제4조 (손해평가인 위촉)",
+    "pack": "P2",
+    "book_page": 807,
+    "pdf_page": 814,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-170",
+    "name": "요령 제5조 (손해평가인 실무교육)",
+    "pack": "P2",
+    "book_page": 807,
+    "pdf_page": 814,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-171",
+    "name": "요령 제5조의2 (손해평가인 정기교육)",
+    "pack": "P2",
+    "book_page": 808,
+    "pdf_page": 815,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-172",
+    "name": "요령 제6조 (손해평가인 위촉의 취소 및 해지 등)",
+    "pack": "P2",
+    "book_page": 808,
+    "pdf_page": 815,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-173",
+    "name": "요령 제8조 (손해평가반 구성 등)",
+    "pack": "P2",
+    "book_page": 808,
+    "pdf_page": 815,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-174",
+    "name": "요령 제8조의2 (교차손해평가)",
+    "pack": "P2",
+    "book_page": 809,
+    "pdf_page": 816,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-175",
+    "name": "요령 제9조 (피해사실 확인)",
+    "pack": "P2",
+    "book_page": 809,
+    "pdf_page": 816,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-176",
+    "name": "요령 제10조 (손해평가준비 및 평가결과 제출)",
+    "pack": "P2",
+    "book_page": 809,
+    "pdf_page": 816,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-177",
+    "name": "요령 제11조 (손해평가결과 검증)",
+    "pack": "P2",
+    "book_page": 809,
+    "pdf_page": 816,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-178",
+    "name": "요령 제12조 (손해평가 단위)",
+    "pack": "P2",
+    "book_page": 810,
+    "pdf_page": 817,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-179",
+    "name": "요령 제13조 (농작물의 보험가액 및 보험금 산정)",
+    "pack": "P2",
+    "book_page": 810,
+    "pdf_page": 817,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-180",
+    "name": "요령 제14조 (가축의 보험가액 및 손해액 산정)",
+    "pack": "P2",
+    "book_page": 810,
+    "pdf_page": 817,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-181",
+    "name": "요령 제15조 (농업시설물의 보험가액 및 손해액 산정)",
+    "pack": "P2",
+    "book_page": 810,
+    "pdf_page": 817,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-182",
+    "name": "요령 제16조 (손해평가업무방법서)",
+    "pack": "P2",
+    "book_page": 811,
+    "pdf_page": 818,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-183",
+    "name": "요령 제17조 (재검토기한)",
+    "pack": "P2",
+    "book_page": 811,
+    "pdf_page": 818,
+    "chapter": "농업재해보험 손해평가요령",
+    "section": "요령"
+  },
+  {
+    "id": "LAW-184",
+    "name": "운영규정 제1조 (목적)",
+    "pack": "P2",
+    "book_page": 822,
+    "pdf_page": 829,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-185",
+    "name": "운영규정 제2조 (용어의 정의)",
+    "pack": "P2",
+    "book_page": 822,
+    "pdf_page": 829,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-186",
+    "name": "운영규정 제3조 (적용범위)",
+    "pack": "P2",
+    "book_page": 822,
+    "pdf_page": 829,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-187",
+    "name": "운영규정 제5조 (위탁업무의 처리)",
+    "pack": "P2",
+    "book_page": 822,
+    "pdf_page": 829,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-188",
+    "name": "운영규정 제6조 (약정의 체결)",
+    "pack": "P2",
+    "book_page": 822,
+    "pdf_page": 829,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-189",
+    "name": "운영규정 제7조 (재보험 사업관리)",
+    "pack": "P2",
+    "book_page": 823,
+    "pdf_page": 830,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-190",
+    "name": "운영규정 제8조 (재해보험 사업의 관리)",
+    "pack": "P2",
+    "book_page": 823,
+    "pdf_page": 830,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-191",
+    "name": "운영규정 제9조 (상품 연구 및 보급)",
+    "pack": "P2",
+    "book_page": 823,
+    "pdf_page": 830,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-192",
+    "name": "운영규정 제10조 (재해 관련 통계 생산 및 데이터베이스 구축·분석)",
+    "pack": "P2",
+    "book_page": 823,
+    "pdf_page": 830,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-193",
+    "name": "운영규정 제11조 (통계작업방법서 작성)",
+    "pack": "P2",
+    "book_page": 823,
+    "pdf_page": 830,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-194",
+    "name": "운영규정 제12조 (손해평가기법의 연구·개발 및 보급)",
+    "pack": "P2",
+    "book_page": 823,
+    "pdf_page": 830,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-195",
+    "name": "운영규정 제13조 (손해평가사 자격시험의 응시원서 및 수수료)",
+    "pack": "P2",
+    "book_page": 824,
+    "pdf_page": 831,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-196",
+    "name": "운영규정 제13조의2 (손해평가사 자격시험 면제신청서류)",
+    "pack": "P2",
+    "book_page": 824,
+    "pdf_page": 831,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-197",
+    "name": "운영규정 제14조 (손해평가사 자격증의 발급 등)",
+    "pack": "P2",
+    "book_page": 824,
+    "pdf_page": 831,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-198",
+    "name": "운영규정 제15조 (손해평가사 교육 및 자격시험 등)",
+    "pack": "P2",
+    "book_page": 824,
+    "pdf_page": 831,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-199",
+    "name": "운영규정 제16조 (수탁기관의 지도·감독 등)",
+    "pack": "P2",
+    "book_page": 825,
+    "pdf_page": 832,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-200",
+    "name": "운영규정 제17조 (기타 세부사항)",
+    "pack": "P2",
+    "book_page": 825,
+    "pdf_page": 832,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-201",
+    "name": "운영규정 제18조 (재검토기한)",
+    "pack": "P2",
+    "book_page": 825,
+    "pdf_page": 832,
+    "chapter": "재보험사업 및 농업재해보험사업의 운영 등에 관한 규정",
+    "section": "운영규정"
+  },
+  {
+    "id": "LAW-202",
+    "name": "목적물고시 (농업재해보험에서 보상하는 보험목적물의 범위)",
+    "pack": "P2",
+    "book_page": 826,
+    "pdf_page": 833,
+    "chapter": "농업재해보험에서 보상하는 보험목적물의 범위",
+    "section": "목적물고시"
+  }
+]
