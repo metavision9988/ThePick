@@ -262,6 +262,52 @@ describe('★G-S3-5 적대 10종 — 전건 검출', () => {
     expect(v.disposition, `${card.id} 이 통과했다 = 검사기 미완성`).not.toBe('pass');
   });
 
+  /**
+   * ★독립 리뷰(2026-08-08)가 잡은 것: 위 10종 중 ⑤⑥은 **외래 어휘**를 써서 바이그램이 떨어졌다.
+   *   **원문 어휘만으로** 같은 클래스를 만들면 바이그램·LCS 를 둘 다 통과한다 = 현 엔진의 진짜 한계.
+   *   `bigram.ts` §한계 1 이 "방어선은 lcsRatio 와 사람 검수뿐"이라 적었는데, LCS 도 못 막는다.
+   *   ⇒ **고칠 때까지 이 사실을 테스트로 들고 있는다**(it.fails = "지금은 못 잡는다"의 실행 가능한 기록).
+   *   고쳐지면 이 테스트가 red 가 되어 알려준다 — 주석보다 강한 장치다.
+   */
+  const hardened: ReadonlyArray<{ label: string; card: Parameters<typeof verifyCard>[0] }> = [
+    {
+      label: "⑤' 주체 바꿔치기(원문 어휘) — 재해보험사업자 → 손해평가사",
+      card: {
+        id: 'ADV-5H',
+        claim: '연 1회 이상 정기교육',
+        quote:
+          '손해평가사는 손해평가인이 공정하고 객관적인 손해평가를 수행할 수 있도록 연 1회 이상 정기교육을 실시하여야 한다.',
+        sourceText: SOURCE,
+      },
+    },
+    {
+      label: "⑥' 의무 → 재량(원문 어휘) — 실시하여야 한다 → 실시할 수 있다",
+      card: {
+        id: 'ADV-6H',
+        claim: '연 1회 이상 정기교육',
+        quote:
+          '재해보험사업자는 손해평가인이 공정하고 객관적인 손해평가를 수행할 수 있도록 연 1회 이상 정기교육을 실시할 수 있다.',
+        sourceText: SOURCE,
+      },
+    },
+  ];
+
+  it.fails.each(hardened)('$label → ★현재 검출 못 함 (알려진 한계)', ({ card }) => {
+    expect(verifyCard(card).disposition).not.toBe('pass');
+  });
+
+  it('★조문·호 번호 위조는 검출한다 (제3자→제4자 · 제1호→제7호)', () => {
+    // 독립 리뷰 실측: `자`·`호` 를 값에서 제외했더니 양쪽에서 함께 삭제돼 비교 자체가 사라졌다.
+    // 상위 plan G-AV-NUM 은 조문번호를 값으로 명시한다 — 제외는 그 기결 게이트의 반전이었다.
+    const v = verifyCard({
+      id: 'ADV-REF',
+      claim: '제4자에게 손해평가를 담당하게 할 수 있다',
+      quote: '제3자에게 손해평가를 담당하게 할 수 있다',
+      sourceText: '제3자에게 손해평가를 담당하게 할 수 있다',
+    });
+    expect(v.disposition).not.toBe('pass');
+  });
+
   it('★10/10 전건 검출 (하나라도 통과하면 미완성)', () => {
     const verdicts = adversarial.map((a) => verifyCard(a.card));
     const passed = verdicts.filter((v) => v.disposition === 'pass');
