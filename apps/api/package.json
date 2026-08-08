@@ -22,7 +22,7 @@
     "@thepick/shared": "workspace:*",
     "@thepick/srs": "workspace:*",
     "drizzle-orm": "^0.45.2",
-    "hono": "^4.12.28",
+    "hono": "^4.12.31",
     "zod": "^3.24.0"
   },
   "devDependencies": {
