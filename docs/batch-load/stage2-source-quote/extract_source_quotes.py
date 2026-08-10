@@ -96,13 +96,20 @@ EXCLUSIONS = {
 }
 
 PAGE_WINDOW = 2  # 조문이 페이지를 넘길 수 있으므로 뒤쪽 N페이지까지 이어 읽는다
+SEARCH_OFFSETS = (0, -1, 1)  # 1차 탐색 기준 페이지 보정
 
-# ★출처 청크 창 — **측정 전에 고정하고, 측정 후에 넓히지 않는다.**
-#   근거: 노드 pdf_page 는 조문 **시작** 페이지다 → 앞쪽 off-by-one(-1) + 조문이 페이지를
-#   최대 2번 넘길 여지(+2). 실패가 나온 뒤 창을 넓히면 그건 검사가 아니라 "green 될 때까지
-#   튜닝"이다(STAGE 3 자기충족 사고의 재발 경로). 창 밖에서 인용이 발견되면 그것은
-#   **엔진 실패가 아니라 주소 드리프트 발견**이며, 그렇게 보고한다.
-CHUNK_WINDOW = (-1, 2)
+# ★출처 청크 창 = **인용 1차 탐색이 실제로 훑는 범위와 동일**하게 파생한다 (독립 리뷰 L-m1 처분).
+#   손으로 `(-1, 2)` 라고 적어 두었더니 탐색 범위 `[-1, +3]` 보다 **좁아져** 있었다.
+#   그 비대칭은 조용한 오보 장치다 — 조문이 `+3` 페이지로 넘어가면 **선언 주소가 옳은데도**
+#   3-1/3-3 이 실패하고, `lcs.ts` 가 못박은 규칙("실패가 늘면 임계가 아니라 인용·주소를 고쳐라")이
+#   **정확한 pdf_page 를 고치도록 사람을 유도**한다. 현 코퍼스에서 미발현이었을 뿐이다.
+#   ⇒ 두 상수를 **결합해 파생**시켜 드리프트를 원천 차단하고, 아래에서 기계로 재확인한다.
+#
+#   ★"창을 넓혀 green 을 만든 것"이 아님을 못박는다: 넓힌 뒤 실패 건수는 **변하지 않았다**
+#   (독립 리뷰 실측 스윕 `-1,1`~`-5,5` 전 구간 동일). 3-1 이 이 코퍼스에서 재는 것은
+#   애초에 **주소 정합**이고, 적중분의 포함 관계는 창과 무관하게 구조적이다(리뷰 C-3).
+CHUNK_WINDOW = (min(SEARCH_OFFSETS), max(SEARCH_OFFSETS) + PAGE_WINDOW)
+assert CHUNK_WINDOW == (-1, 3), f"창 파생이 깨졌다: {CHUNK_WINDOW}"
 
 
 def page_text(pdf: pdfplumber.PDF, page_no: int) -> str:
@@ -143,9 +150,10 @@ def source_chunk(node: dict, cache: dict[str, pdfplumber.PDF]) -> str | None:
     ⚠️ **한계 (독립 리뷰 M-8)**: 페이지 창이라 **이웃 조문이 함께 들어온다** — 실측 48/58 인용이
       다른 노드의 청크에도 통짜로 적중한다. ⇒ 3-1·3-3 의 pass 는 "인용이 이 근방에 실재한다"까지고
       **"이 노드의 조문에서 왔다"를 증거하지 않는다.**
-    ⚠️ **창 비대칭 (독립 리뷰 L-m1)**: 인용 탐색은 `pdf_page −1..+3`(offsets ±1 × PAGE_WINDOW 2)까지
-      읽는데 이 창은 `−1..+2` 다. 조문이 `+3` 으로 넘어가면 **주소가 맞아도** 3-1/3-3 이 실패해
-      정상 `pdf_page` 를 드리프트로 오보한다(현 코퍼스 미발현). 두 상수는 함께 움직여야 한다.
+    ✅ **창 비대칭 해소 (독립 리뷰 L-m1 처분)**: 창은 이제 인용 1차 탐색 범위에서 **파생**된다
+      (`CHUNK_WINDOW = [min(SEARCH_OFFSETS), max(SEARCH_OFFSETS) + PAGE_WINDOW]`).
+      손으로 적어 두었을 때 `−1..+2` 로 탐색 범위 `−1..+3` 보다 좁아 **정상 주소를 드리프트로
+      오보할 수 있었다**(현 코퍼스 미발현). 두 상수는 이제 함께 움직인다.
     """
     pdf_path = PDF_BY_CHAPTER.get(node["chapter"])
     if pdf_path is None or not pdf_path.exists():
@@ -160,7 +168,7 @@ def source_chunk(node: dict, cache: dict[str, pdfplumber.PDF]) -> str | None:
     return joined if joined else None
 
 
-def extract(node: dict, cache: dict[str, pdfplumber.PDF]) -> tuple[str | None, str]:
+def extract(node: dict, cache: dict[str, pdfplumber.PDF]) -> tuple[str | None, str, bool]:
     """인용(축자 원문) 추출. ★출처 청크는 여기서 만들지 않는다 — `source_chunk()` 전담.
 
     두 산출물의 경로를 분리해 두는 것이 3-1/3-3 이 측정으로 남는 유일한 조건이다.
@@ -169,9 +177,9 @@ def extract(node: dict, cache: dict[str, pdfplumber.PDF]) -> tuple[str | None, s
     chapter = node["chapter"]
     pdf_path = PDF_BY_CHAPTER.get(chapter)
     if pdf_path is None:
-        return None, f"chapter 미매핑: {chapter}"
+        return None, f"chapter 미매핑: {chapter}", False
     if not pdf_path.exists():
-        return None, f"PDF 부재: {pdf_path}"
+        return None, f"PDF 부재: {pdf_path}", False
     key = str(pdf_path)
     if key not in cache:
         cache[key] = pdfplumber.open(pdf_path)
@@ -182,8 +190,8 @@ def extract(node: dict, cache: dict[str, pdfplumber.PDF]) -> tuple[str | None, s
         # 목적물고시처럼 조 번호가 없는 단일 문서 — 페이지 전문을 청크로 쓴다
         raw = page_text(pdf, node["pdf_page"])
         if not raw.strip():
-            return None, "조 번호 없음 + 페이지 텍스트 비어 있음"
-        return normalize(raw), f"조 번호 없음 → 페이지 {node['pdf_page']} 전문"
+            return None, "조 번호 없음 + 페이지 텍스트 비어 있음", False
+        return normalize(raw), f"조 번호 없음 → 페이지 {node['pdf_page']} 전문", True
 
     num, sub = m.group(1), m.group(2)
     head = article_head_re(num, sub)
@@ -223,14 +231,14 @@ def extract(node: dict, cache: dict[str, pdfplumber.PDF]) -> tuple[str | None, s
     # 1차 — 기록된 페이지 주변 (±1 페이지 보정 + 뒤로 PAGE_WINDOW)
     start_page = node["pdf_page"]
     best: tuple[int, str] | None = None
-    for offset in (0, -1, 1):
+    for offset in SEARCH_OFFSETS:
         base = start_page + offset
         joined = "\n".join(page_text(pdf, base + i) for i in range(PAGE_WINDOW + 1))
         for cand in candidates(joined):
             if best is None or cand[0] > best[0]:
                 best = cand
     if best is not None and best[0] >= 60:
-        return best[1], f"pdf_page {start_page}±1 (+{PAGE_WINDOW}) · 조번호+제목 매칭 · 최장 본문"
+        return best[1], f"pdf_page {start_page}±1 (+{PAGE_WINDOW}) · 조번호+제목 매칭 · 최장 본문", True
 
     # 2차 폴백 — 전 문서 스캔.
     # ★왜 필요한가(실측): P1 헤더가 자백했듯 **상법 노드의 pdf_page 는 실 PDF 축이 아니라
@@ -249,10 +257,15 @@ def extract(node: dict, cache: dict[str, pdfplumber.PDF]) -> tuple[str | None, s
             return (
                 top[1],
                 f"전 문서 스캔 · 후보 {len(cands)}건 중 최장 본문 (기록 pdf_page {start_page} 미적중)",
+                False,  # ★주소 미적중 = 선언 pdf_page 로 조문을 찾지 못했다
             )
     if best is not None:
-        return best[1], f"⚠️ 본문 60자 미만 — 검수 필요 (pdf_page {start_page})"
-    return None, f"조문 head+제목 미발견 (제{num}조{'의' + sub if sub else ''} '{title}' @ pdf_page {start_page})"
+        return best[1], f"⚠️ 본문 60자 미만 — 검수 필요 (pdf_page {start_page})", True
+    return (
+        None,
+        f"조문 head+제목 미발견 (제{num}조{'의' + sub if sub else ''} '{title}' @ pdf_page {start_page})",
+        False,
+    )
 
 
 def main() -> int:
@@ -261,19 +274,35 @@ def main() -> int:
     quotes, unmatched = [], []
     excluded = []
     chunks: dict[str, str] = {}
+    chunkless: list[dict] = []
     for node in nodes:
         if node["id"] in EXCLUSIONS:
             excluded.append({**node, "reason": EXCLUSIONS[node["id"]]})
             continue
-        quote, how = extract(node, cache)
+        quote, how, address_hit = extract(node, cache)
         if quote is None:
             unmatched.append({**node, "reason": how})
         else:
-            quotes.append({"id": node["id"], "name": node["name"], "quote": quote, "how": how})
+            quotes.append(
+                {
+                    "id": node["id"],
+                    "name": node["name"],
+                    "quote": quote,
+                    "how": how,
+                    # ★명시 계약 (독립 리뷰 L-m5 처분) — 소비자(러너)가 `how` 문자열을
+                    #   `includes('전 문서 스캔')` 로 파싱하던 **암묵 계약**을 필드로 승격한다.
+                    #   문구를 다듬으면 소비자의 주소-미적중 집합이 조용히 빈 집합이 됐다.
+                    "address_hit": address_hit,
+                }
+            )
         # ★청크는 인용 성패와 **무관하게** 선언 주소에서 뽑는다 — 인용 경로와 교차하지 않는다.
         chunk = source_chunk(node, cache)
         if chunk:
             chunks[node["id"]] = chunk
+        else:
+            # ★fail-loud (독립 리뷰 L-m3) — 청크 결손을 카운트만 줄이고 넘어가면
+            #   3-1/3-3 이 조용히 판정 불가로 빠지고 아무도 모른다.
+            chunkless.append({"id": node["id"], "name": node["name"], "pdf_page": node["pdf_page"]})
     for pdf in cache.values():
         pdf.close()
 
@@ -283,16 +312,25 @@ def main() -> int:
     # 3-1/3-3 검사용 출처 청크 — **노드가 선언한 주소**(chapter + pdf_page±창)에서만 뽑는다.
     (OUT / "source-chunks.json").write_text(json.dumps(chunks, ensure_ascii=False, indent=1))
     lo, hi = CHUNK_WINDOW
+    # ★분모는 "제외 안 된 노드"가 아니라 **인용이 만들어진 노드**여야 한다 (독립 리뷰 L-m2).
+    #   두 집합이 갈리면(미매칭 발생 시) 지표가 조용히 어긋난다.
+    quoted_ids = {q["id"] for q in quotes}
+    chunk_for_quoted = sum(1 for i in quoted_ids if i in chunks)
     print(
-        f"출처 청크 {len(chunks)}/{len(nodes) - len(excluded)} "
-        f"(3-1·3-3 검사 입력 · 선언 주소 pdf_page{lo:+d}..{hi:+d} · 인용과 독립)"
+        f"출처 청크 {chunk_for_quoted}/{len(quoted_ids)} (인용 보유 노드 기준) "
+        f"· 전체 생성 {len(chunks)} · 선언 주소 pdf_page{lo:+d}..{hi:+d} · 인용과 독립"
     )
+    miss = sum(1 for q in quotes if not q["address_hit"])
+    print(f"주소 적중 {len(quotes) - miss}/{len(quotes)} · 미적중 {miss} (전 문서 스캔으로 회수)")
     print(f"추출 {len(quotes)}/{len(nodes)} · 미매칭 {len(unmatched)} · 의도적 제외 {len(excluded)}")
     for e in excluded:
         print(f"  ⊘ {e['id']} {e['name'][:40]} — {e['reason'][:60]}…")
+    for c in chunkless:
+        print(f"  ⚠ 청크 결손 {c['id']} {c['name'][:40]} @ pdf_page {c['pdf_page']}")
     for u in unmatched:
         print(f"  ✗ {u['id']} {u['name'][:40]} — {u['reason']}")
-    return 1 if unmatched else 0
+    # 청크 결손은 3-1/3-3 을 판정 불가로 만든다 = 조용한 커버리지 손실 → 미매칭과 동급으로 실패시킨다.
+    return 1 if (unmatched or chunkless) else 0
 
 
 if __name__ == "__main__":

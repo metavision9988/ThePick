@@ -33,28 +33,55 @@ const NON_VALUE_RE = [
   /[A-Z]{2,}-\d+/g, // 노드 ID (CONCEPT-137 · INV-087 · LAW-001 · F-01)
 ];
 
-function stripNonValues(text: string): string {
+/**
+ * 값이 아닌 숫자를 지운다.
+ *
+ * ★**export 한다** (독립 리뷰 M-1 처분). 이 함수는 파일럿 58장 중 22장의 판정을 뒤집는데
+ *   (무력화 시 pass 8→17 · reject 11→30) **테스트가 0건**이었고 그런데도 전 스위트가 green 이었다.
+ *   내부 헬퍼라 직접 겨눌 수 없었던 것이 원인이므로 공개해 골든을 건다.
+ */
+export function stripNonValues(text: string): string {
   let out = text;
   for (const re of NON_VALUE_RE) out = out.replace(re, ' ');
   return out;
 }
 
-/** 손해평가 도메인 단위 — 같은 숫자라도 단위가 다르면 다른 값이다. */
+/**
+ * 손해평가 도메인 단위 — 같은 숫자라도 단위가 다르면 다른 값이다.
+ *
+ * ★**전부 `^` 앵커다** (독립 리뷰 M-4 처분). 직전 판본은 `/원/.test(tail)` 처럼 **부분 일치**라
+ *   꼬리 어디에든 단위 글자가 있으면 그 단위로 읽었다: `5원인`("5 원인") → `krw`,
+ *   `3주 후` → `plant`. 단위는 숫자 **바로 뒤**에 오는 것이지 꼬리 어딘가에 섞인 글자가 아니다.
+ *   긴 별칭을 먼저 둔다(`개월` before `달`, `일간` before `일`) — 짧은 것이 먼저 물면 잘린다.
+ */
 const UNIT_ALIASES: ReadonlyArray<readonly [RegExp, string]> = [
-  [/%|퍼센트|프로/, '%'],
-  [/회/, 'count'],
-  [/개월|달/, 'month'],
-  [/일간|일/, 'day'],
-  [/년|연/, 'year'],
-  [/시간/, 'hour'],
-  [/배/, 'times'],
-  [/ha|헥타르/i, 'ha'],
-  [/㎡|m2|제곱미터/i, 'm2'],
-  [/kg|킬로그램|킬로/i, 'kg'],
-  [/톤|t\b/i, 'ton'],
-  [/주|株|본/, 'plant'],
-  [/원/, 'krw'],
+  [/^(?:%|퍼센트|프로)/, '%'],
+  [/^회/, 'count'],
+  [/^(?:개월|달)/, 'month'],
+  [/^(?:일간|일)/, 'day'],
+  [/^(?:년|연)/, 'year'],
+  [/^시간/, 'hour'],
+  [/^배/, 'times'],
+  [/^(?:헥타르|ha)/i, 'ha'],
+  [/^(?:제곱미터|㎡|m2)/i, 'm2'],
+  [/^(?:킬로그램|킬로|kg)/i, 'kg'],
+  [/^(?:톤|t)/i, 'ton'],
+  [/^(?:株|주|본)/, 'plant'],
+  [/^원/, 'krw'],
 ];
+
+/**
+ * 단위 뒤에 붙어도 **단위 해석을 바꾸지 않는** 조사·수식어.
+ *
+ * ★없으면 `30일까지`·`1,000원을` 같은 정상 표기가 전부 미지 단위로 떨어져 fail-closed 가
+ *   과탐으로 폭주한다. 반대로 이 목록에 없는 글자가 이어지면(`원인`의 `인`) **다른 낱말**로 보고
+ *   미지 단위(`raw:`)로 돌린다 — 모르는 것을 아는 척하지 않는 쪽이 안전하다.
+ */
+// ★조사는 **겹쳐 붙는다** — `30일까지를`(까지+를) · `3년째의`(째+의). 하나만 허용하면
+//   정상 표기가 미지 단위로 떨어져 과탐이 된다(검수 실측: LAW-201 이 이 이유로 reject 였다).
+//   그래서 `*` 반복이다. 짧은 꼬리(≤4자)에만 적용되므로 역추적 폭발 위험은 없다.
+const UNIT_SUFFIX_RE =
+  /^(?:은|는|이|가|을|를|에|의|로|으로|와|과|도|만|씩|째|여|간|당|경|및|또는|이상|이하|이내|미만|초과|까지|부터|마다|분의)*$/;
 
 /** 한국어 큰 수 단위 (금액·수량 공통). */
 const SCALES: ReadonlyArray<readonly [string, number]> = [
@@ -86,7 +113,11 @@ function normalizeUnit(tail: string): string | null {
   const t = tail.trim();
   if (t === '') return null;
   for (const [re, canon] of UNIT_ALIASES) {
-    if (re.test(t)) return canon;
+    const m = re.exec(t);
+    if (m === null) continue;
+    // ★단위 뒤 잔여가 조사류일 때만 그 단위로 인정한다 (M-4). `원인`의 `인` 처럼 낱말이
+    //   이어지면 단위가 아니라 다른 말이므로 미지 단위로 돌린다(fail-closed).
+    if (UNIT_SUFFIX_RE.test(t.slice(m[0].length))) return canon;
   }
   return `raw:${t}`;
 }
@@ -108,8 +139,15 @@ export function numericTokens(text: string): NumericToken[] {
     if (!Number.isFinite(digits)) continue;
     const scaleWord = m[2] ?? '';
     const tail = m[3] ?? '';
-    const scale = SCALES.find(([w]) => w === scaleWord)?.[1] ?? 1;
-    out.push({ value: digits * scale, unit: normalizeUnit(tail), raw: m[0]!.trim() });
+    const unit = normalizeUnit(tail);
+    // ★`조` 충돌 처리 (2026-08-10, 자체 골든이 잡은 실 결함): 한국어 큰 수 `조`(兆)와
+    //   법령 `제N조`의 `조`가 같은 글자다. `stripNonValues` 가 못 지운 파편(`8조 1호에`)이
+    //   **8,000,000,000,000** 이라는 유령 값을 만들었다 — 이 도메인에서 조 단위 금액은
+    //   사실상 없고 조문 참조는 도처에 있으므로, `조`는 **뒤에 실제 단위가 붙을 때만**
+    //   큰 수로 인정한다(`1조원` = 兆 / `8조` = 조문). 억·만·천은 충돌이 없어 그대로 둔다.
+    const scaleUsable = scaleWord !== '조' || (unit !== null && !unit.startsWith('raw:'));
+    const scale = (scaleUsable ? SCALES.find(([w]) => w === scaleWord)?.[1] : 1) ?? 1;
+    out.push({ value: digits * scale, unit, raw: m[0]!.trim() });
   }
   return out;
 }

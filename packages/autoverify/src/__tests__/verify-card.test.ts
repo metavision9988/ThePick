@@ -14,6 +14,7 @@ import {
   anchorsOf,
   numericTokens,
   valueGrounded,
+  stripNonValues,
   verifyCard,
   summarize,
 } from '../index.js';
@@ -89,6 +90,102 @@ describe('G-S3-2 수치 정합', () => {
   });
 });
 
+/**
+ * ★`stripNonValues` 골든 (독립 리뷰 M-1 처분).
+ * 이 함수는 파일럿 58장 중 **22장의 판정을 뒤집는데** 테스트가 0건이었고, 무력화해도
+ * 전 스위트가 green 이었다(무력화 시 pass 8→17 · reject 11→30). 여기서 각 패턴을 직접 겨눈다.
+ */
+describe('G-S3-2 stripNonValues — 값이 아닌 숫자 제거 골든', () => {
+  const stripped = (s: string): string => stripNonValues(s).replace(/\s+/g, ' ').trim();
+
+  it.each([
+    ['호 열거 마커', '1. 삭제 2의2. 「산림조합법」', '삭제 「산림조합법」'],
+    ['조항 참조', '제8조 제11조의2 제1항 제3호', ''],
+    ['조항 파편', '제8조제2항 제1호에 따른', '에 따른'],
+    ['노드 ID', 'CONCEPT-137 INV-087 LAW-001 과 연계', '과 연계'],
+    ['날짜(연월일 3표기)', '2014.3.11 / 2014. 3. 11. / 2026년 8월 15일', '/ /'],
+  ])('%s 는 제거된다', (_label, input, expected) => {
+    expect(stripped(input)).toBe(expected);
+  });
+
+  /**
+   * ★잔여 갭 — 골든을 쓰다 실측으로 드러난 것. 덮지 않고 **동작을 고정**해 둔다.
+   * 둘 다 "숫자가 남는" 방향이 아니라 "글자만 남는" 방향이라 수치 토큰을 만들지 않는다
+   * (= 과탐 유발 없음). 정리 가치는 있으나 판정에 영향이 없어 STAGE 4 큐로 둔다.
+   */
+  it.each([
+    ['제(制) 없는 조항 파편은 남는다', '8조 1호에 따른', '8조 따른'],
+    ['일(日) 없는 연월은 월 글자가 남는다', '2026년 8월', '월'],
+    ['조항 참조 뒤 조사가 남는다', '제8조제2항 제1호에 따른', '에 따른'],
+  ])('잔여 갭(문자만 남고 값은 안 만든다): %s', (_label, input, expected) => {
+    expect(stripped(input)).toBe(expected);
+  });
+
+  /**
+   * ★이 골든이 실제로 잡아낸 결함 (2026-08-10) — 회귀 가드.
+   * 법령의 `제N조`와 한국어 큰 수 `조`(兆)는 **같은 글자**다. 위 잔여 갭이 남긴 `8조` 가
+   * `8 × 10^12` 라는 유령 값을 만들고 있었다. 이 도메인에 조 단위 금액은 사실상 없고
+   * 조문 참조는 도처에 있으므로, `조`는 **뒤에 실제 단위가 붙을 때만** 큰 수로 읽는다.
+   */
+  it('★조문 `조` ↔ 큰 수 `조`(兆) 충돌 — 단위 없는 조는 兆가 아니다', () => {
+    expect(numericTokens('8조 따른').map((t) => t.value)).toEqual([8]);
+    expect(numericTokens('1조원').map((t) => t.value)).toEqual([1_000_000_000_000]);
+    expect(numericTokens('3만원').map((t) => t.value)).toEqual([30_000]);
+  });
+
+  it('★도메인 값은 살아남는다 (과잉 제거 방지 — 이게 깨지면 65%→60% 검사가 죽는다)', () => {
+    const kept = stripped('자기부담비율 65%, 보상기간 30일, 1.5배, 3만원, 5,000kg');
+    for (const v of ['65%', '30일', '1.5배', '3만원', '5,000kg']) expect(kept).toContain(v);
+  });
+
+  it('제거 후 토큰화 — 조항 번호는 값으로 잡히지 않는다', () => {
+    const t = numericTokens('제11조제2항에 따라 자기부담비율 20%를 적용한다');
+    expect(t.map((x) => x.value)).toEqual([20]);
+    expect(t[0]!.unit).toBe('%');
+  });
+});
+
+describe('G-S3-2 단위 파서 — 앵커 정합 (독립 리뷰 M-4)', () => {
+  const unitOf = (s: string): string | null => numericTokens(s)[0]?.unit ?? null;
+
+  it('★단위 글자로 시작하는 다른 낱말을 단위로 읽지 않는다', () => {
+    // 직전 판본은 부분 일치(`/원/.test('원인을')`)라 아래가 `krw`(=금액)로 읽혔다.
+    expect(unitOf('5원인을 분석한다')).not.toBe('krw');
+    expect(unitOf('5원인을 분석한다')).toMatch(/^raw:/);
+    expect(unitOf('5인 이내로 한다')).toBe('raw:인');
+    // `3주 후` 의 '주'(株)는 도메인 단위가 맞다 — 과교정으로 이것까지 죽이면 안 된다
+    expect(unitOf('3주 후')).toBe('plant');
+  });
+
+  it('단위 뒤 조사는 단위 해석을 바꾸지 않는다', () => {
+    expect(unitOf('30일까지')).toBe('day');
+    expect(unitOf('1,000원을')).toBe('krw');
+    expect(unitOf('12개월간')).toBe('month');
+    expect(unitOf('20%를')).toBe('%');
+  });
+
+  it('★조사가 겹쳐 붙어도 같은 단위 — 검수가 잡은 회귀 (LAW-201)', () => {
+    // 실측: 인용 '매 3년째의 6월 30일까지를' ↔ 주장 '30일까지'. 조사 1개만 허용하면
+    // '까지를' 이 미지 단위가 되어 **정상 카드가 reject** 로 튄다.
+    expect(unitOf('30일까지를')).toBe('day');
+    expect(unitOf('3년째의')).toBe('year');
+    expect(valueGrounded('30일까지 검토한다', '매 3년째의 6월 30일까지를 기한으로 한다').kind).toBe(
+      'grounded',
+    );
+  });
+
+  it('긴 별칭이 짧은 별칭보다 먼저 물린다', () => {
+    expect(unitOf('12개월')).toBe('month'); // '달' 이 아니라 '개월'
+    expect(unitOf('3일간')).toBe('day');
+  });
+
+  it('★미지 단위는 null 이 아니라 raw: 키 — fail-open 금지 (ADV-3 회귀 가드)', () => {
+    expect(unitOf('5필지')).toMatch(/^raw:/);
+    // 단위가 다르면 같은 숫자여도 mismatch 여야 한다
+    expect(valueGrounded('5필지', '5원').kind).toBe('mismatch');
+  });
+});
+
 describe('G-S3-3 짜깁기 탐지 (LCS)', () => {
   it('축자 인용 = LCS 1.0', () => {
     expect(lcsRatio('연 1회 이상 정기교육을 실시하여야 한다', SOURCE)).toBe(1);
@@ -155,6 +252,35 @@ describe('verifyCard 종합 판정', () => {
     const ids = v.findings.filter((f) => !f.pass).map((f) => f.check);
     expect(ids).toContain('S3-1-quote');
     expect(ids).toContain('S3-3-splice');
+  });
+
+  /**
+   * ★진앙 분리 (독립 리뷰 M-3 처분) — `reject` 는 "카드가 틀렸다"는 뜻이어야 한다.
+   * 값이 출처에는 있는데 인용에만 없으면 틀린 것은 카드가 아니라 **잘린 인용**이다.
+   */
+  it('★값이 출처에는 있고 인용에만 없으면 reject 가 아니라 queue (인용 보강)', () => {
+    const v = verifyCard({
+      id: 'TRUNC',
+      claim: '연 1회 이상 정기교육을 실시한다',
+      quote: '재해보험사업자는 손해평가인이 공정하고 객관적인 손해평가를 수행할 수 있도록', // '1회' 잘림
+      sourceText: SOURCE, // 출처에는 '연 1회 이상' 이 있다
+    });
+    const f = v.findings.find((x) => x.check === 'S3-2-value')!;
+    expect(f.pass).toBe(false);
+    expect(f.disposition).toBe('queue');
+    expect(f.evidence).toMatch(/인용이 짧게 잘린 것/);
+    expect(v.disposition).not.toBe('reject');
+  });
+
+  it('★값이 출처에도 없으면 그대로 reject (카드 진앙 — 등급 유지)', () => {
+    const v = verifyCard({
+      id: 'BADCARD',
+      claim: '연 7회 이상 정기교육을 실시한다',
+      quote: '연 1회 이상 정기교육을 실시하여야 한다',
+      sourceText: SOURCE,
+    });
+    expect(v.findings.find((x) => x.check === 'S3-2-value')!.disposition).toBe('reject');
+    expect(v.disposition).toBe('reject');
   });
 
   it('summarize 가 검사별 실패 건수를 집계한다', () => {
@@ -386,6 +512,54 @@ describe('★G-S3-5 적대 10종 — 전건 검출', () => {
     expect(v.findings.find((f) => f.check === 'S3-1-quote')?.pass).toBe(true);
     expect(v.findings.find((f) => f.check === 'S3-3-splice')?.pass).toBe(true);
     expect(v.disposition, '이웃 조문 인용이 pass 면 앵커 층까지 무력하다').not.toBe('pass');
+  });
+
+  /**
+   * ★**생산자-교차 픽스처** (독립 리뷰 Pass 2 반론 처분).
+   *
+   * 반론 원문: *"STAGE 4 에서 sourceText 생산자가 바뀌는 순간(D1 백필본, 재추출, 푸터 정제,
+   * NFD 입력) `lcs ≥ 1.0` 은 정상 카드에게도 깨진다. 그때 파일럿·테스트는 전부 green 이다 —
+   * 픽스처가 인용과 **같은 생산자**의 산출물이기 때문이다."*
+   *
+   * ⇒ 청크를 **다른 생산자처럼** 변형해 임계 1.0 의 내성 경계를 실행으로 고정한다.
+   * 견디는 것과 못 견디는 것을 둘 다 못박아 둬야, 나중에 전건 queue 로 퇴화할 때
+   * "fail-closed 라 안전"이라는 말로 넘어가지 못한다.
+   */
+  describe('생산자-교차 내성 — 임계 1.0 이 어디까지 견디는가', () => {
+    const verdictOf = (src: string): string =>
+      verifyCard({
+        id: 'X-PROD',
+        claim: '5인 이내',
+        quote: LAW_173_QUOTE,
+        sourceText: src,
+      }).findings.find((f) => f.check === 'S3-3-splice')!.pass
+        ? 'pass'
+        : 'fail';
+
+    it('✅ 견딘다 — 공백·개행·제로폭 차이 (정규화가 흡수)', () => {
+      expect(verdictOf(LAW_173_CHUNK.replace(/\n/g, '  ').replace(/ /g, '​ '))).toBe('pass');
+    });
+
+    it('✅ 견딘다 — NFD 분해 입력 (정규화가 NFC 로 통일)', () => {
+      expect(verdictOf(LAW_173_CHUNK.normalize('NFD'))).toBe('pass');
+    });
+
+    it('✅ 견딘다 — 페이지 푸터 제거 (인용 밖 텍스트 변화)', () => {
+      expect(verdictOf(LAW_173_CHUNK.replace(/^\s*-\s*\d+\s*-\s*$/gm, ''))).toBe('pass');
+    });
+
+    it('⛔ 못 견딘다 — 인용 **안쪽** 문자 1개 차이 (다른 추출기의 활자 판독 차이)', () => {
+      // ㆍ↔· 같은 유사문자 치환은 PDF 추출기마다 갈린다. 임계 1.0 은 이걸 위조와 구분하지 못한다.
+      const swapped = LAW_173_CHUNK.replace(
+        '손해평가반을 구',
+        '손해평가반을 구'.replace('구', '構'),
+      );
+      expect(verdictOf(swapped)).toBe('fail');
+    });
+
+    it('⛔ 못 견딘다 — 인용 구간이 청크에서 빠진 경우 (다른 청킹 경계)', () => {
+      expect(verdictOf(LAW_173_CHUNK.replace(LAW_173_QUOTE.slice(0, 80), ''))).toBe('fail');
+    });
   });
 
   it('★실코퍼스 인용 절단 — 주장 수치(5인)가 잘린 인용은 통과하지 못한다', () => {

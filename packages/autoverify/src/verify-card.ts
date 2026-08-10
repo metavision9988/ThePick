@@ -112,11 +112,30 @@ export function verifyCard(card: CardInput): CardVerdict {
 
   // --- 3-2 수치 정합 (주장 ↔ 인용) ---
   const v = valueGrounded(card.claim, card.quote);
+  // ★진앙 분리 (독립 리뷰 M-3 처분) — `mismatch` 를 무조건 `reject`(카드 반려)로 돌리면
+  //   **처분 등급이 진앙과 어긋난다.** 08-08 리뷰의 전수 재분류 결과가 정확히 그랬다:
+  //   reject 11건의 진앙은 **카드 오류 0 / 인용 부족 8 / 과탐 3** 이었다.
+  //   구분 기준은 추측이 아니라 데이터로 있다 — **주장 값이 출처 청크에는 있는데 인용에만
+  //   없다면**, 틀린 것은 카드가 아니라 **너무 짧게 잘린 인용**이다. 그때는 `queue`(인용 보강).
+  //   STAGE 4 자동 라우터가 붙으면 이 구분 없이는 정상 카드를 반려하게 된다.
+  const quoteTooShort =
+    v.kind === 'mismatch' &&
+    card.sourceText !== null &&
+    valueGrounded(card.claim, card.sourceText).kind === 'grounded';
   push(
     'S3-2-value',
     v.kind === 'grounded',
-    v.kind === 'grounded' ? 'pass' : v.kind === 'mismatch' ? 'reject' : 'queue',
-    v.detail,
+    v.kind === 'grounded'
+      ? 'pass'
+      : quoteTooShort
+        ? 'queue'
+        : v.kind === 'mismatch'
+          ? 'reject'
+          : 'queue',
+    quoteTooShort
+      ? `${v.detail} — ★단, 그 값이 **출처 청크에는 실재**한다 = 카드가 아니라 ` +
+          '**인용이 짧게 잘린 것**(진앙 = STAGE 2 추출). 처분: 카드 반려가 아니라 인용 보강'
+      : v.detail,
   );
 
   // --- 3-4 앵커 충분성 (주장 ↔ 인용) ---

@@ -26,14 +26,19 @@ for x in q:
     )
 (OUT / "backfill-source-quote.sql").write_text("\n".join(sql) + "\n")
 
-rows = ["| id | 노드 | 추출 근거 | 길이 | 원문 머리 (검수용) |", "| --- | --- | --- | ---: | --- |"]
-for x in q:
-    head = x["quote"][:90].replace("\n", " ").replace("|", "\\|")
-    rows.append(f"| {x['id']} | {x['name']} | {x['how']} | {len(x['quote'])} | {head}… |")
+# ★검수 시트는 여기서 만들지 않는다 (2026-08-10 — 정본 이원화 금지).
+#   구 `review-sheet.md` 는 **원문 머리 90자만** 보여줬고, 그 머리 편향이 LAW-183(꼬리 95%가
+#   별표+부칙)과 LAW-178(머리는 정상, 인용 전체가 다른 문서)을 **둘 다 통과**시켰다.
+#   검수 정본 = `audit_source_quotes.py` → `review-audit.md`
+#   (머리+꼬리+축자 실재+조문 귀속+주소 정합+엔진 판정을 한 행에 놓는다).
 (OUT / "review-sheet.md").write_text(
-    "# STAGE 2 백필 검수 시트 — source_quote 59장\n\n"
-    "> 생성 " + datetime.date.today().isoformat() + " · 결정론 추출(pdfplumber) · LLM 생성 0\n"
-    "> 게이트 `gate_check.py` 위반 0 (제목 일치·description 비동일·길이·조번호·전수)\n"
-    "> ★검수 포인트: **원문 머리가 그 조문이 맞는가** / 요약이 아니라 축자인가\n\n" + "\n".join(rows) + "\n"
+    "# ⛔ 이 파일은 폐기됐다 — 검수 정본은 `review-audit.md` 다\n\n"
+    f"> 폐기 {datetime.date.today().isoformat()} · 사유: **머리 90자만 보여주는 검수표**였고,\n"
+    "> 그 머리 편향으로 두 건을 통과시켰다 — LAW-183(꼬리 95%가 별표·부칙·푸터) ·\n"
+    "> LAW-178(머리는 정상인데 인용 전체가 다른 문서에서 온 오귀속).\n"
+    ">\n"
+    "> **검수는 `review-audit.md` 로 한다** — 생성 `audit_source_quotes.py`.\n"
+    "> A 축자 실재(PDF 전문 대조) · B 조문 귀속 · C 주소 정합(실측 페이지 병기) ·\n"
+    "> D 꼬리 오염 · autoverify 엔진 판정을 **행당 한 줄**로 놓고, 머리와 꼬리를 함께 보여준다.\n"
 )
-print(f"SQL {len(q)}행 · 검수 시트 생성 완료")
+print(f"SQL {len(q)}행 생성 · 검수 시트는 audit_source_quotes.py 소관(review-audit.md)")

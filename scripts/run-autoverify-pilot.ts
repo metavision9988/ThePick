@@ -63,13 +63,25 @@ interface QuoteRow {
   readonly id: string;
   readonly name: string;
   readonly quote: string;
-  /** 추출 경로 서술 — '전 문서 스캔' 이면 기록 pdf_page 미적중(= 주소 드리프트). */
+  /** 추출 경로 서술 (사람용). ★판정에 쓰지 말 것 — 문구를 다듬으면 조용히 깨진다. */
   readonly how: string;
+  /**
+   * 선언 `pdf_page` 로 조문을 찾았는가 — 생산자(`extract_source_quotes.py`)의 **명시 계약**.
+   * ★독립 리뷰 L-m5 처분: 직전 판본은 `how.includes('전 문서 스캔')` 로 파싱했다.
+   *   그 암묵 계약은 생산자가 문구를 한 글자만 바꿔도 **주소-미적중 집합이 빈 집합**이 되어
+   *   아래 정합 관측 절이 조용히 무의미해진다(실패가 아니라 침묵으로).
+   */
+  readonly address_hit?: boolean;
 }
 
-/** 노드가 선언한 pdf_page 로 조문을 찾지 못해 전 문서 스캔으로 회수한 = 주소 드리프트 후보. */
+/** 노드가 선언한 pdf_page 로 조문을 찾지 못한 = 주소 드리프트 후보. */
 function isAddressMiss(row: QuoteRow): boolean {
-  return row.how.includes('전 문서 스캔');
+  if (typeof row.address_hit === 'boolean') return !row.address_hit;
+  // 계약 필드가 없으면 **추측하지 않는다** — 옛 산출물이면 재생성이 답이다(fail-loud).
+  fail(
+    `source-quotes.json 에 'address_hit' 필드가 없다 (${row.id}). ` +
+      'extract_source_quotes.py 를 재실행해 산출물을 갱신하라 — 문자열 추측으로 대체하지 않는다.',
+  );
 }
 
 function main(): void {

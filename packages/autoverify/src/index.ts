@@ -23,7 +23,7 @@ export { longestCommonSubstringLength, lcsRatio, LCS_RATIO_THRESHOLD } from './l
 export { anchorsOf, missingAnchors } from './anchors.js';
 export type { Anchors } from './anchors.js';
 
-export { numericTokens, valueGrounded } from './numeric.js';
+export { numericTokens, valueGrounded, stripNonValues } from './numeric.js';
 export type { NumericToken, Groundedness, GroundednessKind } from './numeric.js';
 
 export { verifyCard, summarize } from './verify-card.js';
