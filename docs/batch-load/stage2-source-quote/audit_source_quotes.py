@@ -65,6 +65,17 @@ def squash(text: str) -> str:
     return re.sub(r"\s+", "", unicodedata.normalize("NFC", text))
 
 
+def load_article_index() -> dict[str, dict]:
+    """**제3의 주소원** — `article_index.py` 산출물. 없으면 빈 dict(검사 C2 생략).
+
+    ★독립성: 이 색인은 PDF 구조만 보고 만든 조문 지도이고, 특정 노드의 인용도 인용을 찾은 위치도
+      쓰지 않는다. 선언 `pdf_page` 와 **다른 출처**의 주소이므로, 둘이 어긋날 때 비로소
+      "어느 쪽이 틀렸나"를 사람이 판단할 근거가 생긴다(독립 리뷰 C-3 권고 처분).
+    """
+    f = OUT / "article-index.json"
+    return json.loads(f.read_text()) if f.exists() else {}
+
+
 def load_pilot_verdicts() -> dict[str, dict]:
     """최신 파일럿 JSON(= TS 엔진 산출물)에서 카드별 판정을 읽는다. 없으면 빈 dict."""
     d = ROOT / "docs/audit/autoverify-pilot"
@@ -80,6 +91,7 @@ def main() -> int:
     nodes = {n["id"]: n for n in json.loads((OUT / "node-inventory.json").read_text())}
     excluded = json.loads((OUT / "excluded.json").read_text())
     verdicts = load_pilot_verdicts()
+    art_index = load_article_index()
 
     # 원본 PDF 전문 캐시 (검사 A·C 용)
     full_text: dict[str, str] = {}
@@ -126,6 +138,16 @@ def main() -> int:
             measured = [i + 1 for i, t in enumerate(page_texts[key]) if probe in squash(t)]
         c_ok = bool(q.get("address_hit"))
 
+        # --- C2. 제3의 주소원(조문 head 색인) 대조 ---
+        index_pages: list[int] = []
+        if am is not None and tm is not None:
+            akey = f"제{am.group(1)}조" + (f"의{am.group(2)}" if am.group(2) else "")
+            hits = art_index.get(node["chapter"], {}).get(akey, [])
+            want_t = squash(tm.group(1))
+            narrowed = [h for h in hits if h.get("title") == want_t] or hits
+            index_pages = [h["page"] for h in narrowed]
+        c2_ok = (not index_pages) or (declared in index_pages)
+
         # --- D. 꼬리 오염 ---
         body = quote[len(quote.split("\n")[0]) :] if "\n" in quote else ""
         tail_hits = [label for pat, label in TAIL_PATTERNS if re.search(pat, body)]
@@ -150,6 +172,8 @@ def main() -> int:
                 "B_attribution": b_ok,
                 "B_note": b_note,
                 "C_address_hit": c_ok,
+                "C2_index_agrees": c2_ok,
+                "index_pages": index_pages,
                 "declared_page": declared,
                 "measured_pages": measured,
                 "D_tail": tail_hits,
@@ -167,6 +191,7 @@ def main() -> int:
     b_bad = [r for r in rows if not r["B_attribution"]]
     c_bad = [r for r in rows if not r["C_address_hit"]]
     d_bad = [r for r in rows if r["D_tail"]]
+    c2_bad = [r for r in rows if not r["C2_index_agrees"]]
 
     md = [
         "# STAGE 2 백필 **검수 재검증** — source_quote 58장",
@@ -183,6 +208,7 @@ def main() -> int:
         "| **A 축자** | 인용이 원본 PDF **전문**에 그대로 있는가(공백 무시) | ★**적재 차단** — 지어냈거나 변형됐다 |",
         "| **B 귀속** | 인용 머리가 그 노드의 `제N조(제목)` 인가 | ★**적재 차단** — 다른 조문/문서가 실렸다 |",
         "| **C 주소** | 선언 `pdf_page` 에 본문이 실제로 있는가 | 적재는 가능하나 **주소 데이터가 틀렸다** |",
+        "| **C2 색인** | **제3의 주소원**(PDF 구조 색인)이 선언 페이지에 동의하는가 | 선언 주소가 틀렸을 가능성 — C 와 교차 판단 |",
         "| **D 꼬리** | 말미가 부칙·별표·푸터·다음 조문을 삼켰는가 | 인용이 조문 경계를 넘었다 |",
         "| **판정** | autoverify 엔진 처분(pass/queue/reject) | 사유 열 참조 |",
         "",
@@ -195,6 +221,13 @@ def main() -> int:
         + (f" — ★실패 {[r['id'] for r in b_bad]}" if b_bad else " ✅"),
         f"- C 주소 정합: {n - len(c_bad)}/{n}"
         + (f" — 불일치 {[r['id'] for r in c_bad]} (실측 페이지 병기)" if c_bad else " ✅"),
+        f"- **C2 색인 대조**(제3의 주소원): {n - len(c2_bad)}/{n}"
+        + (
+            f" — 불일치 {[r['id'] for r in c2_bad]}"
+            if c2_bad
+            else " ✅"
+        ),
+        "  ★C2 는 **선언 주소와 다른 출처**(PDF 구조 색인)라 C 와 어긋나는 지점이 곧 새 발견이다.",
         f"- D 꼬리 오염: {n - len(d_bad)}/{n}"
         + (f" — {[r['id'] for r in d_bad]}" if d_bad else " ✅"),
         "",
@@ -207,19 +240,20 @@ def main() -> int:
         "",
         "## 행별 검수",
         "",
-        "| id | 노드 | 길이 | A | B | C | D | 판정 | 실패 검사 | 주소(선언→실측) |",
-        "| --- | --- | ---: | :-: | :-: | :-: | :-: | :-: | --- | --- |",
+        "| id | 노드 | 길이 | A | B | C | C2 | D | 판정 | 실패 검사 | 주소(선언→실측/색인) |",
+        "| --- | --- | ---: | :-: | :-: | :-: | :-: | :-: | :-: | --- | --- |",
     ]
     for r in rows:
         addr = (
             "—"
-            if r["C_address_hit"]
-            else f"**{r['declared_page']} → {r['measured_pages'] or '미발견'}**"
+            if (r["C_address_hit"] and r["C2_index_agrees"])
+            else f"**{r['declared_page']} → 실측 {r['measured_pages'] or '미발견'} / 색인 {r['index_pages'] or '미발견'}**"
         )
         md.append(
             f"| {r['id']} | {r['name']} | {r['len']} | "
             f"{'✅' if r['A_verbatim'] else '❌'} | {'✅' if r['B_attribution'] else '❌'} | "
-            f"{'✅' if r['C_address_hit'] else '⚠️'} | {'✅' if not r['D_tail'] else '⚠️' + '/'.join(r['D_tail'])} | "
+            f"{'✅' if r['C_address_hit'] else '⚠️'} | {'✅' if r['C2_index_agrees'] else '⚠️'} | "
+            f"{'✅' if not r['D_tail'] else '⚠️' + '/'.join(r['D_tail'])} | "
             f"{r['autoverify']} | {r['autoverify_failed']} | {addr} |"
         )
 
@@ -231,10 +265,11 @@ def main() -> int:
             f"- **머리** `{r['head']}…`",
             f"- **꼬리** `…{r['tail']}`",
         ]
-        if not r["C_address_hit"]:
+        if not r["C_address_hit"] or not r["C2_index_agrees"]:
             md.append(
                 f"- ⚠️ **주소 불일치** — 선언 `pdf_page {r['declared_page']}` / "
-                f"실측 본문 `{r['measured_pages'] or '미발견'}`. "
+                f"실측 본문 `{r['measured_pages'] or '미발견'}` / "
+                f"**제3 주소원(색인)** `{r['index_pages'] or '미발견'}`. "
                 "인용 자체는 A·B 로 검증되므로 적재 가능하나 **주소 데이터 정정 대상**이다."
             )
         if r["D_tail"]:
@@ -250,7 +285,10 @@ def main() -> int:
 
     (OUT / "review-audit.md").write_text("\n".join(md) + "\n")
 
-    print(f"검수 재검증 {n}장 — A {n - len(a_bad)}/{n} · B {n - len(b_bad)}/{n} · C {n - len(c_bad)}/{n} · D {n - len(d_bad)}/{n}")
+    print(
+        f"검수 재검증 {n}장 — A {n - len(a_bad)}/{n} · B {n - len(b_bad)}/{n} · "
+        f"C {n - len(c_bad)}/{n} · C2 {n - len(c2_bad)}/{n} · D {n - len(d_bad)}/{n}"
+    )
     for qid, why in blocking:
         print(f"  ❌ 적재 차단 {qid} — {why}")
     for r in c_bad:

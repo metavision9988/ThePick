@@ -58,3 +58,14 @@ export function missingAnchors(claimText: string, quote: string): string[] {
   for (const n of need.numbers) if (!have.numbers.has(n)) missing.push(`수치 ${n}`);
   return missing;
 }
+
+/**
+ * ★캘리브레이션 표면 등재용 (독립 리뷰 C-2) — 앵커에서 **제외**하는 패턴의 원문.
+ * 제외를 넓히면 "주장에 앵커가 없다"가 되어 3-4 가 조용히 통과한다 = 임계와 동등한 자유도.
+ */
+export const ANCHOR_EXCLUSION_SOURCES: readonly string[] = [
+  ARTICLE_REF_RE.source,
+  REF_FRAGMENT_RE.source,
+  NODE_ID_RE.source,
+  LIST_MARKER_RE.source,
+];

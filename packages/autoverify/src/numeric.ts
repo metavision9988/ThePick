@@ -205,3 +205,23 @@ export function valueGrounded(claimText: string, quote: string): Groundedness {
       `(인용 보유: ${have.map((t) => t.raw).join(', ') || '없음'})`,
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ★캘리브레이션 표면 등재 (독립 리뷰 C-2) — `calibration-surface.ts` 가 지문을 찍는 대상.
+//   제외·별칭 규칙은 **임계와 동등한 자유도**다: 여기 한 줄이면 임계를 내린 것과 같은 효과를 낸다
+//   (실측 — 파일럿 `reject 30→11` 을 만든 것은 임계가 아니라 제외 규칙 추가였다).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 3-2 에서 "값이 아닌 숫자"로 지우는 패턴의 원문. */
+export const NON_VALUE_SOURCES: readonly string[] = NON_VALUE_RE.map((r) => r.source);
+
+/** 단위 별칭의 원문 + 정규 단위명. 넓히면 서로 다른 값이 같은 값으로 취급된다. */
+export const UNIT_ALIAS_SOURCES: readonly string[] = UNIT_ALIASES.map(
+  ([re, canon]) => `${re.source}=>${canon}`,
+);
+
+/** 단위 뒤 조사 허용 목록의 원문. 넓히면 미지 단위가 알려진 단위로 흡수된다. */
+export const UNIT_SUFFIX_SOURCE: string = UNIT_SUFFIX_RE.source;
+
+/** 한국어 큰 수 배율 — `조`(兆) 충돌 처리 포함(위 numericTokens 주석). */
+export const SCALE_SOURCES: readonly string[] = SCALES.map(([w, v]) => `${w}=${v}`);

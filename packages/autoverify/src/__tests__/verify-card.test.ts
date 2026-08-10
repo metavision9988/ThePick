@@ -17,6 +17,9 @@ import {
   stripNonValues,
   verifyCard,
   summarize,
+  CALIBRATION_SURFACE,
+  surfaceFingerprint,
+  surfaceSize,
 } from '../index.js';
 import { LAW_173_QUOTE, LAW_173_CHUNK } from './fixtures/law-173.js';
 
@@ -580,5 +583,52 @@ describe('★G-S3-5 적대 10종 — 전건 검출', () => {
     const passed = verdicts.filter((v) => v.disposition === 'pass');
     expect(passed.map((v) => v.cardId)).toEqual([]);
     expect(verdicts).toHaveLength(10);
+  });
+});
+
+/**
+ * ★**캘리브레이션 표면 동결** (독립 리뷰 C-2 처분).
+ *
+ * 08-08 리뷰가 못박은 것: *"held-out 동결 대상에 **임계 2개뿐 아니라 제외 정규식 5종**을
+ * 포함해야 한다 — 제외는 임계와 동등한 자유도다."* 실제로 파일럿 `reject 30→11` 을 만든 것은
+ * 임계가 아니라 **제외 규칙 추가**였고, 그건 정확도 개선이 아니라 **판정 포기**였다(판정 가능 47→20).
+ *
+ * ⇒ 판정을 바꿀 수 있는 손잡이 전체에 지문을 찍고 여기서 고정한다.
+ *   손잡이를 하나라도 건드리면 이 테스트가 red 가 되어 **조용한 조정이 불가능**해진다.
+ *   바꾸는 것 자체는 금지가 아니다 — 바꾸려면 이 값을 함께 고쳐야 하고 그 diff 가 기록으로 남는다.
+ */
+describe('★캘리브레이션 표면 동결 (held-out 선결)', () => {
+  it('지문이 동결값과 일치한다 — 바뀌었다면 사유를 커밋 메시지에 남길 것', () => {
+    expect(surfaceFingerprint()).toBe('9ce278964f08755a');
+  });
+
+  it('손잡이 개수 고정 — 등재 없이 새 손잡이를 추가하면 red', () => {
+    expect(surfaceSize()).toEqual({ thresholds: 3, exclusionRules: 27 });
+  });
+
+  it('임계 3종이 표면에 실제로 등재돼 있다 (문서만 있고 배선 누락인 상태 차단)', () => {
+    expect(CALIBRATION_SURFACE.thresholds).toEqual({
+      QUOTE_COVERAGE_THRESHOLD: 0.95,
+      MIN_QUOTE_BIGRAMS: 5,
+      LCS_RATIO_THRESHOLD: 1.0,
+    });
+  });
+
+  it('★제외 규칙군 5종이 전부 등재 — 임계만 동결하면 동결한 척이 된다', () => {
+    expect(Object.keys(CALIBRATION_SURFACE.exclusions).sort()).toEqual([
+      'ANCHOR_EXCLUSION',
+      'NON_VALUE',
+      'SCALE',
+      'UNIT_ALIAS',
+      'UNIT_SUFFIX',
+    ]);
+  });
+
+  it('지문이 실제로 민감하다 — 제외 규칙 하나만 바꿔도 값이 달라진다', () => {
+    const tampered = {
+      thresholds: CALIBRATION_SURFACE.thresholds,
+      exclusions: { ...CALIBRATION_SURFACE.exclusions, NON_VALUE: ['\\d+'] },
+    };
+    expect(surfaceFingerprint(tampered)).not.toBe(surfaceFingerprint());
   });
 });
