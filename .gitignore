@@ -75,3 +75,7 @@ docs/measurements/raw/
 
 # 다른 프로젝트(이음길/다이음) 기획 자료 — ThePick repo 추적 제외 (진산 로컬 참조용)
 docs/이음길/
+
+# Python 바이트코드 (docs/batch-load 추출 스크립트 실행 산출물 — 독립 리뷰 m-4)
+__pycache__/
+*.py[cod]

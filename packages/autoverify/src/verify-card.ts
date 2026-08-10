@@ -85,7 +85,16 @@ export function verifyCard(card: CardInput): CardVerdict {
       q.pass ? 'pass' : 'queue',
       q.reason ??
         `바이그램 커버리지 ${q.coverage.toFixed(3)} (임계 ${QUOTE_COVERAGE_THRESHOLD}) — ` +
-          (q.pass ? '인용이 원문에 실재' : '인용이 원문에 없다 = 지어낸 인용 의심'),
+          (q.pass
+            ? '인용이 출처 청크에 실재'
+            : // ★단정 금지: 이 검사는 "인용 ↔ **선언 주소에서 뽑은** 청크"를 본다.
+              // 실패의 원인은 **세 갈래**이고 검사기는 셋을 구분하지 못한다 —
+              //   (a) 인용이 지어낸 것  (b) 선언 주소가 틀린 것  (c) **인용이 엉뚱한 곳에서 온 것**.
+              // ⛔ 이 주석은 한때 "실측 9건이 **전부 (b)**"라고 적었다 — **거짓이었다**(독립 리뷰 C-1).
+              //   LAW-178 은 선언 주소(요령 p.817)가 **옳았고** 인용이 교재 본문 서술 조각이었다(= (c)).
+              //   즉 3-1 이 잡은 것을 내가 "주소 탓"으로 오분류해 **진짜 데이터 결함을 덮을 뻔했다**.
+              //   근본 수리(호 열거 오인 절단 + 헤드 괄호형 강제) 후 실측은 **8건 전부 (b)**(상법 페이지축).
+              '인용이 출처 청크에 없다 — 지어낸 인용 / 선언 주소 오류 / 인용 오귀속(전부 사람 확인 대상)'),
     );
 
     const ratio = lcsRatio(card.quote, card.sourceText);
@@ -94,10 +103,10 @@ export function verifyCard(card: CardInput): CardVerdict {
       'S3-3-splice',
       splicePass,
       splicePass ? 'pass' : 'queue',
-      `LCS 연속 비율 ${ratio.toFixed(3)} (임계 ${LCS_RATIO_THRESHOLD}) — ` +
+      `LCS 연속 비율 ${ratio.toFixed(3)} (임계 ${LCS_RATIO_THRESHOLD} = 정확 포함) — ` +
         (splicePass
-          ? '인용이 원문에 통짜로 존재'
-          : '★바이그램은 통과했으나 연속성 미달 = **원문 단어 재조합(짜깁기·속성 스왑) 의심**'),
+          ? '인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)'
+          : '★연속성 미달 = 원문 단어 재조합(짜깁기·주체/속성 스왑) 또는 선언 주소 오류'),
     );
   }
 

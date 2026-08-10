@@ -1,0 +1,1988 @@
+{
+  "summary": {
+    "total": 58,
+    "pass": 12,
+    "queue": 41,
+    "reject": 5,
+    "byCheck": {
+      "S3-1-quote": 8,
+      "S3-2-value": 43,
+      "S3-3-splice": 8,
+      "S3-4-anchor": 7
+    }
+  },
+  "verdicts": [
+    {
+      "cardId": "LAW-144",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-144",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-144",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-144",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-144",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-145",
+      "disposition": "pass",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-145",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-145",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-145",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장 수치 1종 전부 인용 안에 실재 (1회)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-145",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-146",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-146",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-146",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-146",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-146",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-147",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-147",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-147",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-147",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-147",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-148",
+      "disposition": "pass",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-148",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-148",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-148",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장 수치 2종 전부 인용 안에 실재 (1명을, 9명)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-148",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-149",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-149",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-149",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-149",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-149",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-150",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-150",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-150",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-150",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-150",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-151",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-151",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-151",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-151",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-151",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-152",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-152",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-152",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-152",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-152",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-153",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-153",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-153",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-153",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-153",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-154",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-154",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-154",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-154",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-154",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-155",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-155",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-155",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-155",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-155",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-156",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-156",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-156",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-156",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-156",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-157",
+      "disposition": "pass",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-157",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-157",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-157",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장 수치 5종 전부 인용 안에 실재 (2에, 3년마다, 3년이, 1월, 1일)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-157",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-158",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-158",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "바이그램 커버리지 0.439 (임계 0.95) — 인용이 출처 청크에 없다 — 지어낸 인용 **또는** 선언 주소 오류(둘 다 사람 확인 대상)"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-158",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "LCS 연속 비율 0.181 (임계 1 = 정확 포함) — ★연속성 미달 = 원문 단어 재조합(짜깁기·주체/속성 스왑) 또는 선언 주소 오류"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-158",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-158",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-159",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-159",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "바이그램 커버리지 0.523 (임계 0.95) — 인용이 출처 청크에 없다 — 지어낸 인용 **또는** 선언 주소 오류(둘 다 사람 확인 대상)"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-159",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "LCS 연속 비율 0.188 (임계 1 = 정확 포함) — ★연속성 미달 = 원문 단어 재조합(짜깁기·주체/속성 스왑) 또는 선언 주소 오류"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-159",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장 수치 1종 전부 인용 안에 실재 (3자에)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-159",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-160",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-160",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "바이그램 커버리지 0.341 (임계 0.95) — 인용이 출처 청크에 없다 — 지어낸 인용 **또는** 선언 주소 오류(둘 다 사람 확인 대상)"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-160",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "LCS 연속 비율 0.134 (임계 1 = 정확 포함) — ★연속성 미달 = 원문 단어 재조합(짜깁기·주체/속성 스왑) 또는 선언 주소 오류"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-160",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장 수치 1종 전부 인용 안에 실재 (3자로부터)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-160",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-161",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-161",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "바이그램 커버리지 0.300 (임계 0.95) — 인용이 출처 청크에 없다 — 지어낸 인용 **또는** 선언 주소 오류(둘 다 사람 확인 대상)"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-161",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "LCS 연속 비율 0.117 (임계 1 = 정확 포함) — ★연속성 미달 = 원문 단어 재조합(짜깁기·주체/속성 스왑) 또는 선언 주소 오류"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-161",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장 수치 3종 전부 인용 안에 실재 (3자에, 10일내에, 3자에)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-161",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-162",
+      "disposition": "reject",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-162",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "바이그램 커버리지 0.362 (임계 0.95) — 인용이 출처 청크에 없다 — 지어낸 인용 **또는** 선언 주소 오류(둘 다 사람 확인 대상)"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-162",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "LCS 연속 비율 0.054 (임계 1 = 정확 포함) — ★연속성 미달 = 원문 단어 재조합(짜깁기·주체/속성 스왑) 또는 선언 주소 오류"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-162",
+          "pass": false,
+          "disposition": "reject",
+          "evidence": "주장 수치 [4항] 가 인용에 없다 (인용 보유: 3자와의, 3자가, 3자는, 3자에게, 39 국가법령)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-162",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "앵커 불충분 — [수치 4] 가 인용에 없다. 인용은 주장값을 증거하는 최소 문장 전체여야 한다(인용 확장 요구)"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-163",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-163",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "바이그램 커버리지 0.487 (임계 0.95) — 인용이 출처 청크에 없다 — 지어낸 인용 **또는** 선언 주소 오류(둘 다 사람 확인 대상)"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-163",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "LCS 연속 비율 0.170 (임계 1 = 정확 포함) — ★연속성 미달 = 원문 단어 재조합(짜깁기·주체/속성 스왑) 또는 선언 주소 오류"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-163",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-163",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-164",
+      "disposition": "reject",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-164",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "바이그램 커버리지 0.471 (임계 0.95) — 인용이 출처 청크에 없다 — 지어낸 인용 **또는** 선언 주소 오류(둘 다 사람 확인 대상)"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-164",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "LCS 연속 비율 0.112 (임계 1 = 정확 포함) — ★연속성 미달 = 원문 단어 재조합(짜깁기·주체/속성 스왑) 또는 선언 주소 오류"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-164",
+          "pass": false,
+          "disposition": "reject",
+          "evidence": "주장 수치 [1인에] 가 인용에 없다 (인용 보유: 3자에게, 3자에)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-164",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "앵커 불충분 — [수치 1] 가 인용에 없다. 인용은 주장값을 증거하는 최소 문장 전체여야 한다(인용 확장 요구)"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-165",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-165",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "바이그램 커버리지 0.361 (임계 0.95) — 인용이 출처 청크에 없다 — 지어낸 인용 **또는** 선언 주소 오류(둘 다 사람 확인 대상)"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-165",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "LCS 연속 비율 0.215 (임계 1 = 정확 포함) — ★연속성 미달 = 원문 단어 재조합(짜깁기·주체/속성 스왑) 또는 선언 주소 오류"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-165",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-165",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-166",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-166",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-166",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-166",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-166",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "앵커 불충분 — [날짜 2024-3-29, 수치 2024] 가 인용에 없다. 인용은 주장값을 증거하는 최소 문장 전체여야 한다(인용 확장 요구)"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-167",
+      "disposition": "pass",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-167",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-167",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-167",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장 수치 5종 전부 인용 안에 실재 (1, 2, 3, 4, 5)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-167",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-168",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-168",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-168",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-168",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-168",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-169",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-169",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-169",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-169",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-169",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-170",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-170",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-170",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-170",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-170",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-171",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-171",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-171",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-171",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-171",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-172",
+      "disposition": "pass",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-172",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-172",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-172",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장 수치 4종 전부 인용 안에 실재 (2년, 2년, 6개월, 3)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-172",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-173",
+      "disposition": "reject",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-173",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-173",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-173",
+          "pass": false,
+          "disposition": "reject",
+          "evidence": "주장 수치 [30일, 3개월] 가 인용에 없다 (인용 보유: 5인)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-173",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "앵커 불충분 — [수치 30, 수치 3] 가 인용에 없다. 인용은 주장값을 증거하는 최소 문장 전체여야 한다(인용 확장 요구)"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-174",
+      "disposition": "pass",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-174",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-174",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-174",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장 수치 1종 전부 인용 안에 실재 (1인)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-174",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-175",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-175",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-175",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-175",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-175",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-176",
+      "disposition": "pass",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-176",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-176",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-176",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장 수치 3종 전부 인용 안에 실재 (7영업일, 7영업일, 7일)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-176",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-177",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-177",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-177",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-177",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-177",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-178",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-178",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-178",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-178",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-178",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-179",
+      "disposition": "reject",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-179",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-179",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-179",
+          "pass": false,
+          "disposition": "reject",
+          "evidence": "주장 수치 [5방식, 2026 개정분] 가 인용에 없다 (인용 보유: 1, 2, 1부를)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-179",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "앵커 불충분 — [수치 5, 수치 2026] 가 인용에 없다. 인용은 주장값을 증거하는 최소 문장 전체여야 한다(인용 확장 요구)"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-180",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-180",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-180",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-180",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-180",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-181",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-181",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-181",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-181",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-181",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-182",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-182",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-182",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-182",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-182",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-183",
+      "disposition": "pass",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-183",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-183",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-183",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장 수치 4종 전부 인용 안에 실재 (3년이, 3년째의, 12월, 31일까지)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-183",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-184",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-184",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-184",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-184",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-184",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "앵커 불충분 — [날짜 2020-2-12, 수치 2020] 가 인용에 없다. 인용은 주장값을 증거하는 최소 문장 전체여야 한다(인용 확장 요구)"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-185",
+      "disposition": "pass",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-185",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-185",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-185",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장 수치 4종 전부 인용 안에 실재 (1, 2, 3, 4)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-185",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-186",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-186",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-186",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-186",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-186",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-187",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-187",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-187",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-187",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-187",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-188",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-188",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-188",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-188",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-188",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-189",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-189",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-189",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-189",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-189",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-190",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-190",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-190",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-190",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-190",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-191",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-191",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-191",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-191",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-191",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-192",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-192",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-192",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-192",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-192",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-193",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-193",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-193",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-193",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-193",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-194",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-194",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-194",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-194",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-194",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-195",
+      "disposition": "reject",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-195",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-195",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-195",
+          "pass": false,
+          "disposition": "reject",
+          "evidence": "주장 수치 [0] 가 인용에 없다 (인용 보유: 1차, 2만원, 2차, 3만, 3천원)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-195",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "앵커 불충분 — [수치 0] 가 인용에 없다. 인용은 주장값을 증거하는 최소 문장 전체여야 한다(인용 확장 요구)"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-196",
+      "disposition": "pass",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-196",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-196",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-196",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장 수치 1종 전부 인용 안에 실재 (1차)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-196",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-197",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-197",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-197",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-197",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-197",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-198",
+      "disposition": "pass",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-198",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-198",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-198",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장 수치 5종 전부 인용 안에 실재 (1회, 3년마다, 1회, 1월, 15일까지)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-198",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-199",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-199",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-199",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-199",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-199",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-200",
+      "disposition": "queue",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-200",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-200",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-200",
+          "pass": false,
+          "disposition": "queue",
+          "evidence": "주장에서 수치 토큰을 찾지 못했다 — 값 정합을 판정할 수 없음(사람 큐)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-200",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    },
+    {
+      "cardId": "LAW-201",
+      "disposition": "pass",
+      "findings": [
+        {
+          "check": "S3-1-quote",
+          "cardId": "LAW-201",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "바이그램 커버리지 1.000 (임계 0.95) — 인용이 출처 청크에 실재"
+        },
+        {
+          "check": "S3-3-splice",
+          "cardId": "LAW-201",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "LCS 연속 비율 1.000 (임계 1 = 정확 포함) — 인용이 출처 청크에 통짜로 존재(정규화 후 부분문자열)"
+        },
+        {
+          "check": "S3-2-value",
+          "cardId": "LAW-201",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장 수치 4종 전부 인용 안에 실재 (3년이, 3년째의, 6월, 30일까지)"
+        },
+        {
+          "check": "S3-4-anchor",
+          "cardId": "LAW-201",
+          "pass": true,
+          "disposition": "pass",
+          "evidence": "주장의 날짜·수치 앵커가 전부 인용 안에 실재"
+        }
+      ]
+    }
+  ]
+}

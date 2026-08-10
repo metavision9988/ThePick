@@ -17,6 +17,7 @@ import {
   verifyCard,
   summarize,
 } from '../index.js';
+import { LAW_173_QUOTE, LAW_173_CHUNK } from './fixtures/law-173.js';
 
 /** 실제 법령 조문 (STAGE 2 추출물과 같은 성격 — 조문 단위 청크). */
 const SOURCE =
@@ -264,10 +265,13 @@ describe('★G-S3-5 적대 10종 — 전건 검출', () => {
 
   /**
    * ★독립 리뷰(2026-08-08)가 잡은 것: 위 10종 중 ⑤⑥은 **외래 어휘**를 써서 바이그램이 떨어졌다.
-   *   **원문 어휘만으로** 같은 클래스를 만들면 바이그램·LCS 를 둘 다 통과한다 = 현 엔진의 진짜 한계.
-   *   `bigram.ts` §한계 1 이 "방어선은 lcsRatio 와 사람 검수뿐"이라 적었는데, LCS 도 못 막는다.
-   *   ⇒ **고칠 때까지 이 사실을 테스트로 들고 있는다**(it.fails = "지금은 못 잡는다"의 실행 가능한 기록).
-   *   고쳐지면 이 테스트가 red 가 되어 알려준다 — 주석보다 강한 장치다.
+   *   **원문 어휘만으로** 같은 클래스를 만들면 바이그램·LCS 를 둘 다 통과한다 = 당시 엔진의 진짜 한계.
+   *   당시 처분은 `it.fails`("지금은 못 잡는다"의 실행 가능한 기록)였다.
+   *
+   * ★**2026-08-10 해소** — LCS 임계를 0.8 → 1.0(정확 포함)으로 재설계하자 red 로 전환됐다
+   *   (`lcs.ts` §임계 재설계). 그래서 `it.fails` 를 **정상 `it` 로 승격**한다.
+   *   근거: 축자 인용은 정의상 부분문자열이라 진짜는 1.0 이고, 이 위조들은 어휘를 바꾼 지점에서
+   *   연속성이 끊겨 1.0 에 못 미친다. 실 데이터 49/49 가 정확히 1.0 이므로 과탐 비용은 0이었다.
    */
   const hardened: ReadonlyArray<{ label: string; card: Parameters<typeof verifyCard>[0] }> = [
     {
@@ -292,7 +296,7 @@ describe('★G-S3-5 적대 10종 — 전건 검출', () => {
     },
   ];
 
-  it.fails.each(hardened)('$label → ★현재 검출 못 함 (알려진 한계)', ({ card }) => {
+  it.each(hardened)('$label → 검출(pass 아님) ★2026-08-10 임계 재설계로 해소', ({ card }) => {
     expect(verifyCard(card).disposition).not.toBe('pass');
   });
 
@@ -306,6 +310,95 @@ describe('★G-S3-5 적대 10종 — 전건 검출', () => {
       sourceText: '제3자에게 손해평가를 담당하게 할 수 있다',
     });
     expect(v.disposition).not.toBe('pass');
+  });
+
+  /**
+   * ★독립 리뷰 §2 처분 — **실코퍼스 규모** 적대 (2026-08-10 신설).
+   *
+   * 위 10종은 300자 장난감 `SOURCE` 를 쓴다. 리뷰가 실증한 것: **진짜 청크 규모**(수천 자)에서는
+   * 바이그램 풀이 커져 위조 어휘의 바이그램마저 청크 어딘가에 존재하므로 3-1 이 통과하고,
+   * LCS 도 구 임계 0.8 을 넘겨 **4검사 전부 통과 → `pass`** 가 됐다. 검사기가 가장 위험한 상태다.
+   *
+   * 아래 픽스처는 **파이프라인 산출물의 복사본**이다(`./fixtures/law-173.ts`, 손 편집 금지):
+   *   · 인용 = LAW-173(요령 제8조) `source_quote` **285자 = 코퍼스 median(235자) 대역**
+   *   · 출처 = 같은 노드의 **선언 주소 청크 전체 6,541자**
+   *   · 위조 = 주체 1개 치환(`재해보험사업자` → `손해평가사`) — 둘 다 **원문에 실재하는 어휘**
+   *
+   * ★**정정 (독립 리뷰 M-1, 2026-08-10)**: 직전 판본은 이 청크의 **744자 발췌**를 쓰면서
+   *   "실 코퍼스 규모"라고 적었다. 커버리지는 청크가 커질수록 위조에 관대해지므로
+   *   발췌(cov .976) → **실 규모(cov 1.0000)** 로 값이 달라진다 = 발췌 픽스처는 3-1 을
+   *   **실제보다 유능하게** 보이게 했다. 실 청크로 교체하고 그 서명을 아래에 고정한다.
+   *
+   * ★인용이 144자 → 285자로 늘어난 것은 같은 날 별건 처분이다(호 열거를 조문 경계로 오인해
+   *   본문을 자르던 결함 수리). **인용이 길수록 한 단어 위조는 희석돼 LCS 가 올라간다** —
+   *   실제로 0.830 → **0.914** 가 됐고, 구 임계 0.8 에서 더 안전하게 통과했을 것이다.
+   */
+  const FORGED_173 = LAW_173_QUOTE.replace('재해보험사업자', '손해평가사');
+
+  it('실코퍼스 — 진짜 인용은 cov 1.0 · lcs 1.0 (정확 포함) · pass 유지', () => {
+    expect(coverage(LAW_173_QUOTE, LAW_173_CHUNK)).toBe(1);
+    expect(lcsRatio(LAW_173_QUOTE, LAW_173_CHUNK)).toBe(1);
+  });
+
+  it('★실 규모에서 3-1 은 위조에 만점을 준다 (cov 1.0000) — 3-1 단독은 방어선이 아니다', () => {
+    // 이 값이 1 미만으로 바뀌면 픽스처가 축소됐거나 정규화가 바뀐 것이다. 먼저 그쪽을 의심하라.
+    expect(coverage(FORGED_173, LAW_173_CHUNK)).toBe(1);
+    // 구 임계(lcs .8)도 통과했다 = 이 위조는 08-08 엔진에서 `pass` 였다. 실측 0.914.
+    expect(lcsRatio(FORGED_173, LAW_173_CHUNK)).toBeGreaterThan(0.9);
+    expect(lcsRatio(FORGED_173, LAW_173_CHUNK)).toBeLessThan(1);
+  });
+
+  it('★실코퍼스 주체 위조 → 검출(pass 아님) — 임계 1.0 만이 잡는 구간', () => {
+    const v = verifyCard({
+      id: 'ADV-REAL-1',
+      claim: '손해평가반은 5인 이내로 구성한다',
+      quote: FORGED_173,
+      sourceText: LAW_173_CHUNK,
+    });
+    expect(v.disposition, 'ADV-REAL-1 통과 = 실코퍼스에서 위조가 새어 나간다').not.toBe('pass');
+    expect(v.findings.find((f) => f.check === 'S3-3-splice')?.pass).toBe(false);
+    // ★3-1 은 이 위조를 통과시킨다 — 잡은 것은 3-3 단독이다(위 cov 1.0000 의 귀결).
+    expect(v.findings.find((f) => f.check === 'S3-1-quote')?.pass).toBe(true);
+  });
+
+  it('★구조: `3-3 통과 ⟹ 3-1 통과` — 3-1 은 독립 축이 아니라 3-3 의 하위다 (M-1b)', () => {
+    // lcs===1 ⟺ 인용이 청크의 연속 부분문자열 ⟹ 인용의 모든 바이그램이 청크에 존재 ⟹ cov===1.
+    // 임계 1.0 도입의 부작용이며 **원장에 남겨야 할 사실**이다: 4검사는 이제 3축(3-3·3-2·3-4)이다.
+    for (const q of [LAW_173_QUOTE, LAW_173_QUOTE.slice(0, 60), LAW_173_QUOTE.slice(20, 90)]) {
+      if (lcsRatio(q, LAW_173_CHUNK) === 1) expect(coverage(q, LAW_173_CHUNK)).toBe(1);
+    }
+  });
+
+  it('★한계: 3-1·3-3 은 **노드 귀속을 증거하지 않는다** (청크가 조문 단위가 아님, M-8)', () => {
+    // 청크는 페이지 창(~6천자)이라 이웃 조문이 함께 들어 있다. 다른 조문의 인용을 붙여도 통과한다.
+    // ⇒ 검수 UI 에서 "통짜로 존재" 를 "이 노드의 조문에서 왔다" 로 읽으면 안 된다.
+    const neighbourQuote = '제7조 삭제';
+    const v = verifyCard({
+      id: 'ADV-REAL-3',
+      claim: '손해평가반은 5인 이내로 구성한다',
+      quote: LAW_173_CHUNK.slice(
+        LAW_173_CHUNK.indexOf(neighbourQuote),
+        LAW_173_CHUNK.indexOf(neighbourQuote) + 120,
+      ),
+      sourceText: LAW_173_CHUNK,
+    });
+    // 3-1·3-3 은 통과한다(= 귀속 미검증). 이 카드를 막는 것은 3-2/3-4 층뿐이다.
+    expect(v.findings.find((f) => f.check === 'S3-1-quote')?.pass).toBe(true);
+    expect(v.findings.find((f) => f.check === 'S3-3-splice')?.pass).toBe(true);
+    expect(v.disposition, '이웃 조문 인용이 pass 면 앵커 층까지 무력하다').not.toBe('pass');
+  });
+
+  it('★실코퍼스 인용 절단 — 주장 수치(5인)가 잘린 인용은 통과하지 못한다', () => {
+    const truncated = LAW_173_QUOTE.slice(0, 60); // ①항 머리만 — ②항 '5인 이내' 소실
+    const v = verifyCard({
+      id: 'ADV-REAL-2',
+      claim: '손해평가반은 5인 이내로 구성한다',
+      quote: truncated,
+      sourceText: LAW_173_CHUNK,
+    });
+    // 절단 인용은 원문에 실재하므로 3-1·3-3 은 통과한다 — 잡는 것은 3-2/3-4 층이다.
+    expect(v.findings.find((f) => f.check === 'S3-3-splice')?.pass).toBe(true);
+    expect(v.disposition, '증거가 잘린 인용이 pass 면 앵커 층이 무력하다').not.toBe('pass');
   });
 
   it('★10/10 전건 검출 (하나라도 통과하면 미완성)', () => {
